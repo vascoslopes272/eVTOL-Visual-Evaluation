@@ -1,0 +1,31 @@
+# =============================================================================
+# eVTOL-Embedding-Evaluation — config
+# =============================================================================
+# Joint label+embedding analysis: linear probes per taxonomy axis, structure/
+# clustering study, final cross-pipeline benchmark table.
+#
+# Consumes (does not produce):
+#   - labels_v1.parquet          from eVTOL-Embedding-Extraction (repo 2)
+#   - outputs/embeddings/<pipeline_name>/  from repo 2, one folder per pipeline
+#     (registry.py resolves pipeline name -> folder + manifest.json)
+# =============================================================================
+
+paths:
+  labels_parquet: "EDIT-ME"   # eVTOL-Embedding-Extraction's taxonomy.output_dir/labels_v1.parquet
+  embeddings_root: "EDIT-ME"  # parent dir containing one subfolder per pipeline (see registry.py)
+
+taxonomy:
+  n_folds: 5
+  reference_matrix: [22, mean_patch]   # matrix used for UMAP / clustering (pipeline: dinov2_frozen)
+  umap_color_attrs:           # attributes colored in the Stage-2 UMAP grid
+    - G1_topType
+    - M2_wCount
+    - M2_wingConf
+    - M1_boomsPresent
+    - M1_fusShape
+    - M1_gearArch
+  confound_cols: [assignee, assignee_country, year_bin, perspective,
+                  acSty, acCol, bgSty, parts, qualityFlag]
+  external_cols: [cpc_subclass, cpc_first]   # CPC = patent-office classification
+
+seed: 42
