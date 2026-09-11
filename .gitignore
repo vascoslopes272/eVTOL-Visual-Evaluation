@@ -1,8 +1,8 @@
-# Outputs — keep the directory structure (.gitkeep) but ignore generated content
-outputs/**
-!outputs/
-!outputs/**/
-!outputs/**/.gitkeep
+# Outputs — each pillar keeps its outputs/ folder (.gitkeep) but not the generated content
+*/outputs/**
+!*/outputs/
+!*/outputs/**/
+!*/outputs/**/.gitkeep
 
 # Embedding arrays
 *.npy

@@ -8,3 +8,5 @@ umap-learn
 hdbscan
 pyyaml
 python-dotenv
+openpyxl        # dataset_facts: reads the 1639_LABELLED workbooks
+tabulate        # dataset_facts: export.markdown_tables

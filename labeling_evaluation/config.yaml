@@ -1,0 +1,36 @@
+# =============================================================================
+# eVTOL-Visual-Evaluation / labeling_evaluation — config
+# =============================================================================
+# Analysis of the human-labelled dataset, independent of any embedding.
+#
+# Consumes (does not produce):
+#   - 1639_LABELLED/  written by Patent-Labelling-Tools (Stage 03a identity,
+#     Stage 04 master join, text_architecture/, text_identity/)
+# Nothing here writes to it.
+# =============================================================================
+
+paths:
+  # Stage 04's 1639_LABELLED work tree — the only input src/dataset_facts needs.
+  # $DRIVE_PATH can be set in a .env next to this file instead of hard-coding the mount.
+  labelled_root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED"
+
+# ---------------------------------------------------------------------------
+# dataset_facts — Part A of the methodology framework (the labelled dataset)
+# ---------------------------------------------------------------------------
+dataset_facts:
+  # the framework document whose Part A numbers published.py checks (appendix of the notebook)
+  document: "/mnt/storage_11tb/Drive_files_to_syncronize/eVTOL_Methodology_Framework_v2_ANNOTATED_20260909.md"
+  # where notebooks/30_preliminary_analysis.ipynb writes tables/, figs/ and the draft .md
+  output_dir: "outputs/preliminary_analysis"
+  # first priority year of the truncated window (drawn hatched, labelled partial)
+  partial_window_start: 2024
+  # the 02a rule-decision sidecars behind index section 4.3 (partial until 02a runs on every batch)
+  rule_decisions_glob: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/data/**/rule_decisions_Batch_*.json"
+  # cut-offs the descriptive pass uses, all stated rather than hidden in code
+  informative_min_answered: 300     # a field must be answered on this many aircraft
+  informative_min_effective: 1.5    # ... and spread over this many effective answers
+  near_constant_min_answered: 100   # a near-constant finding needs this much support
+  near_constant_share: 0.95         # ... and this much of one answer
+  tolerance: 0.006                  # rounding slack when checking published rates
+
+seed: 42

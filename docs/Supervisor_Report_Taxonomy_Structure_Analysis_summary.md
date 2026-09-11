@@ -1,7 +1,7 @@
 # eVTOL Patent Taxonomy & Embedding Structure — Progress Report
 
 **Prepared for:** Phase Supervisor
-**Pipeline stage:** [`21_structure_clustering.ipynb`](../notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset), model `facebook/dinov2-large` (frozen), layers {18, 22, 24} × pooling {cls, mean_patch}
+**Pipeline stage:** [`21_structure_clustering.ipynb`](../embedding_evaluation/notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset), model `facebook/dinov2-large` (frozen), layers {18, 22, 24} × pooling {cls, mean_patch}
 
 <span class="provenance">Summary edition of the original combined <code>Supervisor_Report_Taxonomy_Structure_Analysis.md</code>, with Section 5 restored. Supersedes the <code>_summary</code> and <code>_no_section5</code> variants that lived in repo 2 (<code>eVTOL-Embedding-Extraction</code>) before the pipeline split; all figure and output paths below are relative to this repo.</span>
 
@@ -435,4 +435,4 @@ Also worth auditing while this is fresh: the 14 dendrogram branches now each hav
 
 ---
 
-<span class="provenance">All tables/figures sourced from [<code>notebooks/21_structure_clustering.ipynb</code>](../notebooks/21_structure_clustering.ipynb) (formerly <code>DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb</code>). Stage outputs live outside the repo on the sync drive under <code>4 - Intelligence Models &amp; Post Process Outputs/Preliminary_analysis/outputs/</code>: embeddings and Stage-0 QC in <code>analysis_1639_518/</code>, Stage 1–5 tables and figures in <code>analysis_taxonomy/</code>. Figures referenced above are vendored copies in [<code>docs/figs/</code>](figs/); see [ANALYSIS_GUIDE.md](ANALYSIS_GUIDE.md) for metric definitions.</span>
+<span class="provenance">All tables/figures sourced from [<code>notebooks/21_structure_clustering.ipynb</code>](../embedding_evaluation/notebooks/21_structure_clustering.ipynb) (formerly <code>DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb</code>). Stage outputs live outside the repo on the sync drive under <code>4 - Intelligence Models &amp; Post Process Outputs/Preliminary_analysis/outputs/</code>: embeddings and Stage-0 QC in <code>analysis_1639_518/</code>, Stage 1–5 tables and figures in <code>analysis_taxonomy/</code>. Figures referenced above are vendored copies in [<code>docs/figs/</code>](figs/); see [ANALYSIS_GUIDE.md](ANALYSIS_GUIDE.md) for metric definitions.</span>

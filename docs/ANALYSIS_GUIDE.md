@@ -2,7 +2,7 @@
 
 A single study reference for every metric in this workstream: what it means, how
 it is computed (which function / which notebook cell), how to read it, and which
-knob changes it. Code: [`src/probes.py`](../src/probes.py). Notebooks:
+knob changes it. Code: [`embedding_evaluation/src/probes.py`](../embedding_evaluation/src/probes.py). Notebooks:
 `12a_extract_dinov2_frozen.ipynb` (repo 2, extraction QC), `21_structure_clustering.ipynb` (Stage 1).
 
 ---

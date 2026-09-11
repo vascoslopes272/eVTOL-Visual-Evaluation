@@ -1,5 +1,5 @@
 # =============================================================================
-# eVTOL-Embedding-Evaluation — config
+# eVTOL-Visual-Evaluation / embedding_evaluation — config
 # =============================================================================
 # Joint label+embedding analysis: linear probes per taxonomy axis, structure/
 # clustering study, final cross-pipeline benchmark table.
@@ -13,6 +13,7 @@
 paths:
   labels_parquet: "EDIT-ME"   # eVTOL-Embedding-Extraction's taxonomy.output_dir/labels_v1.parquet
   embeddings_root: "EDIT-ME"  # parent dir containing one subfolder per pipeline (see registry.py)
+
 
 taxonomy:
   n_folds: 5

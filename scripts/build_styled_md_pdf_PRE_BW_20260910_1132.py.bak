@@ -1,0 +1,156 @@
+"""Render the annotated methodology .md to a styled PDF (python-markdown + headless Chrome)."""
+import re, subprocess, sys, tempfile
+from pathlib import Path
+import markdown
+
+SRC = Path(sys.argv[1]); DEST = Path(sys.argv[2])
+
+CSS = """
+@page { size: A4; margin: 18mm 16mm 20mm 16mm;
+  @bottom-left { content: "eVTOL Patent Design Evolution — Methodology Framework v2"; font: 8pt Inter, sans-serif; color: #7a8290; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 8pt Inter, sans-serif; color: #7a8290; } }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif; font-size: 9.6pt; line-height: 1.5;
+       color: #1f2430; margin: 0; }
+p { margin: 0.45em 0; }
+strong { font-weight: 600; color: #141821; }
+em { color: #333a48; }
+a { color: inherit; text-decoration: none; }
+code { font-family: "JetBrains Mono", "DejaVu Sans Mono", Menlo, monospace; font-size: 0.84em;
+       background: #eef1f5; color: #2b3444; padding: 0.05em 0.3em; border-radius: 3px; }
+hr { border: none; margin: 0; }
+
+/* title block */
+.title { border-left: 6px solid #1f5fa8; padding: 4px 0 4px 14px; margin: 0 0 14px 0; }
+.title h1 { font-family: "Inter Display", Inter, sans-serif; font-size: 22pt; font-weight: 700; margin: 0; line-height: 1.15; color: #0f2c52; }
+.title .sub { font-size: 11pt; color: #1f5fa8; font-weight: 500; margin-top: 3px; }
+.meta { font-size: 8.6pt; color: #5b6472; background: #f4f6f9; border-radius: 6px; padding: 8px 12px; margin: 0 0 10px 0; }
+.meta p { margin: 0.25em 0; }
+.guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 6px 0; }
+.guide div { background: #fff; border: 1px solid #d8dee8; border-top: 3px solid #1f5fa8; border-radius: 4px; padding: 6px 8px; font-size: 8.2pt; line-height: 1.35; }
+.guide div b { display: block; color: #1f5fa8; font-size: 9pt; margin-bottom: 2px; }
+.fixes { font-size: 8.4pt; color: #5b6472; margin: 6px 0 0 0; }
+
+/* section bands */
+h2 { font-family: "Inter Display", Inter, sans-serif; font-size: 15pt; font-weight: 700; color: #fff; background: #1f5fa8;
+     margin: 1.5em 0 0.7em 0; padding: 6px 12px; border-radius: 4px; break-after: avoid; }
+h2 .part { display: inline-block; background: #fff; color: #1f5fa8; font-size: 9pt; font-weight: 700; padding: 1px 7px;
+     border-radius: 3px; margin-right: 10px; vertical-align: middle; letter-spacing: 0.04em; }
+h3 { font-size: 11.5pt; font-weight: 600; color: #0f2c52; margin: 1.3em 0 0.4em 0; padding-bottom: 3px;
+     border-bottom: 1.5px solid #cfd8e6; break-after: avoid; }
+h2 + h3 { margin-top: 0.6em; }
+
+/* tables */
+table { border-collapse: collapse; width: 100%; margin: 0.6em 0 0.9em 0; font-size: 8.4pt; line-height: 1.4; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th, td { border: 1px solid #d8dee8; padding: 5px 7px; text-align: left; vertical-align: top; }
+th { background: #e8eef7; color: #0f2c52; font-weight: 600; }
+tbody tr:nth-child(even) { background: #f7f9fc; }
+td:first-child { font-weight: 600; color: #141821; }
+table.plan td:first-child { color: #1f5fa8; }
+table.plan { font-size: 8.1pt; }
+td.v-ready { background: #e6f4ea; } td.v-prio { background: #fff3d6; } td.v-park { background: #f1f1f4; color: #4b5260; }
+td.v-warn { background: #fde8e6; }
+
+/* lists */
+ul, ol { margin: 0.3em 0 0.6em 0; padding-left: 1.4em; }
+li { margin: 0.28em 0; }
+li > ul { margin-top: 0.15em; }
+ol > li::marker { font-weight: 600; color: #1f5fa8; }
+
+/* badges & callouts */
+.decide { display: inline-block; background: #b23a1c; color: #fff; font-size: 7.6pt; font-weight: 700; padding: 1px 6px;
+          border-radius: 3px; letter-spacing: 0.05em; vertical-align: middle; }
+.formula { background: #f4f6f9; border-left: 3px solid #9fb3cc; padding: 6px 10px; margin: 0.5em 0; font-size: 9.2pt; }
+.hl { background: #fff8e1; border: 1px solid #f1dd9a; border-radius: 5px; padding: 8px 12px; margin: 0.7em 0; }
+.hl p { margin: 0.3em 0; }
+.pill { display: inline-block; font-size: 7.6pt; font-weight: 700; padding: 0 6px; border-radius: 9px; margin-right: 3px; }
+"""
+
+md_text = SRC.read_text(encoding="utf-8")
+
+# ---- title block: pull the H1 and the three intro paragraphs out of the markdown
+lines = md_text.split("\n")
+h1 = lines[0].lstrip("# ").strip()
+title_main, _, title_sub = h1.partition(" — ")
+body_md = "\n".join(lines[1:])
+intro, _, rest = body_md.partition("\n---\n")
+paras = [p.strip() for p in intro.strip().split("\n\n") if p.strip()]
+date_p, guide_p, fix_p = paras[0], paras[1], paras[2]
+
+def inline(md): return markdown.markdown(md, extensions=["attr_list"]).replace("<p>", "").replace("</p>", "")
+
+guide_cards = re.findall(r"\*\*(Part [A-H])\*\* (.*?)(?=\s\*\*Part|\sItems marked)", guide_p)
+NAMES = {"Part A": "The labelled dataset", "Part B": "Info-gathering plan", "Part C": "Phase 1 checklist", "Part D": "Methods", "Part E": "Additions", "Part F": "Order of work", "Part G": "Thesis outline", "Part H": "Glossary"}
+guide_html = "".join(f"<div><b>{k} · {NAMES[k]}</b>{v.lstrip('is ').rstrip('.')}.</div>" for k, v in guide_cards)
+decide_note = "Items marked <span class='decide'>DECIDE</span> are open rulings for the author."
+
+def fix_lists(md):
+    out=[]; prev=""
+    for ln in md.split("\n"):
+        import re as _re
+        m=_re.match(r"^( {2,3})(- |\d+\. )", ln)
+        if m: ln="    "+ln[len(m.group(1)):]
+        if _re.match(r"^\s*(- |\d+\. )", ln) and prev.strip() and not _re.match(r"^\s*(- |\d+\. )", prev) and not prev.startswith("|"):
+            out.append("")
+        out.append(ln); prev=ln
+    return "\n".join(out)
+rest = fix_lists(rest)
+html_body = markdown.markdown(rest, extensions=["tables", "attr_list", "sane_lists", "md_in_html"])
+
+# ---- post-processing
+def scripts(h):
+    parts = re.split(r"(<code>.*?</code>)", h)
+    for i in range(0, len(parts), 2):
+        t = parts[i]
+        t = re.sub(r"\^([0-2q])D", r"<sup>\1</sup>D", t)
+        t = re.sub(r"(?<![\w/])([A-Za-zδΣ])_([A-Za-z0-9]{1,5})(?![A-Za-z0-9_])", r"\1<sub>\2</sub>", t)
+        parts[i] = t
+    return "".join(parts)
+html_body = scripts(html_body)
+html_body = html_body.replace("▶ DECIDE", "<span class='decide'>DECIDE</span>")
+html_body = re.sub(r"<h2>Part ([A-H]) — (.*?)</h2>", r"<h2><span class='part'>PART \1</span>\2</h2>", html_body)
+# verdict-cell colouring in the Part A table (4th cell of each row)
+def colour_row(m):
+    row = m.group(0)
+    cells = re.findall(r"<td>(.*?)</td>", row, flags=re.S)
+    if len(cells) != 4: return row
+    v = cells[3]
+    cls = ("v-ready" if v.startswith("<strong>Ready") or "Priority 1" in v else
+           "v-prio" if "Cheap" in v else
+           "v-warn" if v.startswith("<strong>Not a gold") else
+           "v-park" if any(k in v for k in ("Park", "Out of scope", "Not needed", "Only matters")) else "")
+    if cls:
+        idx = [mm.start() for mm in re.finditer(r"<td>", row)][3]
+        row = row[:idx] + f"<td class='{cls}'>" + row[idx+4:]
+    return row
+html_body = re.sub(r"<tr>.*?</tr>", colour_row, html_body, flags=re.S)
+# column widths for the plan table (header starts with '#', 'Information')
+html_body = html_body.replace("<table>\n<thead>\n<tr>\n<th>#</th>\n<th>Information",
+    "<table class='plan'><colgroup><col style='width:4%'><col style='width:16%'><col style='width:33%'><col style='width:11%'><col style='width:17%'><col style='width:19%'></colgroup>\n<thead>\n<tr>\n<th>#</th>\n<th>Information")
+html_body = html_body.replace("<table>\n<thead>\n<tr>\n<th>Source</th>\n<th>Exists?</th>",
+    "<table class='state'><colgroup><col style='width:17%'><col style='width:9%'><col style='width:44%'><col style='width:30%'></colgroup>\n<thead>\n<tr>\n<th>Source</th>\n<th>Exists?</th>")
+# formula lines (start with a variable and an "=" ) get a box
+html_body = re.sub(r"<p>((?:d\(i,j\)|κ|Q|P_o|\^0D|V) = .*?)</p>", r"<p class='formula'>\1</p>", html_body)
+# the worked example paragraph in 3.1
+html_body = html_body.replace("<p>Worked example with two classes.", "<div class='hl'><p>Worked example with two classes.")
+html_body = html_body.replace("because κ is dragged down by rare classes.</p>", "because κ is dragged down by rare classes.</p></div>")
+
+html = f"""<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body>
+<div class='title'><h1>{title_main}</h1><div class='sub'>{title_sub}</div></div>
+<div class='meta'>{inline(date_p)}</div>
+<div class='guide'>{guide_html}</div>
+<p class='fixes'>{decide_note} {inline(fix_p)}</p>
+{html_body}
+</body></html>"""
+
+tmp = Path(tempfile.mkstemp(suffix=".html", prefix=".render_", dir=SRC.parent)[1])
+tmp.write_text(html, encoding="utf-8")
+try:
+    subprocess.run(["google-chrome", "--headless", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer",
+                    "--virtual-time-budget=20000", f"--print-to-pdf={DEST}", tmp.resolve().as_uri()],
+                   check=True, capture_output=True)
+finally:
+    tmp.unlink(missing_ok=True)
+print(DEST, DEST.stat().st_size)

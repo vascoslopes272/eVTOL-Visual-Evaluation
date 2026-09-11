@@ -8,6 +8,14 @@ Each stage saves its artefacts under ``<taxonomy.output_dir>/stage{N}/`` and
 returns a plain results dict; ``record_stage`` accumulates those into
 ``results.json`` and ``write_report`` renders ``REPORT_11_taxonomy.md`` so a
 full report file exists after every notebook run.
+
+Known follow-up: ``stage0_prepare`` (moved as-is from the previous combined repo)
+still calls embedding computation (``emb.compute_embeddings``) instead of reading
+finished embeddings through ``registry.py``. Extraction belongs to
+``eVTOL-Embedding-Extraction``'s ``12x`` notebooks; this module should only join
+already-extracted embeddings (via ``registry``) with ``labels_v1.parquet``
+(``paths.labels_parquet``). The ``src.embeddings`` / ``src.labels`` imports below
+do not exist in this pillar yet, so the 20/21 notebooks do not run until that pass.
 """
 
 from __future__ import annotations

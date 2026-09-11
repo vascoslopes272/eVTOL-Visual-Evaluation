@@ -97,7 +97,7 @@ def build(src: Path, dest: Path | None = None) -> Path:
 
     body = markdown.markdown(
         src.read_text(encoding="utf-8"),
-        extensions=["tables", "md_in_html", "attr_list", "sane_lists"],
+        extensions=["tables", "md_in_html", "attr_list", "sane_lists", "footnotes"],
     )
     html = (
         "<!doctype html>\n<html><head><meta charset='utf-8'>\n"
