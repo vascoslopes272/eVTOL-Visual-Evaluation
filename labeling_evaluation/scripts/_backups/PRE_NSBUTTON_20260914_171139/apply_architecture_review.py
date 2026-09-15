@@ -19,7 +19,6 @@ architecture provenance
   adjudicated_text   the citation states it; visible_in_figures = yes / no
   adjudicated_other  the text states a different type than the reader proposed
   adjudicated_image  LEGACY: chosen before the text rule — re-decide in the page (counted and warned)
-  not_stated         also: the reviewer pressed "the text does not state an architecture" (decision ns)
   not_stated         text silent; no citation exists; image label stands (arch_final = image label)
   per_aircraft       (patent file only) the patent draws aircraft of different types; see the variants file
   unsure             annotator could not tell — arch_final blank
@@ -53,14 +52,7 @@ def s(v):
 
 
 allrows = pd.read_excel(TA / "architecture_text_vs_image_20260909.xlsx", sheet_name="ALL_695")
-# per-aircraft readings: the 18 multi-type patents (2026-09-11) + the 50 same-type multi-aircraft patents (2026-09-15).
-# Every patent in either file is decided per aircraft; a patent-level decision no longer covers its aircraft.
-var = pd.concat([pd.read_csv(TA / "variant_reading" / f) for f in
-                 ("architecture_text_variants_20260911.csv", "architecture_text_variants_sametype_20260915.csv")], ignore_index=True)
-if "basis" not in var.columns:
-    var["basis"] = "aircraft"
-var["basis"] = var["basis"].fillna("aircraft")
-assert not var.variant_id.duplicated().any()
+var = pd.read_csv(TA / "variant_reading" / "architecture_text_variants_20260911.csv")
 MULTI = set(var.patent_id)
 idn = pd.read_excel(ROOT / "joined" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id","aircraft_name","aircraft_name_source","scope","scope_source"]].set_index("patent_id")
 _kn_raw = pd.read_csv(TA / "known_aircraft_architecture.csv")
@@ -91,19 +83,11 @@ sc_dec = dec[dec.scope_decision.notna() & (dec.scope_decision.astype(str).str.st
 print(f"decisions read from {dec_path}: {len(pat_dec)} patent rows, {len(var_dec)} aircraft rows, {len(sc_dec)} scope")
 
 
-def ruling(d, img, txt, basis="patent"):
+def ruling(d, img, txt):
     ch = d.decision
-    final = {"confirm": txt, "image": img, "text": txt, "other": s(d.final_label) or None, "unsure": None,
-             # the reviewer found the text silent: same treatment as the reader's own not-stated rows
-             "ns": img}.get(ch)
-    prov = {"confirm": "confirmed", "unsure": "unsure", "ns": "not_stated"}.get(ch, "adjudicated_" + str(ch))
-    if ch == "confirm" and basis == "patent_level_only":
-        # no sentence cites this aircraft's figures: the reviewer confirmed that the patent-level citation applies to it
-        prov = "confirmed_patent_level"
+    final = {"confirm": txt, "image": img, "text": txt, "other": s(d.final_label) or None, "unsure": None}.get(ch)
+    prov = {"confirm": "confirmed", "unsure": "unsure"}.get(ch, "adjudicated_" + str(ch))
     visible = "yes" if ch == "confirm" else s(d.get("visible_in_figures", ""))
-    if not visible and final and img and final == img and ch != "ns":
-        # the ground truth equals the figure label, so the figures show it (2026-09-15, comparison + visibility split)
-        visible = "yes"
     return final, prov, visible
 
 
@@ -118,13 +102,13 @@ vfinal = {}
 for v in var.itertuples():
     img, txt = (s(v.image_type) or None), s(v.text_type)
     if v.variant_id in var_dec.index:
-        final, prov, vis = ruling(var_dec.loc[v.variant_id], img, txt, s(v.basis))
+        final, prov, vis = ruling(var_dec.loc[v.variant_id], img, txt)
     elif txt == "NS" and not s(v.flags):
         final, prov, vis = img, "not_stated", ""
     else:
         final, prov, vis = None, "pending", ""
     vfinal[v.variant_id] = dict(arch_final=final, provenance=prov, visible_in_figures=vis, text_label=txt, text_confidence=s(v.confidence),
-                                quote=s(v.quote), flags=s(v.flags), citation_basis=s(v.basis))
+                                quote=s(v.quote), flags=s(v.flags))
 
 # ---- per patent ---------------------------------------------------------------------------------------
 out = []
@@ -139,7 +123,7 @@ for r in allrows.itertuples():
         prov = "per_aircraft" if done else "pending"
         vis = "|".join(x["visible_in_figures"] or "-" for x in vs) if done else ""
     elif d is not None:
-        final, prov, vis = ruling(d, img, txt, "patent")
+        final, prov, vis = ruling(d, img, txt)
     elif known_auto(pid, img, txt):
         final, prov, vis = img, "known_aircraft", "yes"
     elif bucket.startswith("3"):
@@ -155,10 +139,8 @@ df.to_csv(TA / "architecture_text_final.csv", index=False)
 print("patents:", df.provenance.value_counts().to_dict())
 
 # ---- one row per primary approved aircraft ------------------------------------------------------------
-# The image labels are FROZEN as they stood before the 2026-09-15 wizard relabel session: the comparison measures the
-# figure-based labels the annotator made BEFORE seeing the ground truth, so corrections made after it must not leak in.
-FROZEN = TA / "image_labels_frozen_20260915.csv"
-prim = pd.read_csv(FROZEN, dtype=str, keep_default_na=False).rename(columns={"image_label_frozen": "topType"})
+ml = pd.read_excel(ROOT / "joined" / "master_labels.xlsx", usecols=["patent_id", "variant", "variant_id", "topType", "is_primary", "is_approved"])
+prim = ml[(ml.is_primary == True) & (ml.is_approved == True)]
 bypat = df.set_index("patent_id")
 vrows = []
 for v in prim.itertuples():
@@ -170,7 +152,7 @@ for v in prim.itertuples():
         vrows.append(dict(variant_id=v.variant_id, patent_id=v.patent_id, image_label=s(v.topType), level="patent",
                           arch_final=p.arch_final, provenance=p.provenance, visible_in_figures=p.visible_in_figures,
                           text_label=p.text_label,
-                          text_confidence=p.text_confidence, quote="", flags="", citation_basis="patent"))
+                          text_confidence=p.text_confidence, quote="", flags=""))
 vdf = pd.DataFrame(vrows)
 vdf.to_csv(TA / "architecture_text_final_variants.csv", index=False)
 print("aircraft:", len(vdf), vdf.provenance.value_counts().to_dict())

@@ -241,13 +241,13 @@ def provenance_tables(ds: Dataset, top_offices: int = 10) -> Dict[str, pd.DataFr
         ds.identity[["patent_id", "region", "assignee_country", "pub_office"]],
         on="patent_id", how="left",
     )
-    approved = j["is_approved"].fillna(False).astype(bool)
+    approved = j["is_representative"].fillna(False).astype(bool)
     out = {}
     for key in ("region", "assignee_country", "pub_office"):
         g = j.assign(approved=approved).groupby(key).agg(
-            patents=("patent_id", "size"), approved=("approved", "sum")
+            patents=("patent_id", "size"), representative=("approved", "sum")
         )
-        g["approval_rate"] = (g["approved"] / g["patents"]).round(2)
+        g["representative share"] = (g["representative"] / g["patents"]).round(2)
         g = g.sort_values("patents", ascending=False).reset_index()
         if key != "region":
             g = g.head(top_offices)
@@ -330,7 +330,7 @@ def source_state_table(ds: Dataset) -> pd.DataFrame:
 # time coverage
 # --------------------------------------------------------------------------
 def time_coverage(ds: Dataset) -> pd.DataFrame:
-    """Approved primary patents per priority year — why pre-2016 needs windows."""
+    """Representative primary patents per priority year — why pre-2016 needs windows."""
     joined = ds.patents_analysis.merge(
         ds.identity[["patent_id", "priority_year"]], on="patent_id", how="left"
     )

@@ -17,6 +17,9 @@ from pathlib import Path
 import markdown
 
 SRC = Path(sys.argv[1]); DEST = Path(sys.argv[2])
+# a compact document (file name carries "compact", or --compact on the command line) gets
+# a tighter print style: same faces and rules, less air around headings, tables and figures
+COMPACT = "--compact" in sys.argv[3:] or "compact" in SRC.stem.lower()
 
 CSS_TEMPLATE = """
 /* ---- monochrome print stylesheet (A4, black and white) ---- */
@@ -61,6 +64,13 @@ h2 .part { display: block; font-family: Inter, sans-serif; font-size: 7.8pt; fon
 h3 { font-family: Inter, sans-serif; font-size: 11pt; font-weight: 600; color: #000; margin: 1.35em 0 0.45em 0;
      padding-bottom: 3px; border-bottom: 0.5pt solid #b8b8b8; break-after: avoid; }
 h2 + h3 { margin-top: 0.75em; }
+h4 { font-family: Inter, sans-serif; font-size: 9.8pt; font-weight: 700; color: #000; margin: 1.1em 0 0.3em 0;
+     break-after: avoid; }
+h3 + h4 { margin-top: 0.5em; }
+p.level { font-family: Inter, sans-serif; font-size: 8pt; color: #4d4d4d; margin: 0 0 0.45em 0; text-align: left; }
+p.tcaption { font-family: Inter, sans-serif; font-size: 8pt; color: #000; margin: 0.7em 0 0 0; text-align: left;
+             break-after: avoid; }
+p.tcaption + table { margin-top: 0.25em; }
 
 /* ---- tables: horizontal rules only (booktabs) ---- */
 table { border-collapse: collapse; width: 100%; margin: 0.7em 0 1em 0; font-family: Inter, sans-serif;
@@ -96,6 +106,9 @@ ul > li::marker { color: #6e6e6e; }
 .formula { background: #f4f4f4; border-left: 2.2pt solid #000; padding: 7px 11px; margin: 0.6em 0;
            font-size: 9pt; text-align: left; }
 .hl { background: #f7f7f7; border: 0.5pt solid #c8c8c8; padding: 9px 12px; margin: 0.8em 0; }
+pre { background: #f4f4f4; border-left: 2.2pt solid #000; padding: 6px 11px; margin: 0.5em 0 0.6em 0;
+      font-size: 8.4pt; line-height: 1.4; white-space: pre-wrap; }
+pre code { background: none; padding: 0; font-size: 1em; }
 .hl p { margin: 0.32em 0; }
 .pill { display: inline-block; font-size: 7.4pt; font-weight: 700; padding: 0 6px; border: 0.6pt solid #000;
         border-radius: 8px; margin-right: 3px; }
@@ -130,6 +143,26 @@ else:
 footer = title_main + (f" — {title_sub.split(' (')[0]}" if title_sub else "")
 CSS = CSS_TEMPLATE.replace("__FOOTER__", footer.replace('"', "'"))
 
+# a compact document (file name carries "compact") gets a tighter print style:
+# same faces and rules, less air around headings, tables and figures
+if COMPACT:
+    CSS += """
+@page { margin: 15mm 15mm 16mm 15mm; }
+body { font-size: 8.8pt; line-height: 1.42; }
+p { margin: 0.35em 0; }
+h2 { font-size: 12.5pt; margin: 1.1em 0 0.45em 0; padding-top: 6px; }
+h3 { font-size: 10pt; margin: 0.9em 0 0.3em 0; }
+h4 { font-size: 9.2pt; margin: 0.8em 0 0.2em 0; }
+h3 + h4 { margin-top: 0.35em; }
+h2 + h3 { margin-top: 0.4em; }
+ul, ol { margin: 0.2em 0 0.4em 0; }
+li { margin: 0.15em 0; }
+table { font-size: 7.5pt; line-height: 1.25; margin: 0.45em 0 0.7em 0; }
+th, td { padding: 2.5px 6px 2.5px 0; }
+img { margin: 0.4em auto 0.2em auto; }
+.meta { font-size: 7.6pt; padding-bottom: 6px; margin-bottom: 8px; }
+"""
+
 def fix_lists(md):
     out=[]; prev=""
     for ln in md.split("\n"):
@@ -141,7 +174,7 @@ def fix_lists(md):
         out.append(ln); prev=ln
     return "\n".join(out)
 rest = fix_lists(rest)
-html_body = markdown.markdown(rest, extensions=["tables", "attr_list", "sane_lists", "md_in_html"])
+html_body = markdown.markdown(rest, extensions=["tables", "attr_list", "sane_lists", "md_in_html", "fenced_code"])
 
 # ---- post-processing
 def scripts(h):
@@ -155,6 +188,10 @@ def scripts(h):
 html_body = scripts(html_body)
 html_body = html_body.replace("▶ DECIDE", "<span class='decide'>DECIDE</span>")
 html_body = re.sub(r"<h2>Part ([A-H]) — (.*?)</h2>", r"<h2><span class='part'>PART \1</span>\2</h2>", html_body)
+html_body = re.sub(r"<h2>Chapter (\d+) — (.*?)</h2>", r"<h2><span class='part'>CHAPTER \1</span>\2</h2>", html_body)
+# the level-of-analysis line under a section heading, and the table captions above a table
+html_body = re.sub(r"<p><em>(Level of analysis: .*?)</em></p>", r"<p class='level'><em>\1</em></p>", html_body)
+html_body = re.sub(r"<p><strong>(Table [0-9][^<]*?)</strong></p>", r"<p class='tcaption'><strong>\1</strong></p>", html_body)
 # verdict-cell colouring in the Part A table (4th cell of each row)
 def colour_row(m):
     row = m.group(0)
@@ -182,6 +219,7 @@ html_body = html_body.replace("<p>Worked example with two classes.", "<div class
 html_body = html_body.replace("because κ is dragged down by rare classes.</p>", "because κ is dragged down by rare classes.</p></div>")
 # figure captions: the *Figure `name`.* line after an image
 html_body = re.sub(r"<p><em>(Figure <code>.*?</code>\.)</em></p>", r"<p class='caption'><em>\1</em></p>", html_body)
+html_body = re.sub(r"<p><em>(Figure [0-9][^<]*?)</em></p>", r"<p class='caption'><em>\1</em></p>", html_body)
 
 # narrow tables (2-3 columns) do not need the full text width
 def narrow(m):

@@ -70,15 +70,21 @@ def d1_funnel(ds: Dataset) -> pd.DataFrame:
     figs_per_patent = ds.approved_figures.groupby("patent_id").size()
     rows = [
         ("Patents acquired (PatSeer query)", c["patents_acquired"], ""),
-        ("Approved by the annotator", c["patents_approved"],
-         f"{c['patents_approved'] / c['patents_acquired']:.0%} of acquired"),
-        ("Approved patents that are the primary record", c["patents_analysis"],
-         "the analysis set of patents"),
-        ("Approved aircraft variants", c["approved_variants"], "duplicates included"),
-        ("Primary approved variants - the analysis unit", c["primary_approved_variants"],
+        ("Approved at labelling", c["patents_wizard_approved"],
+         f"{c['patents_wizard_approved'] / c['patents_acquired']:.0%} of acquired: show an "
+         "aircraft that can be read from the figures"),
+        ("Representative patents", c["patents_approved"],
+         f"{c['patents_gated_out']} approved patents leave on a Similar tag (UAV, not electric, "
+         "STOL only): only electric, vertical-take-off, occupied aircraft enter"),
+        ("Representative patents that are the primary record", c["patents_analysis"],
+         "O1 / O2 observations removed"),
+        ("Aircraft observations", c["approved_variants"], "O1, O2 and S3 included"),
+        ("Unique aircraft - the analysis unit", c["primary_approved_variants"],
          "one row per aircraft"),
-        ("Approved figures", c["approved_figures"],
-         f"on {figs_per_patent.size} patents, median {figs_per_patent.median():.0f} per patent"),
+        ("Approved figures", c["approved_figures_all"], "show the aircraft in a readable view"),
+        ("Whole-aircraft figures - the analysis image set", c["approved_figures"],
+         f"{c['detail_figures']} approved detail figures set aside; on {figs_per_patent.size} "
+         f"patents, median {figs_per_patent.median():.0f} per patent"),
     ]
     return pd.DataFrame(rows, columns=["stage", "count", "note"])
 
@@ -88,15 +94,15 @@ def d1_approval_by_region(ds: Dataset) -> pd.DataFrame:
     j = ds.patents.merge(ds.identity[["patent_id", "region"]], on="patent_id", how="left")
     g = j.groupby("region").agg(
         patents=("patent_id", "size"),
-        approved=("is_approved", lambda s: int(s.fillna(False).astype(bool).sum())),
+        representative=("is_representative", lambda s: int(s.fillna(False).astype(bool).sum())),
     )
-    g["approval_rate"] = (g["approved"] / g["patents"]).round(2)
+    g["representative share"] = (g["representative"] / g["patents"]).round(2)
     return g.sort_values("patents", ascending=False).reset_index()
 
 
 def d1_rejection_reasons(ds: Dataset) -> pd.DataFrame:
-    """Why the 529 rejected patents were rejected."""
-    rejected = ds.patents[~ds.patents["is_approved"].fillna(False).astype(bool)]
+    """Why a patent is not representative: the wizard's reason, or the Similar tag that removed it."""
+    rejected = ds.patents[~ds.patents["is_representative"].fillna(False).astype(bool)]
     counts = rejected["reason"].value_counts(dropna=False)
     return pd.DataFrame({
         "reason": [("(no reason recorded)" if pd.isna(k) else k) for k in counts.index],
@@ -113,7 +119,7 @@ def filer_type(company_canonical: pd.Series) -> pd.Series:
 
 
 def _rejected_with_identity(ds: Dataset) -> pd.DataFrame:
-    rejected = ds.patents[~ds.patents["is_approved"].fillna(False).astype(bool)]
+    rejected = ds.patents[~ds.patents["is_representative"].fillna(False).astype(bool)]
     j = rejected.merge(
         ds.identity[["patent_id", "region", "company_canonical"]], on="patent_id", how="left"
     )
@@ -132,6 +138,114 @@ def d1_rejection_by_filer_type(ds: Dataset) -> pd.DataFrame:
     """Rejection reason x filer type — and the same by applicant."""
     j = _rejected_with_identity(ds)
     return pd.crosstab(j["reason"], j["filer type"], margins=True, margins_name="all")
+
+
+# --------------------------------------------------------------------------
+# 2.1.2 the similars — the near misses of the domain
+# --------------------------------------------------------------------------
+def _levels(ds: Dataset) -> pd.DataFrame:
+    """The identity sheet with membership columns: wizard-approved, representative, primary."""
+    ident = ds.identity.copy()
+    appr_ids = set(ds.patents.loc[ds.patents["is_approved"].fillna(False).astype(bool), "patent_id"])
+    rep_ids = set(ds.patents.loc[ds.patents["is_representative"].fillna(False).astype(bool), "patent_id"])
+    ident["_approved"] = ident["patent_id"].isin(appr_ids)
+    ident["_representative"] = ident["patent_id"].isin(rep_ids)
+    ident["_primary"] = ident["patent_id"].isin(set(ds.patents_analysis["patent_id"]))
+    return ident
+
+
+def d1_similars(ds: Dataset) -> pd.DataFrame:
+    """UAV-similar, STOL-similar, electric-similar: how each is caught, and what it removes.
+
+    Three different things sit next to the domain boundary and each is caught by a
+    different reading of the text: occupancy (``UAVSimilar``), the take-off mode
+    confirmed at review (``STOLSimilar`` for STOL only) and the powertrain
+    (``ElectricSimilar``: turbine or piston named, no electric motor). Since
+    2026-09-15 the tag is a gate: an aircraft carrying it leaves the analysis
+    (``Dataset.gated_out``). Every count here is taken on the master's tags, at the
+    aircraft level (an aircraft can carry two tags) and at the patent level.
+    """
+    ident = ds.identity
+    reasons = ds.patents.set_index("patent_id")["reason"]
+    gated = ds.gated_out
+    tags = gated["edgeTags"].fillna("").astype(str).map(lambda v: set(v.split("|")) - {""})
+    primary = gated["is_primary"].fillna(False).astype(bool)
+    dropped_patents = set(ds.patents.loc[
+        ds.patents["is_approved"].fillna(False).astype(bool) & ~ds.patents["is_representative"], "patent_id"])
+    n_pure_uav = int(reasons.eq("Pure UAV").sum())
+    n_not_vtol = int(reasons.eq("Not VTOL").sum())
+    n_unknown = int(ident["is_electric_final"].eq("Unknown").sum())
+    vstol = ident["takeoff_final"].eq("V/STOL")
+    vs_n = int(vstol.sum())
+    vs_p = int(ident.loc[vstol, "patent_id"].isin(set(ds.patents_analysis["patent_id"])).sum())
+    rows = []
+    for name, tag, rule in [
+        ("UAV-similar", "UAVSimilar",
+         "tag UAVSimilar: drawn unoccupied, the text does not declare a UAV (a declared UAV "
+         f"is disapproved at labelling as Pure UAV: {n_pure_uav})"),
+        ("STOL-similar", "STOLSimilar",
+         "take-off mode read from the text, confirmed at review: STOL only (a patent that "
+         f"claims no vertical take-off is disapproved at labelling as Not VTOL: {n_not_vtol}). "
+         f"V/STOL, where the text claims both, is kept ({vs_n} patents, {vs_p} primary)"),
+        ("Electric-similar", "ElectricSimilar",
+         "powertrain read from the text names a turbine or piston engine and no electric motor "
+         "(is_electric_final = No), or the review tag ElectricSimilar; hybrid stays, and "
+         f"{n_unknown} patents give no evidence either way and stay"),
+    ]:
+        has = tags.map(lambda t, tag=tag: tag in t)
+        pats = set(gated.loc[has, "patent_id"])
+        rows.append({"similar": name, "caught by": rule,
+                     "aircraft observations tagged": int(has.sum()),
+                     "unique aircraft removed": int((has & primary).sum()),
+                     "patents tagged": len(pats),
+                     "patents losing every aircraft": len(pats & dropped_patents),
+                     "outcome": "leaves the analysis set at refinement 1"})
+    out = pd.DataFrame(rows)
+    out.attrs.update({"vstol": (vs_n, vs_p), "gated_patents": len(dropped_patents),
+                      "gated_aircraft": int(primary.sum())})
+    return out
+
+
+# --------------------------------------------------------------------------
+# 2.1.4 filing status — granted, pending, withdrawn — at each level
+# --------------------------------------------------------------------------
+#: PatSeer legal status -> the filing-status row of the document
+FILING_STATUS = {
+    "ACTIVE - GRANTED": "Granted, in force",
+    "INACTIVE - EXPIRED": "Granted, since lapsed",
+    "INACTIVE - NONPAYMENT": "Granted, since lapsed",
+    "ACTIVE - APPLIED": "Pending application",
+    "INACTIVE - WITHDRAWN / SURRENDERED": "Withdrawn, refused or suspended",
+    "INACTIVE - REJECTED / REFUSED / SUSPENDED": "Withdrawn, refused or suspended",
+}
+FILING_ORDER = ["Granted, in force", "Granted, since lapsed", "Pending application",
+                "Withdrawn, refused or suspended", "Unknown"]
+
+
+def d1_filing_status(ds: Dataset) -> pd.DataFrame:
+    """Granted / pending / withdrawn at the acquired, representative and primary levels.
+
+    The office sense of "approved" (granted) and the domain sense (representative)
+    are kept apart: this table is the office sense only.
+    """
+    ident = _levels(ds)
+    status = ident["legal_status_raw"].map(FILING_STATUS)
+    # a status the map does not know falls back on the coarse legal_stage column
+    fallback = ident["legal_stage"].map({"Granted": "Granted, in force",
+                                         "Application": "Pending application"}).fillna("Unknown")
+    status = status.fillna(fallback)
+    rows = []
+    for name in FILING_ORDER:
+        m = status.eq(name)
+        rows.append({"filing status": name, "acquired": int(m.sum()),
+                     "representative": int((m & ident["_representative"]).sum()),
+                     "primary": int((m & ident["_primary"]).sum())})
+    granted = status.str.startswith("Granted")
+    out = pd.DataFrame(rows)
+    out = out[out["acquired"] > 0].reset_index(drop=True)
+    out.attrs["granted"] = (int(granted.sum()), int((granted & ident["_representative"]).sum()),
+                            int((granted & ident["_primary"]).sum()))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -163,12 +277,13 @@ def d2_label_set(
     ]
     q1, q3 = answered_per_aircraft.quantile([0.25, 0.75])
     rows = [
-        ("Answerable slots", len(slots)),
+        ("Answerable slots (G1 to M3, coded columns; free text and process flags excluded)", len(slots)),
         ("Distinct concepts behind them (repeats collapsed)",
          len({concept_of(s) for s in slots})),
         ("Slots answered per aircraft, median", int(answered_per_aircraft.median())),
         ("Slots answered per aircraft, lower quartile", int(q1)),
         ("Slots answered per aircraft, upper quartile", int(q3)),
+        ("Slots answered per aircraft, minimum", int(answered_per_aircraft.min())),
         ("Slots answered per aircraft, maximum", int(answered_per_aircraft.max())),
         ("Slots answered on more than 90 % of aircraft", int((coverage > 0.90).sum())),
         ("Slots answered on fewer than 5 % of aircraft", int((coverage < 0.05).sum())),
@@ -295,6 +410,21 @@ def d2_figure_slots(ds: Dataset) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def d2_figure_slot_answers(ds: Dataset, top: int = 4) -> pd.DataFrame:
+    """The most common answers of each figure-level (T2) slot, with counts."""
+    figs = ds.approved_figures
+    rows = []
+    for col, name in FIGURE_SLOTS.items():
+        if col not in figs.columns:
+            continue
+        counts = figs[col].dropna().astype(str).value_counts()
+        rows.append({
+            "slot": name, "answered": int(counts.sum()),
+            "most common answers": " · ".join(f"{k} {v}" for k, v in counts.head(top).items()),
+        })
+    return pd.DataFrame(rows)
+
+
 # --------------------------------------------------------------------------
 # D3 — class balance
 # --------------------------------------------------------------------------
@@ -413,28 +543,66 @@ def d4_missingness(ds: Dataset) -> pd.DataFrame:
 # --------------------------------------------------------------------------
 # D5 — archetype cardinality
 # --------------------------------------------------------------------------
-#: the archetype levels of the document, each adding fields to the one above
+#: the archetype levels of the document: (fields, what the row says), each level
+#: named by what it adds to the architecture class. ``boomBin`` and ``anyTilt``
+#: are derived in :func:`archetype_frame`.
 ARCHETYPE_LEVELS = {
-    "A0": ["topType"],
-    "A1": ["topType", "wCount", "boomsPresent"],
-    "A2": ["topType", "wCount", "boomsPresent", "empType"],
-    "A3": ["topType", "wCount", "boomsPresent", "empType", "fusKin", "gearArch", "wingConf"],
+    "A0": (["topType"], "architecture class"),
+    "A1": (["topType", "wCount", "boomsPresent"], "+ number of wings, booms present"),
+    "A1b": (["topType", "wCount", "boomBin"],
+            "+ number of wings, booms binned none / 1-2 / 3 / 4 or more"),
+    "A1t": (["topType", "wCount", "anyTilt"], "+ number of wings, any tilting unit"),
+    "A2": (["topType", "wCount", "boomsPresent", "empType"],
+           "+ number of wings, booms present, tail type"),
 }
+#: the seven fields the S3 identical-to-root check compares (the old A3 level)
+ARCHETYPE_FIELDS_FULL = ["topType", "wCount", "boomsPresent", "empType", "fusKin", "gearArch",
+                         "wingConf"]
+
+
+def boom_bin(n_booms: pd.Series) -> pd.Series:
+    """Number of booms -> none / 1-2 / 3 / 4+ (the design decision behind the count)."""
+    n = pd.to_numeric(n_booms, errors="coerce").fillna(0)
+    return pd.cut(n, bins=[-1, 0, 2, 3, 10 ** 6], labels=["none", "1-2", "3", "4+"]).astype(str)
+
+
+def archetype_frame(ds: Dataset) -> pd.DataFrame:
+    """The variants with the two derived archetype fields added.
+
+    ``boomBin`` bins the number of booms (``boom1_count`` .. ``boom6_count``, the
+    M1 structural count — not ``boom_count``, which is the propulsor units the
+    booms carry); ``anyTilt`` is true when any propulsor group tilts.
+    """
+    v = ds.variants[ds.variants["topType"].notna()].copy()
+    boom_cols = [c for c in v.columns if re.match(r"boom\d_count$", c)]
+    v["nBooms"] = v[boom_cols].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1).astype(int)
+    v["boomBin"] = boom_bin(v["nBooms"])
+    kin = _group_columns(ds, "_propKin")
+    v["anyTilt"] = v[kin].eq("Tilt").any(axis=1)
+    return v
 
 
 def d5_archetype_cardinality(ds: Dataset, levels: Optional[Dict] = None) -> pd.DataFrame:
-    """How fine a design species can be defined before the corpus turns into singletons."""
-    v = ds.variants[ds.variants["topType"].notna()]
+    """How fine a design species can be defined before the corpus turns into singletons.
+
+    An archetype is the string formed by joining the chosen fields; *distinct
+    archetypes* counts those strings, *singletons* the strings holding exactly one
+    aircraft, and the *effective number* is exp of the Shannon entropy of their
+    shares.
+    """
+    v = archetype_frame(ds)
     rows = []
-    for name, fields in (levels or ARCHETYPE_LEVELS).items():
+    for name, spec in (levels or ARCHETYPE_LEVELS).items():
+        fields, label = spec if isinstance(spec, tuple) else (spec, ", ".join(spec))
         key = v[fields].astype(str).agg(" | ".join, axis=1)
         counts = key.value_counts()
         rows.append({
             "level": name,
-            "fields combined": ", ".join(fields),
+            "fields combined": label,
             "aircraft": int(len(v)),
             "distinct archetypes": int(len(counts)),
             "singletons": int((counts == 1).sum()),
+            "singleton share": round(float((counts == 1).sum() / len(v)), 3),
             "effective number": round(metrics.effective_number(key), 1),
         })
     return pd.DataFrame(rows)
@@ -476,31 +644,35 @@ def d6_weak_labels(ds: Dataset) -> pd.DataFrame:
 # --------------------------------------------------------------------------
 # D7 — duplicates and variants
 # --------------------------------------------------------------------------
+#: wizard duplicate code -> (name, what it is, counts as a new unique aircraft?)
+#: O1 / O2 are the same aircraft seen again (observations); S3 is a similar
+#: aircraft, fully relabelled, and a source of new unique aircraft.
 DUP_TYPES = {
-    1: ("D1 - same aircraft, new figures", "labels inherited, not primary"),
-    2: ("D2 - same aircraft, same figures", "nothing relabelled, not primary"),
-    3: ("D3 - same invention, modified", "fully relabelled, primary"),
+    1: ("O1 - same aircraft seen again, new figures", "labels inherited from the original", "no"),
+    2: ("O2 - same aircraft, same figures", "nothing relabelled", "no"),
+    3: ("S3 - a similar aircraft", "fully relabelled; one new unique aircraft", "yes"),
 }
 
 
 def d7_duplicates(ds: Dataset) -> pd.DataFrame:
-    """Only one duplicate type reaches the analysis set."""
+    """Observations (O1, O2) against similars (S3): only S3 adds unique aircraft."""
     all_rows = ds.master["dup_type"].value_counts()
     in_set = ds.variants["dup_type"].value_counts()
     rows = []
-    for code, (name, what) in DUP_TYPES.items():
+    for code, (name, what, new) in DUP_TYPES.items():
         rows.append({
-            "duplicate type": name,
+            "type": name,
             "what it is": what,
-            "rows": int(all_rows.get(code, 0)),
-            "inside the analysis set": int(in_set.get(code, 0)),
+            "observations": int(all_rows.get(code, 0)),
+            "unique aircraft added": int(in_set.get(code, 0)),
+            "new unique aircraft": new,
         })
     return pd.DataFrame(rows)
 
 
 def d7_d3_rows(ds: Dataset, fields: Optional[List[str]] = None) -> pd.DataFrame:
     """Every D3 row against its root: same architecture? identical on the archetype fields?"""
-    fields = fields or ARCHETYPE_LEVELS["A3"]
+    fields = fields or ARCHETYPE_FIELDS_FULL
     d3 = ds.variants[ds.variants["dup_type"] == 3]
     rows = []
     for _, row in d3.iterrows():
@@ -699,7 +871,7 @@ def d9_architecture_by_window(
     rows = []
     for name, lo, hi in (windows or WINDOWS):
         sub = j[(year >= lo) & (year <= hi)]
-        row = {"window": name, "variants": int(len(sub))}
+        row = {"window": name, "unique aircraft": int(len(sub))}
         shares = sub["topType"].value_counts(normalize=True)
         for t in types:
             row[metrics.ARCH_NAMES.get(t, t)] = round(float(shares.get(t, 0.0)), 2)
@@ -727,7 +899,7 @@ def d11_figures_per_variant(ds: Dataset) -> pd.DataFrame:
         ["1 figure", "2 figures", "3 figures", "4 figures", "5 or more"]
     ).dropna()
     return pd.DataFrame({"approved figures behind the aircraft": counts.index,
-                         "variants": counts.astype(int).to_numpy()})
+                         "unique aircraft": counts.astype(int).to_numpy()})
 
 
 def d11_figure_quality(ds: Dataset) -> pd.DataFrame:
@@ -743,17 +915,67 @@ def d11_figure_quality(ds: Dataset) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["approved figures", "count"])
 
 
+def d11_figure_approval(ds: Dataset) -> pd.DataFrame:
+    """Why a figure is approved, and the resulting count.
+
+    A figure is approved when it shows the whole aircraft in a view the
+    architecture can be read from; the T2 ``parts`` value records what the
+    approved figure shows, so the detail figures approved on purpose are listed.
+    """
+    figs = ds.figures_rep
+    status = figs["status"].astype(str).str.lower()
+    appr = ds.approved_figures_all
+    parts = appr["parts"].astype(str).str.split("|").str[0].replace({"nan": "(blank)"})
+    rows = [("Figures with an image file", int(len(figs))),
+            ("Not approved", int(status.eq("disapproved").sum())),
+            ("Approved", int(len(appr)))]
+    counts = parts.value_counts()
+    minor = counts[counts < 5]
+    for k, v in counts[counts >= 5].items():
+        rows.append((f"  approved, shows: {k}", int(v)))
+    if len(minor):
+        rows.append((f"  approved, shows: other part or blank ({len(minor)} values)", int(minor.sum())))
+    return pd.DataFrame(rows, columns=["figures", "count"])
+
+
+def d11_figure_patents(ds: Dataset) -> pd.DataFrame:
+    """The patents that carry approved figures, split by what they are.
+
+    More patents carry figures than there are primary records: an O1 observation
+    brings new figures of an aircraft already in the set, and a disapproved
+    patent may still hold an approved figure (a contradiction to review).
+    """
+    fig_patents = set(ds.approved_figures["patent_id"])
+    primary = set(ds.patents_analysis["patent_id"])
+    pat = ds.patents.set_index("patent_id")
+    rest = pat.reindex(sorted(fig_patents - primary))
+    approved = rest["is_representative"].fillna(False).astype(bool)
+    o1 = approved & rest["dup_type"].eq(1)
+    other_dup = approved & ~rest["dup_type"].eq(1)
+    rows = [
+        ("Patents carrying approved figures", len(fig_patents), ""),
+        ("  primary representative patents", len(fig_patents & primary), "the analysis set"),
+        ("  O1 observations with new figures", int(o1.sum()),
+         "same aircraft as a primary record; labels inherited"),
+        ("  other representative, not primary", int(other_dup.sum()), ""),
+        ("  disapproved patents with an approved figure", int((~approved).sum()),
+         ", ".join(rest.index[~approved]) + " - to review" if (~approved).any() else ""),
+    ]
+    return pd.DataFrame(rows, columns=["patents", "count", "note"])
+
+
 def d11_sensitivity_set(ds: Dataset) -> Dict:
-    """The thin-evidence flag: one figure, or a flagged figure, or readability Impossible."""
+    """The thin-evidence flag: one approved figure, or a figure flagged for quality.
+
+    Readability ("Impossible") is not part of it: nothing in the preliminary
+    analysis depends on what a model can read, and readability first appears in
+    the DINOv2 chapter.
+    """
     v = ds.variants
     n = pd.to_numeric(v["n_approved_this_variant"], errors="coerce").fillna(0)
     flagged = ds.approved_figures["qualityFlag"].fillna("clean").ne("clean")
     flagged_patents = set(ds.approved_figures.loc[flagged, "patent_id"])
-    thin = (
-        n.eq(1)
-        | v["patent_id"].isin(flagged_patents)
-        | v["dinoUnderstanding"].astype(str).eq("Impossible")
-    )
+    thin = n.eq(1) | v["patent_id"].isin(flagged_patents)
     approved_share = pd.to_numeric(v["n_approved"], errors="coerce") / pd.to_numeric(
         v["n_figures"], errors="coerce"
     )

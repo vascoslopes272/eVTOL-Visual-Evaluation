@@ -15,19 +15,21 @@ from . import a2
 from .loaders import Dataset
 
 #: the flags, in the order the summary prints them
+#: readability ("Impossible") is deliberately NOT a flag here: every flag in the
+#: preliminary analysis is about evidence and labelling, not about what a model
+#: can read. The column stays in the roster for the DINOv2 chapter.
 FLAGS = {
     "single_figure": "rests on one approved figure",
     "quality_flagged": "a figure of the patent is flagged partial or poor",
-    "readability_impossible": 'figure readability "Impossible"',
-    "in_sensitivity_set": "any of the three above (the D11 thin-evidence flag)",
+    "in_sensitivity_set": "either of the two above (the thin-evidence flag)",
     "notPureArch": "mixed architecture",
     "g1_uncertain": "annotator unsure at G1",
     "m1_uncertain": "annotator unsure at M1",
     "m2_uncertain": "annotator unsure at M2",
     "t1_uncertain": "annotator unsure at T1",
     "quickOverride": "quick count override (no architecture type by design)",
-    "d3_duplicate": "D3 — modified re-filing of the same invention",
-    "d3_identical_to_root": "D3 identical to its root on all archetype fields",
+    "d3_duplicate": "S3 - a similar aircraft, relabelled in full",
+    "d3_identical_to_root": "S3 identical to its original on all seven archetype fields",
     "window_partial": "priority year in the truncated window",
     "any_flag": "any flag at all",
 }
@@ -49,7 +51,9 @@ def analysis_set(ds: Dataset, partial_window_start: int = 2024) -> pd.DataFrame:
     year = pd.to_numeric(ident.reindex(v["patent_id"])["priority_year"], errors="coerce")
 
     def flag(col: str) -> pd.Series:
-        return v[col].fillna(False).astype(bool) if col in v.columns else pd.Series(False, index=v.index)
+        if col not in v.columns:
+            return pd.Series(False, index=v.index)
+        return v[col].map(lambda x: str(x) == "True").astype(bool)
 
     out = pd.DataFrame({
         "patent_id": v["patent_id"].to_numpy(),
@@ -60,7 +64,7 @@ def analysis_set(ds: Dataset, partial_window_start: int = 2024) -> pd.DataFrame:
         "region": ident.reindex(v["patent_id"])["region"].to_numpy(),
         "company_canonical": ident.reindex(v["patent_id"])["company_canonical"].to_numpy(),
         "approved_figures": n_fig.astype(int).to_numpy(),
-        "single_figure": n_fig.eq(1).to_numpy(),
+        "single_figure": n_fig.eq(1).to_numpy(dtype=bool),
         "quality_flagged": v["patent_id"].isin(flagged_patents).to_numpy(),
         "readability_impossible": v["dinoUnderstanding"].astype(str).eq("Impossible").to_numpy(),
         "notPureArch": flag("notPureArch").to_numpy(),
@@ -69,23 +73,23 @@ def analysis_set(ds: Dataset, partial_window_start: int = 2024) -> pd.DataFrame:
         "m2_uncertain": flag("m2_humanUncertain").to_numpy(),
         "t1_uncertain": flag("t1_humanUncertain").to_numpy(),
         "quickOverride": flag("g1_quickOverride").to_numpy(),
-        "d3_duplicate": v["dup_type"].eq(3).to_numpy(),
+        "d3_duplicate": v["dup_type"].eq(3).fillna(False).to_numpy(dtype=bool),
         "d3_identical_to_root": [
             (p, s) in d3_identical for p, s in zip(v["patent_id"], v["variant"])
         ],
         "window_partial": (year >= partial_window_start).fillna(False).to_numpy(),
     })
-    out["in_sensitivity_set"] = (
-        out["single_figure"] | out["quality_flagged"] | out["readability_impossible"]
-    )
+    out["in_sensitivity_set"] = out["single_figure"] | out["quality_flagged"]
     flag_cols = [c for c in FLAGS if c not in ("any_flag",)]
+    for c in flag_cols:
+        out[c] = out[c].astype(bool)
     out["any_flag"] = out[flag_cols].any(axis=1)
     return out
 
 
 def summary(roster: pd.DataFrame) -> pd.DataFrame:
     """Rows carrying each flag, with the plain-English meaning."""
-    rows = [{"flag": col, "meaning": meaning, "aircraft": int(roster[col].sum()),
+    rows = [{"flag": col, "meaning": meaning, "unique aircraft": int(roster[col].sum()),
              "share": round(float(roster[col].mean()), 3)}
             for col, meaning in FLAGS.items()]
     return pd.DataFrame(rows)

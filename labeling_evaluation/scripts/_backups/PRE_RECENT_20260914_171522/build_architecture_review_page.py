@@ -28,14 +28,7 @@ import pandas as pd
 
 ROOT = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED")
 XLSX = ROOT / "text_architecture" / "architecture_text_vs_image_20260909.xlsx"
-# per-aircraft readings: the 18 patents with DIFFERENT figure types (2026-09-11) and, from 2026-09-15, the 50 patents
-# whose aircraft share one figure type (their architecture had been confirmed once per patent and copied to every aircraft)
-VARIANTS = [ROOT / "text_architecture" / "variant_reading" / "architecture_text_variants_20260911.csv",
-            ROOT / "text_architecture" / "variant_reading" / "architecture_text_variants_sametype_20260915.csv"]
-# the saved decisions file is embedded as a baseline: a decision in it that is newer than the one in this browser wins
-DECISIONS = ROOT / "review_decisions" / "architecture_review_decisions.csv"
-# decisions the annotator asked to review again (UTC stamp): a browser decision older than the stamp is dropped
-REOPEN = {"US2021371117A1": "2026-09-15T21:18", "DE102023129326A1": "2026-09-15T21:18"}   # user 2026-09-15: "by text shall be reviewed"
+VARIANTS = ROOT / "text_architecture" / "variant_reading" / "architecture_text_variants_20260911.csv"
 SCOPE = ROOT / "text_scope" / "scope_llm_20260911.csv"
 # all review pages live together in Patent-Labelling-Tools/notebooks/post-process (user request 2026-09-11)
 OUT = Path("/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent-Labelling-Tools/notebooks/post-process/03b_architecture_review.html")
@@ -154,21 +147,11 @@ def known_auto(pid, img, txt):
     return None
 
 
-# image labels frozen before the 2026-09-15 wizard relabel session (same file apply_architecture_review.py reads)
-_prim = pd.read_csv(ROOT / "text_architecture" / "image_labels_frozen_20260915.csv", dtype=str, keep_default_na=False)
-_prim["variant"] = _prim.variant_id.map(lambda v: int(v.rsplit("_arch", 1)[1]) if "_arch" in v else 1)
-TYPES_OF = {pid: [s(v) for v in g.sort_values("variant").image_label_frozen] for pid, g in _prim.groupby("patent_id")}
-var = pd.concat([pd.read_csv(p).assign(basis=lambda d: d["basis"] if "basis" in d.columns else "aircraft") for p in VARIANTS],
-                ignore_index=True)
-assert not var.variant_id.duplicated().any(), var[var.variant_id.duplicated()].variant_id.tolist()
+_ml = pd.read_excel(ROOT / "joined" / "master_labels.xlsx")
+_prim = _ml[(_ml.is_primary == True) & (_ml.is_approved == True)]
+TYPES_OF = {pid: [s(v) for v in g.sort_values("variant").topType] for pid, g in _prim.groupby("patent_id")}
+var = pd.read_csv(VARIANTS)
 MULTI = set(var.patent_id)
-SAMETYPE = {p for p in MULTI if len(set(TYPES_OF.get(p, []))) == 1}
-base_dec = {}
-if DECISIONS.exists():
-    _d = pd.read_csv(DECISIONS, dtype=str, keep_default_na=False)
-    for x in _d[_d.decision != ""].itertuples():
-        base_dec[x.variant_id or x.patent_id] = {"choice": x.decision, "other": x.final_label if x.decision == "other" else "",
-                                                 "visible": x.visible_in_figures, "comment": x.comment, "at": x.decided_at}
 mf = pd.read_excel(ROOT / "joined" / "master_figures.xlsx")
 mf = mf[(mf.status == "approved") & (mf.file_exists == True)]
 figs = {}
@@ -196,7 +179,7 @@ for r in allr.itertuples():
                          quote=s(r.quote), note=s(r.note), flags="", figs=figs.get(r.patent_id, []),
                          qcheck=s(qc.quote_check.get(r.patent_id, "")), qsec=s(qc.quote_section.get(r.patent_id, "")),
                          known=known_auto(r.patent_id, s(r.image_label), s(r.text_label)) or "",
-                         basis="patent", sametype=False, ptext=""))
+                         ptext=""))
         data[-1]["light"], data[-1]["why"] = light(r.group, s(r.image_label), s(r.text_label), s(r.confidence),
                                                    data[-1]["qcheck"], s(r.quote), "")
         continue
@@ -205,14 +188,10 @@ for r in allr.itertuples():
         n = int(v.variant_id.rsplit("arch", 1)[1])
         img, txt = s(v.image_type), s(v.text_type)
         group = "notstated" if txt == "NS" else ("agree" if img == txt else "disagree")
-        # a patent-level-only citation cites no figure of this aircraft: it can never be "evident", so it is flagged
-        pl_only = s(v.basis) == "patent_level_only"
-        flags = "; ".join(x for x in [s(v.flags), "no sentence cites this aircraft's figures — patent-level citation" if pl_only else ""] if x)
         data.append(dict(base, key=v.variant_id, kind="aircraft", vn=n, nvar=len(rows_v), group=group,
                          image=img, text=txt, conf=s(v.confidence), quote=s(v.quote), note=s(v.note),
-                         flags=flags, figs=[f for f in figs.get(r.patent_id, []) if f["arch"] == n],
+                         flags=s(v.flags), figs=[f for f in figs.get(r.patent_id, []) if f["arch"] == n],
                          qcheck="verbatim" if s(v.quote) else "", qsec=s(v.quote_section), known="",
-                         basis=s(v.basis), sametype=r.patent_id in SAMETYPE,
                          ptext=f"{s(r.text_label)} — “{s(r.quote)[:220]}”"))
         data[-1]["light"], data[-1]["why"] = light(group, img, txt, s(v.confidence), data[-1]["qcheck"], s(v.quote), s(v.flags))
 
@@ -222,9 +201,6 @@ print("rows:", len(data), Counter((d["kind"], d["group"]) for d in data), "known
       "scope:", "on" if WITH_SCOPE else "off")
 _rev = [d for d in data if (not d["known"] and d["group"] != "notstated") or d["flags"]]
 print("traffic light on the rows you confirm:", Counter(d["light"] for d in _rev))
-_air = [d for d in data if d["kind"] == "aircraft"]
-print("aircraft rows:", len(_air), "| same-type:", sum(d["sametype"] for d in _air), "| undecided in the saved file:",
-      sum(1 for d in _air if d["key"] not in base_dec), "| baseline decisions embedded:", len(base_dec))
 
 PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>03b — architecture type adjudication</title>
 <style>
@@ -292,8 +268,7 @@ table.batch input{width:18px;height:18px;cursor:pointer}
 .pick2 button.on{outline:3px solid var(--acc)}.pick2 button:disabled{opacity:.4}details.figbox summary{cursor:pointer;color:var(--mut);font-size:13px}
 </style></head><body>
 <header><h1>03b — architecture type: text vs image</h1>
-<select id="view"><option value="peraircraft" selected>✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
-<button id="last" title="everything you already decided, newest first — open one and press another button to relabel it">✎ relabel a decided patent</button>
+<select id="view"><option value="lgreen" selected>📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
 <input type="text" id="jump" placeholder="jump to patent ID" title="type part of a patent ID and press Enter — works for patents you already decided" style="width:170px">
 <span id="prog"></span>
 <button id="exp">Export CSV</button><label style="font-size:12px">Import CSV <input type="file" id="imp" accept=".csv" style="width:180px"></label>
@@ -319,14 +294,7 @@ const SLAB={W:'Whole Aircraft Architecture',S:'Architectural Subsystem Enabler',
 const KEY='archreview_v1', SKEY='archreview_scope_v1';
 let DEC={}, SDEC={}; try{DEC=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){DEC={}} try{SDEC=JSON.parse(localStorage.getItem(SKEY)||'{}')}catch(e){SDEC={}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DEC));localStorage.setItem(SKEY,JSON.stringify(SDEC))}catch(e){}}
-// the saved decisions file (review_decisions/architecture_review_decisions.csv) is embedded when the page is built:
-// a decision this browser does not have, or has with an OLDER date, is taken from it (e.g. corrections made in the file)
-const BASE=__BASE__;let NBASE=0;
-Object.entries(BASE).forEach(([k,b])=>{const d=DEC[k];if(!d||!d.choice||String(b.at||'')>String(d.at||'')){DEC[k]=b;NBASE++}});
-const REOPEN=__REOPEN__;
-Object.entries(REOPEN).forEach(([k,t])=>{const d=DEC[k];if(d&&String(d.at||'')<=t){delete DEC[k];NBASE++}});
-if(NBASE)save();
-let VIEW='peraircraft', CUR=0, ROWS=[], PENDVIS=null;
+let VIEW='lgreen', CUR=0, ROWS=[];
 // rows you unticked in a 20-row list: they leave the list and wait in the "unticked" view
 const LKEY='archreview_listskip_v1';let LSKIP={};try{LSKIP=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){LSKIP={}}
 function saveSkip(){try{localStorage.setItem(LKEY,JSON.stringify(LSKIP))}catch(e){}}
@@ -364,7 +332,7 @@ function renderBatch(){const P=document.getElementById('panel');const rows=ROWS.
  P.querySelectorAll('.okall').forEach(b=>b.onclick=confirmBatch)}
 function confirmBatch(){const P=document.getElementById('panel');const at=new Date().toISOString().slice(0,16);
  P.querySelectorAll('tr[data-k]').forEach(tr=>{const k=tr.dataset.k;
-  if(tr.querySelector('input').checked)DEC[k]={choice:'confirm',other:'',visible:'yes',comment:'',at:at,ts:Date.now(),n:nextN()};else LSKIP[k]=1});
+  if(tr.querySelector('input').checked)DEC[k]={choice:'confirm',other:'',visible:'yes',comment:'',at:at};else LSKIP[k]=1});
  save();saveSkip();render();window.scrollTo(0,0)}
 function figHTML(f,big){return `<img src="${esc(f.src)}" style="transform:rotate(${f.rot}deg)" loading="lazy"><small>${f.main?'MAIN · ':''}${f.arch?'aircraft '+f.arch+' · ':''}${esc(f.state)} ${esc(f.per)}</small>`}
 function sideHTML(r,d,other,legacy){const f0=r.figs.find(f=>f.main)||r.figs[0];const rest=r.figs.filter(f=>f!==f0);
@@ -382,14 +350,13 @@ function sideHTML(r,d,other,legacy){const f0=r.figs.find(f=>f.main)||r.figs[0];c
     <button data-c="ns" class="${d.choice==='ns'?'on':''}"><kbd>5</kbd>The text says nothing about the architecture</button>
     <input id="cmt" placeholder="comment (optional)" value="${esc(d.comment||'')}"></div>
    ${d.choice==='image'?`<div class="flag" style="margin-top:8px">⚠ decided earlier as “figures are right”. The text is the ground truth now — choose 1, 2, 3 or 4 again.</div>`:''}
-   ${r.kind==='aircraft'?`<div style="margin-top:8px">${airBox(r,legacy)}</div>`:''}
+   ${r.kind==='aircraft'?`<div class="multi" style="margin-top:8px">aircraft ${r.vn} of ${r.nvar} (${r.variants.map(esc).join(' · ')}) · patent-level reading: ${esc(r.ptext)}</div>`:''}
    ${r.flags?`<div class="flag" style="margin-top:8px">⚑ ${esc(r.flags)}</div>`:''}
    <div class="def" style="margin-top:8px">${r.image&&TYPES[r.image]?esc(r.image)+' = '+esc(TYPES[r.image][1])+'<br>':''}${TYPES[r.text]?esc(r.text)+' = '+esc(TYPES[r.text][1]):''}</div></div></div>
  ${rest.length?`<div class="figs small">${rest.map(f=>`<div class="fig">${figHTML(f)}</div>`).join('')}</div>`:''}
  <p class="help">1 not visible in the figures · 2 visible in the figures too · 3 the text states another type · 4 the text does not settle it · 5 the text says nothing about the architecture · ←/→ navigate · click a figure to zoom</p>`}
 function bind(r,P){
  const u=P.querySelector('button.undo');if(u)u.onclick=()=>undo(r);
- P.querySelectorAll('button[data-vis]').forEach(b=>b.onclick=()=>setVis(r,b.dataset.vis));
  P.querySelectorAll('button[data-c]').forEach(b=>b.onclick=()=>decide(r,b.dataset.c,b.dataset.v));
  P.querySelectorAll('.decide button[data-s]').forEach(b=>b.onclick=()=>decideScope(r,b.dataset.s));
  const ot=P.querySelector('#other');if(ot)ot.onchange=e=>{if(DEC[r.key]){DEC[r.key].other=e.target.value;save();render()}};
@@ -405,15 +372,9 @@ const REVIEW=r=>(!r.known&&r.group!=='notstated')||!!r.flags;
 const SNEED=r=>WITH_SCOPE&&!!r.scope&&!(SDEC[r.pid]&&SDEC[r.pid].choice);
 const firstOfPid=r=>DATA.find(x=>x.pid===r.pid)===r;
 const ORDER={green:0,yellow:1,red:2,grey:3};
-// a decided row whose ground truth differs from the figure type must say whether the figures show it
-const needVis=(r,d)=>{if(!d||!d.choice||d.visible)return false;const f=finalOf(r,d);return !!f&&f!=='?'&&f!=='NS'&&f!==r.image};
 function filterRows(){
- if(VIEW==='peraircraft'){ROWS=DATA.filter(r=>((r.kind==='aircraft'&&(REVIEW(r)||r.basis==='patent_level_only'))||r.key in REOPEN)&&(!DEC[r.key]||r.key===PENDVIS));
-  ROWS.sort((a,b)=>(b.key in REOPEN)-(a.key in REOPEN));if(CUR>=ROWS.length)CUR=0;return}
- if(VIEW==='vis'){ROWS=DATA.filter(r=>needVis(r,DEC[r.key])||r.key===PENDVIS);if(CUR>=ROWS.length)CUR=0;return}
  if(LISTMODE()){ROWS=DATA.filter(r=>REVIEW(r)&&AG(r)&&!DEC[r.key]&&!LSKIP[r.key]&&(VIEW==='lgreen'?r.light==='green':r.light!=='green'));CUR=0;return}
  if(VIEW==='unticked'){ROWS=DATA.filter(r=>LSKIP[r.key]&&!DEC[r.key]);if(CUR>=ROWS.length)CUR=0;return}
- if(VIEW==='recent'){ROWS=DATA.filter(r=>DEC[r.key]&&DEC[r.key].choice).sort((a,b)=>when(DEC[b.key])-when(DEC[a.key]));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='legacy'){ROWS=DATA.filter(r=>DEC[r.key]&&DEC[r.key].choice==='image');if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='side'){ROWS=DATA.filter(r=>REVIEW(r)&&!AG(r)&&!DEC[r.key]).sort((a,b)=>ORDER[a.light]-ORDER[b.light]);if(CUR>=ROWS.length)CUR=0;return}
  if(['green','yellow','red'].includes(VIEW)){ROWS=DATA.filter(r=>REVIEW(r)&&!DEC[r.key]&&r.light===VIEW);if(CUR>=ROWS.length)CUR=0;return}
@@ -434,24 +395,11 @@ function scopeCard(r){if(!WITH_SCOPE||!r.scope)return'';const sc=r.scope,d=SDEC[
   <select id="sother">${Object.entries(SLAB).map(([k,v])=>`<option value="${k}" ${d.other===k?'selected':''}>${k} — ${v}</option>`).join('')}</select>
   <button data-s="unsure" class="${d.choice==='unsure'?'on':''}"><kbd>7</kbd>Cannot tell</button>
   <input id="scmt" placeholder="scope comment (optional)" value="${esc(d.comment||'')}"></div></div>`}
-// the orange box on aircraft rows: which kind of multi-aircraft patent, and how far the citation reaches
-function airBox(r,legacy){if(r.kind!=='aircraft')return'';
- const lead=r.sametype?`This patent draws ${r.nvar} aircraft, all labelled <b>${esc(r.image)}</b> in the figures. Until 2026-09-15 one patent-level decision covered all of them; now each aircraft is decided on its own.`
-  :`This patent draws ${r.nvar} aircraft with different figure types (${r.variants.map(esc).join(' · ')}).`;
- const reach=r.basis==='patent_level_only'?' <b>No sentence of the Description cites this aircraft’s figures</b> — the citation is the patent-level one: confirm only if it applies to this aircraft, otherwise 4 (the text does not settle it).'
-  :r.basis==='claim'?' The sentence places this aircraft inside the invention; the type-deciding words come from the claim.':'';
- return `<div class="multi">${lead} This row is <b>aircraft ${r.vn}</b> only: its own figures, and the sentences that cite them.${reach} Patent-level reading: ${esc(r.ptext)}${legacy&&legacy.choice?` · <b>your earlier patent-level decision: ${esc(legacy.choice)} ${esc(finalOf(r,legacy)||legacy.other||'')}${legacy.visible?' · visible '+esc(legacy.visible):''}</b>`:''}</div>`}
-// shown after a decision whose type differs from the figure type and has no visibility yet
-function visBox(r,d){if(!needVis(r,d))return'';const f=finalOf(r,d);
- return `<div class="band yellow" style="margin-top:10px"><b>One more:</b><span>is <b>${esc(f)}</b> (${esc((TYPES[f]||[''])[0])}) visible in the figures? The figures were labelled ${esc(r.image||'—')}.</span>
-  <button data-vis="no" style="font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer"><kbd>1</kbd> not visible</button>
-  <button data-vis="yes" style="font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer"><kbd>2</kbd> visible too</button></div>`}
-function setVis(r,v){const d=DEC[r.key];if(!d)return;d.visible=v;d.at=new Date().toISOString().slice(0,16);d.ts=Date.now();save();PENDVIS=null;next()}
 function render(){filterRows();renderList();const P=document.getElementById('panel');
  if(LISTMODE())return renderBatch();
- const r=ROWS[CUR];if(!r){P.innerHTML='<p class="help">Nothing in this view.'+(VIEW==='peraircraft'?' Every aircraft row is decided — next: 👁 visibility still missing, then Export CSV.':'')+'</p>';return}
- const d=DEC[r.key]||{};const other=Object.keys(TYPES).filter(t=>t!=='NS');const legacy=r.kind==='aircraft'?(DEC[r.pid]||BASE[r.pid]):null;
- if(!AG(r)){P.innerHTML=sideHTML(r,d,other,legacy);const vb=visBox(r,d);if(vb)P.querySelector('.side > div').insertAdjacentHTML('afterbegin',vb);bind(r,P);return}
+ const r=ROWS[CUR];if(!r){P.innerHTML='<p class="help">Nothing in this view.</p>';return}
+ const d=DEC[r.key]||{};const other=Object.keys(TYPES).filter(t=>t!=='NS');const legacy=r.kind==='aircraft'?DEC[r.pid]:null;
+ if(!AG(r)){P.innerHTML=sideHTML(r,d,other,legacy);bind(r,P);return}
  P.innerHTML=`<div class="head"><h2>${esc(r.pid)}${r.kind==='aircraft'?' · aircraft '+r.vn+' of '+r.nvar:''}</h2><span>${esc(r.company)}</span><span class="mut">${esc(r.realname||r.name)} · ${esc(r.year)} · ${r.nvar>1?r.nvar+' aircraft in this patent':'1 aircraft'}</span><a href="${esc(r.pdf)}" target="_blank">PDF ↗</a></div>
  <div class="mut" style="font-size:13px">${esc(r.title)} — <i>${esc(r.assignee)}</i></div>${undoBar(r)}
  <div class="cards" style="margin-top:10px">
@@ -461,11 +409,10 @@ function render(){filterRows();renderList();const P=document.getElementById('pan
    ${r.image&&TYPES[r.image]?`<div class="def">figures ${esc(r.image)} = ${esc(TYPES[r.image][0])}: ${esc(TYPES[r.image][1])}</div>`:''}
    ${TYPES[r.text]?`<div class="def">text ${esc(r.text)} = ${esc(TYPES[r.text][0])}: ${esc(TYPES[r.text][1])}</div>`:''}
   ${r.known?`<div class="def" style="color:var(--ok)">cleared automatically: known aircraft ${esc(r.known)}</div>`:''}</div>
-  ${airBox(r,legacy)}
+  ${r.kind==='aircraft'?`<div class="multi">This patent draws ${r.nvar} aircraft with different figure types (${r.variants.map(esc).join(' · ')}). This row is <b>aircraft ${r.vn}</b> only: its own figures, and the sentences that cite them. Patent-level reading: ${esc(r.ptext)}${legacy&&legacy.choice?` · <b>earlier patent-level decision on this browser: ${esc(legacy.choice)} ${esc(finalOf(r,legacy)||legacy.other||'')}</b>`:''}</div>`:''}
   ${r.flags?`<div class="flag">⚑ ${esc(r.flags)}</div>`:''}
-  ${visBox(r,d)?`<div style="grid-column:1/3">${visBox(r,d)}</div>`:''}
   <div class="decide">
-   ${AG(r)?`<button data-c="confirm" class="${d.choice==='confirm'?'on':''}"><kbd>1</kbd>Confirm ${esc(r.text)} — ${r.basis==='patent_level_only'?'the patent-level citation applies to this aircraft':'the citation states it'}</button>`:
+   ${AG(r)?`<button data-c="confirm" class="${d.choice==='confirm'?'on':''}"><kbd>1</kbd>Confirm ${esc(r.text)} — the citation states it</button>`:
    `<button data-c="image" class="${d.choice==='image'?'on':''}" ${r.image?'':'disabled'}><kbd>1</kbd>Keep image label${r.image?' ('+esc(r.image)+')':' (none — pick 2 or 3)'}</button>
    <button data-c="text" class="${d.choice==='text'?'on':''}" ${r.text==='NS'?'disabled':''}><kbd>2</kbd>Take text label (${esc(r.text)})</button>`}
    <button data-c="other" class="${d.choice==='other'?'on':''}"><kbd>3</kbd>Other:</button>
@@ -478,36 +425,25 @@ function render(){filterRows();renderList();const P=document.getElementById('pan
  <p class="help">Read the highlighted citation, then: 1 confirm · 3 the text states another type · 4 the text does not settle it · 5 the text says nothing about the architecture${WITH_SCOPE?' · 5 confirm scope · 6 scope other · 7 scope cannot tell':''} · ←/→ or Enter = next · click a figure to zoom. Decisions are saved in this browser; press Export CSV when done (goes to Downloads).</p>`;
  bind(r,P);
 }
-const SHRINKING=['todo','side','unticked','green','yellow','red','scope','legacy','peraircraft','vis'];
+const SHRINKING=['todo','side','unticked','green','yellow','red','scope','legacy'];
 // change a decision you already made: clear it (the patent goes back into the lists) or pick another button
-// order of decisions: exact time for new ones, the saved minute for older ones
-const when=d=>(d.n||0)*1e13+(d.ts||Date.parse(d.at||'')||0);
-// a running number, so decisions made in the same millisecond still keep their order
-const nextN=()=>1+Object.values(DEC).reduce((m,d)=>Math.max(m,(d&&d.n)||0),0);
 function undo(r){delete DEC[r.key];delete LSKIP[r.key];save();saveSkip();render()}
 function undoBar(r){const d=DEC[r.key];if(!d||!d.choice)return'';
  return `<div class="band grey" style="margin-top:8px"><b>Your decision:</b><span>${esc(d.choice)}${d.visible?' · visible in figures: '+esc(d.visible):''}${finalOf(r,d)?' → '+esc(finalOf(r,d)):''} · ${esc(d.at||'')}</span><button class="undo" style="margin-left:auto;font:inherit;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer">↺ clear my decision</button><span class="def">or just press another button</span></div>`}
-function next(){if(VIEW==='recent'){const k=ROWS[CUR]&&ROWS[CUR].key;filterRows();CUR=Math.max(0,ROWS.findIndex(r=>r.key===k));renderList();render();return}
- if(!SHRINKING.includes(VIEW)){CUR=Math.min(CUR+1,ROWS.length-1)}render()}
+function next(){if(!SHRINKING.includes(VIEW)){CUR=Math.min(CUR+1,ROWS.length-1)}render()}
 // visible = does the drawing show the architecture the text states? (text = ground truth, 2026-09-14)
 function decide(r,c,v){const o=document.getElementById('other');
- // "the text states another type" equal to the figure type is visible by construction; a different one asks
- const vis=c==='confirm'?'yes':c==='other'&&o.value===r.image?'yes':(v||'');
- DEC[r.key]={choice:c,other:c==='other'?o.value:'',visible:vis,comment:document.getElementById('cmt').value,at:new Date().toISOString().slice(0,16),ts:Date.now(),n:nextN()};save();
- if(needVis(r,DEC[r.key])){PENDVIS=r.key;render();return}
- PENDVIS=null;next()}
+ DEC[r.key]={choice:c,other:c==='other'?o.value:'',visible:c==='confirm'?'yes':(v||''),comment:document.getElementById('cmt').value,at:new Date().toISOString().slice(0,16)};save();next()}
 function decideScope(r,c){if(!r.scope)return;if(c==='confirm'&&r.scope.code==='NS')return;const o=document.getElementById('sother'),m=document.getElementById('scmt');
  SDEC[r.pid]={choice:c,other:c==='other'?o.value:'',comment:m?m.value:'',at:new Date().toISOString().slice(0,16)};save();next()}
 document.getElementById('zoom').onclick=e=>e.currentTarget.style.display='none';
 document.getElementById('view').onchange=e=>{VIEW=e.target.value;CUR=0;render()};
-document.getElementById('last').onclick=()=>{VIEW='recent';document.getElementById('view').value='recent';CUR=0;render();window.scrollTo(0,0)};
 document.getElementById('jump').addEventListener('keydown',function(e){if(e.key!=='Enter')return;const q=this.value.trim().toUpperCase();if(!q)return;
  const hit=DATA.find(r=>r.key.toUpperCase().includes(q));if(!hit){alert(q+' is not in this review');return}
  VIEW=REVIEW(hit)?'review':'all';document.getElementById('view').value=VIEW;filterRows();CUR=Math.max(0,ROWS.indexOf(hit));this.blur();render();window.scrollTo(0,0)});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(e.key==='Enter'){e.target.blur()}else return}
  if(LISTMODE()){if(e.key==='Enter'||e.key===' '){e.preventDefault();confirmBatch()}return}
  const r=ROWS[CUR];if(!r)return;
- if(needVis(r,DEC[r.key])&&(e.key==='1'||e.key==='2')){setVis(r,e.key==='1'?'no':'yes');return}
  if(e.key===' '){e.preventDefault();if(AG(r))decide(r,'confirm');return}
  if(e.key==='1'&&AG(r))decide(r,'confirm');else if(e.key==='1'&&!AG(r)&&r.text!=='NS')decide(r,'text','no');else if(e.key==='2'&&!AG(r)&&r.text!=='NS')decide(r,'text','yes');else if(e.key==='3')decide(r,'other');else if(e.key==='4')decide(r,'unsure');else if(e.key==='5')decide(r,'ns');
  else if(WITH_SCOPE&&e.key==='5')decideScope(r,'confirm');else if(WITH_SCOPE&&e.key==='6')decideScope(r,'other');else if(WITH_SCOPE&&e.key==='7')decideScope(r,'unsure');
@@ -538,8 +474,6 @@ render();
 out = (PAGE.replace("__DATA__", json.dumps(data, ensure_ascii=False))
            .replace("__TYPES__", json.dumps(TYPES, ensure_ascii=False))
            .replace("__KW__", json.dumps(KW, ensure_ascii=False))
-           .replace("__BASE__", json.dumps(base_dec, ensure_ascii=False))
-           .replace("__REOPEN__", json.dumps(REOPEN))
            .replace("__WITH_SCOPE__", "true" if WITH_SCOPE else "false"))
 OUT.write_text(out, encoding="utf-8")
 print("wrote", OUT, f"{OUT.stat().st_size/1024:.0f} KB")
