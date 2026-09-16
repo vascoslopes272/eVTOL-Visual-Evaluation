@@ -42,14 +42,8 @@ WATCH = {
     "EP3974315A1_arch2": "recheck: figure number uncertain (crops swapped) — the CVT ground truth rests on it",
     "EP3974315A1_arch3": "recheck: figure number uncertain (OCR says 1)",
     "EP3974315A1_arch4": "recheck: figure number uncertain (audit: printed Fig. 3)",
-    "US11787551B1_arch1": "NEW aircraft (Midnight, D3 made in the wizard) — confirm the citation",
-    "US2022388648A1_arch1": "NEW: the wizard splits this patent in 2 aircraft — aircraft 100 (FIGS 1-7)",
-    "US2022388648A1_arch2": "NEW: aircraft 800 (FIGS 8-10)",
-    "US2024002048A1_arch2": "NEW: arch2 is now aircraft 200 (FIGS 6, 8) — your figures say TR, the text says it propels like aircraft 100 (CVT)",
-    "US2024002048A1_arch4": "the FIG. 11 photo you identified as Archer Maker (aircraft-level duplicate; old arch3 decision kept)",
 }
-REOPEN = {"US2021371117A1": "2026-09-15T21:18", "DE102023129326A1": "2026-09-15T21:18",
-          "US2024002048A1_arch2": "2026-09-16T16:44"}   # arch2 is a different aircraft since the wizard renumbering   # user 2026-09-15: "by text shall be reviewed"
+REOPEN = {"US2021371117A1": "2026-09-15T21:18", "DE102023129326A1": "2026-09-15T21:18"}   # user 2026-09-15: "by text shall be reviewed"
 SCOPE = ROOT / "text_scope" / "scope_llm_20260911.csv"
 # all review pages live together in Patent-Labelling-Tools/notebooks/post-process (user request 2026-09-11)
 OUT = Path("/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent-Labelling-Tools/notebooks/post-process/03b_architecture_review.html")
@@ -143,11 +137,7 @@ def s(v):
     return "" if pd.isna(v) else str(v)
 
 
-import sys as _sys
-_sys.path.insert(0, str(Path(__file__).resolve().parent))
-from arch_gt_adjustments import NEW_PATENTS, frozen_labels, readings
 allr = pd.read_excel(XLSX, sheet_name="ALL_695")
-allr = pd.concat([allr, pd.DataFrame([dict(patent_id=k, **v) for k, v in NEW_PATENTS.items()])], ignore_index=True)
 allr["group"] = allr.bucket.map(lambda b: {"0": "agree", "1": "disagree", "2": "lowconf", "3": "notstated"}[str(b)[0]])
 qc = pd.read_csv(ROOT / "text_architecture" / "quote_check.csv").set_index("pid")
 idn = pd.read_excel(ROOT / "joined" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id", "aircraft_name", "aircraft_name_source"]].set_index("patent_id")
@@ -173,10 +163,14 @@ def known_auto(pid, img, txt):
 
 
 # image labels frozen before the 2026-09-15 wizard relabel session (same file apply_architecture_review.py reads)
-_prim = frozen_labels()   # frozen labels + the aircraft made after the freeze (arch_gt_adjustments.py)
+_prim = pd.read_csv(ROOT / "text_architecture" / "image_labels_frozen_20260915.csv", dtype=str, keep_default_na=False)
 _prim["variant"] = _prim.variant_id.map(lambda v: int(v.rsplit("_arch", 1)[1]) if "_arch" in v else 1)
 TYPES_OF = {pid: [s(v) for v in g.sort_values("variant").image_label_frozen] for pid, g in _prim.groupby("patent_id")}
-var = readings(pd.read_csv(p).assign(basis=lambda d: d["basis"] if "basis" in d.columns else "aircraft") for p in VARIANTS)
+var = pd.concat([pd.read_csv(p).assign(basis=lambda d: d["basis"] if "basis" in d.columns else "aircraft") for p in VARIANTS],
+                ignore_index=True)
+assert not var.variant_id.duplicated().any(), var[var.variant_id.duplicated()].variant_id.tolist()
+# aircraft merged away in the wizard after the freeze (user 2026-09-16) — same list as apply_architecture_review.py
+var = var[~var.variant_id.isin({"US2023257132A1_arch2"})].reset_index(drop=True)
 MULTI = set(var.patent_id)
 SAMETYPE = {p for p in MULTI if len(set(TYPES_OF.get(p, []))) == 1}
 base_dec = {}

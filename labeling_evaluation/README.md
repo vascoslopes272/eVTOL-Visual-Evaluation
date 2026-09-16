@@ -4,7 +4,7 @@
 **Companion pillar:** [Embedding Evaluation](../embedding_evaluation/README.md) (embedding QC, structure tests, clustering and alignment metrics).
 
 **Prepared for:** Phase Supervisor
-**Pipeline stage:** [`21_structure_clustering.ipynb`](../embedding_evaluation/notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset)
+**Pipeline stage:** [`21_structure_clustering.ipynb`](../embedding_evaluation/archive/notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset)
 
 *Split from `docs/Supervisor_Report_Taxonomy_Structure_Analysis_summary.md` (the summary edition of the original combined supervisor report, with Section 5 restored). This file carries the review-data, duplicate, taxonomy and design-characteristic sections; the embedding-side sections live in the companion file. All figure and output paths below are relative to this repository.*
 
@@ -192,4 +192,4 @@ This pillar's forward scope covers evolutionary and convergence analysis of eVTO
 
 ---
 
-*All tables sourced from [`notebooks/21_structure_clustering.ipynb`](../embedding_evaluation/notebooks/21_structure_clustering.ipynb) (formerly `DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb`). Stage outputs live outside the repo on the sync drive under `4 - Intelligence Models & Post Process Outputs/Preliminary_analysis/outputs/`: Stage-0 QC in `analysis_1639_518/`, Stage 1–5 tables and figures in `analysis_taxonomy/`. Branch image folders are vendored copies in [`docs/dendrogram_clusters/`](../docs/dendrogram_clusters/); see [ANALYSIS_GUIDE.md](../docs/ANALYSIS_GUIDE.md) for metric definitions.*
+*All tables sourced from [`notebooks/21_structure_clustering.ipynb`](../embedding_evaluation/archive/notebooks/21_structure_clustering.ipynb) (formerly `DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb`). Stage outputs live outside the repo on the sync drive under `4 - Intelligence Models & Post Process Outputs/Preliminary_analysis/outputs/`: Stage-0 QC in `analysis_1639_518/`, Stage 1–5 tables and figures in `analysis_taxonomy/`. Branch image folders are vendored copies in [`docs/dendrogram_clusters/`](../docs/dendrogram_clusters/); see [ANALYSIS_GUIDE.md](../docs/ANALYSIS_GUIDE.md) for metric definitions.*

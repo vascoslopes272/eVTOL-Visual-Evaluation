@@ -1,10 +1,10 @@
 """The notes of the annotated index (v1.1, 2026-09-09) — kept verbatim in the notebook.
 
 These are the 43 markdown cells of the notebook as committed before the 2026-09-13
-rewrite (``git show HEAD:...30_preliminary_analysis.ipynb``): one cell per section of
+rewrite (``git show <old commit>:...30_preliminary_analysis.ipynb``, renamed 10_ on 2026-09-16): one cell per section of
 the old index with its three lines **Source**, **Tables / figures**, **Gives →**, plus
 the assumption notes. The user asked (2026-09-15) that they stay in the notebook no
-matter what, so ``scripts/build_notebook_30.py`` inserts them under the section of the
+matter what, so ``scripts/build_notebook_10.py`` inserts them under the section of the
 NEW document that took over the same content. Keys are node ids of ``index.NODES``
 (plus ``export`` and ``appendix``); the text is never edited here — the old section
 numbers (1.1 … 5.5) are the old index's and are left as they were.

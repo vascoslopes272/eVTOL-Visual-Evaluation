@@ -24,7 +24,7 @@ of its sections shows.
 =============  ==========================================================
 
 Every public function returns a :class:`pandas.DataFrame`, a dict or a Figure, so
-``labeling_evaluation/notebooks/30_preliminary_analysis.ipynb`` only imports,
+``labeling_evaluation/notebooks/10_preliminary_analysis.ipynb`` only imports,
 calls and displays. Configuration: ``labeling_evaluation/config.yaml``. Nothing
 here writes to the dataset.
 """

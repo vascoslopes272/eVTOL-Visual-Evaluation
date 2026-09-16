@@ -35,21 +35,7 @@ VARIANTS = [ROOT / "text_architecture" / "variant_reading" / "architecture_text_
 # the saved decisions file is embedded as a baseline: a decision in it that is newer than the one in this browser wins
 DECISIONS = ROOT / "review_decisions" / "architecture_review_decisions.csv"
 # decisions the annotator asked to review again (UTC stamp): a browser decision older than the stamp is dropped
-# user 2026-09-16: rows to look at again, shown first in the view "🔎 your recheck list" (decided or not)
-WATCH = {
-    "DE102013001852A1": "still unsure: which type does the text state?",
-    "US2023257132A1_arch1": "now the only aircraft of this patent (arch2 removed) — you ruled: no type",
-    "EP3974315A1_arch2": "recheck: figure number uncertain (crops swapped) — the CVT ground truth rests on it",
-    "EP3974315A1_arch3": "recheck: figure number uncertain (OCR says 1)",
-    "EP3974315A1_arch4": "recheck: figure number uncertain (audit: printed Fig. 3)",
-    "US11787551B1_arch1": "NEW aircraft (Midnight, D3 made in the wizard) — confirm the citation",
-    "US2022388648A1_arch1": "NEW: the wizard splits this patent in 2 aircraft — aircraft 100 (FIGS 1-7)",
-    "US2022388648A1_arch2": "NEW: aircraft 800 (FIGS 8-10)",
-    "US2024002048A1_arch2": "NEW: arch2 is now aircraft 200 (FIGS 6, 8) — your figures say TR, the text says it propels like aircraft 100 (CVT)",
-    "US2024002048A1_arch4": "the FIG. 11 photo you identified as Archer Maker (aircraft-level duplicate; old arch3 decision kept)",
-}
-REOPEN = {"US2021371117A1": "2026-09-15T21:18", "DE102023129326A1": "2026-09-15T21:18",
-          "US2024002048A1_arch2": "2026-09-16T16:44"}   # arch2 is a different aircraft since the wizard renumbering   # user 2026-09-15: "by text shall be reviewed"
+REOPEN = {"US2021371117A1": "2026-09-15T21:18", "DE102023129326A1": "2026-09-15T21:18"}   # user 2026-09-15: "by text shall be reviewed"
 SCOPE = ROOT / "text_scope" / "scope_llm_20260911.csv"
 # all review pages live together in Patent-Labelling-Tools/notebooks/post-process (user request 2026-09-11)
 OUT = Path("/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent-Labelling-Tools/notebooks/post-process/03b_architecture_review.html")
@@ -143,11 +129,7 @@ def s(v):
     return "" if pd.isna(v) else str(v)
 
 
-import sys as _sys
-_sys.path.insert(0, str(Path(__file__).resolve().parent))
-from arch_gt_adjustments import NEW_PATENTS, frozen_labels, readings
 allr = pd.read_excel(XLSX, sheet_name="ALL_695")
-allr = pd.concat([allr, pd.DataFrame([dict(patent_id=k, **v) for k, v in NEW_PATENTS.items()])], ignore_index=True)
 allr["group"] = allr.bucket.map(lambda b: {"0": "agree", "1": "disagree", "2": "lowconf", "3": "notstated"}[str(b)[0]])
 qc = pd.read_csv(ROOT / "text_architecture" / "quote_check.csv").set_index("pid")
 idn = pd.read_excel(ROOT / "joined" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id", "aircraft_name", "aircraft_name_source"]].set_index("patent_id")
@@ -173,10 +155,12 @@ def known_auto(pid, img, txt):
 
 
 # image labels frozen before the 2026-09-15 wizard relabel session (same file apply_architecture_review.py reads)
-_prim = frozen_labels()   # frozen labels + the aircraft made after the freeze (arch_gt_adjustments.py)
+_prim = pd.read_csv(ROOT / "text_architecture" / "image_labels_frozen_20260915.csv", dtype=str, keep_default_na=False)
 _prim["variant"] = _prim.variant_id.map(lambda v: int(v.rsplit("_arch", 1)[1]) if "_arch" in v else 1)
 TYPES_OF = {pid: [s(v) for v in g.sort_values("variant").image_label_frozen] for pid, g in _prim.groupby("patent_id")}
-var = readings(pd.read_csv(p).assign(basis=lambda d: d["basis"] if "basis" in d.columns else "aircraft") for p in VARIANTS)
+var = pd.concat([pd.read_csv(p).assign(basis=lambda d: d["basis"] if "basis" in d.columns else "aircraft") for p in VARIANTS],
+                ignore_index=True)
+assert not var.variant_id.duplicated().any(), var[var.variant_id.duplicated()].variant_id.tolist()
 MULTI = set(var.patent_id)
 SAMETYPE = {p for p in MULTI if len(set(TYPES_OF.get(p, []))) == 1}
 base_dec = {}
@@ -308,7 +292,7 @@ table.batch input{width:18px;height:18px;cursor:pointer}
 .pick2 button.on{outline:3px solid var(--acc)}.pick2 button:disabled{opacity:.4}details.figbox summary{cursor:pointer;color:var(--mut);font-size:13px}
 </style></head><body>
 <header><h1>03b — architecture type: text vs image</h1>
-<select id="view"><option value="watch" selected>🔎 your recheck list (decided or not)</option><option value="final">🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
+<select id="view"><option value="final" selected>🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
 <button id="last" title="everything you already decided, newest first — open one and press another button to relabel it">✎ relabel a decided patent</button>
 <input type="text" id="jump" placeholder="jump to patent ID" title="type part of a patent ID and press Enter — works for patents you already decided" style="width:170px">
 <span id="prog"></span>
@@ -340,10 +324,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DEC));localStorage.s
 const BASE=__BASE__;let NBASE=0;
 Object.entries(BASE).forEach(([k,b])=>{const d=DEC[k];if(!d||!d.choice||String(b.at||'')>String(d.at||'')){DEC[k]=b;NBASE++}});
 const REOPEN=__REOPEN__;
-const WATCH=__WATCH__;
 Object.entries(REOPEN).forEach(([k,t])=>{const d=DEC[k];if(d&&String(d.at||'')<=t){delete DEC[k];NBASE++}});
 if(NBASE)save();
-let VIEW='watch', CUR=0, ROWS=[], PENDVIS=null;
+let VIEW='final', CUR=0, ROWS=[], PENDVIS=null;
 // rows you unticked in a 20-row list: they leave the list and wait in the "unticked" view
 const LKEY='archreview_listskip_v1';let LSKIP={};try{LSKIP=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){LSKIP={}}
 function saveSkip(){try{localStorage.setItem(LKEY,JSON.stringify(LSKIP))}catch(e){}}
@@ -436,7 +419,6 @@ function openStage(r){const d=DEC[r.key];
  return 0}
 const STAGE={1:'reopened by you',2:'aircraft not decided yet',3:'patent not decided yet',4:'decided “figures are right” before the text rule — decide again',5:'you chose “the text does not settle it” — last check: press 4 again to keep it, or decide',6:'decided — only the visibility answer is missing'};
 function filterRows(){
- if(VIEW==='watch'){const ks=Object.keys(WATCH);ROWS=DATA.filter(r=>r.key in WATCH).sort((a,b)=>ks.indexOf(a.key)-ks.indexOf(b.key));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='final'){ROWS=DATA.filter(r=>openStage(r)||r.key===PENDVIS).sort((a,b)=>(openStage(a)||9)-(openStage(b)||9));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='peraircraft'){ROWS=DATA.filter(r=>((r.kind==='aircraft'&&(REVIEW(r)||r.basis==='patent_level_only'))||r.key in REOPEN)&&(!DEC[r.key]||r.key===PENDVIS));
   ROWS.sort((a,b)=>(b.key in REOPEN)-(a.key in REOPEN));if(CUR>=ROWS.length)CUR=0;return}
@@ -481,7 +463,7 @@ function render(){filterRows();renderList();const P=document.getElementById('pan
  if(LISTMODE())return renderBatch();
  const r=ROWS[CUR];if(!r){P.innerHTML='<p class="help">Nothing in this view.'+(VIEW==='final'?' <b>The final pass is complete — press Export CSV.</b>':'')+(VIEW==='peraircraft'?' Every aircraft row is decided — next: 👁 visibility still missing, then Export CSV.':'')+'</p>';return}
  const d=DEC[r.key]||{};const other=Object.keys(TYPES).filter(t=>t!=='NS');const legacy=r.kind==='aircraft'?(DEC[r.pid]||BASE[r.pid]):null;
- const stg=openStage(r);const wb=(r.key in WATCH)?`<div class="band yellow" style="margin-bottom:8px"><b>🔎 recheck</b><span>${esc(WATCH[r.key])}</span></div>`:'';const sb=wb+(stg?`<div class="band grey" style="margin-bottom:8px"><b>Final pass · step ${stg}</b><span>${STAGE[stg]}</span></div>`:'');
+ const stg=openStage(r);const sb=stg?`<div class="band grey" style="margin-bottom:8px"><b>Final pass · step ${stg}</b><span>${STAGE[stg]}</span></div>`:'';
  if(!AG(r)){P.innerHTML=sb+sideHTML(r,d,other,legacy);const vb=visBox(r,d);if(vb)P.querySelector('.side > div').insertAdjacentHTML('afterbegin',vb);bind(r,P);return}
  P.innerHTML=sb+`<div class="head"><h2>${esc(r.pid)}${r.kind==='aircraft'?' · aircraft '+r.vn+' of '+r.nvar:''}</h2><span>${esc(r.company)}</span><span class="mut">${esc(r.realname||r.name)} · ${esc(r.year)} · ${r.nvar>1?r.nvar+' aircraft in this patent':'1 aircraft'}</span><a href="${esc(r.pdf)}" target="_blank">PDF ↗</a></div>
  <div class="mut" style="font-size:13px">${esc(r.title)} — <i>${esc(r.assignee)}</i></div>${undoBar(r)}
@@ -532,7 +514,7 @@ function decideScope(r,c){if(!r.scope)return;if(c==='confirm'&&r.scope.code==='N
 document.getElementById('zoom').onclick=e=>e.currentTarget.style.display='none';
 document.getElementById('view').onchange=e=>{VIEW=e.target.value;CUR=0;render()};
 document.getElementById('last').onclick=()=>{VIEW='recent';document.getElementById('view').value='recent';CUR=0;render();window.scrollTo(0,0)};
-document.getElementById('jump').addEventListener('keydown',function(e){if(e.key!=='Enter')return;e.stopPropagation();const q=this.value.trim().toUpperCase();if(!q)return;
+document.getElementById('jump').addEventListener('keydown',function(e){if(e.key!=='Enter')return;const q=this.value.trim().toUpperCase();if(!q)return;
  const hit=DATA.find(r=>r.key.toUpperCase().includes(q));if(!hit){alert(q+' is not in this review');return}
  VIEW=REVIEW(hit)?'review':'all';document.getElementById('view').value=VIEW;filterRows();CUR=Math.max(0,ROWS.indexOf(hit));this.blur();render();window.scrollTo(0,0)});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(e.key==='Enter'){e.target.blur()}else return}
@@ -571,7 +553,6 @@ out = (PAGE.replace("__DATA__", json.dumps(data, ensure_ascii=False))
            .replace("__KW__", json.dumps(KW, ensure_ascii=False))
            .replace("__BASE__", json.dumps(base_dec, ensure_ascii=False))
            .replace("__REOPEN__", json.dumps(REOPEN))
-           .replace("__WATCH__", json.dumps(WATCH))
            .replace("__WITH_SCOPE__", "true" if WITH_SCOPE else "false"))
 OUT.write_text(out, encoding="utf-8")
 print("wrote", OUT, f"{OUT.stat().st_size/1024:.0f} KB")

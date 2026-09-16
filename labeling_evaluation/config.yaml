@@ -29,7 +29,7 @@ dataset_facts:
   batches: [Batch_01, Batch_02, Batch_03, Batch_04, Batch_05]
   # the framework document whose Part A numbers published.py checks (appendix of the notebook)
   document: "/mnt/storage_11tb/Drive_files_to_syncronize/eVTOL_Methodology_Framework_v2_ANNOTATED_20260909.md"
-  # where notebooks/30_preliminary_analysis.ipynb writes tables/, figs/ and the draft .md
+  # where notebooks/10_preliminary_analysis.ipynb writes tables/, figs/ and the draft .md
   output_dir: "outputs/preliminary_analysis"
   # first priority year of the truncated window (drawn hatched, labelled partial)
   partial_window_start: 2024

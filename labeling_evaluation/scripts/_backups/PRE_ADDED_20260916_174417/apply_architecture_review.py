@@ -55,11 +55,12 @@ def s(v):
 allrows = pd.read_excel(TA / "architecture_text_vs_image_20260909.xlsx", sheet_name="ALL_695")
 # per-aircraft readings: the 18 multi-type patents (2026-09-11) + the 50 same-type multi-aircraft patents (2026-09-15).
 # Every patent in either file is decided per aircraft; a patent-level decision no longer covers its aircraft.
-import sys as _sys
-_sys.path.insert(0, str(Path(__file__).resolve().parent))
-from arch_gt_adjustments import DROPPED, RENAMED_OUT, frozen_labels, readings
-var = readings(pd.read_csv(TA / "variant_reading" / f) for f in
-               ("architecture_text_variants_20260911.csv", "architecture_text_variants_sametype_20260915.csv"))
+var = pd.concat([pd.read_csv(TA / "variant_reading" / f) for f in
+                 ("architecture_text_variants_20260911.csv", "architecture_text_variants_sametype_20260915.csv")], ignore_index=True)
+if "basis" not in var.columns:
+    var["basis"] = "aircraft"
+var["basis"] = var["basis"].fillna("aircraft")
+assert not var.variant_id.duplicated().any()
 MULTI = set(var.patent_id)
 idn = pd.read_excel(ROOT / "joined" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id","aircraft_name","aircraft_name_source","scope","scope_source"]].set_index("patent_id")
 _kn_raw = pd.read_csv(TA / "known_aircraft_architecture.csv")
@@ -125,7 +126,10 @@ for v in var.itertuples():
     vfinal[v.variant_id] = dict(arch_final=final, provenance=prov, visible_in_figures=vis, text_label=txt, text_confidence=s(v.confidence),
                                 quote=s(v.quote), flags=s(v.flags), citation_basis=s(v.basis))
 
-# DROPPED / RENAMED_OUT / the added aircraft: see arch_gt_adjustments.py
+# aircraft the annotator removed or merged in the wizard after the freeze (user 2026-09-16):
+# DROPPED rows leave the ground truth; RENAMED rows keep their decision under the wizard's current id
+DROPPED = {"US2023257132A1_arch2": "merged into one aircraft in the wizard 2026-09-16"}
+RENAMED = {"US2023257132A1_arch1": "US2023257132A1"}
 
 # ---- per patent ---------------------------------------------------------------------------------------
 out = []
@@ -159,10 +163,12 @@ print("patents:", df.provenance.value_counts().to_dict())
 # The image labels are FROZEN as they stood before the 2026-09-15 wizard relabel session: the comparison measures the
 # figure-based labels the annotator made BEFORE seeing the ground truth, so corrections made after it must not leak in.
 FROZEN = TA / "image_labels_frozen_20260915.csv"
-prim = frozen_labels().rename(columns={"image_label_frozen": "topType"})   # FROZEN + the post-freeze aircraft
+prim = pd.read_csv(FROZEN, dtype=str, keep_default_na=False).rename(columns={"image_label_frozen": "topType"})
 bypat = df.set_index("patent_id")
 vrows = []
 for v in prim.itertuples():
+    if v.variant_id in DROPPED:
+        continue
     if v.variant_id in vfinal:
         x = vfinal[v.variant_id]
         vrows.append(dict(variant_id=v.variant_id, patent_id=v.patent_id, image_label=s(v.topType), level="aircraft", **x))
@@ -173,8 +179,7 @@ for v in prim.itertuples():
                           text_label=p.text_label,
                           text_confidence=p.text_confidence, quote="", flags="", citation_basis="patent"))
 vdf = pd.DataFrame(vrows)
-vdf["image_label_post_freeze"] = vdf["variant_id"].map(dict(zip(prim.variant_id, prim.post_freeze))).fillna(False)
-vdf["variant_id"] = vdf["variant_id"].replace(RENAMED_OUT)
+vdf["variant_id"] = vdf["variant_id"].replace(RENAMED)
 vdf.to_csv(TA / "architecture_text_final_variants.csv", index=False)
 print("aircraft:", len(vdf), vdf.provenance.value_counts().to_dict())
 

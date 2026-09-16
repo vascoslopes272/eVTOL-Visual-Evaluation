@@ -3,10 +3,10 @@
 Evaluation of eVTOL patent figures along two pillars, analysed separately because
 the thesis compares them:
 
-- **[`embedding_evaluation/`](embedding_evaluation/README.md)** — embedding
-  extraction, visual feature analysis and visual-learning metrics: benchmarks
-  vision pipelines (frozen DINOv2, DINOv2+registers, SigLIP, SAM-crops+SigLIP,
-  style-normalized and fine-tuned variants) against taxonomy labels.
+- **[`embedding_evaluation/`](embedding_evaluation/README.md)** — evaluation of
+  the embeddings produced by `eVTOL-Embedding-Extraction`: which figures went in,
+  integrity, structure vs. random noise, clustering, layer × pooling choice
+  (one notebook, `30_embedding_evaluation`).
 - **[`labeling_evaluation/`](labeling_evaluation/README.md)** — the
   human-labelled dataset on its own: labelling methodology, taxonomy structure,
   design characteristics, and the Preliminary Analysis document (below).
@@ -14,6 +14,15 @@ the thesis compares them:
 Each pillar is self-contained: its own `config.yaml`, `notebooks/`, `src/`,
 `scripts/` and `outputs/`. Only shared material sits at the root — `docs/`
 (reports and figures) and `scripts/` (document rendering).
+
+## Pipeline stages across the three repos
+
+| Stage | Where | Notebooks |
+|---|---|---|
+| 0 — Labelling | `Patent-Labelling-Tools` | wizard, 01a → 02a → 03a/03b → 04 |
+| 1 — Labelling evaluation | `labeling_evaluation/` (this repo) | `10_preliminary_analysis` |
+| 2 — Extraction | `eVTOL-Embedding-Extraction` | `20_figure_selection` → `21_image_processing` → `22_embedding_extraction` |
+| 3 — Embedding evaluation | `embedding_evaluation/` (this repo) | `30_embedding_evaluation` |
 
 This repo only **consumes**: labels from `Patent-Labelling-Tools`
 (`1639_LABELLED/`, `labels_v1.parquet`) and embeddings from
@@ -27,6 +36,7 @@ eVTOL-Visual-Evaluation/
   README.md  requirements.txt
   docs/                           # reports, figures, meeting notes (shared)
     ANALYSIS_GUIDE.md             # metric reference (probes, structure)
+    embedding_evaluation/         # generated report + figs (notebook 30) + SELECTION_DECISIONS.md
     Supervisor_Report_Taxonomy_Structure_Analysis_summary.md/.pdf
   scripts/                        # document tooling only
     build_report_pdf.py           # docs/*.md or */README.md -> PDF
@@ -34,22 +44,24 @@ eVTOL-Visual-Evaluation/
 
   embedding_evaluation/
     README.md                     # pillar report: embedding QC, structure, clustering, alignment
-    config.yaml                   # labels_parquet, embeddings_root, taxonomy settings
+    config.yaml                   # pipeline_root, metrics_dir, metrics + report settings
     notebooks/
-      20_probes.ipynb
-      21_structure_clustering.ipynb
+      30_embedding_evaluation.ipynb   # metrics -> figures -> report (the only notebook)
     src/
       config_loader.py
-      registry.py                 # pipeline name -> embeddings folder + manifest.json
-      probes.py                   # linear probes per taxonomy axis, confound tests
-      structure_clustering.py     # UMAP, HDBSCAN, cluster<->taxonomy alignment
+      embedding_metrics.py        # label-free metrics per embedding run x figure set
+      embedding_report.py         # figures + docs/embedding_evaluation/embedding_evaluation_report.md
+      registry.py                 # (legacy) pipeline name -> embeddings folder + manifest.json
+      probes.py                   # (legacy) linear probes per taxonomy axis, confound tests
+      structure_clustering.py     # (legacy) UMAP, HDBSCAN, cluster<->taxonomy alignment
+    archive/notebooks/            # 20_probes, 21_structure_clustering (do not run; kept for reference)
     scripts/  outputs/
 
   labeling_evaluation/
     README.md                     # pillar report: review data, duplicates, taxonomy, design characteristics
     config.yaml                   # labelled_root + dataset_facts settings
     notebooks/
-      30_preliminary_analysis.ipynb   # the Preliminary Analysis, index order 1.1 -> 5.5 (+ appendix)
+      10_preliminary_analysis.ipynb   # the Preliminary Analysis, index order 1.1 -> 5.5 (+ appendix)
     src/
       config_loader.py
       dataset_facts/              # every measured fact about the labelled dataset
@@ -67,9 +79,18 @@ eVTOL-Visual-Evaluation/
       preliminary_analysis/       # tables/, figs/, PRELIMINARY_ANALYSIS.md (generated, gitignored)
 ```
 
+## The embedding evaluation (embedding pillar)
+
+`embedding_evaluation/notebooks/30_embedding_evaluation.ipynb` reads the figure
+sets and embeddings the extraction repo wrote (`paths.pipeline_root`), computes
+the label-free metrics for every embedding run × figure set
+(`outputs/embedding_metrics/`), draws the figures and writes
+`docs/embedding_evaluation/embedding_evaluation_report.md`. Why each figure was
+selected is registered in `docs/embedding_evaluation/SELECTION_DECISIONS.md`.
+
 ## The Preliminary Analysis (labelling pillar)
 
-`labeling_evaluation/notebooks/30_preliminary_analysis.ipynb` follows the
+`labeling_evaluation/notebooks/10_preliminary_analysis.ipynb` follows the
 annotated index of the Preliminary Analysis document section by section
 (1.1 acquisition funnel → 5.5 class shares per window). Each section is a
 markdown cell with the index's three lines — *Source*, *Tables / figures*,
@@ -80,7 +101,7 @@ block diagrams and the generated document all read one text.
 ```bash
 cd labeling_evaluation
 #   config.yaml -> paths.labelled_root = .../1639_LABELLED   (the only input)
-jupyter lab notebooks/30_preliminary_analysis.ipynb
+jupyter lab notebooks/10_preliminary_analysis.ipynb
 ```
 
 The last cells write `outputs/preliminary_analysis/`: every table as CSV and
@@ -105,5 +126,5 @@ pip install -r requirements.txt
 ```
 
 Then edit the pillar you work on: `embedding_evaluation/config.yaml`
-(`paths.labels_parquet`, `paths.embeddings_root`) or
+(`paths.pipeline_root` = the extraction repo's `paths.pipeline_root`) or
 `labeling_evaluation/config.yaml` (`paths.labelled_root`).

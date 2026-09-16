@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Build notebooks/30_preliminary_analysis.ipynb from src/dataset_facts/index.py.
+"""Build notebooks/10_preliminary_analysis.ipynb from src/dataset_facts/index.py.
 
 The notebook follows the Preliminary Analysis node by node (chapters 1-4, three
 numbering levels). Every heading and every line of prose comes from ``index.py``
 at run time, with the live numbers filled in, so the notebook, the draft and the
 PDF never drift. Re-run this after changing the index, then execute:
 
-    python3 scripts/build_notebook_30.py
-    jupyter nbconvert --to notebook --execute --inplace notebooks/30_preliminary_analysis.ipynb
+    python3 scripts/build_notebook_10.py
+    jupyter nbconvert --to notebook --execute --inplace notebooks/10_preliminary_analysis.ipynb
 """
 import json
 import sys
@@ -191,6 +191,6 @@ nb = {"cells": cells, "nbformat": 4, "nbformat_minor": 5,
                    "language_info": {"name": "python"}}}
 for i, c in enumerate(nb["cells"]):
     c["id"] = f"c{i:03d}-{uuid.uuid5(uuid.NAMESPACE_URL, c['source'][:80]).hex[:6]}"
-out = ROOT / "notebooks" / "30_preliminary_analysis.ipynb"
+out = ROOT / "notebooks" / "10_preliminary_analysis.ipynb"
 out.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
 print("wrote", out, len(cells), "cells")

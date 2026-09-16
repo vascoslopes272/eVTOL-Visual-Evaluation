@@ -1,10 +1,20 @@
 # eVTOL Visual Evaluation — Embedding Evaluation
 
+> **Current pipeline (2026-09-16):** this pillar has one notebook,
+> [`30_embedding_evaluation.ipynb`](notebooks/30_embedding_evaluation.ipynb). It
+> evaluates the figure sets and embeddings from `eVTOL-Embedding-Extraction`
+> (notebooks 20–22) and writes
+> [`docs/embedding_evaluation/embedding_evaluation_report.md`](../docs/embedding_evaluation/embedding_evaluation_report.md).
+> The reasons behind the figure selection are in
+> [`SELECTION_DECISIONS.md`](../docs/embedding_evaluation/SELECTION_DECISIONS.md).
+> The report below is the **earlier** supervisor-report split (Batches 01 + 05,
+> 264 images), kept for reference. Its notebook is archived under `archive/notebooks/`.
+
 **Pillar:** embedding extraction, visual feature analysis and visual-learning metrics.
 **Companion pillar:** [Labeling Evaluation](../labeling_evaluation/README.md) (taxonomy, review data, spatial design characteristics, convergence studies).
 
 **Prepared for:** Phase Supervisor
-**Pipeline stage:** [`21_structure_clustering.ipynb`](notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset)
+**Pipeline stage:** [`21_structure_clustering.ipynb`](archive/notebooks/21_structure_clustering.ipynb) (Batches 01 + 05, 1639-patent dataset)
 **Model:** `facebook/dinov2-large` (frozen), layers {18, 22, 24} × pooling {cls, mean_patch}
 
 *Split from `docs/Supervisor_Report_Taxonomy_Structure_Analysis_summary.md` (the summary edition of the original combined supervisor report, with Section 5 restored). This file carries the embedding-side sections; the batch, duplicate, taxonomy and design-characteristic sections live in the companion file. All figure and output paths below are relative to this repository.*
@@ -279,4 +289,4 @@ Averaging Cohen's d per layer × pooling, **layer 22 cls** has the highest effec
 
 ---
 
-*All tables/figures sourced from [`notebooks/21_structure_clustering.ipynb`](notebooks/21_structure_clustering.ipynb) (formerly `DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb`). Stage outputs live outside the repo on the sync drive under `4 - Intelligence Models & Post Process Outputs/Preliminary_analysis/outputs/`: embeddings and Stage-0 QC in `analysis_1639_518/`, Stage 1–5 tables and figures in `analysis_taxonomy/`. Figures referenced above are vendored copies in [`docs/figs/`](../docs/figs/); see [ANALYSIS_GUIDE.md](../docs/ANALYSIS_GUIDE.md) for metric definitions.*
+*All tables/figures sourced from [`notebooks/21_structure_clustering.ipynb`](archive/notebooks/21_structure_clustering.ipynb) (formerly `DINOv2_eVTOL_frozen_Analysis/notebooks/11_taxonomy_structure_separation.ipynb`). Stage outputs live outside the repo on the sync drive under `4 - Intelligence Models & Post Process Outputs/Preliminary_analysis/outputs/`: embeddings and Stage-0 QC in `analysis_1639_518/`, Stage 1–5 tables and figures in `analysis_taxonomy/`. Figures referenced above are vendored copies in [`docs/figs/`](../docs/figs/); see [ANALYSIS_GUIDE.md](../docs/ANALYSIS_GUIDE.md) for metric definitions.*
