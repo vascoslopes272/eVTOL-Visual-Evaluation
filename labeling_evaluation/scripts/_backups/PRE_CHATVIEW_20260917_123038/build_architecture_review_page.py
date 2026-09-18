@@ -257,17 +257,6 @@ GTFIRST = {
     "US2020269975A1_arch3": "FIG. 6: SLC if the fixed inclined cruise unit on the empennage is drawn, PTC if not",
     "US2020269975A1_arch4": "FIG. 7: SLC if the fixed inclined cruise unit on the empennage is drawn, PTC if not",
 }
-# rows discussed in chat that were not in the to-review list: added so they can be decided on the whole patent too
-GTEXTRA = {
-    "DE102023129326A1": "same aircraft as DE102023133781B3 (the wizard now marks it D1 of it); your ground truth is SLC (not visible) — recheck: that patent's text says CVT",
-}
-_gtf = pd.read_csv(ROOT / "text_architecture" / "architecture_ground_truth.csv", keep_default_na=False).set_index("aircraft_id")
-for k, note in GTEXTRA.items():
-    if k in _keys and k not in GTTODO and k in _gtf.index:
-        x = _gtf.loc[k]
-        GTTODO[k] = {"why": "recheck requested in chat", "proposed": s(x.ground_truth), "fig": s(x.figure_label_frozen),
-                     "wiz": s(x.wizard_label_now)}
-        GTFIRST[k] = note
 for k, note in GTFIRST.items():
     if k in GTTODO:
         GTTODO[k]["first"] = note
@@ -352,7 +341,7 @@ table.batch input{width:18px;height:18px;cursor:pointer}
 .pick2 button.on{outline:3px solid var(--acc)}.pick2 button:disabled{opacity:.4}details.figbox summary{cursor:pointer;color:var(--mut);font-size:13px}
 </style></head><body>
 <header><h1>03b — architecture type: text vs image</h1>
-<select id="view"><option value="chat" selected>💬 discussed in chat — decided and open</option><option value="gt">🎯 ground truth still to decide (whole patent)</option><option value="gtall">🎯 ground-truth list — decided and open</option><option value="watch">🔎 your recheck list (decided or not)</option><option value="final">🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
+<select id="view"><option value="gt" selected>🎯 ground truth still to decide (whole patent)</option><option value="gtall">🎯 ground-truth list — decided and open</option><option value="watch">🔎 your recheck list (decided or not)</option><option value="final">🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
 <button id="last" title="everything you already decided, newest first — open one and press another button to relabel it">✎ relabel a decided patent</button>
 <input type="text" id="jump" placeholder="jump to patent ID" title="type part of a patent ID and press Enter — works for patents you already decided" style="width:170px">
 <span id="prog"></span>
@@ -390,7 +379,7 @@ const GTTODO=__GTTODO__;
 const GTDONE=r=>{const d=DEC[r.key];return !!d&&(d.choice==='gt'||d.choice==='gt_unsure')};
 Object.entries(REOPEN).forEach(([k,t])=>{const d=DEC[k];if(d&&String(d.at||'')<=t){delete DEC[k];NBASE++}});
 if(NBASE)save();
-let VIEW='chat', CUR=0, ROWS=[], PENDVIS=null;
+let VIEW='gt', CUR=0, ROWS=[], PENDVIS=null;
 // rows you unticked in a 20-row list: they leave the list and wait in the "unticked" view
 const LKEY='archreview_listskip_v1';let LSKIP={};try{LSKIP=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){LSKIP={}}
 function saveSkip(){try{localStorage.setItem(LKEY,JSON.stringify(LSKIP))}catch(e){}}
@@ -483,7 +472,6 @@ function openStage(r){const d=DEC[r.key];
  return 0}
 const STAGE={1:'reopened by you',2:'aircraft not decided yet',3:'patent not decided yet',4:'decided “figures are right” before the text rule — decide again',5:'you chose “the text does not settle it” — last check: press 4 again to keep it, or decide',6:'decided — only the visibility answer is missing'};
 function filterRows(){
- if(VIEW==='chat'){ROWS=DATA.filter(r=>r.key in GTTODO&&GTTODO[r.key].first);if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='gt'||VIEW==='gtall'){ROWS=DATA.filter(r=>r.key in GTTODO&&(VIEW==='gtall'||!GTDONE(r)||r.key===GTKEEP));ROWS.sort((a,b)=>!!GTTODO[b.key].first-!!GTTODO[a.key].first);if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='watch'){const ks=Object.keys(WATCH);ROWS=DATA.filter(r=>r.key in WATCH).sort((a,b)=>ks.indexOf(a.key)-ks.indexOf(b.key));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='final'){ROWS=DATA.filter(r=>openStage(r)||r.key===PENDVIS).sort((a,b)=>(openStage(a)||9)-(openStage(b)||9));if(CUR>=ROWS.length)CUR=0;return}
@@ -497,7 +485,7 @@ function filterRows(){
  if(VIEW==='side'){ROWS=DATA.filter(r=>REVIEW(r)&&!AG(r)&&!DEC[r.key]).sort((a,b)=>ORDER[a.light]-ORDER[b.light]);if(CUR>=ROWS.length)CUR=0;return}
  if(['green','yellow','red'].includes(VIEW)){ROWS=DATA.filter(r=>REVIEW(r)&&!DEC[r.key]&&r.light===VIEW);if(CUR>=ROWS.length)CUR=0;return}
  ROWS=DATA.filter(r=>VIEW==='all'||(VIEW==='todo'?(REVIEW(r)&&!DEC[r.key])||(SNEED(r)&&firstOfPid(r)):VIEW==='review'?REVIEW(r):VIEW==='known'?!!r.known:VIEW==='aircraft'?r.kind==='aircraft':VIEW==='flags'?!!r.flags:VIEW==='scope'?SNEED(r)&&firstOfPid(r):r.group===VIEW&&!r.known));if(VIEW==='todo')ROWS.sort((a,b)=>ORDER[a.light]-ORDER[b.light]);if(CUR>=ROWS.length)CUR=0}
-function tagOf(r){if((VIEW==='chat'||VIEW==='gt'||VIEW==='gtall')&&r.key in GTTODO){const d=DEC[r.key];return 'fig '+esc(GTTODO[r.key].fig||'—')+(GTDONE(r)?' ✓ '+esc(d.choice==='gt'?d.other+(d.visible?' · vis '+d.visible:''):'unsure'):'')}const d=DEC[r.key];return (AG(r)?esc(r.text)+' ✓✓':esc(r.image||'—')+'→'+esc(r.text))+(d?' ✓ '+esc(finalOf(r,d)):r.known?' auto':'')+(r.flags?' ⚑':'')}
+function tagOf(r){const d=DEC[r.key];return (AG(r)?esc(r.text)+' ✓✓':esc(r.image||'—')+'→'+esc(r.text))+(d?' ✓ '+esc(finalOf(r,d)):r.known?' auto':'')+(r.flags?' ⚑':'')}
 function renderList(){const L=document.getElementById('list');L.innerHTML='';ROWS.forEach((r,i)=>{const d=DEC[r.key];const el=document.createElement('div');el.className=(i===CUR?'cur ':'')+(d?'done':'');el.innerHTML=`<span><span class="dot L${r.light}"></span><b>${esc(r.pid)}</b>${r.kind==='aircraft'?' · aircraft '+r.vn:''}<br><span style="font-size:11px">${esc(r.company)}</span></span><span class="tag">${tagOf(r)}</span>`;el.onclick=()=>{CUR=i;render()};L.appendChild(el)});
  const todo=DATA.filter(REVIEW);const n=todo.filter(r=>DEC[r.key]).length;
  const sp=WITH_SCOPE?` · scope ${Object.values(SDEC).filter(x=>x&&x.choice).length} / ${new Set(DATA.filter(r=>r.scope).map(r=>r.pid)).size}`:'';
@@ -558,7 +546,7 @@ function render(){filterRows();renderList();const P=document.getElementById('pan
  const r=ROWS[CUR];if(!r&&VIEW==='gt'){P.innerHTML='<p class="help"><b>Every ground-truth row is decided — press Export CSV.</b></p>';return}
  if(!r){P.innerHTML='<p class="help">Nothing in this view.'+(VIEW==='final'?' <b>The final pass is complete — press Export CSV.</b>':'')+(VIEW==='peraircraft'?' Every aircraft row is decided — next: 👁 visibility still missing, then Export CSV.':'')+'</p>';return}
  const d=DEC[r.key]||{};const other=Object.keys(TYPES).filter(t=>t!=='NS');const legacy=r.kind==='aircraft'?(DEC[r.pid]||BASE[r.pid]):null;
- if(VIEW==='gt'||VIEW==='gtall'||VIEW==='chat'){P.innerHTML=gtHTML(r,d);bind(r,P);
+ if(VIEW==='gt'||VIEW==='gtall'){P.innerHTML=gtHTML(r,d);bind(r,P);
   P.querySelectorAll('.gtt button').forEach(b=>b.onclick=()=>{GTPICK[r.key]=b.dataset.t;GTKEEP=r.key;render()});
   P.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>decideGT(r,b.dataset.g));return}
  const stg=openStage(r);const wb=(r.key in WATCH)?`<div class="band yellow" style="margin-bottom:8px"><b>🔎 recheck</b><span>${esc(WATCH[r.key])}</span></div>`:'';const sb=wb+(stg?`<div class="band grey" style="margin-bottom:8px"><b>Final pass · step ${stg}</b><span>${STAGE[stg]}</span></div>`:'');
@@ -618,7 +606,7 @@ document.getElementById('jump').addEventListener('keydown',function(e){if(e.key!
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(e.key==='Enter'){e.target.blur()}else return}
  if(LISTMODE()){if(e.key==='Enter'||e.key===' '){e.preventDefault();confirmBatch()}return}
  const r=ROWS[CUR];if(!r)return;
- if((VIEW==='gt'||VIEW==='gtall'||VIEW==='chat')&&r.key in GTTODO){if(e.key==='1')return decideGT(r,'yes');if(e.key==='2')return decideGT(r,'no');if(e.key==='3')return decideGT(r,'unsure');
+ if((VIEW==='gt'||VIEW==='gtall')&&r.key in GTTODO){if(e.key==='1')return decideGT(r,'yes');if(e.key==='2')return decideGT(r,'no');if(e.key==='3')return decideGT(r,'unsure');
   if(e.key==='ArrowRight'||e.key==='Enter'){CUR=Math.min(CUR+1,ROWS.length-1);render()}else if(e.key==='ArrowLeft'){CUR=Math.max(CUR-1,0);render()}else if(e.key==='Escape')document.getElementById('zoom').style.display='none';return}
  if(needVis(r,DEC[r.key])&&(e.key==='1'||e.key==='2')){setVis(r,e.key==='1'?'no':'yes');return}
  if(e.key===' '){e.preventDefault();if(AG(r))decide(r,'confirm');return}

@@ -8,7 +8,7 @@ This register records which figures enter the embedding pipeline, and why.
 
 When a rule changes, add a dated entry here, re-run notebooks 20 → 21 → 22, then re-run `30_embedding_evaluation`.
 
-**Input:** Stage 04's join, `1639_LABELLED/joined/` (`master_labels.xlsx`, `master_figures.xlsx`, `approved_images/`). The label source is `master_04`, in use since 2026-09-15.
+**Input:** Stage 04's tables, `1639_LABELLED/0_labelling/outputs/tables/` (`aircraft_table.csv`, `figure_table.csv`) and `outputs/images/<aircraft_id>/`; outputs go to `1639_LABELLED/2_embedding_extraction/` (layout of 2026-09-17; aircraft_uid = `<patent>_ua<N>`). The label source is `master_04`, in use since 2026-09-15.
 
 **Unit of analysis:** the **aircraft**. This is a primary approved variant of a patent, identified by `aircraft_uid = <patent_id>#<variant>`. The labelling evaluation uses the same unit, so both stages analyse the same 685 aircraft.
 

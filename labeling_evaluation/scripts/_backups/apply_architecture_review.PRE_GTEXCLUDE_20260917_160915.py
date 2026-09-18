@@ -24,8 +24,6 @@ architecture provenance
   per_aircraft       (patent file only) the patent draws aircraft of different types; see the variants file
   whole_patent       2026-09-17: the annotator decided the type on the whole patent; visible_in_figures = yes / no
   unsure             annotator could not tell — arch_final blank
-  not_stated_in_patent  whole-patent pass: "the patent does not settle it" (decision gt_unsure) — arch_final blank
-                     (user 2026-09-17: named "not stated in the patent")
   pending            not yet confirmed (arch_final blank)
 
 scope provenance
@@ -101,7 +99,7 @@ def ruling(d, img, txt, basis="patent"):
              # the reviewer found the text silent: same treatment as the reader's own not-stated rows
              "ns": img}.get(ch)
     prov = {"confirm": "confirmed", "unsure": "unsure", "ns": "not_stated",
-            "gt": "whole_patent", "gt_unsure": "not_stated_in_patent"}.get(ch, "adjudicated_" + str(ch))
+            "gt": "whole_patent", "gt_unsure": "unsure"}.get(ch, "adjudicated_" + str(ch))
     if ch == "confirm" and basis == "patent_level_only":
         # no sentence cites this aircraft's figures: the reviewer confirmed that the patent-level citation applies to it
         prov = "confirmed_patent_level"
@@ -158,10 +156,6 @@ for r in allrows.itertuples():
                     review_comment=(s(d.comment) if d is not None else ""),
                     decided_at=(s(d.decided_at) if d is not None else "")))
 df = pd.DataFrame(out)
-# 2026-09-17: aircraft that became D1/D2 duplicates after the freeze carry no labels (they point at their original),
-# so their ground-truth rows are dropped — listed, with the reason, in text_architecture/gt_excluded_aircraft.csv.
-GT_EXCLUDED = set(pd.read_csv(TA / "gt_excluded_aircraft.csv", dtype=str).variant_id) if (TA / "gt_excluded_aircraft.csv").exists() else set()
-df = df[~df.patent_id.isin(GT_EXCLUDED)]
 df.to_csv(TA / "architecture_text_final.csv", index=False)
 print("patents:", df.provenance.value_counts().to_dict())
 
@@ -185,7 +179,6 @@ for v in prim.itertuples():
 vdf = pd.DataFrame(vrows)
 vdf["image_label_post_freeze"] = vdf["variant_id"].map(dict(zip(prim.variant_id, prim.post_freeze))).fillna(False)
 vdf["variant_id"] = vdf["variant_id"].replace(RENAMED_OUT)
-vdf = vdf[~vdf.variant_id.isin(GT_EXCLUDED)]
 vdf.to_csv(TA / "architecture_text_final_variants.csv", index=False)
 print("aircraft:", len(vdf), vdf.provenance.value_counts().to_dict())
 

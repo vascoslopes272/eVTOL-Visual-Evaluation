@@ -12,7 +12,7 @@
 paths:
   # Stage 04's 1639_LABELLED work tree — the only input src/dataset_facts needs.
   # $DRIVE_PATH can be set in a .env next to this file instead of hard-coding the mount.
-  labelled_root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED"
+  labelled_root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED"   # the whole tree (stage folders 0_…3_ inside)
 
 # ---------------------------------------------------------------------------
 # dataset_facts — Part A of the methodology framework (the labelled dataset)
@@ -30,14 +30,14 @@ dataset_facts:
   # the framework document whose Part A numbers published.py checks (appendix of the notebook)
   document: "/mnt/storage_11tb/Drive_files_to_syncronize/eVTOL_Methodology_Framework_v2_ANNOTATED_20260909.md"
   # where notebooks/10_preliminary_analysis.ipynb writes tables/, figs/ and the draft .md
-  output_dir: "outputs/preliminary_analysis"
+  output_dir: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/1_labelling_analysis/preliminary_analysis"
   # first priority year of the truncated window (drawn hatched, labelled partial)
   partial_window_start: 2024
   # index 4.3 — the codebook's consistency rules, run by the existing harness on two stages of the exports
   conformance_dir: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent-Labelling-Tools/scripts/conformance"
   rules_stages:
     before correction: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/data/03_HUMAN_wizard_exports"
-    after correction: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/labels"
+    after correction: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/0_labelling/inputs/labels"
   # the legacy 02a rule-decision sidecars (two batches only) — kept for the record, not for 4.3
   rule_decisions_glob: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/data/**/rule_decisions_Batch_*.json"
   # cut-offs the descriptive pass uses, all stated rather than hidden in code

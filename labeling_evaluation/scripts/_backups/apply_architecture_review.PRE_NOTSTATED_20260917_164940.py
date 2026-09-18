@@ -24,8 +24,6 @@ architecture provenance
   per_aircraft       (patent file only) the patent draws aircraft of different types; see the variants file
   whole_patent       2026-09-17: the annotator decided the type on the whole patent; visible_in_figures = yes / no
   unsure             annotator could not tell — arch_final blank
-  not_stated_in_patent  whole-patent pass: "the patent does not settle it" (decision gt_unsure) — arch_final blank
-                     (user 2026-09-17: named "not stated in the patent")
   pending            not yet confirmed (arch_final blank)
 
 scope provenance
@@ -101,7 +99,7 @@ def ruling(d, img, txt, basis="patent"):
              # the reviewer found the text silent: same treatment as the reader's own not-stated rows
              "ns": img}.get(ch)
     prov = {"confirm": "confirmed", "unsure": "unsure", "ns": "not_stated",
-            "gt": "whole_patent", "gt_unsure": "not_stated_in_patent"}.get(ch, "adjudicated_" + str(ch))
+            "gt": "whole_patent", "gt_unsure": "unsure"}.get(ch, "adjudicated_" + str(ch))
     if ch == "confirm" and basis == "patent_level_only":
         # no sentence cites this aircraft's figures: the reviewer confirmed that the patent-level citation applies to it
         prov = "confirmed_patent_level"

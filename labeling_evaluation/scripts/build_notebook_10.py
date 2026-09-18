@@ -137,6 +137,13 @@ code("import subprocess",
      "subprocess.run([sys.executable, str(ROOT.parent / 'scripts' / 'build_styled_md_pdf.py'), str(doc), str(pdf), '--compact'], check=True)",
      "pages = subprocess.run(['pdfinfo', str(pdf)], capture_output=True, text=True).stdout",
      "print(pdf.name, [l for l in pages.splitlines() if l.startswith('Pages')])"),
+md("## Figure atlas — the document as pictures only",
+   "",
+   "User ruling 2026-09-17: the figures without the prose. `atlas.render` draws every figure from the",
+   "live dataset into `atlas/` (PNG) and `PRELIMINARY_ANALYSIS_FIGURES.pdf` (one figure per page)."),
+code("from src.dataset_facts import atlas",
+     "atlas_pdf, atlas_pngs = atlas.render(ds, OUT, N)",
+     "print(atlas_pdf.name, len(atlas_pngs), 'figures')"),
 
 # ---------------- appendix ----------------
 *notes("appendix"),

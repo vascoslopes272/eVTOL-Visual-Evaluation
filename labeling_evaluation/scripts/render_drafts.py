@@ -20,7 +20,7 @@ PILLAR = Path(__file__).resolve().parent.parent
 REPO = PILLAR.parent
 sys.path.insert(0, str(PILLAR))
 from src.config_loader import load_config  # noqa: E402
-from src.dataset_facts import export, figures, load_dataset, numbers, report  # noqa: E402
+from src.dataset_facts import atlas, export, figures, load_dataset, numbers, report  # noqa: E402
 
 
 def main(argv):
@@ -38,6 +38,8 @@ def main(argv):
     md = report.write_markdown(ds, tables, figs, out, values=values, partial_window_start=partial)
     print(f"source={ds.source}  tables={len(tables)}  figures={len(figs)}")
     print(f"document: {md}  ({md.stat().st_size / 1024:.0f} KB)")
+    atlas_pdf, atlas_pngs = atlas.render(ds, out, values)
+    print(f"figure atlas: {atlas_pdf}  ({len(atlas_pngs)} figures)")
     if "--pdf" in argv:
         pdf = md.with_suffix(".pdf")
         subprocess.run([sys.executable, str(REPO / "scripts" / "build_styled_md_pdf.py"),

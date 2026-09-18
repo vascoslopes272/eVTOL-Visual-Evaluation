@@ -11,7 +11,7 @@ build_architecture_review_page.py and apply_architecture_review.py so both see t
 from pathlib import Path
 import pandas as pd
 
-TA = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/text_architecture")
+TA = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/0_labelling/inputs/text_architecture")   # 2026-09-17 layout
 DROPPED = {"US2023257132A1_arch2": "merged into one aircraft in the wizard 2026-09-16"}
 RENAMED_IN = {"US2024002048A1_arch2": "US2024002048A1_arch3", "US2024002048A1_arch3": "US2024002048A1_arch4"}
 RENAMED_OUT = {"US2023257132A1_arch1": "US2023257132A1", "US11787551B1_arch1": "US11787551B1"}

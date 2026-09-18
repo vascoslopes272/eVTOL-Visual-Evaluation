@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 import pandas as pd
 
-ROOT = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/0_labelling/inputs")
+ROOT = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED")
 XLSX = ROOT / "text_architecture" / "architecture_text_vs_image_20260909.xlsx"
 # per-aircraft readings: the 18 patents with DIFFERENT figure types (2026-09-11) and, from 2026-09-15, the 50 patents
 # whose aircraft share one figure type (their architecture had been confirmed once per patent and copied to every aircraft)
@@ -150,7 +150,7 @@ allr = pd.read_excel(XLSX, sheet_name="ALL_695")
 allr = pd.concat([allr, pd.DataFrame([dict(patent_id=k, **v) for k, v in NEW_PATENTS.items()])], ignore_index=True)
 allr["group"] = allr.bucket.map(lambda b: {"0": "agree", "1": "disagree", "2": "lowconf", "3": "notstated"}[str(b)[0]])
 qc = pd.read_csv(ROOT / "text_architecture" / "quote_check.csv").set_index("pid")
-idn = pd.read_excel(ROOT / "identity" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id", "aircraft_name", "aircraft_name_source"]].set_index("patent_id")
+idn = pd.read_excel(ROOT / "joined" / "aircraft_identity_ALL.xlsx", sheet_name="Identity")[["patent_id", "aircraft_name", "aircraft_name_source"]].set_index("patent_id")
 _kn_raw = pd.read_csv(ROOT / "text_architecture" / "known_aircraft_architecture.csv")
 # a company whose documented aircraft do not all share one architecture cannot disambiguate by name:
 # the gazetteer picks between its models by filing-year window, which is only a guess.
@@ -183,9 +183,9 @@ base_dec = {}
 if DECISIONS.exists():
     _d = pd.read_csv(DECISIONS, dtype=str, keep_default_na=False)
     for x in _d[_d.decision != ""].itertuples():
-        base_dec[x.variant_id or x.patent_id] = {"choice": x.decision, "other": x.final_label if x.decision in ("other", "gt") else "",
+        base_dec[x.variant_id or x.patent_id] = {"choice": x.decision, "other": x.final_label if x.decision == "other" else "",
                                                  "visible": x.visible_in_figures, "comment": x.comment, "at": x.decided_at}
-mf = pd.read_csv(ROOT.parent / "outputs" / "tables" / "figure_table.csv", keep_default_na=False, na_values=[""], low_memory=False)
+mf = pd.read_excel(ROOT / "joined" / "master_figures.xlsx")
 mf = mf[(mf.status == "approved") & (mf.file_exists == True)]
 figs = {}
 for pid, g in mf.groupby("patent_id"):
@@ -231,49 +231,6 @@ for r in allr.itertuples():
                          basis=s(v.basis), sametype=r.patent_id in SAMETYPE,
                          ptext=f"{s(r.text_label)} — “{s(r.quote)[:220]}”"))
         data[-1]["light"], data[-1]["why"] = light(group, img, txt, s(v.confidence), data[-1]["qcheck"], s(v.quote), s(v.flags))
-
-# 2026-09-17: the ground truth is the author's reading of the WHOLE patent. Rows still to decide (list written by
-# text_architecture/build_architecture_ground_truth.py): copied-from-figure rows, aircraft of multi-aircraft patents
-# decided once per patent, and "visible but the wizard still differs". Shown in the view "🎯 ground truth still to decide".
-GTLIST = ROOT / "text_architecture" / "GT_TO_REVIEW_20260917.xlsx"
-GTTODO = {}
-_keys = {d["key"] for d in data}
-if GTLIST.exists():
-    for x in pd.read_excel(GTLIST, keep_default_na=False).itertuples():
-        k = x.aircraft_id if x.aircraft_id in _keys else x.patent_id if x.patent_id in _keys else None
-        if k is None:
-            print("⚠ GT row not on the page:", x.aircraft_id); continue
-        GTTODO[k] = {"why": s(x.to_review), "proposed": s(x.proposed_ground_truth) or s(x.ground_truth),
-                     "fig": s(x.figure_label_frozen), "wiz": s(x.wizard_label_now)}
-# user 2026-09-17: the patents discussed in chat (and relabelled in the wizard) come first, with a note
-GTFIRST = {
-    "US2020361622A1": "text draws 2 aircraft: FIG. 1 helicopter (RC, disapproved in the wizard), FIG. 2 wings + ducted fans rotatably coupled (TR) — this row is FIG. 2; wizard still MR",
-    "US2021094674A1": "convertible helicopter/airplane mode, ducted fans rotatably coupled to fuselage or wing (TR); wizard now TR",
-    "CN119231794A": "fig. 1: four stationary + four tilting propulsion devices on a fixed-wing aircraft (CVT); wizard still SLC",
-    "DE102023133781B3": "wing ducts rigidly vertical + two rear ducts pivotable vertical↔horizontal (CVT); DE102023129326A1 is now its D1 duplicate; wizard still SLC",
-    "US2023192280A1": "FIG. 1 coaxial rotor + pusher propulsive system (compound helicopter: RC or SLC — your ruling); wizard SLC",
-    "US2021064062A1_arch1": "FIG. 1 embodiment: thrust subunits pivot freely on the main body; wings only in a later embodiment; wizard now PTC (uncertain)",
-    "US2020269975A1_arch1": "FIG. 4: SLC if the fixed inclined cruise unit on the empennage is drawn, PTC if not",
-    "US2020269975A1_arch3": "FIG. 6: SLC if the fixed inclined cruise unit on the empennage is drawn, PTC if not",
-    "US2020269975A1_arch4": "FIG. 7: SLC if the fixed inclined cruise unit on the empennage is drawn, PTC if not",
-}
-# rows discussed in chat that were not in the to-review list: added so they can be decided on the whole patent too
-GTEXTRA = {
-    "DE102023129326A1": "same aircraft as DE102023133781B3 (the wizard now marks it D1 of it); your ground truth is SLC (not visible) — recheck: that patent's text says CVT",
-}
-_gtf = pd.read_csv(ROOT / "text_architecture" / "architecture_ground_truth.csv", keep_default_na=False).set_index("aircraft_id")
-for k, note in GTEXTRA.items():
-    if k in _keys and k not in GTTODO and k in _gtf.index:
-        x = _gtf.loc[k]
-        GTTODO[k] = {"why": "recheck requested in chat", "proposed": s(x.ground_truth), "fig": s(x.figure_label_frozen),
-                     "wiz": s(x.wizard_label_now)}
-        GTFIRST[k] = note
-for k, note in GTFIRST.items():
-    if k in GTTODO:
-        GTTODO[k]["first"] = note
-    else:
-        print("⚠ GTFIRST key not in the list:", k)
-print("ground truth still to decide:", len(GTTODO), "| discussed first:", sum("first" in v for v in GTTODO.values()))
 
 from collections import Counter
 print("rows:", len(data), Counter((d["kind"], d["group"]) for d in data), "known-auto:", sum(1 for d in data if d["known"]),
@@ -342,7 +299,6 @@ table.batch input{width:18px;height:18px;cursor:pointer}
 .bt{font-weight:600;font-size:14px;margin-bottom:3px}.bq{line-height:1.5}.btype{font-size:19px;font-weight:700;color:var(--txt)}
 .bbar{display:flex;gap:12px;align-items:center;margin:10px 0}.bbar button{font:inherit;font-size:15px;padding:10px 18px;border-radius:8px;border:1px solid #15803d;background:#16a34a;color:#fff;cursor:pointer}
 .side{display:grid;grid-template-columns:minmax(300px,45%) 1fr;gap:16px;margin-top:10px;align-items:start}
-.side > div{min-width:0}
 .sfig{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
 .sfig img{max-width:100%;max-height:520px;cursor:zoom-in}
 .pick2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
@@ -352,7 +308,7 @@ table.batch input{width:18px;height:18px;cursor:pointer}
 .pick2 button.on{outline:3px solid var(--acc)}.pick2 button:disabled{opacity:.4}details.figbox summary{cursor:pointer;color:var(--mut);font-size:13px}
 </style></head><body>
 <header><h1>03b — architecture type: text vs image</h1>
-<select id="view"><option value="chat" selected>💬 discussed in chat — decided and open</option><option value="gt">🎯 ground truth still to decide (whole patent)</option><option value="gtall">🎯 ground-truth list — decided and open</option><option value="watch">🔎 your recheck list (decided or not)</option><option value="final">🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
+<select id="view"><option value="watch" selected>🔎 your recheck list (decided or not)</option><option value="final">🏁 FINAL PASS — everything still open</option><option value="peraircraft">✈ per aircraft + reopened patents — not yet decided</option><option value="vis">👁 visibility still missing (decided, text ≠ figures)</option><option value="lgreen">📋 🟢 evident agreements — 20 at a time</option><option value="lyellow">📋 🟡 other agreements — 20 at a time</option><option value="side">⚖ disagreements — figures vs text</option><option value="unticked">↩ unticked in a list — one per screen</option><option value="recent">✎ already decided — newest first (relabel)</option><option value="legacy">⚠ decided “figures are right” before the text rule</option><option value="todo">to confirm (not auto, not decided)</option><option value="green">🟢 evident — to confirm</option><option value="yellow">🟡 not that evident — to confirm</option><option value="red">🔴 really different — to confirm</option><option value="review">everything you confirm</option><option value="agree">agree — confirm the citation</option><option value="disagree">disagree (text ≠ image)</option><option value="lowconf">agree, low confidence</option><option value="aircraft">aircraft rows (patents with several types)</option><option value="flags">aircraft rows with a flag</option><option value="known">known aircraft — cleared automatically</option><option value="notstated">text not stated (no citation exists)</option><option value="scope">scope — to confirm</option><option value="all">all rows</option></select>
 <button id="last" title="everything you already decided, newest first — open one and press another button to relabel it">✎ relabel a decided patent</button>
 <input type="text" id="jump" placeholder="jump to patent ID" title="type part of a patent ID and press Enter — works for patents you already decided" style="width:170px">
 <span id="prog"></span>
@@ -385,12 +341,9 @@ const BASE=__BASE__;let NBASE=0;
 Object.entries(BASE).forEach(([k,b])=>{const d=DEC[k];if(!d||!d.choice||String(b.at||'')>String(d.at||'')){DEC[k]=b;NBASE++}});
 const REOPEN=__REOPEN__;
 const WATCH=__WATCH__;
-// 2026-09-17: ground truth = your reading of the WHOLE patent (text + figures), decided per aircraft
-const GTTODO=__GTTODO__;
-const GTDONE=r=>{const d=DEC[r.key];return !!d&&(d.choice==='gt'||d.choice==='gt_unsure')};
 Object.entries(REOPEN).forEach(([k,t])=>{const d=DEC[k];if(d&&String(d.at||'')<=t){delete DEC[k];NBASE++}});
 if(NBASE)save();
-let VIEW='chat', CUR=0, ROWS=[], PENDVIS=null;
+let VIEW='watch', CUR=0, ROWS=[], PENDVIS=null;
 // rows you unticked in a 20-row list: they leave the list and wait in the "unticked" view
 const LKEY='archreview_listskip_v1';let LSKIP={};try{LSKIP=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){LSKIP={}}
 function saveSkip(){try{localStorage.setItem(LKEY,JSON.stringify(LSKIP))}catch(e){}}
@@ -463,7 +416,7 @@ function bind(r,P){
  P.querySelectorAll('.fig img, .sfig img').forEach(im=>im.onclick=()=>{const z=document.getElementById('zoom');z.querySelector('img').src=im.src;z.querySelector('img').style.transform=im.style.transform;z.style.display='flex'});
 }
 function label(t){const d=TYPES[t];return t?`<span class="big">${esc(t)}</span> <span class="def">${d?esc(d[0]):''}</span>`:'<span class="def">— (no image type: unclassifiable / quick override)</span>'}
-function finalOf(r,d){if(!d)return'';if(d.choice==='gt')return d.other||'';if(d.choice==='gt_unsure')return'?';if(d.choice==='ns')return'NS';if(d.choice==='confirm')return r.text;if(d.choice==='image')return r.image;if(d.choice==='text')return r.text;if(d.choice==='other')return d.other||'';return d.choice==='unsure'?'?':''}
+function finalOf(r,d){if(!d)return'';if(d.choice==='ns')return'NS';if(d.choice==='confirm')return r.text;if(d.choice==='image')return r.image;if(d.choice==='text')return r.text;if(d.choice==='other')return d.other||'';return d.choice==='unsure'?'?':''}
 const AG=r=>r.group==='agree'||r.group==='lowconf';
 const REVIEW=r=>(!r.known&&r.group!=='notstated')||!!r.flags;
 const SNEED=r=>WITH_SCOPE&&!!r.scope&&!(SDEC[r.pid]&&SDEC[r.pid].choice);
@@ -483,8 +436,6 @@ function openStage(r){const d=DEC[r.key];
  return 0}
 const STAGE={1:'reopened by you',2:'aircraft not decided yet',3:'patent not decided yet',4:'decided “figures are right” before the text rule — decide again',5:'you chose “the text does not settle it” — last check: press 4 again to keep it, or decide',6:'decided — only the visibility answer is missing'};
 function filterRows(){
- if(VIEW==='chat'){ROWS=DATA.filter(r=>r.key in GTTODO&&GTTODO[r.key].first);if(CUR>=ROWS.length)CUR=0;return}
- if(VIEW==='gt'||VIEW==='gtall'){ROWS=DATA.filter(r=>r.key in GTTODO&&(VIEW==='gtall'||!GTDONE(r)||r.key===GTKEEP));ROWS.sort((a,b)=>!!GTTODO[b.key].first-!!GTTODO[a.key].first);if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='watch'){const ks=Object.keys(WATCH);ROWS=DATA.filter(r=>r.key in WATCH).sort((a,b)=>ks.indexOf(a.key)-ks.indexOf(b.key));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='final'){ROWS=DATA.filter(r=>openStage(r)||r.key===PENDVIS).sort((a,b)=>(openStage(a)||9)-(openStage(b)||9));if(CUR>=ROWS.length)CUR=0;return}
  if(VIEW==='peraircraft'){ROWS=DATA.filter(r=>((r.kind==='aircraft'&&(REVIEW(r)||r.basis==='patent_level_only'))||r.key in REOPEN)&&(!DEC[r.key]||r.key===PENDVIS));
@@ -497,7 +448,7 @@ function filterRows(){
  if(VIEW==='side'){ROWS=DATA.filter(r=>REVIEW(r)&&!AG(r)&&!DEC[r.key]).sort((a,b)=>ORDER[a.light]-ORDER[b.light]);if(CUR>=ROWS.length)CUR=0;return}
  if(['green','yellow','red'].includes(VIEW)){ROWS=DATA.filter(r=>REVIEW(r)&&!DEC[r.key]&&r.light===VIEW);if(CUR>=ROWS.length)CUR=0;return}
  ROWS=DATA.filter(r=>VIEW==='all'||(VIEW==='todo'?(REVIEW(r)&&!DEC[r.key])||(SNEED(r)&&firstOfPid(r)):VIEW==='review'?REVIEW(r):VIEW==='known'?!!r.known:VIEW==='aircraft'?r.kind==='aircraft':VIEW==='flags'?!!r.flags:VIEW==='scope'?SNEED(r)&&firstOfPid(r):r.group===VIEW&&!r.known));if(VIEW==='todo')ROWS.sort((a,b)=>ORDER[a.light]-ORDER[b.light]);if(CUR>=ROWS.length)CUR=0}
-function tagOf(r){if((VIEW==='chat'||VIEW==='gt'||VIEW==='gtall')&&r.key in GTTODO){const d=DEC[r.key];return 'fig '+esc(GTTODO[r.key].fig||'—')+(GTDONE(r)?' ✓ '+esc(d.choice==='gt'?d.other+(d.visible?' · vis '+d.visible:''):'unsure'):'')}const d=DEC[r.key];return (AG(r)?esc(r.text)+' ✓✓':esc(r.image||'—')+'→'+esc(r.text))+(d?' ✓ '+esc(finalOf(r,d)):r.known?' auto':'')+(r.flags?' ⚑':'')}
+function tagOf(r){const d=DEC[r.key];return (AG(r)?esc(r.text)+' ✓✓':esc(r.image||'—')+'→'+esc(r.text))+(d?' ✓ '+esc(finalOf(r,d)):r.known?' auto':'')+(r.flags?' ⚑':'')}
 function renderList(){const L=document.getElementById('list');L.innerHTML='';ROWS.forEach((r,i)=>{const d=DEC[r.key];const el=document.createElement('div');el.className=(i===CUR?'cur ':'')+(d?'done':'');el.innerHTML=`<span><span class="dot L${r.light}"></span><b>${esc(r.pid)}</b>${r.kind==='aircraft'?' · aircraft '+r.vn:''}<br><span style="font-size:11px">${esc(r.company)}</span></span><span class="tag">${tagOf(r)}</span>`;el.onclick=()=>{CUR=i;render()};L.appendChild(el)});
  const todo=DATA.filter(REVIEW);const n=todo.filter(r=>DEC[r.key]).length;
  const sp=WITH_SCOPE?` · scope ${Object.values(SDEC).filter(x=>x&&x.choice).length} / ${new Set(DATA.filter(r=>r.scope).map(r=>r.pid)).size}`:'';
@@ -526,41 +477,10 @@ function visBox(r,d){if(!needVis(r,d))return'';const f=finalOf(r,d);
   <button data-vis="no" style="font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer"><kbd>1</kbd> not visible</button>
   <button data-vis="yes" style="font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer"><kbd>2</kbd> visible too</button></div>`}
 function setVis(r,v){const d=DEC[r.key];if(!d)return;d.visible=v;d.at=new Date().toISOString().slice(0,16);d.ts=Date.now();save();PENDVIS=null;next()}
-let GTKEEP=null, GTPICK={};
-function gtHTML(r,d){const g=GTTODO[r.key];const pick=GTPICK[r.key]||(d.choice==='gt'?d.other:'')||g.proposed||'';
- const f0=r.figs.find(f=>f.main)||r.figs[0];const rest=r.figs.filter(f=>f!==f0);
- const types=Object.keys(TYPES).filter(t=>t!=='NS');const same=pick&&pick===g.fig;
- return `${g.first?`<div class="band green" style="margin-bottom:8px"><b>💬 discussed in chat</b><span>${esc(g.first)}</span></div>`:''}<div class="band yellow" style="margin-bottom:8px"><b>🎯 why this one</b><span>${esc(g.why)}</span></div>
- <div class="head"><h2>${esc(r.pid)}${r.kind==='aircraft'?' · aircraft '+r.vn+' of '+r.nvar:''}</h2><span>${esc(r.company)} · ${esc(r.year)}</span>${r.pdf?`<a href="${esc(r.pdf)}" target="_blank">PDF ↗</a>`:''}<a href="https://patents.google.com/patent/${esc(r.pid)}/en" target="_blank">Google Patents ↗</a></div>
- <div style="font-size:16px;font-weight:600">${esc(r.title)}</div>${undoBar(r)}
- <div class="side"><div class="sfig">${f0?`<div class="fig" style="border:0;max-width:none">${figHTML(f0)}</div>`:'<p class="help">no approved figure on disk</p>'}${rest.length?`<div class="help">${rest.length} more figure(s) below</div>`:''}</div>
-  <div>
-   <div class="cite"><div class="vs"><span>your figure label: <span class="big img">${esc(g.fig||'—')}</span></span><span>wizard now: <b>${esc(g.wiz||'—')}</b></span></div>
-    ${r.kind==='aircraft'?`<div class="def" style="margin-top:6px">This row is <b>aircraft ${r.vn}</b> only — its own figures are shown. The patent draws ${r.nvar} aircraft.</div>`:''}
-    <div class="def" style="margin-top:6px">Automatic text reading (context only, not the answer): <b>${esc(r.text)}</b>${r.quote?` — “${hl(shortQ(r.quote),r.text)}”`:' — no citation found'}</div></div>
-   <div style="margin-top:10px"><b>1 · Which architecture is this aircraft?</b> <span class="def">read the whole patent: text and figures</span></div>
-   <div class="gtt" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">${types.map(t=>`<button data-t="${t}" title="${esc(TYPES[t][1])}" style="font:inherit;padding:6px 10px;border-radius:8px;cursor:pointer;border:2px solid ${t===pick?'var(--acc)':'var(--line)'};background:${t===pick?'#e8efff':'#fff'}"><b>${t}</b> <small class="mut">${esc(TYPES[t][0])}</small></button>`).join('')}</div>
-   ${pick&&TYPES[pick]?`<div class="def">${esc(pick)} = ${esc(TYPES[pick][1])}</div>`:''}
-   <div style="margin-top:10px"><b>2 · Can the figures show ${esc(pick||'it')}?</b> ${same?'<span class="def">same as your figure label, so yes</span>':''}</div>
-   <div class="pick2"><button data-g="yes" class="pt ${d.choice==='gt'&&d.visible==='yes'?'on':''}" ${pick?'':'disabled'}><kbd>1</kbd> Visible in the figures<b>${esc(pick||'—')}</b><small>the drawings are enough to see it</small></button>
-    <button data-g="no" class="pi ${d.choice==='gt'&&d.visible==='no'?'on':''}" ${pick&&!same?'':'disabled'}><kbd>2</kbd> Not visible in the figures<b>${esc(pick||'—')}</b><small>only the rest of the patent shows it</small></button></div>
-   <div class="decide"><button data-g="unsure" class="${d.choice==='gt_unsure'?'on':''}"><kbd>3</kbd>The patent does not settle it</button>
-    <input id="cmt" placeholder="comment (optional)" value="${esc(d.comment||'')}"></div></div></div>
- ${rest.length?`<div class="figs small">${rest.map(f=>`<div class="fig">${figHTML(f)}</div>`).join('')}</div>`:''}
- <p class="help">click a type (it starts on the proposal) · 1 visible · 2 not visible · 3 the patent does not settle it · ←/→ navigate · click a figure to zoom · Export CSV when done</p>`}
-function decideGT(r,g){const pick=GTPICK[r.key]||(DEC[r.key]&&DEC[r.key].choice==='gt'?DEC[r.key].other:'')||GTTODO[r.key].proposed||'';
- const cm=document.getElementById('cmt');const base={comment:cm?cm.value:'',at:new Date().toISOString().slice(0,16),ts:Date.now(),n:nextN()};
- if(g==='unsure')DEC[r.key]=Object.assign({choice:'gt_unsure',other:'',visible:''},base);
- else{if(!pick)return;const vis=pick===GTTODO[r.key].fig?'yes':g;DEC[r.key]=Object.assign({choice:'gt',other:pick,visible:vis},base)}
- save();delete GTPICK[r.key];GTKEEP=null;next()}
-function render(){filterRows();renderList();const P=document.getElementById('panel');const nopen=DATA.filter(openStage).length;const ngt=DATA.filter(r=>r.key in GTTODO&&!GTDONE(r)).length;document.getElementById('prog').textContent='🎯 '+ngt+' / '+Object.keys(GTTODO).length+' ground truth to decide · 🏁 '+nopen+' still open · '+document.getElementById('prog').textContent;
+function render(){filterRows();renderList();const P=document.getElementById('panel');const nopen=DATA.filter(openStage).length;document.getElementById('prog').textContent='🏁 '+nopen+' still open · '+document.getElementById('prog').textContent;
  if(LISTMODE())return renderBatch();
- const r=ROWS[CUR];if(!r&&VIEW==='gt'){P.innerHTML='<p class="help"><b>Every ground-truth row is decided — press Export CSV.</b></p>';return}
- if(!r){P.innerHTML='<p class="help">Nothing in this view.'+(VIEW==='final'?' <b>The final pass is complete — press Export CSV.</b>':'')+(VIEW==='peraircraft'?' Every aircraft row is decided — next: 👁 visibility still missing, then Export CSV.':'')+'</p>';return}
+ const r=ROWS[CUR];if(!r){P.innerHTML='<p class="help">Nothing in this view.'+(VIEW==='final'?' <b>The final pass is complete — press Export CSV.</b>':'')+(VIEW==='peraircraft'?' Every aircraft row is decided — next: 👁 visibility still missing, then Export CSV.':'')+'</p>';return}
  const d=DEC[r.key]||{};const other=Object.keys(TYPES).filter(t=>t!=='NS');const legacy=r.kind==='aircraft'?(DEC[r.pid]||BASE[r.pid]):null;
- if(VIEW==='gt'||VIEW==='gtall'||VIEW==='chat'){P.innerHTML=gtHTML(r,d);bind(r,P);
-  P.querySelectorAll('.gtt button').forEach(b=>b.onclick=()=>{GTPICK[r.key]=b.dataset.t;GTKEEP=r.key;render()});
-  P.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>decideGT(r,b.dataset.g));return}
  const stg=openStage(r);const wb=(r.key in WATCH)?`<div class="band yellow" style="margin-bottom:8px"><b>🔎 recheck</b><span>${esc(WATCH[r.key])}</span></div>`:'';const sb=wb+(stg?`<div class="band grey" style="margin-bottom:8px"><b>Final pass · step ${stg}</b><span>${STAGE[stg]}</span></div>`:'');
  if(!AG(r)){P.innerHTML=sb+sideHTML(r,d,other,legacy);const vb=visBox(r,d);if(vb)P.querySelector('.side > div').insertAdjacentHTML('afterbegin',vb);bind(r,P);return}
  P.innerHTML=sb+`<div class="head"><h2>${esc(r.pid)}${r.kind==='aircraft'?' · aircraft '+r.vn+' of '+r.nvar:''}</h2><span>${esc(r.company)}</span><span class="mut">${esc(r.realname||r.name)} · ${esc(r.year)} · ${r.nvar>1?r.nvar+' aircraft in this patent':'1 aircraft'}</span><a href="${esc(r.pdf)}" target="_blank">PDF ↗</a></div>
@@ -589,7 +509,7 @@ function render(){filterRows();renderList();const P=document.getElementById('pan
  <p class="help">Read the highlighted citation, then: 1 confirm · 3 the text states another type · 4 the text does not settle it · 5 the text says nothing about the architecture${WITH_SCOPE?' · 5 confirm scope · 6 scope other · 7 scope cannot tell':''} · ←/→ or Enter = next · click a figure to zoom. Decisions are saved in this browser; press Export CSV when done (goes to Downloads).</p>`;
  bind(r,P);
 }
-const SHRINKING=['gt','todo','side','unticked','green','yellow','red','scope','legacy','peraircraft','vis','final'];
+const SHRINKING=['todo','side','unticked','green','yellow','red','scope','legacy','peraircraft','vis','final'];
 // change a decision you already made: clear it (the patent goes back into the lists) or pick another button
 // order of decisions: exact time for new ones, the saved minute for older ones
 const when=d=>(d.n||0)*1e13+(d.ts||Date.parse(d.at||'')||0);
@@ -614,12 +534,10 @@ document.getElementById('view').onchange=e=>{VIEW=e.target.value;CUR=0;render()}
 document.getElementById('last').onclick=()=>{VIEW='recent';document.getElementById('view').value='recent';CUR=0;render();window.scrollTo(0,0)};
 document.getElementById('jump').addEventListener('keydown',function(e){if(e.key!=='Enter')return;e.stopPropagation();const q=this.value.trim().toUpperCase();if(!q)return;
  const hit=DATA.find(r=>r.key.toUpperCase().includes(q));if(!hit){alert(q+' is not in this review');return}
- VIEW=(hit.key in GTTODO)?'gtall':REVIEW(hit)?'review':'all';document.getElementById('view').value=VIEW;filterRows();CUR=Math.max(0,ROWS.indexOf(hit));this.blur();render();window.scrollTo(0,0)});
+ VIEW=REVIEW(hit)?'review':'all';document.getElementById('view').value=VIEW;filterRows();CUR=Math.max(0,ROWS.indexOf(hit));this.blur();render();window.scrollTo(0,0)});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(e.key==='Enter'){e.target.blur()}else return}
  if(LISTMODE()){if(e.key==='Enter'||e.key===' '){e.preventDefault();confirmBatch()}return}
  const r=ROWS[CUR];if(!r)return;
- if((VIEW==='gt'||VIEW==='gtall'||VIEW==='chat')&&r.key in GTTODO){if(e.key==='1')return decideGT(r,'yes');if(e.key==='2')return decideGT(r,'no');if(e.key==='3')return decideGT(r,'unsure');
-  if(e.key==='ArrowRight'||e.key==='Enter'){CUR=Math.min(CUR+1,ROWS.length-1);render()}else if(e.key==='ArrowLeft'){CUR=Math.max(CUR-1,0);render()}else if(e.key==='Escape')document.getElementById('zoom').style.display='none';return}
  if(needVis(r,DEC[r.key])&&(e.key==='1'||e.key==='2')){setVis(r,e.key==='1'?'no':'yes');return}
  if(e.key===' '){e.preventDefault();if(AG(r))decide(r,'confirm');return}
  if(e.key==='1'&&AG(r))decide(r,'confirm');else if(e.key==='1'&&!AG(r)&&r.text!=='NS')decide(r,'text','no');else if(e.key==='2'&&!AG(r)&&r.text!=='NS')decide(r,'text','yes');else if(e.key==='3')decide(r,'other');else if(e.key==='4')decide(r,'unsure');else if(e.key==='5')decide(r,'ns');
@@ -642,7 +560,7 @@ document.getElementById('imp').onchange=e=>{const f=e.target.files[0];if(!f)retu
  const old=!h.includes('variant_id');
  rows.forEach(c=>{const o=old?{patent_id:c[0],decision:c[4],final_label:c[5],comment:c[6],decided_at:c[7]}:Object.fromEntries(h.map((k,i)=>[k,c[i]]));
   if(!o.patent_id)return;
-  if(o.decision){const key=o.variant_id||o.patent_id;DEC[key]={choice:o.decision,other:(o.decision==='other'||o.decision==='gt')?o.final_label:'',visible:o.visible_in_figures||'',comment:o.comment||'',at:o.decided_at||''};n++}
+  if(o.decision){const key=o.variant_id||o.patent_id;DEC[key]={choice:o.decision,other:o.decision==='other'?o.final_label:'',visible:o.visible_in_figures||'',comment:o.comment||'',at:o.decided_at||''};n++}
   if(o.scope_decision){SDEC[o.patent_id]={choice:o.scope_decision,other:o.scope_decision==='other'?(SREV[o.scope_final]||''):'',comment:o.scope_comment||'',at:o.scope_decided_at||''};ns++}});
  save();render();alert(n+' architecture and '+ns+' scope decisions imported')};rd.readAsText(f)};
 document.getElementById('clr').onclick=()=>{if(confirm('Clear every decision saved in this browser?')){DEC={};SDEC={};LSKIP={};save();saveSkip();render()}};
@@ -654,7 +572,6 @@ out = (PAGE.replace("__DATA__", json.dumps(data, ensure_ascii=False))
            .replace("__BASE__", json.dumps(base_dec, ensure_ascii=False))
            .replace("__REOPEN__", json.dumps(REOPEN))
            .replace("__WATCH__", json.dumps(WATCH))
-           .replace("__GTTODO__", json.dumps(GTTODO, ensure_ascii=False))
            .replace("__WITH_SCOPE__", "true" if WITH_SCOPE else "false"))
 OUT.write_text(out, encoding="utf-8")
 print("wrote", OUT, f"{OUT.stat().st_size/1024:.0f} KB")

@@ -164,12 +164,6 @@ class Dataset:
         # draws several aircraft stays representative while one of them survives; its figures
         # follow the patent. `is_approved` stays the wizard's recorded verdict.
         tags = m["edgeTags"].fillna("").astype(str).map(lambda v: set(v.split("|")) - {""})
-        # 2026-09-17: a D1/D2 row carries no G1 block of its own — it POINTS at the aircraft it
-        # repeats (`same_aircraft_as`, first target). It is gated with that aircraft's tags.
-        if "same_aircraft_as" in m.columns and "aircraft_id" in m.columns:
-            own = dict(zip(m["aircraft_id"], tags))
-            target = m["same_aircraft_as"].fillna("").astype(str).str.split("; ").str[0]
-            tags = pd.Series([own.get(t, tg) if t else tg for t, tg in zip(target, tags)], index=m.index)
         m["similar_tag"] = tags.map(lambda t: next((g for g in GATE_TAGS if g in t), None))
         m["is_representative"] = approved & m["similar_tag"].isna()
         patent_rep = m.groupby("patent_id")["is_representative"].transform("any")
@@ -207,8 +201,7 @@ class Dataset:
         byv = self.approved_figures.groupby(["patent_id", "arch"]).size()
         m["n_approved_this_variant_all"] = m["n_approved_this_variant"]
         root = m["labels_inherited_from"].where(m["labels_inherited_from"].notna(), m["patent_id"])
-        ua = m["points_to_ua"].where(m["points_to_ua"].notna(), m["variant"]) if "points_to_ua" in m.columns else m["variant"]
-        m["n_approved_this_variant"] = [int(byv.get((r, int(v)), 0)) for r, v in zip(root, pd.to_numeric(ua, errors="coerce").fillna(1))]
+        m["n_approved_this_variant"] = [int(byv.get((r, v), 0)) for r, v in zip(root, m["variant"])]
         for view in (self.approved_variants, self.variants, self.patents, self.patents_analysis):
             view["n_approved_this_variant"] = m.loc[view.index, "n_approved_this_variant"]
 

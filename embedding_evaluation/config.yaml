@@ -16,9 +16,9 @@ paths:
   embeddings_root: "EDIT-ME"  # parent dir containing one subfolder per pipeline (see registry.py)
   # eVTOL-Embedding-Extraction's paths.pipeline_root (notebooks 20–22):
   # selection/ (figure sets), processed/, embeddings/<tag>/. Read-only here.
-  pipeline_root: "/mnt/storage_11tb/Drive_files_to_syncronize/4 - Intelligence Models & Post Process Outputs/Preliminary_analysis/outputs/embedding_pipeline"
+  pipeline_root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/2_embedding_extraction"
   # Where 30_embedding_evaluation writes its numbers (metrics/<tag>/<set>/).
-  metrics_dir: "outputs/embedding_metrics"
+  metrics_dir: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/3_embedding_evaluation/metrics"
   # Report + figures (repo-root docs/, shared).
   embedding_report_dir: "../docs/embedding_evaluation"
 
@@ -38,6 +38,15 @@ metrics:
 report:
   detail_embedding: "dinov2-large_518"
   detail_set: main
+
+# ── evtol.news photo set (src/evtolnews_eval.py, scripts/evtolnews_eval.py) ──
+# Built by eVTOL-Embedding-Extraction/scripts/evtolnews_pipeline.py. Private:
+# images are (c) their owners; nothing is published before asking the source.
+evtolnews:
+  root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS"
+  labelled_root: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED"
+  embeddings: ["dinov2-large_224", "dinov2-large_518"]
+  sets: [main, all]              # sets that exist in BOTH trees (class metrics compare photo vs patent)
 
 # ── legacy (archived notebooks 20_probes / 21_structure_clustering) ─────────
 taxonomy:
