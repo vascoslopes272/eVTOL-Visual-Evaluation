@@ -32,10 +32,10 @@ TABLE_CAPTIONS: Dict[str, str] = {
     "a2_d2_figure_slot_answers": "Most common answers of the T2 slots",
     "roster_summary_short": "Evidence and labelling flags on the unique aircraft",
     "a2_d2_label_set": "The label set and the slots answered per aircraft",
-    "a2_d4_missingness": "Blanks where the parent field says the part exists; values an override hides are left out",
+    "a2_d4_missingness": "Blanks where the parent field says the part exists",
     "a2_d3_selected_fields": "Most common answers, G1 to M3 fields",
     "a2_d2_informative_fields": "Field inventory, ranked by effective number of answers",
-    "a3_derived_layer_summary": "Derived per-aircraft features, each with the aircraft it is counted over",
+    "a3_derived_layer_summary": "Derived per-aircraft features",
     "a2_d5_archetype_cardinality": "Archetype cardinality at five levels",
     "a2_d9_architecture_by_window": "Class shares per window, four largest classes",
     "a2_d13_flagship_check": "Flagship check: labels of the largest filers against their public products",
@@ -50,9 +50,9 @@ FIGURE_CAPTIONS: Dict[str, str] = {
     "provenance_bars": "acquired and representative patents by region and by publication office",
     "patents_per_year": "representative primary patents per priority year, with the candidate windows",
     "fig_03_design_space_order": "the four label cards of one unique aircraft, and the order of the design-space analysis",
-    "fill_rate_heatmap": "fill rate of each field, conditional on the parent part being present; a value an override hides is left out",
+    "fill_rate_heatmap": "fill rate of each field, conditional on the parent part being present",
     "archetype_levels": "the two columns that pick the archetype level",
-    "class_balance_bars": "architecture class balance; the white bar is the aircraft a G1 override leaves without a type",
+    "class_balance_bars": "architecture class balance",
     "class_share_stacked_area": "class shares per window; the partial window is hatched",
     "slots_histogram": "slots answered per unique aircraft",
     "lorenz": "concentration of filing",
@@ -75,7 +75,7 @@ COLUMNS: Dict[str, List[str]] = {
     "a2_d2_figure_slots": ["name", "field", "answered", "answers", "top_share", "effective_answers"],
     "a2_d2_informative_fields": ["name", "card", "answered", "answers", "top_share",
                                  "effective_answers", "top2_cumulative", "top3_cumulative"],
-    "a2_d5_archetype_cardinality": ["level", "fields combined", "aircraft", "left out", "distinct archetypes",
+    "a2_d5_archetype_cardinality": ["level", "fields combined", "aircraft", "distinct archetypes",
                                     "singletons", "effective number"],
 }
 
@@ -293,14 +293,9 @@ NODES: List[Dict] = [
          code=["display(a2.d11_figures_per_variant(ds))", "pd.Series(a2.d11_sensitivity_set(ds)).to_frame('value')"]),
     dict(id="3.2.3", title="Most common answers, T2 labels",
          text=("Most figures are monochrome line drawings on a plain background, seen from the "
-               "front-isometric, and drawn Invariant or in hover."),
+               "front-isometric, and drawn in hover-cruise or hover."),
          tables=["a2_d2_figure_slot_answers"],
-         after=("How to read the flight state: Hover, Transition and Cruise are read from the angle of "
-                "the moving part. Invariant means nothing in the drawing depends on the configuration. "
-                "Both means the moving part is drawn in two positions with equal weight. Other means no "
-                "configuration can be read. A part drawn solid in one position and dashed in the other "
-                "is recorded as the solid one. The six states are counted apart and never pooled."),
-         code=["from src.dataset_facts.atlas import table_caption", "display(a2.d2_figure_slot_answers(ds))", "display(Markdown(table_caption(ds, 't2_answers')))"]),
+         code=["a2.d2_figure_slot_answers(ds)"]),
     dict(id="3.2.4", title="Evidence flags",
          text=("Every flag is about evidence or labelling; nothing in this document is about what "
                "a model can read, which first appears in the DINOv2 chapter. The flagged aircraft "
@@ -336,12 +331,9 @@ NODES: List[Dict] = [
          text=("A blank is a labelling gap only where the parent field says the part exists. On "
                "that test nearly every blank is design absence; the three real gaps are wing "
                "height, wing planform and tail type on winged aircraft. No aircraft is dropped "
-               "for blanks, and landing gear \"Unknown\" means not drawn, never absent. An override "
-               "keeps only what it records: {override_aircraft} aircraft carry a stage override, and "
-               "where it hides the parent or the field the value is not determinable, so the aircraft "
-               "is left out of that check (at most {d4_left} per check) instead of counted as a gap."),
+               "for blanks, and landing gear \"Unknown\" means not drawn, never absent."),
          tables=["a2_d4_missingness"], figures=["fill_rate_heatmap"],
-         code=["from src.dataset_facts.atlas import table_caption", "display(a2.d4_missingness(ds))", "display(Markdown(table_caption(ds, 'd4')))", "display(a2.d6_weak_labels(ds))", "display(Markdown(table_caption(ds, 'd6')))"]),
+         code=["display(a2.d4_missingness(ds))", "a2.d6_weak_labels(ds)"]),
     dict(id="3.3.3", title="Most common answers, G1 to M3 labels",
          text=("The table covers the aircraft-level labels G1 to M3 only. Which answers dominate "
                "says where the design space has boundaries: one wing, a fixed fuselage, standard "
@@ -360,15 +352,9 @@ NODES: List[Dict] = [
     dict(id="3.3.5", title="Derived per-aircraft features",
          text=("The sparse boom and tier slots become variables every aircraft has: total "
                "propulsor units, any tilting unit, mixed fixed and tilting units, any ducted "
-               "unit, all units ducted, and whether the wing carries thrust (rotors on the wing card "
-               "and on a wing-attached boom both count). A value that cannot be read is left out, "
-               "never read as zero, none or Fixed: the unit total covers {units_n} aircraft and leaves "
-               "out {units_left} (hoverbikes and personal flying vehicles have no propulsor card, a G1 "
-               "override leaves no type, an overridden station may lack its count); the tilt answer "
-               "covers {tilt_base} and leaves out {tilt_left}. A tilting boom is read from the boom "
-               "tick."),
+               "unit, all units ducted."),
          tables=["a3_derived_layer_summary"],
-         code=["from src.dataset_facts.atlas import table_caption", "DLS = a3.derived_layer_summary(ds)", "display(DLS)", "display(Markdown(table_caption(ds, 'derived') + f\"  \\nLeft out of the unit total: {DLS.attrs['units_left_out']}. Left out of the tilt answer: {DLS.attrs['left_out']}.\"))", "a3.derived_layer(ds).head()"]),
+         code=["display(a3.derived_layer_summary(ds))", "a3.derived_layer(ds).head()"]),
     dict(id="3.3.6", title="Archetype cardinality",
          text=("An archetype is the string formed by joining the chosen fields; *distinct "
                "archetypes* counts those strings, and the *effective number* is the exponential "
@@ -386,15 +372,13 @@ NODES: List[Dict] = [
                "resolution is reached through tilt, the feature the architecture classes actually "
                "turn on ({tilt_n} aircraft tilt a unit)."),
          figures=["archetype_levels"], tables=["a2_d5_archetype_cardinality"],
-         code=["from src.dataset_facts.atlas import table_caption", "display(a2.d5_archetype_cardinality(ds))", "display(Markdown(table_caption(ds, 'd5')))", "# rule 4 (2026-09-19): raw boom / wing-card fields against the pooled wing-borne pair", "SENS = a3.boom_wing_sensitivity(ds)", "display(SENS['fields'])", "display(SENS['archetypes'])", "display(SENS['neighbours'])", "display(Markdown(table_caption(ds, 'sensitivity')))"]),
+         code=["a2.d5_archetype_cardinality(ds)"]),
     dict(id="3.3.7", title="Architecture class balance",
          text=("{n_classes} classes, the largest ({top_class}) at {top_class_share}: balanced "
                "enough for windows of about 40 aircraft. The {small_classes} classes below twelve "
-               "aircraft are the candidates for merging or dropping in the frozen-model chapter. "
-               "{unclassifiable} unique aircraft are unclassifiable (G1 override): they carry no type "
-               "and are counted beside the classes, never in one."),
+               "aircraft are the candidates for merging or dropping in the frozen-model chapter."),
          figures=["class_balance_bars"],
-         code=["from src.dataset_facts.atlas import table_caption", "display(a2.d3_architecture_balance(ds))", "display(Markdown(table_caption(ds, 'balance')))"]),
+         code=["a2.d3_architecture_balance(ds)"]),
     dict(id="3.3.8", title="Class shares per window",
          text=("A first look at a shift from tilt rotor to lift plus cruise, and no class above "
                "{max_window_share} in any window, so raw shares show no dominant design. This is "
@@ -466,9 +450,7 @@ NODES: List[Dict] = [
                "they do not, and *δ* is 1 only when both aircraft carry a value for that field. "
                "The *δ* term is what implements 3.3.2. A boom field does not exist for a wingless "
                "multirotor, so it leaves that pair's average instead of registering as a "
-               "difference between them. Whether the wing carries the thrust enters as one pooled "
-               "field: rotors on the wing card and on a wing-attached boom count the same, so the "
-               "boom-or-wing reading of an ambiguous member does not move the distance.\n\n"
+               "difference between them.\n\n"
                "The weights *w* decide how much each field contributes, and the question they "
                "answer is concrete. The codebook spends {slots_M3} slots on propulsion and "
                "{slots_G1} on architecture class. That ratio records how much detail the "

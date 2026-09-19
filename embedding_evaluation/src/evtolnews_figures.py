@@ -95,6 +95,46 @@ def src(source: str, tag: str | None = None, layer: int | None = None, pool: str
     return "; ".join(parts)
 
 
+
+# How to read each figure whose axes are not self-explanatory; printed under the figure and in its caption.
+_UMAP = ("each point is one aircraft (its main image). UMAP reduces each 1 024-number embedding to 2 numbers "
+         "so that aircraft with similar embeddings sit close together. The two axes are these 2 numbers: "
+         "they have no unit, no physical meaning and an arbitrary orientation. Only closeness is meaningful; "
+         "positions on the axes and distances between far-apart groups are not")
+READ = {
+    "f07_cosine": "x = cosine similarity between the embeddings of two images (1 = identical); each curve is "
+                  "the distribution over image pairs",
+    "f08_pca": "x = principal component, in order of the variance it explains; y = share of the variance "
+               "(log scale); dashed = a random matrix of the same shape",
+    "f09_distance": "x = cosine distance between the embeddings of two images; filled = a random matrix of the "
+                    "same shape",
+    "f10_dendrogram": "each leaf at the bottom is one aircraft; branches join aircraft whose embeddings are close; "
+                      "the height of a join (Ward distance) measures how different the two groups are; the "
+                      "strip gives each leaf's directory class",
+    "f11_umap_clusters": "left: " + _UMAP + ". Right: for each directory class, the share of its aircraft in "
+                         "each label-free cluster",
+    "f12_umap_class": _UMAP,
+    "f13_umap_facets": _UMAP + ". Each panel highlights one class on the same map",
+    "f14_umap_matrices": _UMAP + ". Each panel is a separate UMAP fit, so the maps are not aligned with each other",
+    "f15_umap_photo_patent": _UMAP + ". The two panels are separate UMAP fits and cannot be compared point by point",
+    "f16_umap_joint": _UMAP + ". One UMAP fit on both sources: left coloured by source, right by class",
+    "f17_contingency": "rows = directory class; columns = the five k-means clusters found without labels; "
+                       "numbers = aircraft; darker = larger share of the row",
+    "f21_confusion": "rows = true class; columns = the class kNN predicts; numbers = aircraft; the diagonal is "
+                     "correct; darker = larger share of the row",
+    "f23_parent": "rows = the human topType of the patent aircraft; columns = the directory class of its page; "
+                  "numbers = aircraft; outlined = the parent the codebook implies",
+    "f24_recall_at_k": "x = k, how many of the top-ranked aircraft are looked at (log scale); y = share of queries "
+                       "whose right aircraft is among them",
+    "f27_attention_classes": "red opacity = how much the CLS token attends to each 14 x 14 px patch, scaled per "
+                             "image; the image is shown in grey underneath",
+    "f28_attention_pairs": "red opacity = how much the CLS token attends to each 14 x 14 px patch, scaled per "
+                           "image; the image is shown in grey underneath",
+    "f29_attention_collapse": "left: median share of the CLS attention held by the single most attended patch; "
+                              "right: share of images whose most attended patch lies on the white padding",
+}
+
+
 class Figs:
     """Collects figures: PNG on disk + the record the document needs."""
 
@@ -104,12 +144,23 @@ class Figs:
         self.items: Dict[str, Dict[str, str]] = {}
 
     def save(self, fig, key: str, title: str, source: str, note: str = "", bottom: float = 0.035) -> None:
-        fig.text(0.005, 0.004, "Source: " + source, fontsize=5.8, color=MUTED, ha="left", va="bottom",
-                 wrap=True)
-        fig.tight_layout(rect=(0, bottom, 1, 1))
+        read = READ.get(key, "")
+        _stamp(fig, source, read)
+        fig.tight_layout(rect=(0, bottom + (0.03 if read else 0), 1, 1))
         fig.savefig(self.dir / f"{key}.png", bbox_inches="tight", pad_inches=0.06)
         plt.close(fig)
-        self.items[key] = {"file": f"figs/{key}.png", "title": title, "source": source, "note": note}
+        self.items[key] = {"file": f"figs/{key}.png", "title": title, "source": source, "note": note,
+                           "read": read}
+
+
+def _stamp(fig, source: str, read: str = "") -> None:
+    """Source line (and the how-to-read line) along the figure's lower edge."""
+    import textwrap
+    w = int(fig.get_figwidth() * 23)
+    lines = textwrap.wrap("Source: " + source, w)
+    if read:
+        lines += textwrap.wrap("How to read: " + read, w)
+    fig.text(0.005, 0.004, "\n".join(lines), fontsize=5.8, color=MUTED, ha="left", va="bottom")
 
 
 # ── data ────────────────────────────────────────────────────────────────────
@@ -186,9 +237,17 @@ def _scatter_classes(ax, emb: np.ndarray, y: np.ndarray, s: float = 7, alpha: fl
             placed.append((mx, my))
             ax.text(mx, my, c, fontsize=8, weight="bold", color=TEXT, ha="center", va="center", zorder=4,
                     bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=CLASS_COLOR[c], lw=0.8, alpha=0.9))
+    _umap_axes(ax)
+
+
+def _umap_axes(ax, small: bool = False) -> None:
+    """UMAP axes: labelled, no ticks (the values carry no meaning)."""
     ax.set_xticks([]); ax.set_yticks([])
     for sp in ("left", "bottom"):
         ax.spines[sp].set_color(GRID)
+    fs = 5.8 if small else 7
+    ax.set_xlabel("UMAP dimension 1 (no unit)", fontsize=fs, color=MUTED, labelpad=2)
+    ax.set_ylabel("UMAP dimension 2 (no unit)", fontsize=fs, color=MUTED, labelpad=2)
 
 
 def _class_legend(ax, y: np.ndarray | None = None, loc: str = "best", ncol: int = 1,
@@ -478,13 +537,13 @@ def fig_dendrogram(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool: s
     strip.text(-4, 0.5, "class", ha="right", va="center", fontsize=7, color=MUTED, transform=strip.transData)
     lax = fig.add_axes([0.05, 0.05, 0.93, 0.1]); lax.axis("off")
     _class_legend(lax, y, loc="center", ncol=5)
-    fig.text(0.005, 0.004, "Source: " + src("photo", tag, L, pool, "main", f"{len(y)} aircraft; "
-             "Ward linkage on PCA-90% (notebook 30), dashed line = cut at the best k-means k"),
-             fontsize=5.8, color=MUTED)
+    _stamp(fig, src("photo", tag, L, pool, "main", f"{len(y)} aircraft; Ward linkage on PCA-90% (notebook 30), "
+           "dashed line = cut at the best k-means k"), READ["f10_dendrogram"])
     fig.savefig(F.dir / "f10_dendrogram.png", bbox_inches="tight", pad_inches=0.06); plt.close(fig)
     F.items["f10_dendrogram"] = {"file": "figs/f10_dendrogram.png",
                                  "title": "Stage C: Ward dendrogram of the photo embeddings, leaves coloured by directory class",
-                                 "source": src("photo", tag, L, pool, "main", f"{len(y)} aircraft"), "note": ""}
+                                 "source": src("photo", tag, L, pool, "main", f"{len(y)} aircraft"), "note": "",
+                                 "read": READ["f10_dendrogram"]}
 
 
 def fig_umap_clusters(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool: str = REF[2]) -> pd.DataFrame:
@@ -507,7 +566,7 @@ def fig_umap_clusters(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool
         mx, my = np.median(emb[m], axis=0)
         ax.text(mx, my, f"C{j + 1}", fontsize=8.5, weight="bold", ha="center", va="center",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=col, lw=0.9))
-    ax.set_xticks([]); ax.set_yticks([]); ax.legend(loc="lower right", markerscale=1.6)
+    _umap_axes(ax); ax.legend(loc="lower right", markerscale=1.6)
     ax.set_title(f"k-means, k = {k} (best silhouette, notebook 30)")
     ct = pd.crosstab(pd.Series(lab + 1, name="cluster").map(lambda v: f"C{v}"), pd.Series(y, name="class"))
     ct = ct.reindex(columns=CLASSES, fill_value=0)
@@ -538,7 +597,7 @@ def fig_umap_class(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool: s
     emb = D.umap(f"photo_{tag}_L{L}_{pool}_main", X)
     fig, ax = plt.subplots(figsize=(7.4, 5.4))
     _scatter_classes(ax, emb, y, s=10)
-    _class_legend(ax, y, loc="upper center", ncol=3, anchor=(0.5, -0.01))
+    _class_legend(ax, y, loc="upper center", ncol=3, anchor=(0.5, -0.06))
     ax.set_title(f"UMAP of the photo embeddings, {mat_name(L, pool)}, coloured by directory class")
     F.save(fig, "f12_umap_class", "Stage C: UMAP of the photo embeddings coloured by the directory class",
            src("photo", tag, L, pool, "main", f"{len(y)} aircraft; UMAP n_neighbors 15, min_dist 0.1, "
@@ -549,7 +608,7 @@ def fig_umap_class(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool: s
         m = y == c
         ax.scatter(emb[m, 0], emb[m, 1], s=6, c=CLASS_COLOR[c], marker=CLASS_MARK[c], lw=0)
         ax.set_title(f"{c} ({m.sum()})", color=TEXT)
-        ax.set_xticks([]); ax.set_yticks([])
+        _umap_axes(ax, small=True)
     F.save(fig, "f13_umap_facets", "Stage C: the same UMAP map, one class highlighted per panel",
            src("photo", tag, L, pool, "main", f"{len(y)} aircraft"))
 
@@ -593,7 +652,7 @@ def fig_umap_joint(F: Figs, D: Data, tag: str = REF[0], L: int = REF[1], pool: s
     ax.scatter(emb[:n, 0], emb[:n, 1], s=6, c=INK["photo"], lw=0, alpha=0.7, label=f"photos ({n})")
     ax.scatter(emb[n:, 0], emb[n:, 1], s=6, c=INK["patent"], marker="s", lw=0, alpha=0.8,
                label=f"patent figures ({len(Xa)})")
-    ax.legend(loc="lower left", markerscale=1.8); ax.set_xticks([]); ax.set_yticks([])
+    ax.legend(loc="lower left", markerscale=1.8); _umap_axes(ax)
     ax.set_title("one map for both sources: coloured by source")
     ax = axes[1]
     _scatter_classes(ax, emb, np.concatenate([yp, ya]), s=6)

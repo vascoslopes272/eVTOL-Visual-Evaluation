@@ -60,13 +60,8 @@ HEATMAP_FIELDS = [
 
 
 def fill_rate_matrix(ds: Dataset, fields: Optional[List[str]] = None) -> pd.DataFrame:
-    """Fill rate of each field on all aircraft, on winged aircraft, on boomed aircraft.
-
-    Rule 1 (2026-09-19): a value an override hides is not determinable, so that aircraft
-    leaves the cell's base instead of counting as unanswered (``attrs['left_out']``).
-    """
+    """Fill rate of each field on all aircraft, on winged aircraft, on boomed aircraft."""
     v = ds.variants
-    dd = ds.data_dictionary
     winged = pd.to_numeric(v["wCount"], errors="coerce").fillna(0) > 0
     boomed = v["boomsPresent"].fillna(False).astype(bool)
     conditions = {
@@ -75,17 +70,12 @@ def fill_rate_matrix(ds: Dataset, fields: Optional[List[str]] = None) -> pd.Data
         f"booms present (n={int(boomed.sum())})": boomed,
     }
     fields = [f for f in (fields or HEATMAP_FIELDS) if f in v.columns]
-    rows, left = {}, {}
+    rows = {}
     for f in fields:
-        hidden = a2.hidden_by_override(v, f, dd)
-        if hidden.any():
-            left[a2.FIELD_NAMES.get(f, f)] = int(hidden.sum())
         rows[a2.FIELD_NAMES.get(f, f)] = {
-            name: float(v.loc[mask & ~hidden, f].notna().mean()) for name, mask in conditions.items()
+            name: float(v.loc[mask, f].notna().mean()) for name, mask in conditions.items()
         }
-    out = pd.DataFrame(rows).T
-    out.attrs["left_out"] = left
-    return out
+    return pd.DataFrame(rows).T
 
 
 def fill_rate_heatmap(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
@@ -250,12 +240,9 @@ def class_balance_bars(balance: pd.DataFrame, path: Optional[Path] = None) -> pl
     df = balance
     fig, ax = plt.subplots(figsize=(6.4, 3.1))
     y = np.arange(len(df))[::-1]
-    # the unclassifiable row (G1 override, rule 1) is drawn white: beside the classes, not one of them
-    ax.barh(y, df["count"], color=[GREYS[2] if pd.notna(s) else "white" for s in df["share"]],
-            edgecolor="black", linewidth=0.5)
+    ax.barh(y, df["count"], color=GREYS[2], edgecolor="black", linewidth=0.5)
     for yi, c, s in zip(y, df["count"], df["share"]):
-        ax.text(c + df["count"].max() * 0.015, yi,
-                f"{int(c)}  ({s:.2f})" if pd.notna(s) else f"{int(c)}  (no type)", va="center",
+        ax.text(c + df["count"].max() * 0.015, yi, f"{int(c)}  ({s:.2f})", va="center",
                 fontsize=8)
     ax.set_yticks(y)
     ax.set_yticklabels(df["name"], fontsize=8.5)

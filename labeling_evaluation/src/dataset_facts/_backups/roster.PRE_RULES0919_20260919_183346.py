@@ -12,7 +12,7 @@ from typing import Dict
 import pandas as pd
 
 from . import a2
-from .loaders import Dataset, override_sets
+from .loaders import Dataset
 
 #: the flags, in the order the summary prints them
 #: readability ("Impossible") is deliberately NOT a flag here: every flag in the
@@ -27,7 +27,7 @@ FLAGS = {
     "m1_uncertain": "annotator unsure at M1",
     "m2_uncertain": "annotator unsure at M2",
     "t1_uncertain": "annotator unsure at T1",
-    "quickOverride": "a stage override (G1: no type; M1, M2: fields not determinable; M3: count only)",
+    "quickOverride": "quick count override (no architecture type by design)",
     "d3_duplicate": "S3 - a similar aircraft, relabelled in full",
     "d3_identical_to_root": "S3 identical to its original on all seven archetype fields",
     "window_partial": "priority year in the truncated window",
@@ -72,8 +72,7 @@ def analysis_set(ds: Dataset, partial_window_start: int = 2024) -> pd.DataFrame:
         "m1_uncertain": flag("m1_humanUncertain").to_numpy(),
         "m2_uncertain": flag("m2_humanUncertain").to_numpy(),
         "t1_uncertain": flag("t1_humanUncertain").to_numpy(),
-        # rule 1 (2026-09-19): every stage override, not only G1 (notebook 04's overrides column)
-        "quickOverride": override_sets(v).map(bool).to_numpy(dtype=bool),
+        "quickOverride": flag("g1_quickOverride").to_numpy(),
         "d3_duplicate": v["dup_type"].eq(3).fillna(False).to_numpy(dtype=bool),
         "d3_identical_to_root": [
             (p, s) in d3_identical for p, s in zip(v["patent_id"], v["variant"])

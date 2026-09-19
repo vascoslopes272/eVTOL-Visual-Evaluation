@@ -14,21 +14,10 @@ import numpy as np
 import pandas as pd
 
 from . import metrics
-from .loaders import (M3_STATIONS, NO_UNITS_TYPES, Dataset, hidden_by_override,
-                      override_sets)
+from .loaders import Dataset
 
 #: the T2 value that says a figure shows the whole aircraft
 WHOLE_VEHICLE = "Whole Vehicle Layout"
-#: the flight states a figure can be drawn in (T2 acState, R2-02), in reading order. Each is its
-#: own slot in every tally: Both is never pooled with Other or Invariant, and a value outside
-#: this list is reported, never dropped (:func:`acstate_counts`).
-ACSTATE_ORDER = ["Hover", "Transition", "Cruise", "Invariant", "Both", "Other"]
-#: how to read the flight state (rulings 2026-09-19), printed under every acState figure/table
-ACSTATE_READ = ("Hover, Transition and Cruise are read from the angle of the moving part. Invariant = "
-                "nothing in the drawing depends on the configuration. Both = the moving part drawn in two "
-                "positions with equal weight. Other = no configuration can be read. A part drawn solid in "
-                "one position and dashed in the other is recorded as the solid one. The six are never "
-                "pooled")
 #: the figure quality flags, in the wizard's own vocabulary
 QUALITY_NAMES = {"clean": "Clean", "generic": "Partial quality", "Partial Quality": "Partial quality",   # 04 writes the wizard name since 2026-09-18
                  "poor_quality": "Poor quality"}
@@ -398,18 +387,6 @@ FIGURE_SLOTS = {
 }
 
 
-def acstate_counts(states: pd.Series) -> pd.Series:
-    """Figures per flight state: every state of :data:`ACSTATE_ORDER` (zeros kept), then any
-    value outside it under its own name. ``attrs['unknown']`` lists those values, so a new
-    state is reported, never dropped or pooled."""
-    s = states.replace("", np.nan).dropna().astype(str)
-    counts = s.value_counts()
-    unknown = [k for k in counts.index if k not in ACSTATE_ORDER]
-    out = counts.reindex(ACSTATE_ORDER + unknown, fill_value=0).astype(int)
-    out.attrs["unknown"] = {k: int(counts[k]) for k in unknown}
-    return out
-
-
 def d2_figure_slots(ds: Dataset) -> pd.DataFrame:
     """The figure-level (T2) slots, profiled over the approved figures.
 
@@ -434,56 +411,26 @@ def d2_figure_slots(ds: Dataset) -> pd.DataFrame:
 
 
 def d2_figure_slot_answers(ds: Dataset, top: int = 4) -> pd.DataFrame:
-    """The most common answers of each figure-level (T2) slot, with counts.
-
-    The flight state lists every state, zeros included (Both and Other each keep their own
-    slot, rulings 2026-09-19); ``attrs['acstate_unknown']`` holds any state outside the list.
-    """
+    """The most common answers of each figure-level (T2) slot, with counts."""
     figs = ds.approved_figures
     rows = []
-    out_attrs = {}
     for col, name in FIGURE_SLOTS.items():
         if col not in figs.columns:
             continue
-        if col == "acState":
-            counts = acstate_counts(figs[col])
-            out_attrs["acstate_unknown"] = counts.attrs["unknown"]
-            answers = " · ".join(f"{k} {v}" for k, v in counts.items())
-        else:
-            counts = figs[col].dropna().astype(str).value_counts()
-            answers = " · ".join(f"{k} {v}" for k, v in counts.head(top).items())
-        rows.append({"slot": name, "answered": int(counts.sum()), "most common answers": answers})
-    out = pd.DataFrame(rows)
-    out.attrs.update(out_attrs)
-    return out
+        counts = figs[col].dropna().astype(str).value_counts()
+        rows.append({
+            "slot": name, "answered": int(counts.sum()),
+            "most common answers": " · ".join(f"{k} {v}" for k, v in counts.head(top).items()),
+        })
+    return pd.DataFrame(rows)
 
 
 # --------------------------------------------------------------------------
 # D3 — class balance
 # --------------------------------------------------------------------------
-#: the row that states the aircraft without a type beside the type totals (rule 1)
-UNCLASSIFIABLE = "Unclassifiable (G1 override)"
-
-
-def unclassifiable(v: pd.DataFrame) -> pd.Series:
-    """True for the aircraft a G1 override leaves without a type (rule 1, 2026-09-19)."""
-    return override_sets(v).map(lambda s: "G1" in s).astype(bool) & v["topType"].isna()
-
-
-def d3_architecture_balance(ds: Dataset, with_unclassifiable: bool = True) -> pd.DataFrame:
-    """The architecture type is well balanced for a twelve-class variable.
-
-    Shares are of the classified aircraft. The last row states the aircraft a G1 override
-    leaves without a type (rule 1): they are counted beside the classes, never inside one.
-    """
-    out = metrics.share_table(ds.variants["topType"], names=metrics.ARCH_NAMES)
-    n_unc = int(unclassifiable(ds.variants).sum())
-    out.attrs["unclassifiable"] = n_unc
-    if with_unclassifiable and n_unc:
-        out = pd.concat([out, pd.DataFrame([{"name": UNCLASSIFIABLE, "value": "", "count": n_unc,
-                                             "share": np.nan}])], ignore_index=True)
-        out.attrs["unclassifiable"] = n_unc
-    return out
+def d3_architecture_balance(ds: Dataset) -> pd.DataFrame:
+    """The architecture type is well balanced for a twelve-class variable."""
+    return metrics.share_table(ds.variants["topType"], names=metrics.ARCH_NAMES)
 
 
 #: the fields the document prints in full under D3
@@ -518,256 +465,42 @@ def _group_columns(ds: Dataset, suffix: str) -> List[str]:
 #: section M3. ``boom_count`` is the units carried on the booms; the number of
 #: booms is ``boom1_count``..``boom6_count`` in M1. The ``_t<N>_`` columns split
 #: a carrier's units by type and are already inside the carrier total, so adding
-#: them would double-count. Kept for the batch-reader fallback of :func:`propulsor_units`;
-#: the analysis reads notebook 04's ``propulsor_units`` (rule 1, 2026-09-19).
+#: them would double-count.
 PROPULSOR_UNIT_COLUMNS = [
     "boom_count", "wing1_count", "wing2_count", "wing3_count",
     "emp_count", "fuselage_count", "hull_array_count", "core_layout_count",
 ]
 
-#: why a propulsion value is left out, in the order the reasons are reported
-LEFT_OUT_HBPFV = "HB/PFV: no propulsor record (codebook)"
-LEFT_OUT_G1 = "G1 override: no type"
-LEFT_OUT_NONE = "no propulsor recorded"
-LEFT_OUT_M3 = "M3 override: station detail not kept"
-LEFT_OUT_M3_COUNT = "M3 override without a quick count"
-LEFT_OUT_M2 = "M2 override: wing or tail tilt not determinable"
-LEFT_OUT_M1 = "M1 override: boom groups not determinable"
-#: the archetype value of a type the codebook gives no propulsor card (HB, PFV)
-NO_M3_CARD = "n/a (no M3 card)"
-
-
-def _s(v) -> str:
-    if v is None or v is pd.NA or (isinstance(v, float) and np.isnan(v)):
-        return ""
-    s = str(v).strip()
-    return "" if s in ("nan", "None", "NaT", "<NA>") else s
-
-
-def _n(v) -> int:
-    s = _s(v)
-    if s in ("", "False"):
-        return 0
-    if s == "True":
-        return 1
-    try:
-        return int(float(s))
-    except ValueError:
-        return 0
-
-
-def _reason_of(note: str) -> str:
-    """Notebook 04's ``propulsor_units_note`` -> one short reason (the first that applies)."""
-    if re.match(r"^(HB|PFV):", note):
-        return LEFT_OUT_HBPFV
-    if "G1 override" in note:
-        return LEFT_OUT_G1
-    if "without a quick count" in note:
-        return LEFT_OUT_M3_COUNT
-    return note
-
-
-def propulsor_units(v: pd.DataFrame) -> pd.DataFrame:
-    """Total non-control propulsors per aircraft (rule 1), and why a blank is blank.
-
-    Read from notebook 04's ``propulsor_units``: the quick count on a count-only
-    (overridden) station; blank for HB/PFV (the codebook gives them no propulsor record),
-    after a G1 override, and when an overridden station has no quick count. A blank is
-    never read as 0. Columns ``units`` (float, NaN = left out) and ``left_out`` (reason).
-    """
-    if "propulsor_units" in v.columns:
-        units = pd.to_numeric(v["propulsor_units"], errors="coerce").astype(float)
-        note = v.get("propulsor_units_note", pd.Series("", index=v.index)).map(_s)
-        reason = [(_reason_of(n) or "not determinable") if pd.isna(u) else "" for u, n in zip(units, note)]
-        return pd.DataFrame({"units": units, "left_out": reason}, index=v.index)
-    # batch-reader fallback: the loader already put the quick count on an overridden station
-    counts = [c for c in PROPULSOR_UNIT_COLUMNS if c in v.columns]
-    units = v[counts].apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=len(counts))
-    tt, ov = v["topType"].map(_s), override_sets(v)
-    reason = [LEFT_OUT_HBPFV if t in NO_UNITS_TYPES else LEFT_OUT_G1 if "G1" in o
-              else LEFT_OUT_M3_COUNT if pd.isna(u) else "" for t, o, u in zip(tt, ov, units)]
-    units = units.where(pd.Series(reason, index=v.index).eq(""))
-    return pd.DataFrame({"units": units.astype(float), "left_out": reason}, index=v.index)
-
-
-def _boom_categories(r: pd.Series, tilting_wings: set) -> set:
-    """Notebook 04's boom classes per (propeller-carrying boom group x boom-card rotor type):
-    on_tilting_wing, tilting (group ticked Booms tilt, or rotor propKin Tilt) or fixed."""
-    g = lambda c: r[c] if c in r.index else None
-    groups = []
-    for k in range(1, 7):
-        att, cnt = _s(g(f"boom{k}_attach")), _n(g(f"boom{k}_count"))
-        if (not att and cnt == 0) or _s(g(f"boom{k}_hasProps")) == "False":
-            continue
-        wi = _s(g(f"boom{k}_wingIdx"))
-        rides = (att in ("Wings", "Both") and bool(tilting_wings) and _s(g(f"boom{k}_onFixedPart")) != "True"
-                 and (wi in ("", "Multi") or (re.fullmatch(r"W\d", wi) is not None and int(wi[1]) in tilting_wings)))
-        groups.append((rides, _s(g(f"boom{k}_tilts")) == "True"))
-    nt = _n(g("boom_ntypes")) or 1
-    kinds = []
-    for pre in ([f"boom_t{t}_" for t in range(1, nt + 1)] if nt > 1 else ["boom_"]):
-        if _n(g(pre + "count")) > 0 and _s(g(pre + "ctrlOnly")) != "True":
-            kinds.append(_s(g(pre + "propKin")))
-    cats = set()
-    for pk in kinds:
-        for rides, ticked in (groups or [(False, False)]):
-            cats.add("on_tilting_wing" if rides else "tilting" if (ticked or pk == "Tilt") else "fixed")
-    return cats
-
-
-def _boom_state(cats: set) -> str:
-    if not cats:
-        return "none"
-    return next(iter(cats)) if len(cats) == 1 else "mixed"
-
-
-def propulsion_states(v: pd.DataFrame) -> pd.DataFrame:
-    """Per aircraft: a tilting thrust source? a fixed one? a ducted unit? all units ducted?
-
-    A thrust source is every propulsion card (or each of its propeller types) with units that
-    are not control-only. It TILTS when the propulsor pivots on its own mount (propKin Tilt),
-    sits on a tilting wing, is on the empennage and the empennage tilts, or is on the boom
-    card and ``boom_thrust_state`` says so (rule 3, 2026-09-19: the boom tick carries the
-    tilt, so the boom card is read from notebook 04's state and never from the raw boom
-    propKin). Otherwise it is FIXED (user ruling 2026-09-18).
-
-    Rule 1 (2026-09-19): a value an override hides is not determinable, and it is never read
-    as none or Fixed. A count-only (M3 override) station has no tilt or duct detail; an M2
-    override hides the wing tilt; an M1 override hides the boom groups. An aircraft with no
-    propulsor record at all (HB/PFV by codebook, or nothing entered) has no answer either.
-    Each answer is True when a recorded source shows it, <NA> when a hidden part could
-    change it, else False; ``left_out`` gives the reason for a <NA> tilt answer.
-    """
-    ovs = override_sets(v)
-    bmech = [c for c in v.columns if c.endswith("_bmech")]
-    has_state = "boom_thrust_state" in v.columns
-    rows = []
-    for (_, r), ov in zip(v.iterrows(), ovs):
-        g = lambda c: r[c] if c in r.index else None
-        if _s(g("topType")) in NO_UNITS_TYPES:
-            rows.append((pd.NA, pd.NA, pd.NA, pd.NA, LEFT_OUT_HBPFV))
-            continue
-        tw = {k for k in range(1, 5) if _s(g(f"wing{k}_tilt")) == "Tilt"}
-        tilt = fixed = recorded = False
-        why = []                                   # hidden parts that could carry an answer
-        hidden_station = False
-        for card in M3_STATIONS:
-            if f"M3:{card}" in ov:
-                q = _s(g(f"{card}_quickCount"))
-                if not q or _n(q) > 0:             # units there, of unknown kind
-                    hidden_station = True
-                    recorded |= bool(q)
-                    why.append(LEFT_OUT_M3 if q else LEFT_OUT_M3_COUNT)
-                continue
-            if card == "boom":
-                continue                           # rule 3: read below from boom_thrust_state
-            nt = _n(g(f"{card}_ntypes")) or 1
-            for pre in ([f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]):
-                if _n(g(pre + "count")) <= 0 or _s(g(pre + "ctrlOnly")) == "True":
-                    continue
-                recorded = True
-                pk = _s(g(pre + "propKin"))
-                if pk == "Tilt":
-                    tilt = True
-                elif card.startswith("wing") or card == "emp":
-                    if "M2" in ov:
-                        why.append(LEFT_OUT_M2)
-                    elif (card == "emp" and _s(g("empTilts")) == "True") or \
-                            (card.startswith("wing") and int(card[4:]) in tw):
-                        tilt = True
-                    else:
-                        fixed = True
-                else:
-                    fixed = True
-        if "M3:boom" not in ov:
-            state = _s(g("boom_thrust_state")) if has_state else ""
-            if not state and "M1" not in ov:       # no notebook-04 state: the same rule, computed here
-                state = _boom_state(_boom_categories(r, tw))
-            if state == "":                        # an M1 override hides the boom groups
-                nt = _n(g("boom_ntypes")) or 1
-                pks = [_s(g(p + "propKin")) for p in ([f"boom_t{t}_" for t in range(1, nt + 1)] if nt > 1 else ["boom_"])
-                       if _n(g(p + "count")) > 0 and _s(g(p + "ctrlOnly")) != "True"]
-                if pks:
-                    recorded = True
-                    tilt |= "Tilt" in pks
-                    why.append(LEFT_OUT_M1)
-            elif state != "none":
-                recorded = True
-                tilt |= state in ("tilting", "on_tilting_wing", "mixed")
-                fixed |= state == "fixed" or (state == "mixed" and "fixed" in _boom_categories(r, tw))
-        if not recorded and not hidden_station:
-            rows.append((pd.NA, pd.NA, pd.NA, pd.NA, LEFT_OUT_NONE))
-            continue
-        vals = [_s(g(c)) for c in bmech]
-        ducted, open_ = "Ducted" in vals, "Open" in vals
-        any_tilt = True if tilt else (pd.NA if why else False)
-        any_fixed = True if fixed else (pd.NA if why else False)
-        any_ducted = True if ducted else (pd.NA if hidden_station else False)
-        all_ducted = False if open_ else (pd.NA if hidden_station else ducted)
-        rows.append((any_tilt, any_fixed, any_ducted, all_ducted, "" if any_tilt is not pd.NA else why[0]))
-    out = pd.DataFrame(rows, columns=["any_tilting", "any_fixed", "any_ducted", "all_ducted", "left_out"],
-                       index=v.index)
-    for c in ("any_tilting", "any_fixed", "any_ducted", "all_ducted"):
-        out[c] = out[c].astype("boolean")
-    return out
-
-
-def thrust_states(v: pd.DataFrame) -> pd.DataFrame:
-    """Per aircraft: does it have a TILTING thrust source, and a FIXED one? (user ruling 2026-09-18)
-
-    The tilt columns of :func:`propulsion_states` (rules 1 and 3 of 2026-09-19 applied):
-    nullable booleans, <NA> where an override or a missing propulsor record leaves the
-    answer not determinable, with the reason in ``left_out``.
-    """
-    return propulsion_states(v)[["any_tilting", "any_fixed", "left_out"]]
-
-
-def left_out_summary(reasons: pd.Series) -> str:
-    """'30 HB/PFV: no propulsor record (codebook); 2 G1 override: no type' (blank reasons skipped)."""
-    counts = reasons[reasons.astype(str).ne("")].value_counts()
-    return "; ".join(f"{int(n)} {k}" for k, n in counts.items()) or "none"
-
 
 def d3_propulsor_units(ds: Dataset) -> Dict:
     """The propulsor groups, read across every carrier and tier.
 
-    A "group" is one row of one propulsor card: a wing panel, the empennage, the fuselage
-    or a hull array, at one of its up-to-three tiers. The boom card is not tallied by its
-    raw propKin (rule 3, 2026-09-19: the boom tick carries the tilt): its state comes from
-    ``boom_thrust_state``, one per aircraft. Units, tilt and ducting follow rule 1: a value
-    that is not determinable is left out and the number left out is reported.
+    A "group" is one row of one propulsor card: a wing panel, a boom group, the
+    empennage, the fuselage or a hull array, at one of its up-to-three tiers.
     """
     v = ds.variants
-    kin = [c for c in _group_columns(ds, "_propKin") if not c.startswith("boom_")]
+    kin = _group_columns(ds, "_propKin")
+    bmech = _group_columns(ds, "_bmech")
+    counts = [c for c in PROPULSOR_UNIT_COLUMNS if c in v.columns]
+
     kin_all = pd.concat([v[c] for c in kin]).value_counts()
-    st = propulsion_states(v)
-    pu = propulsor_units(v)
-    units = pu["units"].dropna()
-    tilt, fixed = st["any_tilting"], st["any_fixed"]
-    mix = tilt & fixed
-    bts = v["boom_thrust_state"].fillna("not determinable").value_counts() if "boom_thrust_state" in v.columns \
-        else pd.Series(dtype=int)
+    ducted_per_aircraft = v[bmech].eq("Ducted").any(axis=1)
+    open_per_aircraft = v[bmech].eq("Open").any(axis=1)
+    _ts = thrust_states(v)                                       # per thrust source, wing / boom / tail tilt included
+    tilt, fixed = _ts["any_tilting"], _ts["any_fixed"]
+    units = v[counts].apply(pd.to_numeric, errors="coerce").sum(axis=1)
     return {
         "groups_fixed": int(kin_all.get("Fixed", 0)),
         "groups_tilting": int(kin_all.get("Tilt", 0)),
         "groups_other": int(kin_all.get("Other", 0)),
-        **{f"aircraft_boom_thrust_{k}": int(bts.get(k, 0))
-           for k in ("fixed", "tilting", "on_tilting_wing", "mixed", "not determinable")},
-        "aircraft_with_a_ducted_unit": int(st["any_ducted"].sum()),
-        "ducted_base": int(st["any_ducted"].notna().sum()),
-        "aircraft_all_units_ducted": int(st["all_ducted"].sum()),
-        "all_ducted_base": int(st["all_ducted"].notna().sum()),
+        "aircraft_with_a_ducted_unit": int(ducted_per_aircraft.sum()),
+        "aircraft_all_units_ducted": int((ducted_per_aircraft & ~open_per_aircraft).sum()),
         "aircraft_with_a_tilting_unit": int(tilt.sum()),
-        "aircraft_mixing_fixed_and_tilting": int(mix.sum()),
-        "tilting_base": int(tilt.notna().sum()),
-        "mixing_base": int(mix.notna().sum()),
-        "tilting_left_out": left_out_summary(st["left_out"]),
-        "units_n": int(len(units)),
+        "aircraft_mixing_fixed_and_tilting": int((tilt & fixed).sum()),
         "units_median": float(units.median()),
         "units_q1": float(units.quantile(0.25)),
         "units_q3": float(units.quantile(0.75)),
         "aircraft_with_more_than_8_units": int((units > 8).sum()),
-        "units_left_out": left_out_summary(pu["left_out"]),
     }
 
 
@@ -786,31 +519,23 @@ D4_CHECKS = [
 
 
 def d4_missingness(ds: Dataset) -> pd.DataFrame:
-    """A blank is a labelling gap only where the parent field says the part exists.
-
-    Rule 1 (2026-09-19): where an override hides the parent or the child field, the blank
-    is not a gap but a value that is not determinable. Those aircraft are left out of the
-    check and counted in ``left out (override)``.
-    """
+    """A blank is a labelling gap only where the parent field says the part exists."""
     v = ds.variants
-    dd = ds.data_dictionary
     winged = pd.to_numeric(v["wCount"], errors="coerce").fillna(0) > 0
     rows = []
     for label, parent, child in D4_CHECKS:
-        hidden = hidden_by_override(v, child, dd)
         if parent is None:
             mask = pd.Series(True, index=v.index)
+        elif parent[1] == "winged":
+            mask = winged
         else:
-            hidden = hidden | hidden_by_override(v, parent[0], dd)
-            mask = winged if parent[1] == "winged" else v[parent[0]].fillna(False).astype(bool)
-        mask = mask & ~hidden
+            mask = v[parent[0]].fillna(False).astype(bool)
         blank = v.loc[mask, child].isna()
         rows.append({
             "check": label,
             "affected": int(blank.sum()),
             "of": int(mask.sum()),
             "share": round(float(blank.mean()) if mask.sum() else 0.0, 3),
-            "left out (override)": int(hidden.sum()),
         })
     return pd.DataFrame(rows)
 
@@ -846,20 +571,59 @@ def archetype_frame(ds: Dataset) -> pd.DataFrame:
 
     ``boomBin`` bins the number of booms (``boom1_count`` .. ``boom6_count``, the
     M1 structural count — not ``boom_count``, which is the propulsor units the
-    booms carry); ``anyTilt`` is true when any propulsor group tilts (wing / boom / tail tilt
-    count too, 2026-09-18) and <NA> when an override leaves it not determinable (rule 1).
-    HB and PFV have no propulsor card by design, so their ``anyTilt`` is the explicit value
-    ``n/a (no M3 card)``: a design absence kept as its own answer, like a blank tail in A2,
-    and never read as "no tilting unit". An M1 override leaves ``boomBin`` blank.
+    booms carry); ``anyTilt`` is true when any propulsor group tilts.
     """
     v = ds.variants[ds.variants["topType"].notna()].copy()
     boom_cols = [c for c in v.columns if re.match(r"boom\d_count$", c)]
     v["nBooms"] = v[boom_cols].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1).astype(int)
-    v["boomBin"] = boom_bin(v["nBooms"]).where(~override_sets(v).map(lambda s: "M1" in s).astype(bool))
-    ts = thrust_states(v)
-    v["anyTilt"] = ts["any_tilting"].astype(object).where(ts["any_tilting"].notna(), None)
-    v.loc[ts["left_out"].eq(LEFT_OUT_HBPFV), "anyTilt"] = NO_M3_CARD
+    v["boomBin"] = boom_bin(v["nBooms"])
+    v["anyTilt"] = thrust_states(v)["any_tilting"]            # wing / boom / tail tilt count too (2026-09-18)
     return v
+
+
+def thrust_states(v: pd.DataFrame) -> pd.DataFrame:
+    """Per aircraft: does it have a TILTING thrust source, and a FIXED one? (user ruling 2026-09-18)
+
+    A thrust source is every propulsion card (or each of its propeller types) with units that are not control-only.
+    It TILTS when the propulsor pivots on its own mount (propKin = Tilt), OR it sits on a tilting wing (wingN_tilt =
+    Tilt), OR it is the boom card and a boom group tilts — itself, or because it is fixed to a tilting wing — OR it is
+    the empennage card and the empennage tilts —
+    the same things the wizard counts as "this record moves". Otherwise it is FIXED. Before this, only propKin was
+    read, so every Tilt Wing (propulsors bolted to a wing that tilts) read as "no tilting unit".
+    """
+    def num(x):
+        s = str(x)
+        if s in ("True",): return 1
+        if s in ("", "False", "nan", "None", "<NA>"): return 0
+        try: return int(float(s))
+        except ValueError: return 0
+    cards = ["wing1", "wing2", "wing3", "wing4", "fuselage", "emp", "boom", "hull_array", "core_layout"]
+    tilt, fixed = [], []
+    for _, r in v.iterrows():
+        g = lambda c: r[c] if c in r.index else ""
+        tw = {n for n in range(1, 5) if str(g(f"wing{n}_tilt")) == "Tilt"}
+        groups = []                                   # per boom group: does it tilt? (itself, or riding a tilting wing)
+        for i in range(1, 7):
+            att = str(g(f"boom{i}_attach"))
+            if att in ("", "nan", "None") and num(g(f"boom{i}_count")) == 0: continue
+            wi = str(g(f"boom{i}_wingIdx")); wi = "" if wi in ("nan", "None", "<NA>") else wi
+            rides = att in ("Wings", "Both") and bool(tw) and (wi in ("", "Multi") or (wi[1:].isdigit() and int(wi[1:]) in tw))
+            rides = rides and str(g(f"boom{i}_onFixedPart")) != "True"   # wizard v15.16: on the part of the wing that does not tilt
+            groups.append(str(g(f"boom{i}_tilts")) == "True" or rides)
+        boom_tilts, boom_fixed = any(groups), any(not x for x in groups)
+        t_any = f_any = False
+        for card in cards:
+            nt = num(g(f"{card}_ntypes")) or 1
+            pres = [f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]
+            for pre in pres:
+                if num(g(pre + "count")) <= 0 or str(g(pre + "ctrlOnly")) == "True": continue
+                pk = str(g(pre + "propKin"))
+                t = (pk == "Tilt" or (card.startswith("wing") and str(g(f"{card}_tilt")) == "Tilt")
+                     or (card == "emp" and str(g("empTilts")) == "True") or (card == "boom" and boom_tilts))
+                t_any |= t
+                f_any |= (not t) or (card == "boom" and boom_tilts and boom_fixed and pk != "Tilt")
+        tilt.append(t_any); fixed.append(f_any)
+    return pd.DataFrame({"any_tilting": tilt, "any_fixed": fixed}, index=v.index)
 
 
 def d5_archetype_cardinality(ds: Dataset, levels: Optional[Dict] = None) -> pd.DataFrame:
@@ -868,31 +632,21 @@ def d5_archetype_cardinality(ds: Dataset, levels: Optional[Dict] = None) -> pd.D
     An archetype is the string formed by joining the chosen fields; *distinct
     archetypes* counts those strings, *singletons* the strings holding exactly one
     aircraft, and the *effective number* is exp of the Shannon entropy of their
-    shares. Rule 1 (2026-09-19): an aircraft whose level field is not determinable
-    (hidden by an override, or no propulsor record for ``anyTilt``) is left out of that
-    level and counted in ``left out``; a blank is never read as a value.
+    shares.
     """
     v = archetype_frame(ds)
     rows = []
     for name, spec in (levels or ARCHETYPE_LEVELS).items():
         fields, label = spec if isinstance(spec, tuple) else (spec, ", ".join(spec))
-        # only what an override hides (or an anyTilt / boomBin that is not determinable) is
-        # left out; any other blank stays a design absence, as in 3.3.2
-        left = pd.Series(False, index=v.index)
-        for f in fields:
-            left |= v[f].isna() if f in ("anyTilt", "boomBin") else hidden_by_override(v, f, ds.data_dictionary)
-        known = ~left
-        sub = v[known]
-        key = sub[fields].astype(str).agg(" | ".join, axis=1)
+        key = v[fields].astype(str).agg(" | ".join, axis=1)
         counts = key.value_counts()
         rows.append({
             "level": name,
             "fields combined": label,
-            "aircraft": int(len(sub)),
-            "left out": int((~known).sum()),
+            "aircraft": int(len(v)),
             "distinct archetypes": int(len(counts)),
             "singletons": int((counts == 1).sum()),
-            "singleton share": round(float((counts == 1).sum() / len(sub)), 3) if len(sub) else 0.0,
+            "singleton share": round(float((counts == 1).sum() / len(v)), 3),
             "effective number": round(metrics.effective_number(key), 1),
         })
     return pd.DataFrame(rows)
@@ -907,20 +661,12 @@ D6_FLAGS = {
     "Annotator unsure at M2": "m2_humanUncertain",
     "Annotator unsure at T1": "t1_humanUncertain",
     "Annotator unsure at M1": "m1_humanUncertain",
-}
-#: the stage overrides, one row each (rule 1, 2026-09-19)
-D6_OVERRIDES = {
-    "Stage override at G1 (no type)": "G1",
-    "Stage override at M1 (structure not determinable)": "M1",
-    "Stage override at M2 (wings and tail not determinable)": "M2",
-    "Stage override at an M3 station (count only)": "M3",
+    "Quick count override": "g1_quickOverride",
 }
 
 
 def d6_weak_labels(ds: Dataset) -> pd.DataFrame:
-    """The annotator's own uncertainty flags, the stage overrides split by stage, and the
-    unreadable figures. One aircraft can carry overrides at several stages, so the
-    stage rows can add up to more than the "any stage override" row."""
+    """The annotator's own uncertainty flags, plus the unreadable figures."""
     v = ds.variants
     rows = []
     for label, col in D6_FLAGS.items():
@@ -931,17 +677,12 @@ def d6_weak_labels(ds: Dataset) -> pd.DataFrame:
             "column": col,
             "aircraft": int(v[col].fillna(False).astype(bool).sum()),
         })
-    ov = override_sets(v)
-    for label, stage in D6_OVERRIDES.items():
-        hit = ov.map(lambda s, st=stage: any(t == st or t.startswith(st + ":") for t in s))
-        rows.append({"flag": label, "column": "overrides", "aircraft": int(hit.sum())})
-    rows.append({"flag": "Any stage override", "column": "overrides", "aircraft": int(ov.map(bool).sum())})
     rows.append({
         "flag": 'Figure readability "Impossible"',
         "column": "dinoUnderstanding",
         "aircraft": int((v["dinoUnderstanding"].astype(str) == "Impossible").sum()),
     })
-    return pd.DataFrame(rows).sort_values("aircraft", ascending=False, kind="stable").reset_index(drop=True)
+    return pd.DataFrame(rows).sort_values("aircraft", ascending=False).reset_index(drop=True)
 
 
 # --------------------------------------------------------------------------

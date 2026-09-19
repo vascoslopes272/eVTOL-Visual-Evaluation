@@ -71,7 +71,9 @@ class Doc:
         self.k += 1
         f = self.figs[key]
         self.add(f'<figure class="{width}"><img src="{f["file"]}"><figcaption><strong>Figure {self.k}.</strong> '
-                 f'{f["title"]}.<span class="src">Source: {f["source"]}.</span></figcaption></figure>', "")
+                 f'{f["title"]}.<span class="src">Source: {f["source"]}.</span>'
+                 + (f'<span class="src"><strong>How to read:</strong> {f["read"]}.</span>' if f.get("read") else "")
+                 + '</figcaption></figure>', "")
 
     def table(self, title: str, df: pd.DataFrame, fmt: Dict[str, str] | None = None) -> None:
         self.t += 1
@@ -564,7 +566,7 @@ def write_brief(cfg: Dict[str, Any]) -> Path:
     d.add('<div style="break-before: page;"></div>', "", "## Evidence", "")
 
     d.add("### 1. Photographs carry the architecture class", "")
-    d.fig("f12_umap_class", "small")
+    d.fig("f12_umap_class", "wide")
     d.add(f"Each class occupies its own region of the map. Balanced accuracy: kNN-5 {bp.knn5_bal_acc:.2f}, "
           f"{bp.knn5_bal_acc_maker_out:.2f} with the maker held out, logistic probe {bp.probe_bal_acc_maker_out:.2f}; "
           f"shuffled labels reach {bp.knn5_perm_p95:.2f} at most. Clusters found without labels follow the classes "
@@ -597,7 +599,7 @@ def write_brief(cfg: Dict[str, Any]) -> Path:
           "itself, which makes matching trivial; the black curve excludes them and is the honest result.", "")
 
     d.add("### 6. The model looks at the aircraft, and in drawings also at their labels", "")
-    d.fig("f29_attention_collapse", "w75")
+    d.fig("f29_attention_collapse", "half")
     d.add(f"Layer 18 spreads the attention (strongest cell {ac.loc[('photo', 18), 'top_cell_share']:.0%}). From "
           f"layer 22 on a single cell takes {ac.loc[('photo', 24), 'top_cell_share']:.0%} to "
           f"{ac.loc[('patent', 24), 'top_cell_share']:.0%} of it, on the white padding in "

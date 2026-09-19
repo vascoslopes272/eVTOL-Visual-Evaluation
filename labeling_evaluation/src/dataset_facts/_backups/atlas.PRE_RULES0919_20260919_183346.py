@@ -135,78 +135,6 @@ def _legend_arch(fig, codes: List[str], loc="lower center", ncol=8, y=0.0):
     fig.legend(handles=handles, loc=loc, ncol=ncol, bbox_to_anchor=(0.5, y))
 
 
-# ------------------------------------------------ Source / How to read ------
-#: one colour per flight state, fixed (Both and Other each keep their own)
-STATE_COLOR = {"Hover": CAT[0], "Transition": CAT[3], "Cruise": CAT[1], "Invariant": CAT[2],
-               "Both": CAT[6], "Other": OTHER}
-TABLES_SRC = "aircraft_table.csv and figure_table.csv (notebook 04, rules of 2026-09-19)"
-
-
-def _note(fig, source: str, read: str = "") -> None:
-    """Attach the Source and How to read lines; :func:`render` prints them on the figure."""
-    fig._atlas_note = (source, read)
-
-
-def _stamp(fig, source: str, read: str = "") -> None:
-    """Source line (and the how-to-read line) along the figure's lower edge (the convention of
-    embedding_evaluation/src/evtolnews_figures.py)."""
-    import textwrap
-    w = int(fig.get_figwidth() * 17)
-    lines = textwrap.wrap("Source: " + source, w)
-    if read:
-        lines += textwrap.wrap("How to read: " + read, w)
-    fig.text(0.005, -0.02, "\n".join(lines), fontsize=7.2, color=INK2, ha="left", va="top")
-
-
-def table_caption(ds: Dataset, key: str) -> str:
-    """Markdown 'Source / How to read' lines for a notebook table the 2026-09-19 rules changed."""
-    from . import a3
-    v = ds.variants
-    n = len(v)
-    notes = {
-        "t2_answers": (
-            f"{TABLES_SRC}; T2 labels of the {len(ds.approved_figures)} approved whole-aircraft figures.",
-            "Answers with their figure counts, most common first; the flight state lists all six states, "
-            "zeros included. " + a2.ACSTATE_READ + "."),
-        "d4": (
-            f"{TABLES_SRC}; {n} unique aircraft.",
-            "A blank counts as a gap only where the parent field says the part exists. Where an override "
-            "hides the parent or the field, the value is not determinable: the aircraft is left out of the "
-            "check (left out column), never counted as a gap."),
-        "d6": (
-            f"{TABLES_SRC}; {n} unique aircraft; overrides from the overrides column.",
-            "Aircraft carrying each flag. Overrides are split by stage: after G1 the aircraft has no type, "
-            "after M1 or M2 the skipped fields are not determinable, at an M3 station only the count is "
-            "kept. One aircraft can hold overrides at several stages."),
-        "derived": (
-            f"{TABLES_SRC}; propulsor_units, boom_thrust_state and wing_thrust_carrier; {n} unique aircraft.",
-            "Each value is counted over the aircraft in 'of'; 'left out' are the aircraft where it cannot "
-            "be read: HB and PFV (no propulsor card), a G1 override, or a station whose detail an override "
-            "hides. A left-out aircraft is never read as 0, none or Fixed. Tilting booms come from the boom "
-            "tick (boom_thrust_state). The wing carries thrust when rotors sit on the wing card or on a "
-            "wing-attached boom."),
-        "d5": (
-            f"{TABLES_SRC}; {int(v['topType'].notna().sum())} classified unique aircraft.",
-            "Archetype = the chosen fields joined into one string. 'left out' = aircraft whose level field "
-            "an override hides; HB and PFV keep their own tilt value, n/a (no M3 card)."),
-        "balance": (
-            f"{TABLES_SRC}; topType of {n} unique aircraft.",
-            "Count and share of the classified aircraft per architecture class. The last row gives the "
-            "aircraft a G1 override leaves without a type; they sit beside the classes, never in one."),
-        "sensitivity": (
-            f"{TABLES_SRC}; {int(v['topType'].notna().sum())} classified unique aircraft, "
-            f"{int(v['wing_boom_candidate'].fillna(False).astype(bool).sum()) if 'wing_boom_candidate' in v else 0} "
-            "of them wing-boom candidates (boom or wing-card reading visually ambiguous).",
-            "Raw = the recorded boom and wing-card fields; pooled = does the wing carry thrust (wing card and "
-            "wing-attached boom count the same) plus the wing-borne unit count. Archetypes: fewer distinct "
-            "archetypes means raw archetypes merged; 'split' counts the aircraft that leave the pooled "
-            "archetype holding most of their raw one. Neighbours: an aircraft changes when its nearest "
-            "neighbours under the two Gower distances share no aircraft (ties kept)."),
-    }
-    src, read = notes[key]
-    return f"**Source:** {src}  \n**How to read:** {read}"
-
-
 # ------------------------------------------------------------ frames -------
 def _variants(ds: Dataset) -> pd.DataFrame:
     v = ds.variants.merge(
@@ -221,8 +149,8 @@ def _variants(ds: Dataset) -> pd.DataFrame:
     v["filer"] = np.select(
         [cc.eq(a2.CATCH_ALL[0]), cc.eq(a2.CATCH_ALL[1]) | cc.isna()],
         ["Individual inventor", "Unattributed / independent"], "Named company")
-    # rule 1 (2026-09-19): notebook 04's total, quick counts included; blank = not determinable
-    v["units"] = a2.propulsor_units(v)["units"].to_numpy()
+    units = [c for c in a2.PROPULSOR_UNIT_COLUMNS if c in v.columns]
+    v["units"] = v[units].apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
     return v
 
 
@@ -488,55 +416,32 @@ def fig_image_slots(ds, v, n):
     fig, axes = plt.subplots(len(slots), 1, figsize=PAGE, gridspec_kw={"hspace": 1.1})
     for ax, (col, title) in zip(axes, slots):
         s = f[col].replace("", np.nan).dropna().astype(str)
-        if col == "acState":
-            # every state keeps its own segment, Both included at zero; an unknown state is
-            # shown under its own name, never folded into another (rulings 2026-09-19)
-            counts = a2.acstate_counts(s)
-            top = counts / max(counts.sum(), 1)
-            colors = {k: STATE_COLOR.get(k, CAT[7]) for k in top.index}
-            legend = [f"{k} {int(c)}" for k, c in counts.items()]
-        else:
-            vc = s.value_counts(normalize=True)
-            top = vc.head(6)
-            if len(vc) > 6:
-                top["rest"] = vc.iloc[6:].sum()
-            colors = dict(zip(top.index, CAT[:len(top) - 1] + [OTHER] if "rest" in top.index
-                              else CAT[:len(top)]))
-            legend = None
+        vc = s.value_counts(normalize=True)
+        top = vc.head(6)
+        if len(vc) > 6:
+            top["other"] = vc.iloc[6:].sum()
         frame = pd.DataFrame([top.to_numpy()], columns=top.index, index=[""])
-        _stack_h(ax, frame, colors, min_label=0.04)
+        _stack_h(ax, frame, dict(zip(top.index, CAT[:len(top) - 1] + [OTHER] if "other" in top.index
+                                    else CAT[:len(top)])), min_label=0.04)
         ax.set_title(f"{title}  (n {len(s):,})".replace(",", " "), fontsize=10)
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles, legend or labels, loc="upper center", bbox_to_anchor=(0.5, -0.25), ncol=7, fontsize=8.5)
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.25), ncol=7, fontsize=8.5)
         ax.set_yticks([])
-    unknown = a2.acstate_counts(f["acState"]).attrs["unknown"]
-    _note(fig, f"{TABLES_SRC}; T2 labels of the {len(f)} approved whole-aircraft figures of the unique aircraft"
-          + (f"; flight states outside the codebook list: {unknown}" if unknown else "") + ".",
-          "Each bar is 100 % of the figures, one segment per answer. Flight state: " + a2.ACSTATE_READ
-          + ". Both has its own segment even at zero.")
     return fig, "3.2.1", "What the approved whole-aircraft figures look like"
 
 
 def fig_state_by_arch(ds, v, n):
     f = ds.approved_figures.merge(v[["aircraft_id", "atype"]], on="aircraft_id", how="inner")
     f = f[f["acState"].astype(str).ne("") & f["acState"].notna()]
-    # one column per state of the codebook list, Both included at zero; unknown states appended
-    states = a2.acstate_counts(f["acState"]).index.tolist()
+    states = f["acState"].value_counts().index.tolist()
     tab = pd.crosstab(f["atype"], f["acState"]).reindex(columns=states).fillna(0)
     tab = tab.reindex([c for c in ALL_ARCH if c in tab.index])
     share = tab.div(tab.sum(axis=1), axis=0)
     fig, ax = plt.subplots(figsize=PAGE)
     share.index = [f"{_arch_name(c)}  n {int(tab.loc[c].sum())}" for c in tab.index]
-    share.columns = [f"{c}\n({int(tab[c].sum())})" for c in share.columns]
     _heat(ax, share, vmax=1)
     ax.set_title("Flight state drawn, per architecture (row share of whole-aircraft figures)")
     ax.xaxis.tick_top()
     plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
-    n_untyped = int(ds.approved_figures["aircraft_id"].isin(set(v.loc[v["atype"].isna(), "aircraft_id"])).sum())
-    _note(fig, f"{TABLES_SRC}; {int(tab.values.sum())} approved whole-aircraft figures of classified aircraft"
-          + (f" ({n_untyped} figures of unclassifiable aircraft, G1 override, not drawn)" if n_untyped else "") + ".",
-          "Each row is one architecture and sums to 100 % of its figures; each column is one flight state "
-          "with its figure count under the name. " + a2.ACSTATE_READ + ".")
     return fig, "3.2.2", "Which flight state each architecture is drawn in"
 
 
@@ -561,14 +466,7 @@ def fig_arch_gt(ds, v, n):
     ax.set_yticks(y, [_arch_name(c) for c in order])
     ax.invert_yaxis()
     ax.legend(loc="lower right")
-    n_unc = int(a2.unclassifiable(v).sum())
-    ax.set_title(f"Architecture classes: {len(v) - n_unc} unique aircraft"
-                 + (f", {n_unc} unclassifiable (G1 override)" if n_unc else ""))
-    _note(fig, f"{TABLES_SRC}; topType (wizard) of {len(v)} unique aircraft and architecture_ground_truth.csv "
-          f"(whole-patent reading, {len(gt)} aircraft in both).",
-          "Left: aircraft per class, solid = figure label, hatched = ground truth; the "
-          f"{n_unc} aircraft a G1 override leaves without a type are counted in the title, not in a class. "
-          "Right: each row is a ground-truth class and sums to 100 %; the number in a cell is aircraft.")
+    ax.set_title(f"Architecture classes — {len(v)} unique aircraft")
     ax.spines[["left"]].set_visible(False)
     _hgrid(ax)
     # confusion: frozen figure label vs ground truth
@@ -713,12 +611,6 @@ def fig_fill(ds, v, n):
     fig, ax = plt.subplots(figsize=PAGE)
     _heat(ax, mat, vmax=1, cbar=True)
     ax.set_title("Conditional fill rate — share answered where the parent condition holds")
-    left = mat.attrs.get("left_out", {})
-    _note(fig, f"{TABLES_SRC}; {len(ds.variants)} unique aircraft.",
-          "Each cell is the share of aircraft that answer the field (row) among those meeting the condition "
-          "(column). A value an override hides is not determinable: that aircraft is left out of the cell, "
-          "never counted as unanswered" + (f" (left out: {', '.join(f'{k} {n}' for k, n in left.items())})"
-                                           if left else "") + ".")
     return fig, "3.3.6", "Where the labels are complete"
 
 
@@ -744,16 +636,6 @@ def _profile(v, col, top=8, labels=None):
 def fig_design_heatmaps(ds, v, n):
     af = a2.archetype_frame(ds)
     v2 = v.merge(af[["aircraft_id", "boomBin", "anyTilt"]], on="aircraft_id", how="left")
-    # rule 1: a value an override hides is shown as its own column, never as blank or "no"
-    nd = "not determinable"
-    v2["anyTilt"] = v2["anyTilt"].map(lambda x: "yes" if x is True else "no" if x is False
-                                      else x if isinstance(x, str) else nd)
-    left = {}
-    for col in ("wCount", "fusKin", "empType", "gearArch"):
-        hid = a2.hidden_by_override(v2, col, ds.data_dictionary)
-        if hid.any():
-            v2[col] = v2[col].astype(object).where(~hid, nd)
-            left[col] = int(hid.sum())
     panels = [("wCount", "Wings", {"0": "none", "1": "1 wing", "2": "2 wings", "3": "3 wings"}),
               ("fusKin", "Fuselage motion", None), ("boomBin", "Booms", None),
               ("anyTilt", "Any propulsor tilts", None), ("empType", "Tail type", None),
@@ -767,12 +649,6 @@ def fig_design_heatmaps(ds, v, n):
             ax.set_yticklabels([])
         ax.tick_params(axis="x", labelsize=8)
         ax.tick_params(axis="y", labelsize=8.5)
-    n_nd = int(v2["anyTilt"].eq(nd).sum())
-    _note(fig, f"{TABLES_SRC}; {int(v['atype'].notna().sum())} classified unique aircraft.",
-          "Each row is one architecture and sums to 100 % across a panel's columns. Any propulsor tilts reads "
-          "the boom tick for booms (boom_thrust_state); 'n/a (no M3 card)' marks HB and PFV, which have no "
-          f"propulsor card; 'not determinable' marks a value an override hides ({n_nd} for tilt"
-          + "".join(f", {n} for {c}" for c, n in left.items()) + "). Blank = design absence.")
     return fig, "3.3.7", "The design space — each architecture's answer profile (row shares)"
 
 
@@ -781,10 +657,10 @@ def fig_units(ds, v, n):
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=PAGE, gridspec_kw={"width_ratios": [1.3, 1], "wspace": 0.35})
     rng = np.random.default_rng(42)
     for i, c in enumerate(order):
-        u = v.loc[v["atype"].eq(c), "units"].dropna().to_numpy()   # rule 1: blank = left out, never 0
+        u = v.loc[v["atype"].eq(c), "units"].dropna()
+        u = u[u > 0].to_numpy()
         if not len(u):
-            ax.text(0.3, i, "no propulsor card (left out)" if c in a2.NO_UNITS_TYPES else "no unit total",
-                    va="center", fontsize=8.5, color=MUTED)
+            ax.text(0.3, i, "no propulsor count recorded", va="center", fontsize=8.5, color=MUTED)
             continue
         ax.scatter(np.clip(u, 0, 30) + rng.uniform(-0.25, 0.25, len(u)), i + rng.uniform(-0.25, 0.25, len(u)),
                    s=9, color=_color(c), alpha=0.55, lw=0)
@@ -794,37 +670,23 @@ def fig_units(ds, v, n):
             ax.plot(med, i, "o", color=SURFACE, mec=INK, ms=7, mew=1.8)
     ax.set_yticks(range(len(order)), [_arch_name(c) for c in order])
     ax.invert_yaxis()
-    ax.set_xlabel("propulsor units on the aircraft (capped at 30; quick counts included)")
+    ax.set_xlabel("propulsor units on the aircraft (capped at 30; aircraft with 0 counted left out)")
     ax.set_title("Propulsor units — dot = aircraft, bar = quartiles, ring = median")
     ax.spines[["left"]].set_visible(False)
     _hgrid(ax)
-    # rule 1: tilt, duct and unit answers that cannot be read are <NA> and leave the share's base;
-    # rule 3: the boom card is read from boom_thrust_state (the boom tick carries the tilt)
-    st = a2.propulsion_states(v)
-    units = pd.Series(v["units"].to_numpy(), index=v.index)
+    kin = a2._group_columns(ds, "_propKin")
+    bm = a2._group_columns(ds, "_bmech")
+    _ts = a2.thrust_states(v)                                  # wing / boom / tail tilt count as tilting (2026-09-18)
     feat = pd.DataFrame({
         "atype": v["atype"],
-        "tilting unit": st["any_tilting"],
-        "fixed + tilting": st["any_tilting"] & st["any_fixed"],
-        "ducted unit": st["any_ducted"],
-        "more than 8 units": (units > 8).astype("boolean").where(units.notna(), pd.NA),
+        "tilting unit": _ts["any_tilting"],
+        "fixed + tilting": _ts["any_tilting"] & _ts["any_fixed"],
+        "ducted unit": v[bm].eq("Ducted").any(axis=1),
+        "more than 8 units": v["units"] > 8,
     })
-    rows = [c for c in ALL_ARCH if c in feat["atype"].values]
-    g = feat.groupby("atype")
-    tab = g.agg(lambda s: float(s.dropna().astype(float).mean()) if s.notna().any() else np.nan)
-    tab = tab.reindex(rows).astype(float)
-    base = g["tilting unit"].agg(lambda s: int(s.notna().sum())).reindex(rows)
-    tab.index = [f"{c}  (n {int(base[c])} of {int((feat['atype'] == c).sum())})" for c in rows]
+    tab = feat.groupby("atype").mean().reindex([c for c in ALL_ARCH if c in feat["atype"].values])
     _heat(ax2, tab, vmax=1)
-    ax2.set_title("Share of aircraft with …, where it can be read")
-    pu = a2.propulsor_units(v)
-    _note(fig, f"{TABLES_SRC}; {len(v)} unique aircraft; unit total for {int(units.notna().sum())}, left out "
-          f"{a2.left_out_summary(pu['left_out'])}.",
-          "Left: one dot per aircraft; the bar spans the quartiles and the ring marks the median. An "
-          "overridden station counts its quick count; HB and PFV have no propulsor card and are left out, "
-          "never counted as 0. Right: share of each type's aircraft with the feature, over the aircraft where "
-          "it can be read (n of the type's total per row; tilt left out: "
-          f"{a2.left_out_summary(st['left_out'])}). A tilting boom is read from the boom tick.")
+    ax2.set_title("Share of aircraft with …")
     return fig, "3.3.8", "Propulsion"
 
 
@@ -838,14 +700,6 @@ def fig_archetypes(ds, v, n):
             p.set_facecolor(BLUE(0.6))
             p.set_hatch("")
         ax.set_title("")
-    left = {r["level"]: int(r["left out"]) for _, r in card.iterrows() if r.get("left out", 0)}
-    _note(fig, f"{TABLES_SRC}; {int(card['aircraft'].max())} classified unique aircraft"
-          + (f"; left out as not determinable: {', '.join(f'{k} {n}' for k, n in left.items())}" if left else "")
-          + ".",
-          "Left: archetypes holding one aircraft at each level, dashed line at 5 % of the aircraft. Right: "
-          "distinct archetypes (solid) against the effective number (dashed). An aircraft is left out of a "
-          "level when an override hides one of its fields; HB and PFV keep their own tilt value, n/a (no M3 "
-          "card).")
     return fig, "3.3.9", "Archetype levels — how many distinct designs each level of detail finds"
 
 
@@ -890,8 +744,6 @@ def render(ds: Dataset, out_dir: Path, values: Dict, filename: str = "PRELIMINAR
             fig, number, title = fn(ds, v, values)
             fig.suptitle(f"Figure {number} — {title}", x=0.02, y=0.995, ha="left",
                          fontsize=13, fontweight="bold", color=INK)
-            if getattr(fig, "_atlas_note", None):
-                _stamp(fig, *fig._atlas_note)
             slug = re.sub(r"[^a-z0-9]+", "_", fn.__name__[4:])
             png = png_dir / f"fig_{number.replace('.', '_')}_{slug}.png"
             fig.savefig(png, dpi=DPI, bbox_inches="tight", facecolor=SURFACE)

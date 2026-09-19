@@ -109,106 +109,6 @@ def _apply_kinds(df: pd.DataFrame, data_dictionary: Optional[pd.DataFrame],
     return df
 
 
-# --------------------------------------------------------------------------
-# rule 1 (ruling 2026-09-19): an override keeps only what it records
-# --------------------------------------------------------------------------
-#: "An override keeps only what it records. After a G1 override the aircraft has no type;
-#: after an M1 or M2 override the skipped fields are not determinable; at an M3 station
-#: only the propulsor count is kept. A value that is not determinable is never read as
-#: zero, none or Fixed. It is left out, and the number left out is reported."
-#: The wizard stores an overridden M3 station as ``<station>_count = 0`` and the real
-#: number in ``<station>_quickCount``; notebook 04 lists the overrides in ``overrides``.
-M3_STATIONS = ["fuselage", "wing1", "wing2", "wing3", "emp", "boom", "core_layout", "hull_array"]
-#: what a G1 override hides (notebook 04's HIDDEN_BY): the type, nothing else
-G1_HIDDEN = ("topType", "notPureArch")
-#: the labelling-process columns an override never hides
-OVERRIDE_PROCESS = ("humanUncertain", "quickOverride", "quickCount", "quickNote")
-#: architecture types the codebook gives no propulsor record (no M3 card)
-NO_UNITS_TYPES = ("HB", "PFV")
-
-
-def override_sets(frame: pd.DataFrame) -> pd.Series:
-    """The overrides ticked on each row, as a set of ``G1`` / ``M1`` / ``M2`` / ``M3:<station>``.
-
-    Read from notebook 04's ``overrides`` column; a frame without it (the batch reader)
-    falls back on the wizard's own ``*_quickOverride`` ticks.
-    """
-    if "overrides" in frame.columns:
-        return frame["overrides"].fillna("").astype(str).map(lambda s: frozenset(s.split("|")) - {""})
-
-    def tick(c):
-        return frame[c].map(lambda x: str(x) == "True") if c in frame.columns else pd.Series(False, index=frame.index)
-    parts = {s: tick(f"{s.lower()}_quickOverride") for s in ("G1", "M1", "M2")}
-    parts.update({f"M3:{st}": tick(f"{st}_quickOverride") for st in M3_STATIONS})
-    return pd.Series([frozenset(k for k, s in parts.items() if s.iat[i]) for i in range(len(frame))],
-                     index=frame.index)
-
-
-def override_stage(column: str, section: str) -> Optional[str]:
-    """The override that hides ``column`` (``G1`` / ``M1`` / ``M2`` / ``M3:<station>``), or None.
-
-    A count at an M3 station is not hidden: it is replaced by the quick count
-    (:func:`apply_overrides`).
-    """
-    if any(p.lower() in column.lower() for p in OVERRIDE_PROCESS):
-        return None
-    if section == "G1":
-        return "G1" if column in G1_HIDDEN else None
-    if section in ("M1", "M2"):
-        return section
-    if section == "M3":
-        st = next((s for s in M3_STATIONS if column.startswith(s + "_")), None)
-        if st is None or column in (f"{st}_count",):
-            return None
-        return f"M3:{st}"
-    return None
-
-
-def hidden_by_override(frame: pd.DataFrame, column: str,
-                       data_dictionary: Optional[pd.DataFrame]) -> pd.Series:
-    """True on the rows where an override hides ``column`` (the value is not determinable)."""
-    sections = {} if data_dictionary is None else dict(zip(data_dictionary["column"], data_dictionary["section"]))
-    stage = override_stage(column, str(sections.get(column, "")))
-    if stage is None:
-        return pd.Series(False, index=frame.index)
-    return override_sets(frame).map(lambda s: stage in s).astype(bool)
-
-
-def apply_overrides(m: pd.DataFrame, data_dictionary: Optional[pd.DataFrame]) -> Dict[str, int]:
-    """Blank every value an override hides, in place; an overridden M3 station counts its quick count.
-
-    Returns how many cells were blanked and how many station counts were replaced, per
-    override. A stored value behind an override is a leftover of the wizard (notebook 04
-    flags it as OVERRIDE_HIDES_VALUE), never an answer.
-    """
-    if data_dictionary is None or not {"column", "section"} <= set(data_dictionary.columns):
-        return {}
-    ov = override_sets(m)
-    has = ov.map(bool)
-    log: Dict[str, int] = {}
-    if not has.any():
-        return log
-    sections = dict(zip(data_dictionary["column"], data_dictionary["section"]))
-    for c in m.columns:
-        stage = override_stage(c, str(sections.get(c, "")))
-        if stage is None:
-            continue
-        rows = has & ov.map(lambda s, st=stage: st in s) & m[c].notna()
-        if rows.any():
-            m.loc[rows, c] = None
-            log[stage] = log.get(stage, 0) + int(rows.sum())
-    for st in M3_STATIONS:
-        cnt, qc = f"{st}_count", f"{st}_quickCount"
-        if cnt not in m.columns:
-            continue
-        rows = ov.map(lambda s, st=st: f"M3:{st}" in s)
-        if rows.any():
-            q = pd.to_numeric(m[qc], errors="coerce") if qc in m.columns else pd.Series(pd.NA, index=m.index)
-            m.loc[rows, cnt] = q[rows].astype("Int64") if str(m[cnt].dtype) == "Int64" else q[rows]
-            log[f"M3:{st} count from the quick count"] = int(rows.sum())
-    return log
-
-
 #: the edge tags that take an aircraft out of the analysis (ruling 2026-09-15: only
 #: electric, vertical-take-off, non-UAV aircraft enter). V/STOL carries no tag and stays;
 #: a Hybrid or Unknown powertrain carries no tag and stays.
@@ -243,8 +143,6 @@ class Dataset:
     #: which source the labels came from, and what the batch reader logged
     source: str = field(init=False, default="master_04")
     build_log: Dict = field(init=False, default_factory=dict)
-    #: rule 1 (2026-09-19): cells blanked because an override hides them (apply_overrides)
-    override_log: Dict = field(init=False, default_factory=dict)
 
     # derived views, built in __post_init__
     variants: pd.DataFrame = field(init=False)
@@ -258,9 +156,6 @@ class Dataset:
 
     def __post_init__(self) -> None:
         m = self.master
-        # rule 1 (ruling 2026-09-19): a value an override hides is not determinable, so it is
-        # blanked here once and every table reads the same record
-        self.override_log = apply_overrides(m, self.data_dictionary)
         approved = m["is_approved"].fillna(False).astype(bool)
         primary = m["is_primary"].fillna(False).astype(bool)
 

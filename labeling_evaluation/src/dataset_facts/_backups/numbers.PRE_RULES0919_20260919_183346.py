@@ -170,10 +170,8 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     af = a2.archetype_frame(ds)
     n["booms_answers"] = int(af["nBooms"].nunique())
     n["booms_top_share"] = f"{af['nBooms'].value_counts(normalize=True).iloc[0]:.2f}"
-    n["tilt_n"] = int(af["anyTilt"].eq(True).sum())          # <NA> / n/a never counted (rule 1)
-    n["a1t_left"] = int(arch.loc["A1t", "left out"]) if "left out" in arch.columns else 0
-    bal = a2.d3_architecture_balance(ds, with_unclassifiable=False)
-    n["unclassifiable"] = int(bal.attrs.get("unclassifiable", 0))
+    n["tilt_n"] = int(af["anyTilt"].sum())
+    bal = a2.d3_architecture_balance(ds)
     n["n_classes"] = int(len(bal))
     n["top_class"] = str(bal.iloc[0]["name"])
     n["top_class_share"] = f"{bal.iloc[0]['share']:.2f}"
@@ -195,19 +193,8 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     n["tr_named"] = int(len(tr_named))
     n["bell_tr_share"] = f"{n['bell_tr'] / n['tr_named']:.0%}" if n["tr_named"] else "0%"
     n["bell_strings"] = int(len(a2.d8_split_firms(ds, "Bell / Textron")))
-    dls = a3.derived_layer_summary(ds).set_index("derived variable")
-    der = dls["value"]
+    der = a3.derived_layer_summary(ds).set_index("derived variable")["value"]
     n["units_median"] = der.iloc[0]
-    # rule 1 (2026-09-19): the bases and what is left out
-    n["units_n"] = int(dls["of"].iloc[0])
-    n["units_left"] = int(dls["left out"].iloc[0])
-    n["tilt_base"] = int(dls.loc["Aircraft with any tilting unit", "of"])
-    n["tilt_left"] = int(dls.loc["Aircraft with any tilting unit", "left out"])
-    n["override_aircraft"] = int(a2.override_sets(ds.variants).map(bool).sum())
-    d4 = a2.d4_missingness(ds)
-    n["d4_left"] = int(d4["left out (override)"].max()) if len(d4) else 0
-    n["wing_boom_candidates"] = int(ds.variants["wing_boom_candidate"].fillna(False).astype(bool).sum()) \
-        if "wing_boom_candidate" in ds.variants.columns else 0
     fl = a2.d13_flagship_check(ds)
     n["flagship_companies"] = int(len(fl))
     if "public products" in fl:
