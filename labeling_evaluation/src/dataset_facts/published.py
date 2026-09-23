@@ -321,13 +321,12 @@ def _region(ds, name):
 
 def _reason(ds, name):
     t = a2.d1_rejection_reasons(ds)
-    hit = t.loc[t["reason"] == name, "patents"]
+    hit = t.loc[t["code"] == name, "patents"]      # 2026-09-22: "reason" is now the wizard's label
     return int(hit.iloc[0]) if len(hit) else 0
 
 
 def _label_set(ds, name):
-    t = a2.d2_label_set(ds)
-    return int(t.loc[t["property of the label set"] == name, "value"].iloc[0])
+    return a2.d2_column_stats(ds)[name]
 
 
 def _eff(ds, field):

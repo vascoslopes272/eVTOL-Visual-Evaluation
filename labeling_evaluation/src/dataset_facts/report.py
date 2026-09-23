@@ -22,66 +22,200 @@ from .loaders import Dataset
 MAX_ROWS = 16
 
 
-def _table_md(name: str, table: pd.DataFrame, number: str) -> str:
+def _prov_md(name: str, idx, values: Optional[Dict], kind: str,
+             tables: Optional[Dict] = None) -> str:
+    """The provenance line of one item — unit of analysis, base and transform — as a
+    markdown paragraph, or ``""``.
+
+    The line is optional by design: an index module that does not define ``provenance``
+    (the Preliminary Analysis) renders exactly as before, and an item whose entry is
+    missing or broken costs a line, never the build.
+    """
+    fn = getattr(idx, "provenance", None)
+    if fn is None:
+        return ""
+    try:
+        line = fn(name, values, kind, tables)
+    except Exception:                                  # a bad entry never breaks the document
+        return ""
+    return f"\n*{line}*\n" if line else ""
+
+
+def _take_md(name: str, idx, values: Optional[Dict], kind: str,
+             tables: Optional[Dict] = None) -> str:
+    """The takeaway line of one item — what the reader should conclude — as a markdown
+    paragraph, or ``""``.
+
+    Optional in exactly the same way as :func:`_prov_md`: an index module that does not define
+    ``takeaway`` (the Preliminary Analysis) renders byte-for-byte as before, and a broken entry
+    costs a line, never the build. It prints under the provenance line and in the same grey —
+    the renderer styles any paragraph opening with "Takeaway: " like the "Unit: " one.
+    """
+    fn = getattr(idx, "takeaway", None)
+    if fn is None:
+        return ""
+    try:
+        line = fn(name, values, kind, tables)
+    except Exception:                                  # a bad entry never breaks the document
+        return ""
+    return f"\n*Takeaway: {line}*\n" if line else ""
+
+
+def _quest_md(name: str, idx, values: Optional[Dict], kind: str,
+              tables: Optional[Dict] = None) -> str:
+    """The question line of one item — which of the eight sector questions it answers, and
+    in what way — as a markdown paragraph, or ``""``.
+
+    Optional in exactly the same way as :func:`_prov_md` and :func:`_take_md`: an index
+    module that does not define ``question`` (the Preliminary Analysis) renders
+    byte-for-byte as before, and a broken entry costs a line, never the build. It prints
+    last of the three grey lines and in the same grey — the renderer styles any paragraph
+    opening with "Question: " like the "Unit: " one.
+
+    The line also carries the item's DEGREE OF IMPORTANCE when the index module offers a
+    ``grade`` register — ``… — direct · core``, ``… — describes · weak, low
+    representativeness (9 aircraft)`` — rather than opening a fourth grey line under an
+    already heavily annotated figure. That register is optional in its own right: an index
+    module with ``question`` but no ``grade`` prints the question line exactly as before,
+    and a grade that raises costs the tail of one line, never the build.
+    """
+    fn = getattr(idx, "question", None)
+    if fn is None:
+        return ""
+    try:
+        line = fn(name, values, kind, tables)
+    except Exception:                                  # a bad entry never breaks the document
+        return ""
+    if not line:
+        return ""
+    gfn = getattr(idx, "grade", None)                   # the fourth register; absent in the PA
+    if gfn is not None:
+        try:
+            deg = gfn(name, values, kind, tables)
+        except Exception:                              # a bad grade never breaks the document
+            deg = ""
+        if deg:
+            line = f"{line} · {deg}"
+    return f"\n*Question: {line}*\n"
+
+
+def _table_md(name: str, table: pd.DataFrame, number: str, idx=index,
+              values: Optional[Dict] = None, tables: Optional[Dict] = None) -> str:
     t = md_safe(table)
-    cols = index.COLUMNS.get(name)
+    cols = idx.COLUMNS.get(name)
     if cols:
         t = t[[c for c in cols if c in t.columns]]
-    cap = index.ROW_CAP.get(name, MAX_ROWS)
+    cap = idx.ROW_CAP.get(name, MAX_ROWS)
     note = ""
     if len(t) > cap:
         note = f"\n\n*First {cap} of {len(t)} rows; the full table is `tables/{name}.csv`.*"
         t = t.head(cap)
-    caption = index.TABLE_CAPTIONS.get(name, name)
-    return f"**Table {number} — {caption}.**\n\n{t.to_markdown(index=False)}{note}\n"
+    caption = idx.TABLE_CAPTIONS.get(name, name)
+    prov = _prov_md(name, idx, values, "table", tables)
+    take = _take_md(name, idx, values, "table", tables)
+    quest = _quest_md(name, idx, values, "table", tables)
+    return (f"**Table {number} — {caption}.**\n\n{t.to_markdown(index=False)}{note}\n"
+            f"{prov}{take}{quest}")
 
 
-def _figure_md(name: str, path: Path, out_dir: Path, number: str) -> str:
+def _figure_md(name: str, path: Path, out_dir: Path, number: str, idx=index,
+               panels: Optional[Dict] = None, values: Optional[Dict] = None,
+               tables: Optional[Dict] = None) -> str:
     rel = Path(path).relative_to(out_dir) if Path(path).is_relative_to(out_dir) else Path(path)
-    width = index.FIG_WIDTH.get(name, "80%")
-    caption = index.FIGURE_CAPTIONS.get(name, name)
-    return (f"![Figure {number} — {caption}.]({rel.as_posix()}){{: width=\"{width}\" }}\n\n"
-            f"*Figure {number} — {caption}.*\n")
+    width = idx.FIG_WIDTH.get(name, "80%")
+    caption = idx.FIGURE_CAPTIONS.get(name, name)
+    # a figure that holds more than one graph names each of them, with the mark printed on it
+    marks = (panels or {}).get(name) or []
+    sub = ""
+    if len(marks) > 1:
+        sub = " " + " ".join(f"**{m}** {lbl};" for m, lbl in marks).rstrip(";") + "."
+    md = (f"![Figure {number} — {caption}.{sub}]({rel.as_posix()}){{: width=\"{width}\" }}\n\n"
+          f"*Figure {number} — {caption}.{sub}*\n"
+          f"{_prov_md(name, idx, values, 'figure', tables)}"
+          f"{_take_md(name, idx, values, 'figure', tables)}"
+          f"{_quest_md(name, idx, values, 'figure', tables)}")
+    if name in idx.LANDSCAPE:   # its own landscape page (the renderer's div.landscape)
+        md = f'<div class="landscape" markdown="1">\n\n{md}\n</div>\n'
+    return md
 
 
 def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[str, Path],
                    out_dir: Path, filename: str = "PRELIMINARY_ANALYSIS.md",
-                   values: Optional[Dict] = None, partial_window_start: int = 2024) -> Path:
-    """Write the document; returns its path."""
+                   values: Optional[Dict] = None, partial_window_start: int = 2024,
+                   idx=index, generated_by: Optional[str] = None, keep_with_next: bool = False,
+                   panels: Optional[Dict] = None) -> Path:
+    """Write the document; returns its path. ``idx`` is the index module (the Preliminary
+    Analysis by default, ``la_index`` for the Labelling Analysis)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     values = values or numbers.live(ds, partial_window_start)
     today = _dt.date.today().isoformat()
     lines = [
-        f"# {index.TITLE}",
+        f"# {idx.TITLE}",
         "",
-        f"Date: {today} · Generated by `labeling_evaluation/notebooks/10_preliminary_analysis.ipynb` "
-        f"from the batch exports in `{ds.root.name}/labels` (PatSeer snapshot {values['snapshot']}) · "
-        "Every number comes from the tables in `tables/`; the prose is edited in "
-        "`src/dataset_facts/index.py`.",
+        generated_by or (
+            f"Date: {today} · Generated by `labeling_evaluation/notebooks/10_preliminary_analysis.ipynb` "
+            f"from the batch exports in `{ds.root.name}/labels` (PatSeer snapshot {values['snapshot']}) · "
+            "Every number comes from the tables in `tables/`; the prose is edited in "
+            "`src/dataset_facts/index.py`."),
         "",
         "---",
         "",
     ]
-    for n in index.NODES:
+    for n in idx.NODES:
         nid = n["id"]
-        if index.depth(nid) == 0 and nid != "1":
+        # an appendix opens a page like a chapter; ``APPENDIX`` is optional, so an index module
+        # without it (the Preliminary Analysis) renders byte-for-byte as before
+        chapter = idx.depth(nid) == 0 and (nid[0].isdigit()
+                                           or nid in getattr(idx, "APPENDIX", ()))
+        if chapter and nid != "1" and not keep_with_next:
             lines += ["---", ""]
-        lines += [index.heading(nid, values), ""]
-        lvl = index.level_line(nid)
+        head = [idx.heading(nid, values), ""]
+        lvl = idx.level_line(nid)
         if lvl:
-            lines += [lvl, ""]
-        body = index.text(nid, values)
+            head += [lvl, ""]
+        body = idx.text(nid, values)
         if body:
-            lines += [body, ""]
+            head += [body, ""]
         figs = [f for f in n.get("figures", []) if f in figures]
+        tabs_ = [t for t in n.get("tables", []) if t in tables]
+        first_fig = figs[0] if figs and figs[0] not in getattr(idx, "LANDSCAPE", set()) else None
+        if keep_with_next:
+            # the heading travels with the first block under it; a chapter opens a new page
+            cls = "keep chapter-start" if chapter else "keep"
+            first = []
+            # a node named in the index module's optional ``NO_KEEP`` binds its heading to its
+            # prose only: the item under it flows, instead of dragging a tall figure onto the
+            # next page and leaving the rest of this one blank. Absent in ``index`` and in
+            # ``la_index``, so both of those documents render exactly as before.
+            if nid in getattr(idx, "NO_KEEP", ()):
+                first = []
+            elif first_fig:
+                first = [_figure_md(first_fig, figures[first_fig], out_dir,
+                                    idx.figure_number(nid, 0, len(figs)), idx, panels,
+                                    values, tables), ""]
+            elif not figs and tabs_:
+                first = [_table_md(tabs_[0], tables[tabs_[0]], idx.table_number(nid, 0, len(tabs_)),
+                                   idx, values, tables), ""]
+            lines += [f'<div class="{cls}" markdown="1">', ""] + head + first + ["</div>", ""]
+            done_fig = {first_fig} if (first_fig and first) else set()
+            done_tab = {tabs_[0]} if (not figs and tabs_ and first) else set()
+        else:
+            lines += head
+            done_fig, done_tab = set(), set()
         for k, name in enumerate(figs):
+            if name in done_fig:
+                continue
             lines += [_figure_md(name, figures[name], out_dir,
-                                 index.figure_number(nid, k, len(figs))), ""]
+                                 idx.figure_number(nid, k, len(figs)), idx, panels,
+                                 values, tables), ""]
         tabs = [t for t in n.get("tables", []) if t in tables]
         for k, name in enumerate(tabs):
-            lines += [_table_md(name, tables[name], index.table_number(nid, k, len(tabs))), ""]
-        tail = index.after(nid, values)
+            if name in done_tab:
+                continue
+            lines += [_table_md(name, tables[name], idx.table_number(nid, k, len(tabs)),
+                                idx, values, tables), ""]
+        tail = idx.after(nid, values)
         if tail:
             lines += [tail, ""]
     path = out_dir / filename

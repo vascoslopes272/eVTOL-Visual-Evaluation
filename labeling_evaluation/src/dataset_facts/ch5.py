@@ -27,8 +27,9 @@ def settings_table(n: Dict) -> pd.DataFrame:
         ("a blank", "3.3.2",
          "absence, dropped from a comparison instead of counted as difference"),
         ("thin evidence", "3.2.4", f"{n['sens']} aircraft, marked and carried, never removed"),
-        ("labels hold", "4.1",
-         "they agree with the public product wherever the product is public"),
+        ("labels checked", "4.1",
+         f"the top label matches the public product for {n['flagship_match']} of the "
+         f"{n['flagship_public']} companies with one; the others file alternative embodiments"),
     ]
     return pd.DataFrame(rows, columns=["choice", "fixed in", "value"])
 
@@ -43,8 +44,8 @@ def judgement_table(n: Dict) -> pd.DataFrame:
          "the design-species row of table 5.1, the archetype paragraph of 5.3, condition 1 "
          "of 5.7, and every curve of 5.5 that is drawn at the counting level"),
         ("field weights in the distance (5.3)",
-         f"one unit per subsystem, because {n['slots_M3']} propulsion slots against "
-         f"{n['slots_G1']} architecture slots records the codebook and not the aircraft",
+         f"one unit per subsystem, because {n['cols_M3']} propulsion columns against "
+         f"{n['cols_G1']} on card G1 records the codebook and not the aircraft",
          "uniform weights, the conventional default for Gower's coefficient",
          "which of the two weightings is the main result and which is the robustness run; "
          "the curves themselves are computed both ways regardless"),
@@ -66,6 +67,8 @@ REFERENCES = [
     "*Biometrics* 27(4), 857–871.",
     "Hill, M. O. (1973), \"Diversity and evenness: a unifying notation and its consequences\", "
     "*Ecology* 54(2), 427–432.",
+    "Jaffe, A. B. (1986), \"Technological opportunity and spillovers of R&D: evidence from firms' "
+    "patents, profits, and market value\", *American Economic Review* 76(5), 984–1001.",
     "Rao, C. R. (1982), \"Diversity and dissimilarity coefficients: a unified approach\", "
     "*Theoretical Population Biology* 21(1), 24–43.",
     "Stirling, A. (2007), \"A general framework for analysing diversity in science, technology "

@@ -26,6 +26,10 @@ CSS_TEMPLATE = """
 @page { size: A4; margin: 19mm 17mm 20mm 17mm;
   @bottom-left { content: "__FOOTER__"; font: 7.6pt Inter, sans-serif; color: #555; }
   @bottom-right { content: counter(page) " / " counter(pages); font: 7.6pt Inter, sans-serif; color: #555; } }
+/* a figure on its own A4-landscape page at full width (<div class="landscape">) */
+@page landscape { size: A4 landscape; margin: 11mm 13mm 14mm 13mm; }
+div.landscape { page: landscape; }
+div.landscape img { width: 100% !important; max-height: 168mm; object-fit: contain; margin: 0 auto 0.3em auto; }
 html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: "Noto Serif", "Liberation Serif", Georgia, serif; font-size: 9.3pt; line-height: 1.52;
        color: #111111; margin: 0; orphans: 2; widows: 2; }
@@ -67,6 +71,10 @@ h2 + h3 { margin-top: 0.75em; }
 h4 { font-family: Inter, sans-serif; font-size: 9.8pt; font-weight: 700; color: #000; margin: 1.1em 0 0.3em 0;
      break-after: avoid; }
 h3 + h4 { margin-top: 0.5em; }
+h5 { font-family: Inter, sans-serif; font-size: 9pt; font-weight: 700; color: #262626; margin: 0.9em 0 0.25em 0;
+     break-after: avoid; }
+h4 + h5 { margin-top: 0.4em; }
+h1, h2, h3, h4, h5 { break-inside: avoid; }
 p.level { font-family: Inter, sans-serif; font-size: 8pt; color: #4d4d4d; margin: 0 0 0.45em 0; text-align: left; }
 p.tcaption { font-family: Inter, sans-serif; font-size: 8pt; color: #000; margin: 0.7em 0 0 0; text-align: left;
              break-after: avoid; }
@@ -91,7 +99,30 @@ td.v-park { color: #4d4d4d; }
 
 /* ---- figures ---- */
 img { max-width: 100%; height: auto; display: block; margin: 0.8em auto 0.3em auto; }
+/* 2026-09-22: a wide table or a long code span must wrap, never widen the page — Chrome otherwise
+   shrinks the WHOLE document to fit, which made every letter and the landscape drawings small */
+table { max-width: 100%; }
+/* break-word, never anywhere: `anywhere` lets Chrome squeeze a narrow column to one letter
+   per line ("l/e/v/e/l"), because it drops the min-content width to a single character. */
+td, th { overflow-wrap: break-word; hyphens: none; }
+code { overflow-wrap: anywhere; }
+/* a heading never splits across pages, and never ends a page on its own */
+h1, h2, h3, h4 { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+/* a heading and the first figure or table under it stay on one page; a chapter opens a new page */
+div.keep { break-inside: avoid; page-break-inside: avoid; }
+div.chapter-start { break-before: page; page-break-before: always; }
 p > img + em, p.caption { font-family: Inter, sans-serif; font-size: 8pt; color: #4d4d4d; text-align: center; }
+/* the provenance line under a figure or a table: unit of analysis, base, transform.
+   Same grey and size as the Source line drawn inside a figure, so the two read as one note. */
+p.prov { font-family: Inter, sans-serif; font-size: 7pt; line-height: 1.32; color: #5a5a5a;
+         text-align: left; margin: 0.1em 0 0.7em 0; break-inside: avoid; page-break-inside: avoid; }
+p.prov em { color: inherit; font-style: italic; }
+p.caption + p.prov { margin-top: 0.05em; }
+/* the takeaway sits directly under the provenance line: same grey, one hair of air between them */
+p.prov + p.prov.take { margin-top: 0.22em; }
+/* the question line sits last, under the takeaway: same grey again */
+p.prov + p.prov.quest { margin-top: 0.22em; }
+p.prov.quest em { font-style: italic; }
 
 /* ---- lists ---- */
 ul, ol { margin: 0.35em 0 0.65em 0; padding-left: 1.35em; }
@@ -154,6 +185,8 @@ h2 { font-size: 12.5pt; margin: 1.1em 0 0.45em 0; padding-top: 6px; }
 h3 { font-size: 10pt; margin: 0.9em 0 0.3em 0; }
 h4 { font-size: 9.2pt; margin: 0.8em 0 0.2em 0; }
 h3 + h4 { margin-top: 0.35em; }
+h5 { font-size: 8.6pt; margin: 0.65em 0 0.2em 0; }
+h4 + h5 { margin-top: 0.3em; }
 h2 + h3 { margin-top: 0.4em; }
 ul, ol { margin: 0.2em 0 0.4em 0; }
 li { margin: 0.15em 0; }
@@ -189,6 +222,8 @@ html_body = scripts(html_body)
 html_body = html_body.replace("▶ DECIDE", "<span class='decide'>DECIDE</span>")
 html_body = re.sub(r"<h2>Part ([A-H]) — (.*?)</h2>", r"<h2><span class='part'>PART \1</span>\2</h2>", html_body)
 html_body = re.sub(r"<h2>Chapter (\d+) — (.*?)</h2>", r"<h2><span class='part'>CHAPTER \1</span>\2</h2>", html_body)
+# an appendix carries the same eyebrow; no document that has none is changed by this line
+html_body = re.sub(r"<h2>Appendix ([A-Z]) — (.*?)</h2>", r"<h2><span class='part'>APPENDIX \1</span>\2</h2>", html_body)
 # the level-of-analysis line under a section heading, and the table captions above a table
 html_body = re.sub(r"<p><em>(Level of analysis: .*?)</em></p>", r"<p class='level'><em>\1</em></p>", html_body)
 html_body = re.sub(r"<p><strong>(Table [0-9][^<]*?)</strong></p>", r"<p class='tcaption'><strong>\1</strong></p>", html_body)
@@ -220,6 +255,20 @@ html_body = html_body.replace("because κ is dragged down by rare classes.</p>",
 # figure captions: the *Figure `name`.* line after an image
 html_body = re.sub(r"<p><em>(Figure <code>.*?</code>\.)</em></p>", r"<p class='caption'><em>\1</em></p>", html_body)
 html_body = re.sub(r"<p><em>(Figure [0-9][^<]*?)</em></p>", r"<p class='caption'><em>\1</em></p>", html_body)
+
+# the provenance line the Labelling Analysis prints under every figure and every table
+# (la_index.provenance): unit of analysis, base, transform. Absent from a document that
+# does not emit it, and this rule is then a no-op.
+html_body = re.sub(r"<p><em>(Unit: [^<]*)</em></p>", r"<p class='prov'><em>\1</em></p>", html_body)
+
+# the takeaway line printed under the provenance line (la_index.takeaway): what the reader
+# should conclude. Same grey, same size; a no-op in a document that does not emit it.
+html_body = re.sub(r"<p><em>(Takeaway: [^<]*)</em></p>", r"<p class='prov take'><em>\1</em></p>", html_body)
+
+# the question line printed last of the three grey lines (la_index.question): which of the
+# eight sector questions the item answers, and in what way. Same grey; a no-op in a
+# document that does not emit it.
+html_body = re.sub(r"<p><em>(Question: [^<]*)</em></p>", r"<p class='prov quest'><em>\1</em></p>", html_body)
 
 # narrow tables (2-3 columns) do not need the full text width
 def narrow(m):

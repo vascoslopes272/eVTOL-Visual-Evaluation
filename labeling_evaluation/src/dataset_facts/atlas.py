@@ -263,8 +263,9 @@ def fig_funnel(ds, v, n):
 
 
 def fig_removal(ds, v, n):
-    r = a2.d1_rejection_reasons(ds).sort_values("patents")
-    gate = r["reason"].str.startswith("Similar")
+    r = a2.d1_rejection_reasons(ds)
+    r = r[~r["code"].str.startswith(("subtotal", "total"))].sort_values("patents")
+    gate = r["code"].str.startswith("Similar")
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=PAGE, gridspec_kw={"width_ratios": [1.3, 1], "wspace": 0.6})
     bars = ax.barh(r["reason"], r["patents"], color=np.where(gate, CAT[1], CAT[0]), height=0.62)
     _bar_labels(ax, bars)
@@ -299,6 +300,8 @@ def fig_removal(ds, v, n):
 
 def fig_duplicates(ds, v, n):
     d = a2.d7_duplicates(ds)
+    # 2026-09-22: the table also carries the originals and a total; the chart shows the three repeat types
+    d = d[d["type"].astype(str).str[:2].isin(["O1", "O2", "S3"])].reset_index(drop=True)
     app = a2.d7_aircraft_per_patent(ds)
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=PAGE, gridspec_kw={"wspace": 0.5})
     lab = ["O1 — same aircraft,\nnew figures", "O2 — same aircraft,\nsame figures", "S3 — similar aircraft\n(new unique)"]
@@ -458,6 +461,7 @@ def fig_filers(ds, v, n):
 
 def fig_status(ds, v, n):
     fs = a2.d1_filing_status(ds).set_index("filing status")
+    fs = fs.drop(index="**Total**", errors="ignore").drop(columns=["what it means"], errors="ignore")
     lag = a2.d9_publication_lag(ds)
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=PAGE, gridspec_kw={"width_ratios": [1.4, 1], "wspace": 0.4})
     share = (fs / fs.sum()).T
@@ -541,6 +545,35 @@ def fig_state_by_arch(ds, v, n):
 
 
 # Chapter 3.3 — design space
+def _drawing(name: str) -> plt.Figure:
+    """A static codebook drawing (drawn by the author, not from data) on one page."""
+    from .figures import CODEBOOK_DRAWINGS
+    img = plt.imread(CODEBOOK_DRAWINGS[name])
+    top = 0.93   # room for the "Figure N — title" line render() prints above
+    fig = plt.figure(figsize=(PAGE[0], PAGE[0] * img.shape[0] / img.shape[1] / top))
+    ax = fig.add_axes([0, 0, 1, top])
+    ax.imshow(img, interpolation="lanczos")
+    ax.set_axis_off()
+    return fig
+
+
+def fig_codebook_classes(ds, v, n):
+    fig = _drawing("codebook_classes")
+    _note(fig, "the labelling codebook, card G1 (drawing, not data).",
+          "The solid line is the part that decides the class; the dashed line is the hover position. "
+          "OVERRIDE is an escape, not a class: an override aircraft carries no type.")
+    return fig, "3.3a", "The twelve architecture classes (card G1)"
+
+
+def fig_codebook_dimensions(ds, v, n):
+    fig = _drawing("codebook_dimensions")
+    _note(fig, "the labelling codebook, cards G1 to M3 (drawing, not data).",
+          "A tick box is a flag, # a number, \"if\" a slot asked only when its condition holds, "
+          "×n a card repeated per part (per boom group, wing panel, propulsor host or type), pink an "
+          "escape (humanUncertain, override).")
+    return fig, "3.3b", "Every dimension of the label cards G1 to M3"
+
+
 def fig_arch_gt(ds, v, n):
     gt = _ground_truth(ds)
     gt = gt[gt["ground_truth"].isin(ALL_ARCH) & gt["figure_label_frozen"].isin(ALL_ARCH)]
@@ -669,31 +702,39 @@ def fig_powertrain(ds, v, n):
     return fig, "3.3.4", "Powertrain"
 
 
+#: one colour per kind of question (Figure 3.3b legend); grey = not a question
+KIND_COLOR = {"Dimension": CAT[0], "Tick": CAT[1], "Number": CAT[2]}
+
+
 def fig_fields(ds, v, n):
+    from . import register
     inv = a2.d2_field_inventory(ds)
+    kind = inv["field"].map(register.column_kind(ds)).fillna("off the cards")
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=PAGE, gridspec_kw={"width_ratios": [1.3, 1], "wspace": 0.3})
-    card = inv["card"].fillna("?").astype(str).str[:1]
-    cards = sorted(card.unique())
-    cc = dict(zip(cards, CAT))
-    for c in cards:
-        s = inv[card.eq(c)]
-        ax.scatter(s["answered"], s["effective_answers"], s=26, color=cc[c], alpha=0.8,
-                   edgecolor=SURFACE, lw=0.6, label=f"card {c}")
+    labels = {"Dimension": "dimension", "Tick": "tick", "Number": "number"}
+    for k in ["Dimension", "Tick", "Number", "other"]:
+        sel = kind.eq(k) if k != "other" else ~kind.isin(list(KIND_COLOR))
+        s = inv[sel]
+        if not len(s):
+            continue
+        ax.scatter(s["answered"], s["effective_answers"], s=26, color=KIND_COLOR.get(k, OTHER), alpha=0.85,
+                   edgecolor=SURFACE, lw=0.6, zorder=3 if k != "other" else 2,
+                   label=f"{labels.get(k, 'tag or off the cards')} ({len(s)})")
     ax.axvline(n.get("informative_min_answered", 300), color=MUTED, ls="--", lw=1)
     ax.axhline(1.5, color=MUTED, ls="--", lw=1)
     for _, r in inv[(inv["answered"] >= 300) & (inv["effective_answers"] >= 3)].iterrows():
         ax.annotate(r["field"], (r["answered"], r["effective_answers"]), fontsize=7.5, color=INK2,
                     xytext=(3, 3), textcoords="offset points")
-    ax.set_xlabel("unique aircraft answering the field")
+    ax.set_xlabel("unique aircraft answering the column")
     ax.set_ylabel("effective number of answers")
     ax.text(ax.get_xlim()[1], 1.55, "informative →", ha="right", va="bottom", fontsize=8.5, color=INK2)
-    ax.legend(loc="upper left", ncol=2)
-    ax.set_title(f"Every answerable field ({len(inv)})")
+    ax.legend(loc="upper left", ncol=2, title="the slot the column fills", title_fontsize=8.5)
+    ax.set_title(f"Every coded export column ({len(inv)}), by kind")
     _hgrid(ax, "both")
-    slots = a2.d2_slots_per_aircraft(ds)
-    sv = v.assign(slots=v["aircraft_id"].map(dict(zip(ds.variants["aircraft_id"], slots))))
+    per = register.per_aircraft(ds)
+    sv = v.assign(q=v["aircraft_id"].map(dict(zip(ds.variants["aircraft_id"], per))))
     order = [c for c in ALL_ARCH if c in sv["atype"].values]
-    data = [sv.loc[sv["atype"].eq(c), "slots"].to_numpy() for c in order]
+    data = [sv.loc[sv["atype"].eq(c), "q"].dropna().to_numpy() for c in order]
     bp = ax2.boxplot(data, vert=False, patch_artist=True, widths=0.6, medianprops={"color": INK},
                      flierprops={"markersize": 3, "markeredgecolor": MUTED})
     for patch, c in zip(bp["boxes"], order):
@@ -701,10 +742,16 @@ def fig_fields(ds, v, n):
         patch.set_edgecolor(SURFACE)
     ax2.set_yticks(range(1, len(order) + 1), order)
     ax2.invert_yaxis()
-    ax2.set_xlabel("fields answered per aircraft")
+    ax2.set_xlabel(f"slots answered per aircraft (of {n['questions']})")
     ax2.set_title("Label depth by architecture")
     _hgrid(ax2)
-    return fig, "3.3.5", "Which fields carry information, and how deep each aircraft is labelled"
+    _note(fig, f"{TABLES_SRC}; the slots are the rows of the dimension register "
+               f"(assets/codebook/dimension_register.csv, the drawing of Figure 3.3b); {len(per)} unique aircraft.",
+          f"Left: one dot per export column; a slot repeated per boom group, wing panel, propulsor host or "
+          f"propulsor type gives one dot per repeat. Right: how many of the {n['questions']} slots each "
+          f"aircraft answers; a slot is answered when any of its columns holds a value (an unticked box "
+          f"on a card that exists is an answer).")
+    return fig, "3.3.5", "Which columns carry information, and how many slots each aircraft answers"
 
 
 def fig_fill(ds, v, n):
@@ -870,6 +917,7 @@ FIGURES: List[Callable] = [
     fig_funnel, fig_removal, fig_duplicates, fig_figure_approval,
     fig_years, fig_region, fig_filers, fig_status,
     fig_image_slots, fig_state_by_arch,
+    fig_codebook_classes, fig_codebook_dimensions,
     fig_arch_gt, fig_gt_visibility, fig_arch_time, fig_powertrain,
     fig_fields, fig_fill, fig_design_heatmaps, fig_units, fig_archetypes,
     fig_flagship,

@@ -33,6 +33,8 @@ FILES = {
     "quote_check": "0_labelling/inputs/text_architecture/quote_check.csv",
     "text_identity": "0_labelling/inputs/text_identity/results.csv",
     "text_identity_cmp": "0_labelling/inputs/text_identity/comparison_237.csv",
+    # 2026-09-22: NASA TRL + programme status per aircraft (Patent-Labelling-Tools/scripts/build_aircraft_trl.py)
+    "trl": "0_labelling/inputs/trl/aircraft_trl.csv",
 }
 
 
@@ -239,6 +241,7 @@ class Dataset:
     quote_check: Optional[pd.DataFrame] = None
     text_identity: Optional[pd.DataFrame] = None
     text_identity_cmp: Optional[pd.DataFrame] = None
+    trl: Optional[pd.DataFrame] = None               # NASA TRL + programme status per aircraft
 
     #: which source the labels came from, and what the batch reader logged
     source: str = field(init=False, default="master_04")
@@ -410,6 +413,7 @@ def load_dataset(cfg: Dict[str, Any], strict: bool = False,
         quote_check=_read(root, "quote_check", required=False),
         text_identity=_read(root, "text_identity", required=strict),
         text_identity_cmp=_read(root, "text_identity_cmp", required=strict),
+        trl=_read(root, "trl", required=False),
     )
     ds.source = source
     ds.build_log = log

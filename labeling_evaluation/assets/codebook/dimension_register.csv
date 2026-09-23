@@ -1,0 +1,55 @@
+order,card,box,repeat,question,kind,answers,condition,on_list,columns,when,note
+1,G1,Architecture class,×1,Architecture class,Dimension,TW · TR · DS · CVT · PTC · TB · SLC · SRW · RC · MR · HB · PFV,,yes,topType,,
+2,G1,Architecture class,×1,Override,Escape,,,yes,g1_quickOverride,,"escape, not a class: the aircraft carries no type"
+3,G1,Beside the class,×1,humanUncertain,Escape,,,yes,g1_humanUncertain,,
+4,G1,Beside the class,×1,notPureArch,Tick,,,yes,notPureArch,,mixed architecture
+5,G1,Beside the class,×1,Edge tags,Tag,UAVSimilar · ElectricSimilar,,yes,edgeTags,,the domain gate reads these; not a design question
+6,M1,Fuselage,×1,Shape,Dimension,Circular · Oval · Rectangular · Blended / Lifting Body · Other,,yes,fusShape,,
+7,M1,Fuselage,×1,Kinematics,Dimension,Fixed · Variable Incidence · Whole-Body Pitch · Tail-sitter,,yes,fusKin,,
+8,M1,Fuselage,×1,Ground contact,Dimension,Skids · Wheeled Gear · Pads / Hull · Unknown,,yes,gearArch,,
+9,M1,Fuselage,×1,Lateral symmetry,Dimension,Yes · No,,yes,latSym,,two answers: set kind to Tick to count it as a tick
+10,M1,Fuselage,×1,Booms present,Dimension,Yes · No,,yes,boomsPresent,,two answers: set kind to Tick to count it as a tick
+11,M1,Boom group,×0..n,Count,Number,,,yes,boom[1-9]_count,,
+12,M1,Boom group,×0..n,Symmetric,Tick,,,yes,boom[1-9]_sym,,
+13,M1,Boom group,×0..n,Circular / Radial,Tick,,,yes,boom[1-9]_circSym,,
+14,M1,Boom group,×0..n,Attachment,Dimension,Wings · Fuselage · Both · Empennage · Other,,yes,boom[1-9]_attach,,
+15,M1,Boom group,×0..n,Wing panel index,Dimension,1 · 2 · 3 · 4 · More than one,if wing,yes,boom[1-9]_wingIdx,,
+16,M1,Boom group,×0..n,Spanwise position,Dimension,Inboard · Mid-span · Outboard · Spanning · N/A · Other,if wing,yes,boom[1-9]_span,,
+17,M1,Boom group,×0..n,Longitudinal position,Dimension,Fore · Mid · Aft · Full length · N/A · Other,if not wing,yes,boom[1-9]_long,,
+18,M1,Boom group,×0..n,Orientation,Dimension,Longitudinal · Lateral · Vertical · X / Diagonal · Other,,yes,boom[1-9]_orient,,
+19,M1,Boom group,×0..n,Wing relationship,Dimension,Forward · Aft · Straddles · Bridge · N/A · Other,,yes,boom[1-9]_wingRel,,
+20,M1,Boom group,×0..n,Carries propulsors,Dimension,Yes · No,,yes,boom[1-9]_hasProps,,two answers: set kind to Tick to count it as a tick
+21,M1,Boom group,×0..n,Booms tilt,Tick,,,yes,boom[1-9]_tilts,,
+22,M1,Boom group,×0..n,Booms stow,Tick,,,yes,boom[1-9]_retracts,,
+23,M1,Boom group,×0..n,On the fixed part of a wing,Tick,,if Tilt wing,no,boom[1-9]_onFixedPart,,"v15.16 tick (codebook v1.9), not drawn: set on_list to yes to count it"
+24,M1,Fuselage,×1,Figure readability,Process,Easy · Hard · Impossible,,no,dinoUnderstanding,,"grades the figure, not the aircraft (DINOv2 chapter)"
+25,M1,Escapes,×1,Quick override,Escape,,,yes,m1_quickOverride,,
+26,M1,Escapes,×1,humanUncertain,Escape,,,yes,m1_humanUncertain,,
+27,M2,Wing architecture,×1,Wing architecture,Dimension,W · BWB · FW · LB · Other · Unknown,,yes,wingConf,,
+28,M2,Wing panel,×1..4,Tilt,Dimension,Fixed · Tiltable,if W · Other,yes,wing[1-9]_tilt,,
+29,M2,Wing panel,×1..4,Vertical position,Dimension,High · Mid · Low · Unknown,if W · Other,yes,wing[1-9]_posV,,
+30,M2,Wing panel,×1..4,Longitudinal position,Dimension,Forward · Center · Aft,if W · Other,yes,wing[1-9]_posL,,
+31,M2,Wing panel,×1..4,Planform,Dimension,Straight · Swept · Delta · Tapered · Other,if W · Other,yes,wing[1-9]_plan,wingConf not in BWB|FW|LB,
+32,M2,Wing panel,×1..4,Tip-joined,Tick,,if W · Other,yes,wing[1-9]_tipJoin,,
+33,M2,Wing panel,×1..4,Role,Dimension,Canard · Tandem · Aft Stabiliser · Biplane · Other,if panel 2+,yes,wing[1-9]_role,,
+34,M2,Wing panel,×1..4,Number of wing panels,Number,,if W · Other,no,wCount,,"drawn as the repeat ×1..4, not as a question: set on_list to yes to count it"
+35,M2,Integrated surface,×1,Planform,Dimension,Straight · Swept · Delta · Tapered · Other,if BWB · FW · LB,yes,wing1_plan,wingConf in BWB|FW|LB,the wizard stores it in wing1_plan
+36,M2,Empennage,×0..1,Type,Dimension,Tailless · Conventional · Cruciform · T · V · Inverted V · Y · H / Twin · Single Fin · Fins · Horizontal Only · Box · Other,,yes,empType,,
+37,M2,Empennage,×0..1,Tilts with wings,Tick,,,yes,empTilts,,
+38,M2,Escapes,×1,Quick override,Escape,,,yes,m2_quickOverride,,
+39,M2,Escapes,×1,humanUncertain,Escape,,,yes,m2_humanUncertain,,
+40,M3,Propulsor card,×1 per host,"Zone on the wing, chordwise",Dimension,Leading · Trailing · Above · Below,Wing N,yes,wing[1-9]_(t[1-9]_)?zoneChord,,
+41,M3,Propulsor card,×1 per host,"Zone on the wing, spanwise",Dimension,Inboard · Mid · Outboard · Tip · Across,Wing N,yes,wing[1-9]_(t[1-9]_)?zoneSpan,,
+42,M3,Propulsor card,×1 per host,Zone on the body,Dimension,Nose · Aft · Front · Rear · Side · Dorsal · Ventral,Fuselage body,yes,(fuselage|core_layout|hull_array)_(t[1-9]_)?zone,,"hosts fuselage, core_layout (wingless Fuselage Body) and hull_array (Integrated Hull Edge Array, BWB/FW/LB)"
+43,M3,Propulsor card,×1 per host,Zone on the empennage,Dimension,Stacked vertical · Stacked horizontal · Tip · Other,if not Tailless,yes,emp_(t[1-9]_)?zone,,
+44,M3,Propulsor card,×1 per host,Number of types,Number,,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_ntypes,,
+45,M3,Propulsor card,×1 per host,Lateral symmetry,Tick,,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_sym,,
+46,M3,Propulsor type,×1..n,Count,Number,,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?count,,
+47,M3,Propulsor type,×1..n,Thrust kinematics,Dimension,Horizontal · Vertical · Mixed,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?orient,,
+48,M3,Propulsor type,×1..n,Articulation,Dimension,Fixed · Tilt · Other,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?propKin,,
+49,M3,Propulsor type,×1..n,Tractor / pusher,Dimension,Front · Back · None or cannot tell,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?chord,,
+50,M3,Propulsor type,×1..n,Enclosure,Dimension,Open · Ducted,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?bmech,,
+51,M3,Propulsor type,×1..n,Retraction,Dimension,Fixed · Blade-folding · Retracting,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?rmech,,
+52,M3,Propulsor type,×1..n,Control only,Tick,,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(t[1-9]_)?ctrlOnly,,
+53,M3,Escapes,×1 per host,Quick override,Escape,,,yes,(fuselage|core_layout|hull_array|wing[1-9]|emp|boom)_(quickOverride|quickCount),,
+54,M3,Escapes,×1,humanUncertain,Escape,,,yes,m3_humanUncertain,,

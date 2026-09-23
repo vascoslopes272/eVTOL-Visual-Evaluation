@@ -13,8 +13,8 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from . import metrics
-from .loaders import (M3_STATIONS, NO_UNITS_TYPES, Dataset, hidden_by_override,
+from . import metrics, register
+from .loaders import (GATE_TAGS, M3_STATIONS, NO_UNITS_TYPES, Dataset, hidden_by_override,
                       override_sets)
 
 #: the T2 value that says a figure shows the whole aircraft
@@ -111,14 +111,59 @@ def d1_approval_by_region(ds: Dataset) -> pd.DataFrame:
     return g.sort_values("patents", ascending=False).reset_index()
 
 
+#: the wizard's disapproval reasons, in the wizard's own order and words
+#: (T1_DISAPPROVE_REASONS of the labelling HTML: id -> label shown, tooltip shortened)
+WIZARD_REASONS = {
+    "Out of Domain": ("Out of TD", "not an eVTOL / AAM passenger aircraft at all"),
+    "Pure UAV": ("Pure UAV", "explicitly and exclusively an uncrewed or cargo drone"),
+    "No Content": ("No content available on the patent", "nothing to review: no figures, no usable description"),
+    "No Aircraft Image": ("No Usable, Sufficient, or Legible Aircraft Image",
+                          "the drawings do not settle the architecture"),
+    "Unreadable": ("Unreadable/Insufficient image quality (legacy)", "retired in v15.4"),
+    "Not VTOL": ("Not VTOL (STOL / CTOL)", "needs a ground roll; claims no vertical mode"),
+    "Other": ("Other", "none of the above"),
+}
+#: the identity-review tags that remove an approved patent, in the words of the document
+BUT_SIMILAR = {
+    "Similar: UAV": ("UAV but similar", "approved, but every aircraft is drawn unoccupied"),
+    "Similar: not electric": ("Not electric but similar",
+                              "approved, but every aircraft names a turbine or piston engine"),
+    "Similar: STOL only": ("STOL but similar", "approved, but every aircraft is STOL only"),
+}
+
+
 def d1_rejection_reasons(ds: Dataset) -> pd.DataFrame:
-    """Why a patent is not representative: the wizard's reason, or the Similar tag that removed it."""
-    rejected = ds.patents[~ds.patents["is_representative"].fillna(False).astype(bool)]
-    counts = rejected["reason"].value_counts(dropna=False)
-    return pd.DataFrame({
-        "reason": [("(no reason recorded)" if pd.isna(k) else k) for k in counts.index],
-        "patents": counts.to_numpy(),
-    })
+    """Why a patent is not representative: the wizard's reason first, then the tag that removed it.
+
+    The wizard reasons carry the wizard's own label; the approved patents a "but similar"
+    tag removes come after them, and the subtotals make 1 639 - representative add up.
+    Column ``code`` is the wizard id / loader reason the numbers read.
+    """
+    p = ds.patents
+    rejected = p[~p["is_representative"].fillna(False).astype(bool)]
+    counts = rejected["reason"].fillna("(no reason recorded)").value_counts()
+    rows = []
+    wiz = [(k, *WIZARD_REASONS[k]) for k in WIZARD_REASONS if counts.get(k, 0)]
+    wiz += [(k, k, "") for k in counts.index if k not in WIZARD_REASONS and k not in BUT_SIMILAR]
+    for code, label, meaning in wiz:
+        rows.append({"code": code, "reason": label, "what it means": meaning, "patents": int(counts[code])})
+    n_wiz = sum(r["patents"] for r in rows)
+    rows.append({"code": "subtotal_wizard", "reason": "**Disapproved at labelling**", "what it means": "",
+                 "patents": n_wiz})
+    sim = []
+    for code, (label, meaning) in BUT_SIMILAR.items():
+        if counts.get(code, 0):
+            sim.append({"code": code, "reason": label, "what it means": meaning, "patents": int(counts[code])})
+    rows += sim
+    n_sim = sum(r["patents"] for r in sim)
+    rows.append({"code": "subtotal_similar", "reason": "**Approved, then removed by a tag**",
+                 "what it means": "", "patents": n_sim})
+    rows.append({"code": "total", "reason": "**Not representative**",
+                 "what it means": f"{int(p['patent_id'].nunique()):,} acquired − "
+                                  f"{int(p['is_representative'].fillna(False).astype(bool).sum()):,} "
+                                  "representative".replace(",", " "),
+                 "patents": n_wiz + n_sim})
+    return pd.DataFrame(rows)
 
 
 def filer_type(company_canonical: pd.Series) -> pd.Series:
@@ -179,10 +224,13 @@ def d1_similars(ds: Dataset) -> pd.DataFrame:
     ident = ds.identity
     reasons = ds.patents.set_index("patent_id")["reason"]
     gated = ds.gated_out
-    tags = gated["edgeTags"].fillna("").astype(str).map(lambda v: set(v.split("|")) - {""})
+    # the tags as the gate reads them: a D1/D2 row carries the tags of the aircraft it repeats
+    tags = gate_tags(ds.master).loc[gated.index]
     primary = gated["is_primary"].fillna(False).astype(bool)
     dropped_patents = set(ds.patents.loc[
         ds.patents["is_approved"].fillna(False).astype(bool) & ~ds.patents["is_representative"], "patent_id"])
+    # a patent that loses every aircraft is counted once, under the reason 2.1.1 gives it
+    patent_reason = ds.patents.set_index("patent_id")["reason"]
     n_pure_uav = int(reasons.eq("Pure UAV").sum())
     n_not_vtol = int(reasons.eq("Not VTOL").sum())
     n_unknown = int(ident["is_electric_final"].eq("Unknown").sum())
@@ -190,31 +238,53 @@ def d1_similars(ds: Dataset) -> pd.DataFrame:
     vs_n = int(vstol.sum())
     vs_p = int(ident.loc[vstol, "patent_id"].isin(set(ds.patents_analysis["patent_id"])).sum())
     rows = []
-    for name, tag, rule in [
-        ("UAV-similar", "UAVSimilar",
+    for name, tag, reason, rule in [
+        ("UAV but similar", "UAVSimilar", "Similar: UAV",
          "tag UAVSimilar: drawn unoccupied, the text does not declare a UAV (a declared UAV "
          f"is disapproved at labelling as Pure UAV: {n_pure_uav})"),
-        ("STOL-similar", "STOLSimilar",
-         "take-off mode read from the text, confirmed at review: STOL only (a patent that "
-         f"claims no vertical take-off is disapproved at labelling as Not VTOL: {n_not_vtol}). "
-         f"V/STOL, where the text claims both, is kept ({vs_n} patents, {vs_p} primary)"),
-        ("Electric-similar", "ElectricSimilar",
+        ("Not electric but similar", "ElectricSimilar", "Similar: not electric",
          "powertrain read from the text names a turbine or piston engine and no electric motor "
          "(is_electric_final = No), or the review tag ElectricSimilar; hybrid stays, and "
          f"{n_unknown} patents give no evidence either way and stay"),
+        ("STOL but similar", "STOLSimilar", "Similar: STOL only",
+         "take-off mode read from the text, confirmed at review: STOL only (a patent that "
+         f"claims no vertical take-off is disapproved at labelling as Not VTOL: {n_not_vtol}). "
+         f"V/STOL, where the text claims both, is kept ({vs_n} patents, {vs_p} primary)"),
     ]:
         has = tags.map(lambda t, tag=tag: tag in t)
+        alone = tags.map(lambda t, tag=tag: t & set(GATE_TAGS) == {tag})
+        # a tag gets a row only when it alone removes an aircraft (2026-09-21: the last
+        # STOL-only aircraft was disapproved at labelling as Not VTOL)
+        if tag == "STOLSimilar" and not bool((alone & primary).any()):
+            continue
         pats = set(gated.loc[has, "patent_id"])
         rows.append({"similar": name, "caught by": rule,
                      "aircraft observations tagged": int(has.sum()),
                      "unique aircraft removed": int((has & primary).sum()),
                      "patents tagged": len(pats),
-                     "patents losing every aircraft": len(pats & dropped_patents),
+                     "patents losing every aircraft": int(patent_reason.reindex(list(dropped_patents)).eq(reason).sum()),
                      "outcome": "leaves the analysis set at refinement 1"})
     out = pd.DataFrame(rows)
+    stol_any = tags.map(lambda t: "STOLSimilar" in t)
     out.attrs.update({"vstol": (vs_n, vs_p), "gated_patents": len(dropped_patents),
-                      "gated_aircraft": int(primary.sum())})
+                      "gated_aircraft": int(primary.sum()),
+                      "stol_also_uav": int((stol_any & primary).sum()),
+                      "stol_ids": ", ".join(sorted(set(gated.loc[stol_any & primary, "patent_id"])))})
     return out
+
+
+def gate_tags(m: pd.DataFrame) -> pd.Series:
+    """The Similar tags of every master row as the domain gate reads them (loaders.Dataset).
+
+    A D1/D2 row carries no G1 block of its own: it takes the tags of the aircraft it
+    repeats (``same_aircraft_as``, first target).
+    """
+    tags = m["edgeTags"].fillna("").astype(str).map(lambda v: set(v.split("|")) - {""})
+    if "same_aircraft_as" in m.columns and "aircraft_id" in m.columns:
+        own = dict(zip(m["aircraft_id"], tags))
+        target = m["same_aircraft_as"].fillna("").astype(str).str.split("; ").str[0]
+        tags = pd.Series([own.get(t, tg) if t else tg for t, tg in zip(target, tags)], index=m.index)
+    return tags
 
 
 # --------------------------------------------------------------------------
@@ -231,6 +301,14 @@ FILING_STATUS = {
 }
 FILING_ORDER = ["Granted, in force", "Granted, since lapsed", "Pending application",
                 "Withdrawn, refused or suspended", "Unknown"]
+#: what each filing-status row means, in the office's terms
+FILING_MEANING = {
+    "Granted, in force": "granted, and the owner still pays the renewal fees",
+    "Granted, since lapsed": "granted, then ended: the 20-year term expired or the renewal fees stopped",
+    "Pending application": "published, no decision from the office yet",
+    "Withdrawn, refused or suspended": "the application ended without a grant",
+    "Unknown": "no legal status in the PatSeer snapshot",
+}
 
 
 def d1_filing_status(ds: Dataset) -> pd.DataFrame:
@@ -248,12 +326,17 @@ def d1_filing_status(ds: Dataset) -> pd.DataFrame:
     rows = []
     for name in FILING_ORDER:
         m = status.eq(name)
-        rows.append({"filing status": name, "acquired": int(m.sum()),
+        rows.append({"filing status": name, "what it means": FILING_MEANING[name],
+                     "acquired": int(m.sum()),
                      "representative": int((m & ident["_representative"]).sum()),
                      "primary": int((m & ident["_primary"]).sum())})
     granted = status.str.startswith("Granted")
     out = pd.DataFrame(rows)
     out = out[out["acquired"] > 0].reset_index(drop=True)
+    out.loc[len(out)] = {"filing status": "**Total**", "what it means": "",
+                         "acquired": int(out["acquired"].sum()),
+                         "representative": int(out["representative"].sum()),
+                         "primary": int(out["primary"].sum())}
     out.attrs["granted"] = (int(granted.sum()), int((granted & ident["_representative"]).sum()),
                             int((granted & ident["_primary"]).sum()))
     return out
@@ -271,13 +354,21 @@ def d2_label_set(
     ds: Dataset, near_constant_min_answered: int = 100, near_constant_share: float = 0.95,
     informative_min_answered: int = 300, informative_min_effk: float = 1.5,
 ) -> pd.DataFrame:
-    """The properties of the label set: slots, concepts, coverage, informative fields."""
-    slots = answerable_slots(ds)
-    sub = ds.variants[slots]
-    answered_per_aircraft = d2_slots_per_aircraft(ds)
-    coverage = sub.notna().mean()
-    inv = d2_field_inventory(ds)
+    """The properties of the label set, counted from the dimension register (Figure 3.3b).
 
+    Questions are the rows of ``register`` (the drawing of the cards G1 to M3); export
+    columns are what those questions fill once repeated per boom group, wing panel,
+    propulsor host and propulsor type. The near-constant and informative counts stay at
+    column level (the field inventory of 3.3.4).
+    """
+    reg = register.load()
+    q = register.questions(ds, reg)
+    counted = q[q["counted"]]
+    kinds = counted["kind"].value_counts()
+    per = register.per_aircraft(ds, reg)
+    cards = register.by_card(ds, reg).set_index("card")
+    off = q[~q["on_list"]]
+    inv = d2_field_inventory(ds)
     near_constant = inv[
         (inv["answered"] >= near_constant_min_answered)
         & (inv["top_share"] >= near_constant_share)
@@ -286,23 +377,42 @@ def d2_label_set(
         (inv["answered"] >= informative_min_answered)
         & (inv["effective_answers"] >= informative_min_effk)
     ]
-    q1, q3 = answered_per_aircraft.quantile([0.25, 0.75])
+    q1, q3 = per.quantile([0.25, 0.75])
     rows = [
-        ("Answerable slots (G1 to M3, coded columns; free text and process flags excluded)", len(slots)),
-        ("Distinct concepts behind them (repeats collapsed)",
-         len({concept_of(s) for s in slots})),
-        ("Slots answered per aircraft, median", int(answered_per_aircraft.median())),
+        ("Total slots on the four label cards (Figure 3.3b)", len(counted)),
+        ("of which dimensions (one answer from a list)", int(kinds.get("Dimension", 0))),
+        ("of which ticks (a box ticked or not)", int(kinds.get("Tick", 0))),
+        ("of which numbers (a count)", int(kinds.get("Number", 0))),
+        ("Tags and escapes beside them, not counted", int(cards.loc["all", "tags and escapes beside them"])),
+        ("Export columns the slots fill (repeated per boom group, wing panel, propulsor "
+         "host and propulsor type)", int(cards.loc["all", "export columns"])),
+        ("Coded export columns not on the cards, left out", int(off["columns"].sum())),
+        (f"Slots answered per aircraft (of {len(counted)}), median", int(per.median())),
         ("Slots answered per aircraft, lower quartile", int(q1)),
         ("Slots answered per aircraft, upper quartile", int(q3)),
-        ("Slots answered per aircraft, minimum", int(answered_per_aircraft.min())),
-        ("Slots answered per aircraft, maximum", int(answered_per_aircraft.max())),
-        ("Slots answered on more than 90 % of aircraft", int((coverage > 0.90).sum())),
-        ("Slots answered on fewer than 5 % of aircraft", int((coverage < 0.05).sum())),
-        (f"Fields with the same answer on {near_constant_share:.0%} or more "
+        ("Slots answered per aircraft, minimum", int(per.min())),
+        ("Slots answered per aircraft, maximum", int(per.max())),
+        ("Slots answered on more than 90 % of aircraft", int((counted["share_answering"] > 0.90).sum())),
+        ("Slots answered on fewer than 5 % of aircraft", int((counted["share_answering"] < 0.05).sum())),
+        (f"Export columns with the same answer on {near_constant_share:.0%} or more "
          f"(answered on at least {near_constant_min_answered})", len(near_constant)),
-        ("Fields that carry the information", len(informative)),
+        ("Export columns that carry the information (3.3.4)", len(informative)),
     ]
-    return pd.DataFrame(rows, columns=["property of the label set", "value"])
+    out = pd.DataFrame(rows, columns=["property of the label set", "value"])
+    out.attrs["off_cards"] = [r["question"].lower() for _, r in off.iterrows()]
+    return out
+
+
+def d2_column_stats(ds: Dataset) -> Dict[str, int]:
+    """Column-level completeness: the framework document's old "slots" numbers.
+
+    Kept for :mod:`published` only; the document counts questions (:func:`d2_label_set`).
+    """
+    per = d2_slots_per_aircraft(ds)
+    coverage = ds.variants[answerable_slots(ds)].notna().mean()
+    return {"Slots answered per aircraft, median": int(per.median()),
+            "Slots answered on more than 90 % of aircraft": int((coverage > 0.90).sum()),
+            "Slots answered on fewer than 5 % of aircraft": int((coverage < 0.05).sum())}
 
 
 def d2_field_inventory(ds: Dataset) -> pd.DataFrame:
@@ -490,8 +600,15 @@ def d3_architecture_balance(ds: Dataset, with_unclassifiable: bool = True) -> pd
 D3_FIELDS = ["wCount", "empType", "fusKin", "wingConf", "gearArch", "latSym"]
 
 
-def d3_selected_fields(ds: Dataset, fields: Optional[List[str]] = None) -> pd.DataFrame:
-    """Answered / distinct / top share and the most common answers, per field."""
+def d3_selected_fields(ds: Dataset, fields: Optional[List[str]] = None,
+                       propulsion: bool = True) -> pd.DataFrame:
+    """Answered / distinct / top share and the most common answers, per field.
+
+    With ``propulsion`` (the default table) two derived propulsion rows close it: the
+    propulsor units per aircraft, in the bins of :func:`rotor_bin`, and the propulsor
+    groups per aircraft (the M3 stations that carry units). HB / PFV and a G1 override
+    have no propulsor record and are not counted (rule 1).
+    """
     rows = []
     for f in fields or D3_FIELDS:
         s = ds.variants[f]
@@ -507,7 +624,38 @@ def d3_selected_fields(ds: Dataset, fields: Optional[List[str]] = None) -> pd.Da
                 f"{names.get(str(k), k)} {v}" for k, v in top.items()
             ),
         })
+    if propulsion and fields is None:
+        units = propulsor_units(ds.variants)["units"]
+        for name, field, s in [
+            ("propulsor units per aircraft", "(derived) propulsor units, binned", rotor_bin(units)),
+            ("propulsor groups per aircraft", "(derived) M3 stations carrying units",
+             propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g)))
+             .where(units.notna())),
+        ]:
+            s = s.where(s.ne("nan")).dropna()
+            top = s.value_counts().head(5)
+            rows.append({"name": name, "field": field, "answered": int(len(s)),
+                         "answers": int(s.nunique()), "top_share": round(metrics.top_share(s), 2),
+                         "most common answers": " · ".join(f"{k} {v}" for k, v in top.items())})
     return pd.DataFrame(rows)
+
+
+#: propulsor units per aircraft -> the bins of the archetype levels (user, 2026-09-22):
+#: the peaks at 4, 6 and 8 each anchor a bin; 5 and 7 (mostly an even lift set plus one
+#: pusher) join the next even count; 1-3 and 9 or more are the two tails
+ROTOR_BINS = ([-1, 3, 4, 6, 8, 10 ** 6], ["0-3", "4", "5-6", "7-8", "9+"])
+
+
+def rotor_bin(units: pd.Series) -> pd.Series:
+    """Propulsor units -> 0-3 / 4 / 5-6 / 7-8 / 9+ (strings; NaN stays NaN, never 0)."""
+    u = pd.to_numeric(units, errors="coerce")
+    return pd.cut(u, bins=ROTOR_BINS[0], labels=ROTOR_BINS[1]).astype(object).where(u.notna())
+
+
+def propulsor_groups(v: pd.DataFrame) -> pd.Series:
+    """How many M3 stations (booms, wing panels, tail, fuselage, hull, core layout) carry units."""
+    cols = [c for c in PROPULSOR_UNIT_COLUMNS if c in v.columns]
+    return (v[cols].apply(pd.to_numeric, errors="coerce") > 0).sum(axis=1)
 
 
 def _group_columns(ds: Dataset, suffix: str) -> List[str]:
@@ -819,16 +967,25 @@ def d4_missingness(ds: Dataset) -> pd.DataFrame:
 # D5 — archetype cardinality
 # --------------------------------------------------------------------------
 #: the archetype levels of the document: (fields, what the row says), each level
-#: named by what it adds to the architecture class. ``boomBin`` and ``anyTilt``
-#: are derived in :func:`archetype_frame`.
+#: named by what it adds to the architecture class. ``boomBin``, ``anyTilt`` and
+#: ``rotorBin`` are derived in :func:`archetype_frame`. A level ending in ``c`` is its
+#: parent plus the propulsor count in the bins 0-3 / 4 / 5-6 / 7-8 / 9+ (user, 2026-09-22:
+#: the number of rotors is a driver of the eVTOL taxonomy, so every level gets a count version).
 ARCHETYPE_LEVELS = {
     "A0": (["topType"], "architecture class"),
+    "A0c": (["topType", "rotorBin"], "+ propulsor units 0-3 / 4 / 5-6 / 7-8 / 9+"),
     "A1": (["topType", "wCount", "boomsPresent"], "+ number of wings, booms present"),
+    "A1c": (["topType", "wCount", "boomsPresent", "rotorBin"],
+            "+ number of wings, booms present, propulsor units"),
     "A1b": (["topType", "wCount", "boomBin"],
             "+ number of wings, booms binned none / 1-2 / 3 / 4 or more"),
     "A1t": (["topType", "wCount", "anyTilt"], "+ number of wings, any tilting unit"),
+    "A1tc": (["topType", "wCount", "anyTilt", "rotorBin"],
+             "+ number of wings, any tilting unit, propulsor units"),
     "A2": (["topType", "wCount", "boomsPresent", "empType"],
            "+ number of wings, booms present, tail type"),
+    "A2c": (["topType", "wCount", "boomsPresent", "empType", "rotorBin"],
+            "+ number of wings, booms present, tail type, propulsor units"),
 }
 #: the seven fields the S3 identical-to-root check compares (the old A3 level)
 ARCHETYPE_FIELDS_FULL = ["topType", "wCount", "boomsPresent", "empType", "fusKin", "gearArch",
@@ -859,6 +1016,11 @@ def archetype_frame(ds: Dataset) -> pd.DataFrame:
     ts = thrust_states(v)
     v["anyTilt"] = ts["any_tilting"].astype(object).where(ts["any_tilting"].notna(), None)
     v.loc[ts["left_out"].eq(LEFT_OUT_HBPFV), "anyTilt"] = NO_M3_CARD
+    # 2026-09-22: the number of propulsor units, binned (rotor_bin) — HB / PFV carry no
+    # propulsor record by design and keep that as their own answer, as for anyTilt
+    pu = propulsor_units(v)
+    v["rotorBin"] = rotor_bin(pu["units"])
+    v.loc[pu["left_out"].eq(LEFT_OUT_HBPFV), "rotorBin"] = NO_M3_CARD
     return v
 
 
@@ -880,7 +1042,7 @@ def d5_archetype_cardinality(ds: Dataset, levels: Optional[Dict] = None) -> pd.D
         # left out; any other blank stays a design absence, as in 3.3.2
         left = pd.Series(False, index=v.index)
         for f in fields:
-            left |= v[f].isna() if f in ("anyTilt", "boomBin") else hidden_by_override(v, f, ds.data_dictionary)
+            left |= v[f].isna() if f in ("anyTilt", "boomBin", "rotorBin") else hidden_by_override(v, f, ds.data_dictionary)
         known = ~left
         sub = v[known]
         key = sub[fields].astype(str).agg(" | ".join, axis=1)
@@ -958,19 +1120,37 @@ DUP_TYPES = {
 
 
 def d7_duplicates(ds: Dataset) -> pd.DataFrame:
-    """Observations (O1, O2) against similars (S3): only S3 adds unique aircraft."""
-    all_rows = ds.master["dup_type"].value_counts()
-    in_set = ds.variants["dup_type"].value_counts()
-    rows = []
+    """From aircraft observations to unique aircraft, inside the representative set.
+
+    Every row of the representative patents is an observation: the original record of an
+    aircraft, an O1 / O2 seen again, or an S3 similar. O1 and O2 are removed; originals and
+    S3 are the unique aircraft. The rows add up to the funnel (observations - O1 - O2 =
+    unique aircraft). The last column counts the same types one step earlier, over every
+    aircraft observation on the patents approved at labelling — that is, before the
+    "but similar" domain gate removed any (renamed 2026-09-22; it read "all approved
+    (before the gate)", which did not say what was counted or over which patents).
+    """
+    obs = ds.approved_variants["dup_type"]
+    in_set = ds.variants["dup_type"]
+    before_gate = ds.master.loc[ds.master["is_approved"].fillna(False).astype(bool), "dup_type"]
+    BEFORE = "observations at labelling, before the domain gate"   # the column the caption explains
+    rows = [{"type": "Original - the first record of an aircraft", "what it is": "labelled in full",
+             "observations": int(obs.isna().sum()), "removed": 0,
+             "unique aircraft": int(in_set.isna().sum()),
+             BEFORE: int(before_gate.isna().sum())}]
     for code, (name, what, new) in DUP_TYPES.items():
-        rows.append({
-            "type": name,
-            "what it is": what,
-            "observations": int(all_rows.get(code, 0)),
-            "unique aircraft added": int(in_set.get(code, 0)),
-            "new unique aircraft": new,
-        })
-    return pd.DataFrame(rows)
+        n = int(obs.eq(code).sum())
+        rows.append({"type": name, "what it is": what, "observations": n,
+                     "removed": 0 if new == "yes" else n,
+                     "unique aircraft": int(in_set.eq(code).sum()),
+                     BEFORE: int(before_gate.eq(code).sum())})
+    out = pd.DataFrame(rows)
+    out.loc[len(out)] = {"type": "**Total**", "what it is": "",
+                         "observations": int(out["observations"].sum()),
+                         "removed": int(out["removed"].sum()),
+                         "unique aircraft": int(out["unique aircraft"].sum()),
+                         BEFORE: int(out[BEFORE].sum())}
+    return out
 
 
 def d7_d3_rows(ds: Dataset, fields: Optional[List[str]] = None) -> pd.DataFrame:
@@ -1189,6 +1369,159 @@ def d9_architecture_by_window(
     return out
 
 
+def window_of(year: float, windows=None) -> Optional[str]:
+    """The window a priority year falls in (None outside every window)."""
+    for name, lo, hi in (windows or WINDOWS):
+        if pd.notna(year) and lo <= year <= hi:
+            return name
+    return None
+
+
+def aircraft_observations(ds: Dataset) -> pd.DataFrame:
+    """One row per observation of a unique aircraft: its primary record and every O1 / O2.
+
+    Columns ``aircraft_id`` (the unique aircraft), ``patent_id``, ``year`` (priority year),
+    ``is_primary`` and ``topType`` (the unique aircraft's class).
+    """
+    av = ds.approved_variants.merge(ds.identity[["patent_id", "priority_year"]],
+                                    on="patent_id", how="left")
+    av["year"] = pd.to_numeric(av["priority_year"], errors="coerce")
+    primary = av["is_primary"].fillna(False).astype(bool)
+    target = av["same_aircraft_as"].fillna("").astype(str).str.split("; ").str[0]
+    out = pd.DataFrame({"aircraft_id": np.where(primary, av["aircraft_id"], target),
+                        "patent_id": av["patent_id"], "year": av["year"], "is_primary": primary})
+    cls = av.loc[primary].set_index("aircraft_id")["topType"]
+    out = out[out["aircraft_id"].isin(cls.index)].copy()
+    out["topType"] = out["aircraft_id"].map(cls)
+    return out.reset_index(drop=True)
+
+
+def d9_aircraft_spans(ds: Dataset) -> pd.DataFrame:
+    """Every unique aircraft with the priority years of all its observations.
+
+    The window of an aircraft is the priority year of its primary record (the original the
+    labeller flagged, never re-rooted on date). An O1 / O2 re-filing of the same aircraft can
+    come before or after it. ``first`` / ``last`` span every observation; an aircraft
+    without a repeat is a single point in time (first == last == primary year).
+    """
+    obs = aircraft_observations(ds)
+    prim = obs[obs["is_primary"]].set_index("aircraft_id")
+    g = obs.groupby("aircraft_id")["year"].agg(first="min", last="max", observations="size")
+    g["primary_year"] = prim["year"].reindex(g.index)
+    g["topType"] = prim["topType"].reindex(g.index)
+    g["repeats"] = g["observations"] - 1
+    g["span_years"] = g["last"] - g["first"]
+    g["window_primary"] = g["primary_year"].map(window_of)
+    g["window_first"] = g["first"].map(window_of)
+    g["window_last"] = g["last"].map(window_of)
+    return g.reset_index()
+
+
+def d9_architecture_by_window_active(ds: Dataset, types: Optional[List[str]] = None) -> pd.DataFrame:
+    """Class shares per window counted two ways: once (primary year) and while filed.
+
+    *Once*: every aircraft in the window of its primary record (Table 3.3.8). *While
+    filed*: an aircraft counts in every window its filings touch, from its first to its
+    last observation, windows in between included; an aircraft filed once stays a single
+    point. Long-lived designs weigh more in the second count.
+    """
+    sp = d9_aircraft_spans(ds)
+    types = types or ["TR", "SLC", "CVT", "MR"]
+    rows = []
+    for name, lo, hi in WINDOWS:
+        once = sp[sp["primary_year"].between(lo, hi)]
+        active = sp[(sp["first"] <= hi) & (sp["last"] >= lo)]
+        for mode, sub in (("once, at the primary record", once), ("while filed, first to last", active)):
+            row = {"window": name, "count": mode, "unique aircraft": int(len(sub))}
+            shares = sub["topType"].value_counts(normalize=True)
+            for t in types:
+                row[metrics.ARCH_NAMES.get(t, t)] = round(float(shares.get(t, 0.0)), 2)
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+# --------------------------------------------------------------------------
+# D14 — technological proximity between firms (Jaffe 1986)
+# --------------------------------------------------------------------------
+def firm_profiles(ds: Dataset, min_aircraft: int = 5, by: str = "class") -> pd.DataFrame:
+    """Firm x category counts of unique aircraft, for the named firms with ``min_aircraft`` or more.
+
+    ``by="class"``: the twelve architecture classes; ``by="class_rotors"``: the class crossed
+    with the propulsor-count bin (the A0c archetype). Each unique aircraft counts once, under
+    the canonical company of its primary patent; the two catch-all buckets are not firms.
+    """
+    v = archetype_frame(ds).merge(ds.identity[["patent_id", "company_canonical"]],
+                                  on="patent_id", how="left")
+    v = v[v["company_canonical"].notna() & ~v["company_canonical"].isin(CATCH_ALL)]
+    if by == "class_rotors":
+        v = v[v["rotorBin"].notna()]
+        key = v["topType"].astype(str) + " " + v["rotorBin"].astype(str)
+    else:
+        key = v["topType"].astype(str)
+    tab = pd.crosstab(v["company_canonical"], key)
+    size = tab.sum(axis=1)
+    return tab[size >= min_aircraft]
+
+
+def proximity_matrix(profiles: pd.DataFrame) -> pd.DataFrame:
+    """Jaffe (1986) technological proximity: the cosine of two firms' profile vectors.
+
+    1 = the same mix of categories, 0 = no category in common. Independent of firm size.
+    """
+    x = profiles.to_numpy(dtype=float)
+    norm = np.linalg.norm(x, axis=1, keepdims=True)
+    unit = x / np.where(norm == 0, 1, norm)
+    return pd.DataFrame(unit @ unit.T, index=profiles.index, columns=profiles.index)
+
+
+def proximity_order(prox: pd.DataFrame) -> List[str]:
+    """Firms ordered so that proximate firms sit together (average-linkage clustering)."""
+    try:
+        from scipy.cluster.hierarchy import leaves_list, linkage
+        from scipy.spatial.distance import squareform
+        d = (1 - prox.to_numpy()).clip(min=0)
+        np.fill_diagonal(d, 0)
+        return list(prox.index[leaves_list(linkage(squareform(d, checks=False), "average"))])
+    except Exception:
+        return list(prox.index)
+
+
+def d14_firm_proximity(ds: Dataset, min_aircraft: int = 5) -> pd.DataFrame:
+    """Each firm, its architecture profile, and the firm whose profile is closest to it.
+
+    Proximity is computed twice: on the architecture class alone, and on the class crossed
+    with the propulsor-count bin, which separates, say, a four-rotor from an eight-rotor
+    multirotor. Firms with fewer than ``min_aircraft`` unique aircraft have no stable profile
+    and are left out.
+    """
+    pc = firm_profiles(ds, min_aircraft, "class")
+    pr = firm_profiles(ds, min_aircraft, "class_rotors")
+    xc, xr = proximity_matrix(pc), proximity_matrix(pr.reindex(pc.index).fillna(0))
+    rows = []
+    for f in proximity_order(xc):
+        prof = pc.loc[f]
+        prof = prof[prof > 0].sort_values(ascending=False)
+        c = xc.loc[f].drop(f)
+        r = xr.loc[f].drop(f)
+        rows.append({
+            "firm": f, "unique aircraft": int(pc.loc[f].sum()),
+            "architecture profile": " · ".join(f"{metrics.ARCH_NAMES.get(k, k)} {int(n)}" for k, n in prof.head(3).items()),
+            "closest firm (class)": c.idxmax(), "proximity (class)": round(float(c.max()), 2),
+            "closest firm (class x propulsor count)": r.idxmax(),
+            "proximity (class x propulsor count)": round(float(r.max()), 2),
+        })
+    out = pd.DataFrame(rows)
+    iu = np.triu_indices(len(xc), k=1)
+    out.attrs.update({"firms": int(len(pc)), "min_aircraft": min_aircraft,
+                      "aircraft": int(pc.to_numpy().sum()),
+                      "mean_class": round(float(xc.to_numpy()[iu].mean()), 2),
+                      "mean_rotors": round(float(xr.to_numpy()[iu].mean()), 2),
+                      "pairs_high_class": int((xc.to_numpy()[iu] >= 0.9).sum()),
+                      "pairs_zero_class": int((xc.to_numpy()[iu] == 0).sum()),
+                      "pairs": int(len(iu[0]))})
+    return out
+
+
 # --------------------------------------------------------------------------
 # D11 — how much visual evidence each label rests on
 # --------------------------------------------------------------------------
@@ -1230,8 +1563,14 @@ def d11_figure_approval(ds: Dataset) -> pd.DataFrame:
     appr = ds.approved_figures_all
     parts = appr["parts"].astype(str).str.split("|").str[0].replace({"nan": "(blank)"})
     rows = [("Figures with an image file", int(len(figs))),
-            ("Not approved", int(status.eq("disapproved").sum())),
-            ("Approved", int(len(appr)))]
+            ("Not approved", int(status.eq("disapproved").sum()))]
+    # 2026-09-22: a figure the wizard never set is neither approved nor disapproved; listed so the
+    # table adds up to the figures on file
+    no_status = figs.loc[~status.isin(["approved", "disapproved"]), ["patent_id", "fig_key"]]
+    if len(no_status):
+        rows.append((f"No status recorded ({', '.join(no_status['patent_id'] + ' ' + no_status['fig_key'].astype(str))})",
+                     int(len(no_status))))
+    rows.append(("Approved", int(len(appr))))
     counts = parts.value_counts()
     minor = counts[counts < 5]
     for k, v in counts[counts >= 5].items():
@@ -1308,6 +1647,13 @@ def d13_flagship_check(ds: Dataset, min_patents: int = 2) -> pd.DataFrame:
     eVTOL Aircraft Directory); the label side is recomputed. A company whose
     documented aircraft do not all share one architecture is marked, because that
     is exactly the case the automatic exemption of A.4 refuses to decide.
+
+    Two columns read the public side only, and neither compares a label with it:
+    ``public products span 2+ classes`` is true when the company's own public
+    aircraft sit in more than one architecture class (Airbus: CityAirbus MR,
+    NextGen SLC, Vahana TW), and ``most-filed class matches a public product`` is
+    true when the class the company files most is the class of one of those
+    aircraft. Companies with nothing in the directory read "no public product".
     """
     j = ds.variants.merge(
         ds.identity[["patent_id", "company_canonical"]], on="patent_id", how="left"
@@ -1332,10 +1678,134 @@ def d13_flagship_check(ds: Dataset, min_patents: int = 2) -> pd.DataFrame:
                 f"{r.aircraft_name} ({r.known_type})" for r in models.itertuples()
             )
             types = set(models["known_type"])
-            entry["public types differ"] = len(types) > 1
-            entry["top label matches a public type"] = (
-                bool(counts.index[0] in types) if len(counts) and types else None
+            # both columns are about the company's OWN public products, never about the labels
+            # against them: the first says the products do not all share one architecture, the
+            # second that the class the company files most is the class of one of its products.
+            none_ = "no public product"
+            entry["public products span 2+ classes"] = len(types) > 1 if types else none_
+            entry["most-filed class matches a public product"] = (
+                bool(counts.index[0] in types) if len(counts) and types else none_
             )
         rows.append(entry)
     out = pd.DataFrame(rows)
     return out.sort_values("aircraft", ascending=False).reset_index(drop=True)
+
+
+# --------------------------------------------------------------------------
+# D15 — technology readiness (NASA TRL) and programme status of the unique aircraft
+# --------------------------------------------------------------------------
+#: NASA NPR 7123.1D levels grouped as the document reads them
+TRL_BANDS = [("TRL 2", (2,)), ("TRL 3-5", (3, 4, 5)), ("TRL 6-7", (6, 7)), ("TRL 8-9", (8, 9))]
+STATUS_ORDER = ["active", "paused", "superseded", "ended", "unknown", "not tracked", "n/a"]
+
+
+def trl_frame(ds: Dataset) -> pd.DataFrame:
+    """One row per unique aircraft of the analysis set with its TRL and programme status.
+
+    The TRL table (``0_labelling/inputs/trl/aircraft_trl.csv``) gives every aircraft a level:
+    the evidence level where a public source reports hardware, else TRL 2, "patent only".
+    An aircraft the table does not list (newer than its build) is TRL 2, not tracked.
+    """
+    if ds.trl is None:
+        raise FileNotFoundError("0_labelling/inputs/trl/aircraft_trl.csv is missing: run build_aircraft_trl.py")
+    t = ds.trl[["aircraft_id", "trl", "trl_basis", "confidence", "programme_status"]]
+    v = ds.variants[["aircraft_id", "topType"]].merge(t, on="aircraft_id", how="left")
+    v["trl"] = pd.to_numeric(v["trl"], errors="coerce").fillna(2).astype(int)
+    v["programme_status"] = v["programme_status"].fillna("not tracked")
+    v["band"] = v["trl"].map({lvl: name for name, lvls in TRL_BANDS for lvl in lvls})
+    return v
+
+
+def d15_trl_by_class(ds: Dataset) -> pd.DataFrame:
+    """Unique aircraft per architecture class and TRL band, largest class first, with a total."""
+    v = trl_frame(ds)
+    v["class"] = v["topType"].map(lambda t: metrics.ARCH_NAMES.get(t, t) if pd.notna(t) else "no type")
+    bands = [b for b, _ in TRL_BANDS]
+    tab = pd.crosstab(v["class"], v["band"]).reindex(columns=bands, fill_value=0)
+    tab = tab.loc[tab.sum(axis=1).sort_values(ascending=False).index]
+    tab.insert(0, "unique aircraft", tab.sum(axis=1))
+    tab["above TRL 2"] = tab["unique aircraft"] - tab["TRL 2"]
+    tab.loc["Total"] = tab.sum()
+    tab["share above TRL 2"] = (tab["above TRL 2"] / tab["unique aircraft"]).round(2)
+    out = tab.reset_index().rename(columns={"index": "class"})
+    out.columns.name = None
+    lv = v["trl"].value_counts()
+    out.attrs.update({"aircraft": int(len(v)), "above": int((v["trl"] > 2).sum()),
+                      **{f"trl{k}": int(lv.get(k, 0)) for k in range(2, 10)},
+                      "evidence": int(v["trl_basis"].eq("evidence").sum()),
+                      "medium": int(v["confidence"].eq("medium").sum())})
+    return out
+
+
+def d15_trl_status(ds: Dataset) -> pd.DataFrame:
+    """Programme status against TRL band: the level an aircraft reached, and whether its programme goes on."""
+    v = trl_frame(ds)
+    bands = [b for b, _ in TRL_BANDS]
+    tab = pd.crosstab(v["programme_status"], v["band"]).reindex(columns=bands, fill_value=0)
+    tab = tab.reindex([s for s in STATUS_ORDER if s in tab.index])
+    tab["unique aircraft"] = tab.sum(axis=1)
+    tab.loc["Total"] = tab.sum()
+    out = tab.reset_index().rename(columns={"programme_status": "programme status"})
+    out.columns.name = None
+    return out
+
+
+# --------------------------------------------------------------------------
+# D16 — the patent's label against the public aircraft of the same name
+# --------------------------------------------------------------------------
+PUBLIC_MATCH = [
+    ("yes", "same class as the public aircraft"),
+    ("taxonomy", "same aircraft; the directory draws its classes elsewhere"),
+    ("no", "the patent describes another configuration (drawing and text agree)"),
+    ("image", "drawing label differs from the patent text; the text matches the public aircraft"),
+]
+
+
+def public_arch_frame(ds: Dataset) -> pd.DataFrame:
+    """Unique aircraft that have a public counterpart, with how the patent's label compares to it.
+
+    The comparison comes from the TRL rulings (``arch_match``): the patent's class (read from the
+    drawing) against the class of the aircraft the firm showed or flew. Where they differ the
+    architecture ground truth (the whole-patent text reading, ``arch_gt``) tells whether the patent
+    itself describes another configuration or only the drawing label departs from the text.
+    """
+    if ds.trl is None:
+        raise FileNotFoundError("0_labelling/inputs/trl/aircraft_trl.csv is missing")
+    t = ds.trl[["aircraft_id", "aircraft_name", "trl", "arch_match", "public_arch"]].copy()
+    t = t[t["arch_match"].fillna("").ne("")]
+    cols = ["aircraft_id", "patent_id", "topType"] + (["arch_gt"] if "arch_gt" in ds.variants else [])
+    v = ds.variants[cols].merge(t, on="aircraft_id", how="inner")
+    v["match"] = v["arch_match"].astype(str).str.split(" ").str[0]
+    # a disagreement is split by the text reading: text = drawing -> the patent's own configuration;
+    # text != drawing -> the drawing label is what departs (the text matches the public aircraft)
+    if "arch_gt" in v:
+        diff = v["match"].isin(["no", "image"])
+        gt = v["arch_gt"].fillna("").astype(str)
+        v.loc[diff & gt.ne("") & gt.eq(v["topType"].astype(str)), "match"] = "no"
+        v.loc[diff & gt.ne("") & gt.ne(v["topType"].astype(str)), "match"] = "image"
+    return v
+
+
+def d16_public_match(ds: Dataset) -> pd.DataFrame:
+    """How many named aircraft carry the class of their public counterpart, and why the rest do not."""
+    v = public_arch_frame(ds)
+    rows = [{"patent label against the public aircraft": label, "unique aircraft": int((v["match"] == k).sum())}
+            for k, label in PUBLIC_MATCH]
+    out = pd.DataFrame(rows)
+    out.loc[len(out)] = {"patent label against the public aircraft": "Total", "unique aircraft": int(len(v))}
+    out["share"] = (out["unique aircraft"] / len(v)).round(2) if len(v) else 0.0
+    out.attrs.update({"aircraft": int(len(v)), **{k: int((v["match"] == k).sum()) for k, _ in PUBLIC_MATCH}})
+    return out
+
+
+def d16_public_differences(ds: Dataset) -> pd.DataFrame:
+    """The named aircraft whose patent class differs from the public aircraft, one row each."""
+    v = public_arch_frame(ds)
+    v = v[v["match"].isin(["no", "image"])].copy()
+    name = lambda c: metrics.ARCH_NAMES.get(c, c) if pd.notna(c) and c != "" else ""
+    return pd.DataFrame({
+        "aircraft": v["aircraft_name"], "patent": v["patent_id"],
+        "drawing label": v["topType"].map(name),
+        "patent text": v["arch_gt"].map(name) if "arch_gt" in v else "",
+        "public aircraft": v["public_arch"], "TRL": v["trl"].astype(int),
+    }).sort_values(["public aircraft", "aircraft"]).reset_index(drop=True)

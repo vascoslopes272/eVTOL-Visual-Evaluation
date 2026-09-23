@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- source: Design artifact "eVTOL Patent-Image Taxonomy — Scheme", board Map.dc.html (copied 2026-09-21) -->
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;display=swap">
+  <style>
+    body { margin: 0; background: #F5F2EA; color: #1C1B18; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    a { color: #27466F; } a:hover { color: #1C1B18; }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+    .serif { font-family: "Newsreader", Georgia, serif; }
+    .col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .head { color: #F5F2EA; border-radius: 12px; padding: 12px 16px; display: flex; align-items: baseline; gap: 12px; }
+    .hc { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 600; line-height: 1; }
+    .hn { font-family: "Newsreader", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .box { background: #FFFFFF; border: 1.5px solid #1C1B18; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .box.dash { border-style: dashed; }
+    .bt { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .bn { font-family: "Newsreader", Georgia, serif; font-size: 20px; font-weight: 600; line-height: 1.1; }
+    .mult { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; background: #1C1B18; color: #F5F2EA; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+    .tree { margin-left: 6px; padding-left: 18px; border-left: 1.5px solid #CFC8B8; display: flex; flex-direction: column; gap: 9px; }
+    .n { position: relative; display: flex; flex-direction: column; gap: 2px; }
+    .n::before { content: ""; position: absolute; left: -18px; top: 11px; width: 12px; border-top: 1.5px solid #CFC8B8; }
+    .nm { font-size: 14.5px; font-weight: 600; line-height: 1.35; display: flex; align-items: center; gap: 7px; }
+    .op { font-size: 12.5px; color: #5E5B53; line-height: 1.4; }
+    .if { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600; color: #5E5B53; border: 1px dashed #8F887A; border-radius: 4px; padding: 0 5px; }
+    .esc { display: inline-flex; align-items: center; border: 1.5px dashed #9B2461; background: #F8E8F0; color: #7E1C4F; border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 500; }
+    .rep { box-shadow: 6px 6px 0 -1.5px #FFFFFF, 6px 6px 0 0 #1C1B18, 12px 12px 0 -1.5px #FFFFFF, 12px 12px 0 0 #1C1B18; margin: 0 12px 12px 0; }
+  
+    /* export fix 2026-09-21: labels never wrap (the design tool's PNG export wrapped them onto the next line) */
+    .bn, .hn, .esc, .mult, .if, .serif, .code, .gh { white-space: nowrap; }
+  </style>
+
+</head>
+<body>
+<div style="width: 1900px; height: 1080px; box-sizing: border-box; padding: 56px; display: flex; flex-direction: column; gap: 28px; background: #F5F2EA;">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+    <span class="serif" style="font-size: 44px; font-weight: 600; line-height: 1;">Every dimension, at a glance</span>
+    <div style="display: flex; align-items: center; gap: 22px; font-size: 13.5px; color: #3D3B36;">
+      <span style="display: inline-flex; align-items: center; gap: 7px;"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>flag</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px;"><span class="mono" style="font-weight: 600;">#</span>number</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px;"><span class="if">if</span>conditional</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px;"><span class="mult">×n</span>repeated</span>
+      <span class="esc">escape</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 330px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.05fr); gap: 30px; align-items: start;">
+
+    <div class="col">
+      <div class="head" style="background: #27466F;"><span class="hc">G1</span><span class="hn">Architecture</span></div>
+      <div class="box">
+        <div class="bt"><span class="bn">Architecture class</span><span class="mult">×1</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Winged · vectored</span><span class="op">TW · TR · DS · CVT · PTC · TB</span></div>
+          <div class="n"><span class="nm">Winged · independent</span><span class="op">SLC · SRW</span></div>
+          <div class="n"><span class="nm">Wingless</span><span class="op">RC · MR</span></div>
+          <div class="n"><span class="nm">Other</span><span class="op">HB · PFV</span><span style="margin-top: 4px;"><span class="esc">Override</span></span></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="bt"><span class="bn">Beside the class</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm"><span class="esc">humanUncertain</span></span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>notPureArch</span></div>
+          <div class="n"><span class="nm">Edge tags</span><span class="op">UAVSimilar · ElectricSimilar</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="head" style="background: #8C3B1E;"><span class="hc">M1</span><span class="hn">Structure</span></div>
+      <div class="box">
+        <div class="bt"><span class="bn">Fuselage</span><span class="mult">×1</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Shape</span><span class="op">Circular · Oval · Rectangular · Blended / Lifting Body · Other</span></div>
+          <div class="n"><span class="nm">Kinematics</span><span class="op">Fixed · Variable Incidence · Whole-Body Pitch · Tail-sitter</span></div>
+          <div class="n"><span class="nm">Ground contact</span><span class="op">Skids · Wheeled Gear · Pads / Hull · Unknown</span></div>
+          <div class="n"><span class="nm">Lateral symmetry</span><span class="op">Yes · No</span></div>
+          <div class="n"><span class="nm">Booms present</span><span class="op">Yes · No</span></div>
+        </div>
+      </div>
+      <div class="box rep" style="border-color: #8C3B1E;">
+        <div class="bt"><span class="bn" style="color: #8C3B1E;">Boom group</span><span class="mult">×0..n</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm"><span class="mono">#</span>Count</span><span class="op" style="display: flex; gap: 12px;"><span style="display: inline-flex; align-items: center; gap: 5px;"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#5E5B53" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#5E5B53" stroke-width="1.6"></path></svg>Symmetric</span><span style="display: inline-flex; align-items: center; gap: 5px;"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#5E5B53" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#5E5B53" stroke-width="1.6"></path></svg>Circular / Radial</span></span></div>
+          <div class="n"><span class="nm">Attachment</span><span class="op">Wings · Fuselage · Both · Empennage · Other</span></div>
+          <div class="n"><span class="nm"><span class="if">if wing</span>Wing panel index</span><span class="op">1 · 2 · 3 · 4 · More than one</span></div>
+          <div class="n"><span class="nm"><span class="if">if wing</span>Spanwise position</span><span class="op">Inboard · Mid-span · Outboard · Spanning · N/A · Other</span></div>
+          <div class="n"><span class="nm"><span class="if">if not wing</span>Longitudinal position</span><span class="op">Fore · Mid · Aft · Full length · N/A · Other</span></div>
+          <div class="n"><span class="nm">Orientation</span><span class="op">Longitudinal · Lateral · Vertical · X / Diagonal · Other</span></div>
+          <div class="n"><span class="nm">Wing relationship</span><span class="op">Forward · Aft · Straddles · Bridge · N/A · Other</span></div>
+          <div class="n"><span class="nm">Carries propulsors</span><span class="op">Yes · No</span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Booms tilt<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="margin-left: 10px;"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Booms stow</span></div>
+        </div>
+      </div>
+      <div><span class="esc">Quick override</span> <span class="esc">humanUncertain</span></div>
+    </div>
+
+    <div class="col">
+      <div class="head" style="background: #1F625E;"><span class="hc">M2</span><span class="hn">Aero</span></div>
+      <div class="box">
+        <div class="bt"><span class="bn">Wing architecture</span><span class="mult">×1</span></div>
+        <div class="op">W · BWB · FW · LB · Other · Unknown</div>
+      </div>
+      <div class="box dash rep" style="border-color: #1F625E;">
+        <div class="bt"><span class="bn" style="color: #1F625E;"><span class="if" style="margin-right: 8px;">if W · Other</span>Wing panel</span><span class="mult">×1..4</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Tilt</span><span class="op">Fixed · Tiltable</span></div>
+          <div class="n"><span class="nm">Vertical position</span><span class="op">High · Mid · Low · Unknown</span></div>
+          <div class="n"><span class="nm">Longitudinal position</span><span class="op">Forward · Center · Aft</span></div>
+          <div class="n"><span class="nm">Planform</span><span class="op">Straight · Swept · Delta · Tapered · Other</span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Tip-joined</span></div>
+          <div class="n"><span class="nm"><span class="if">if panel 2+</span>Role</span><span class="op">Canard · Tandem · Aft Stabiliser · Biplane · Other</span></div>
+        </div>
+      </div>
+      <div class="box dash" style="border-color: #1F625E;">
+        <div class="bt"><span class="bn" style="color: #1F625E;"><span class="if" style="margin-right: 8px;">if BWB · FW · LB</span>Integrated surface</span><span class="mult">×1</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Planform</span><span class="op">Straight · Swept · Delta · Tapered · Other</span></div>
+        </div>
+      </div>
+      <div class="box">
+        <div class="bt"><span class="bn">Empennage</span><span class="mult">×0..1</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Type</span><span class="op">Tailless · Conventional · Cruciform · T · V · Inverted V · Y · H / Twin · Single Fin · Fins · Horizontal Only · Box · Other</span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Tilts with wings</span></div>
+        </div>
+      </div>
+      <div><span class="esc">Quick override</span> <span class="esc">humanUncertain</span></div>
+    </div>
+
+    <div class="col">
+      <div class="head" style="background: #6E5310;"><span class="hc">M3</span><span class="hn">Propulsion</span></div>
+      <div class="box rep" style="border-color: #6E5310;">
+        <div class="bt"><span class="bn" style="color: #6E5310;">Propulsor card</span><span class="mult">×1 per host</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm">Wing N</span><span class="op">Chordwise: Leading · Trailing · Above · Below</span><span class="op">Spanwise: Inboard · Mid · Outboard · Tip · Across</span></div>
+          <div class="n"><span class="nm">Fuselage body</span><span class="op">Nose · Aft · Front · Rear · Side · Dorsal · Ventral</span></div>
+          <div class="n"><span class="nm">Boom-mounted</span><span class="op">no zone</span></div>
+          <div class="n"><span class="nm"><span class="if">if not Tailless</span>Empennage</span><span class="op">Stacked vertical · Stacked horizontal · Tip · Other</span></div>
+          <div class="n"><span class="nm"><span class="mono">#</span>Number of types</span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Lateral symmetry</span></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; margin: -8px 0;"><svg width="14" height="26" viewBox="0 0 14 26" aria-hidden="true"><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#6E5310" stroke-width="1.5"></path></svg></div>
+      <div class="box rep" style="border-color: #6E5310;">
+        <div class="bt"><span class="bn" style="color: #6E5310;">Propulsor type</span><span class="mult">×1..n</span></div>
+        <div class="tree">
+          <div class="n"><span class="nm"><span class="mono">#</span>Count</span></div>
+          <div class="n"><span class="nm">Thrust kinematics</span><span class="op">Horizontal · Vertical · Mixed</span></div>
+          <div class="n"><span class="nm">Articulation</span><span class="op">Fixed · Tilt · Other</span></div>
+          <div class="n"><span class="nm">Tractor / pusher</span><span class="op">Front · Back · None or cannot tell</span></div>
+          <div class="n"><span class="nm">Enclosure</span><span class="op">Open · Ducted</span></div>
+          <div class="n"><span class="nm">Retraction</span><span class="op">Fixed · Blade-folding · Retracting</span></div>
+          <div class="n"><span class="nm"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#1C1B18" stroke-width="1.5"></rect><path d="M3.5 7.2l2.3 2.3 4.7-4.9" fill="none" stroke="#1C1B18" stroke-width="1.6"></path></svg>Control only</span></div>
+        </div>
+      </div>
+      <div><span class="esc">Quick override</span> <span class="esc">humanUncertain</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

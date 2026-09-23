@@ -13,7 +13,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from . import a1, a2, a3, a4, a5, a6, ch5, numbers, published, roster, rules
+from . import a1, a2, a3, a4, a5, a6, ch5, numbers, published, register, roster, rules
 from .loaders import Dataset
 
 
@@ -26,7 +26,10 @@ def md_safe(table: pd.DataFrame) -> pd.DataFrame:
     t = table
     if isinstance(t.index, pd.MultiIndex) or t.index.name is not None:
         t = t.reset_index()
-    return t.astype(object).where(t.notna(), "")
+    t = t.astype(object).where(t.notna(), "")
+    # a "|" inside a cell (Gower's 1 − |xi − xj| / range) reads as a column break to the markdown
+    # table parser and silently drops the rest of the cell; a cell without one is left untouched
+    return t.map(lambda v: v.replace("|", "\\|") if isinstance(v, str) and "|" in v else v)
 
 
 def build_all(ds: Dataset, facts: Optional[Dict] = None,
@@ -80,6 +83,8 @@ def build_all(ds: Dataset, facts: Optional[Dict] = None,
         "a2_d9_windows": windows[["window", "unique aircraft"]],
         # ---- index 2
         "a2_d2_label_set": a2.d2_label_set(ds),
+        "a2_d2_questions_by_card": register.by_card(ds),
+        "a2_d2_dimension_register": register.questions(ds),
         "a2_d2_figure_slots": a2.d2_figure_slots(ds),
         "a2_d2_figure_slot_answers": a2.d2_figure_slot_answers(ds),
         "a2_d11_figures_per_variant": a2.d11_figures_per_variant(ds),
@@ -103,6 +108,10 @@ def build_all(ds: Dataset, facts: Optional[Dict] = None,
             "maximum": int(slots.max()),
         }),
         "a2_d13_flagship_check": a2.d13_flagship_check(ds),
+        "a2_d15_trl_by_class": a2.d15_trl_by_class(ds),
+        "a2_d15_trl_status": a2.d15_trl_status(ds),
+        "a2_d16_public_match": a2.d16_public_match(ds),
+        "a2_d16_public_differences": a2.d16_public_differences(ds),
         # ---- index 5
         "a2_d3_selected_fields": a2.d3_selected_fields(ds),
         "a2_d2_near_constant_fields": a2.d2_near_constant_fields(ds),
@@ -116,6 +125,10 @@ def build_all(ds: Dataset, facts: Optional[Dict] = None,
         "a2_d5_archetype_cardinality": a2.d5_archetype_cardinality(ds),
         "a2_d3_architecture_balance": a2.d3_architecture_balance(ds),
         "a2_d9_architecture_by_window": windows,
+        # 2026-09-22: repeat filings over time, and technological proximity between firms
+        "a2_d9_architecture_by_window_active": a2.d9_architecture_by_window_active(ds),
+        "a2_d9_aircraft_spans": a2.d9_aircraft_spans(ds),
+        "a2_d14_firm_proximity": a2.d14_firm_proximity(ds),
         # ---- chapter 5 and every number the prose and the diagrams quote
         "ch5_settings": ch5.settings_table(live),
         "ch5_judgement": ch5.judgement_table(live),

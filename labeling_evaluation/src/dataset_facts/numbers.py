@@ -13,7 +13,7 @@ from typing import Dict
 
 import pandas as pd
 
-from . import a1, a2, a3, a5, roster
+from . import a1, a2, a3, a5, register, roster
 from .loaders import Dataset
 
 
@@ -38,6 +38,16 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     n["figures_total"] = int(len(ds.figures_rep))            # figures on file of the representative patents
     n["figures_total_all"] = int(len(ds.figures))            # ... of every acquired patent
     n["figures_not_approved"] = n["figures_total"] - n["figures_approved_all"]
+    st = ds.figures_rep["status"].astype(str).str.lower()
+    n["figures_disapproved"] = int(st.eq("disapproved").sum())
+    n["figures_nostatus"] = n["figures_not_approved"] - n["figures_disapproved"]
+    n["nostatus_note"] = ""
+    if n["figures_nostatus"]:
+        odd = ds.figures_rep.loc[~st.isin(["approved", "disapproved"])]
+        ids = ", ".join(odd["patent_id"].astype(str) + " " + odd["fig_key"].astype(str))
+        n["nostatus_note"] = (f" {n['figures_nostatus']} figure{'s were' if n['figures_nostatus'] > 1 else ' was'} "
+                              f"never approved or disapproved in the wizard ({ids}) and "
+                              f"{'are' if n['figures_nostatus'] > 1 else 'is'} counted apart.")
     n["wizard_approved"] = c["patents_wizard_approved"]
     n["gated_patents"] = c["patents_gated_out"]
     n["gated_aircraft"] = c["primary_variants_gated_out"]
@@ -45,29 +55,42 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     n["disapproved_wizard"] = n["acquired"] - n["wizard_approved"]
     n["rep_share"] = f"{n['representative'] / n['acquired']:.0%}"
     n["wizard_share"] = f"{n['wizard_approved'] / n['acquired']:.0%}"
-    reasons = a2.d1_rejection_reasons(ds).set_index("reason")["patents"]
+    reasons = a2.d1_rejection_reasons(ds).set_index("code")["patents"]
     n["r_noimg"] = int(reasons.get("No Aircraft Image", 0))
     n["r_uav"] = int(reasons.get("Pure UAV", 0))
     n["r_ood"] = int(reasons.get("Out of Domain", 0))
+    n["r_nocontent"] = int(reasons.get("No Content", 0))
+    n["r_notvtol"] = int(reasons.get("Not VTOL", 0))
+    n["r_otherreason"] = int(reasons.get("Other", 0))
     n["r_sim_uav"] = int(reasons.get("Similar: UAV", 0))
     n["r_sim_el"] = int(reasons.get("Similar: not electric", 0))
     n["r_sim_stol"] = int(reasons.get("Similar: STOL only", 0))
-    n["r_sim"] = n["r_sim_uav"] + n["r_sim_el"] + n["r_sim_stol"]
-    n["r_other"] = int(reasons.sum() - n["r_noimg"] - n["r_uav"] - n["r_ood"] - n["r_sim"])
+    n["r_sim"] = int(reasons.get("subtotal_similar", 0))
+    n["r_wiz"] = int(reasons.get("subtotal_wizard", 0))
+    n["r_other"] = n["r_wiz"] - n["r_noimg"] - n["r_uav"] - n["r_ood"]
+    n["not_rep"] = int(reasons.get("total", 0))
     snap = ds.identity["snapshot_date"].dropna()
     n["snapshot"] = str(snap.iloc[0])[:10] if len(snap) else "unknown"
     # ---- similars
     sim = a2.d1_similars(ds).set_index("similar")
-    n["uav_n"] = int(sim.loc["UAV-similar", "patents tagged"])
-    n["uav_primary"] = int(sim.loc["UAV-similar", "unique aircraft removed"])
-    n["stol_n"] = int(sim.loc["STOL-similar", "patents tagged"])
-    n["stol_rep"] = int(sim.loc["STOL-similar", "unique aircraft removed"])
+    n["uav_n"] = int(sim.loc["UAV but similar", "patents tagged"])
+    n["uav_primary"] = int(sim.loc["UAV but similar", "unique aircraft removed"])
+    has_stol = "STOL but similar" in sim.index
+    n["stol_n"] = int(sim.loc["STOL but similar", "patents tagged"]) if has_stol else 0
+    n["stol_rep"] = int(sim.loc["STOL but similar", "unique aircraft removed"]) if has_stol else 0
+    n["stol_also_uav"], n["stol_ids"] = sim.attrs["stol_also_uav"], sim.attrs["stol_ids"]
     n["vstol_n"], n["vstol_primary"] = sim.attrs["vstol"]
-    n["notel_n"] = int(sim.loc["Electric-similar", "patents tagged"])
-    n["notel_primary"] = int(sim.loc["Electric-similar", "unique aircraft removed"])
+    n["notel_n"] = int(sim.loc["Not electric but similar", "patents tagged"])
+    n["notel_primary"] = int(sim.loc["Not electric but similar", "unique aircraft removed"])
+    n["two_tags"] = n["uav_primary"] + n["notel_primary"] + n["stol_rep"] - n["gated_aircraft"]
     n["unknown_el"] = int(ds.identity["is_electric_final"].eq("Unknown").sum())
     n["hybrid_el"] = int(ds.identity["is_electric_final"].eq("Hybrid").sum())
     n["stol_note"] = ""
+    if n["stol_rep"] == 0 and n["stol_also_uav"]:
+        n["stol_note"] = (" STOL but similar no longer removes an aircraft on its own: the last "
+                          "STOL-only aircraft was disapproved at labelling as Not VTOL, and the one "
+                          f"aircraft still carrying the tag ({n['stol_ids']}) is also UAV but similar "
+                          "and leaves on that tag, so the table has no STOL row.")
     # ---- filing status
     fs = a2.d1_filing_status(ds).set_index("filing status")
     n["granted_acq"], n["granted_rep"], n["granted_pri"] = fs.attrs["granted"]
@@ -83,13 +106,30 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     n["partial_start"] = partial_window_start
     n["complete_to"] = partial_window_start - 2
     # ---- observations and similars
-    dup = a2.d7_duplicates(ds).set_index("type")
-    n["o1_obs"] = int(dup.iloc[0]["observations"])
-    n["o2_obs"] = int(dup.iloc[1]["observations"])
-    n["s3"] = int(dup.iloc[2]["observations"])
+    dup = a2.d7_duplicates(ds)
+    dup.index = dup["type"].astype(str).str[:2]
+    n["orig_obs"] = int(dup.loc["Or", "observations"])
+    n["o1_obs"] = int(dup.loc["O1", "observations"])
+    n["o2_obs"] = int(dup.loc["O2", "observations"])
+    n["s3"] = int(dup.loc["S3", "observations"])
+    n["o12_removed"] = n["o1_obs"] + n["o2_obs"]
+    n["o1_all"], n["o2_all"], n["s3_all"] = (int(dup.loc[k, "observations at labelling, before the domain gate"])
+                                             for k in ("O1", "O2", "S3"))
     n["s3_identical"] = a2.d7_d3_identical_to_root(ds)["identical_on_all_archetype_fields"]
-    pat = ds.patents
-    n["o12_patents"] = int((pat["is_representative"].fillna(False).astype(bool) & pat["dup_type"].isin([1, 2])).sum())
+    # patents -> observations: how many aircraft each representative patent draws
+    obs_per = ds.approved_variants.groupby("patent_id").size()
+    n["rep_one"] = int((obs_per == 1).sum())
+    n["rep_multi"] = int((obs_per > 1).sum())
+    n["rep_extra"] = int(obs_per.sum() - len(obs_per))
+    # the same distribution multiplied out, so the funnel can show the arithmetic:
+    # "37 patents x 2 + 9 x 3 + 8 x 4 + 3 x 5" = rep_multi_aircraft on rep_multi patents,
+    # of which rep_extra are beyond the one aircraft already counted for each patent
+    multi = obs_per[obs_per > 1].value_counts().sort_index()
+    n["rep_multi_terms"] = " + ".join(
+        (f"{int(pat)} patents × {int(k)}" if i == 0 else f"{int(pat)} × {int(k)}")
+        for i, (k, pat) in enumerate(multi.items()))
+    n["rep_multi_aircraft"] = int(sum(int(k) * int(pat) for k, pat in multi.items()))
+    n["o12_patents"] = n["representative"] - n["primary"]     # patents holding only an O1 / O2
     per = a2.d7_aircraft_per_patent(ds)
     n["multi_patents"] = int(per.loc[per["aircraft drawn in the patent"] > 1, "patents"].sum())
     n["max_aircraft"] = int(per["aircraft drawn in the patent"].max())
@@ -146,18 +186,25 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
         n["gazetteer"], n["sbert"] = int(prop.get("gazetteer", 0)), int(prop.get("sbert", 0))
     except Exception:
         n["gazetteer"], n["sbert"] = 0, 0
-    # ---- label set
-    ls = a2.d2_label_set(ds).set_index("property of the label set")["value"]
-    n["slots"] = int(ls.iloc[0]); n["concepts"] = int(ls.iloc[1])
-    n["median_slots"] = int(ls["Slots answered per aircraft, median"])
-    n["slots_gt90"] = int(ls["Slots answered on more than 90 % of aircraft"])
-    n["slots_lt5"] = int(ls["Slots answered on fewer than 5 % of aircraft"])
-    n["informative"] = int(ls["Fields that carry the information"])
+    # ---- label set: questions from the dimension register (Figure 3.3b), columns from the export
+    lab = a2.d2_label_set(ds)
+    ls = lab.set_index("property of the label set")["value"]
+    n["questions"] = int(ls.iloc[0])
+    n["q_dim"], n["q_tick"], n["q_num"] = (int(ls.iloc[k]) for k in (1, 2, 3))
+    n["q_beside"] = int(ls["Tags and escapes beside them, not counted"])
+    n["cols"] = int(ls.iloc[5]); n["cols_off"] = int(ls["Coded export columns not on the cards, left out"])
+    n["off_names"] = ", ".join(lab.attrs["off_cards"])
+    n["median_q"] = int(ls.iloc[7])
+    n["q_gt90"] = int(ls["Slots answered on more than 90 % of aircraft"])
+    n["q_lt5"] = int(ls["Slots answered on fewer than 5 % of aircraft"])
+    n["q_lt5_phrase"] = f"{n['q_lt5']} slot is" if n["q_lt5"] == 1 else f"{n['q_lt5']} slots are"
+    n["informative"] = int(ls["Export columns that carry the information (3.3.4)"])
     n["near_constant"] = int(ls.iloc[-2])
-    dd = ds.data_dictionary.set_index("column")["section"]
-    slots = a2.answerable_slots(ds)
-    for card in ("G1", "M1", "M2", "M3"):
-        n[f"slots_{card}"] = sum(1 for s in slots if dd.get(s) == card)
+    cards = register.by_card(ds).set_index("card")
+    for card in register.CARDS:
+        r = cards.loc[card]
+        n[f"q_{card}"], n[f"cols_{card}"] = int(r["slots"]), int(r["export columns"])
+        n[f"qd_{card}"], n[f"qt_{card}"], n[f"qn_{card}"] = (int(r[k]) for k in ("dimensions", "ticks", "numbers"))
     # ---- archetypes
     arch = a2.d5_archetype_cardinality(ds).set_index("level")
     n["n_arch"] = int(arch.iloc[0]["aircraft"])
@@ -213,7 +260,90 @@ def live(ds: Dataset, partial_window_start: int = 2024) -> Dict:
     if "public products" in fl:
         pub = fl[fl["public products"].astype(str).str.len() > 0]
         n["flagship_public"] = int(len(pub))
-        n["flagship_match"] = int(pub["top label matches a public type"].fillna(False).astype(bool).sum())
+        match = pub["most-filed class matches a public product"].eq(True)
+        n["flagship_match"] = int(match.sum())
+        miss = pub[~match]
+        n["flagship_mismatch"] = int(len(miss))
+        n["flagship_mismatch_names"] = ", ".join(miss["company"].astype(str))
+    # ---- propulsor count (2026-09-22): the bins and what they hold
+    units = a2.propulsor_units(ds.variants)["units"]
+    bins = a2.rotor_bin(units).value_counts()
+    n["units_counted"] = int(units.notna().sum())
+    n["units_left_c"] = int(units.isna().sum())      # same count as units_left (3.3.5)
+    for b, k in zip(a2.ROTOR_BINS[1], ("r03", "r4", "r56", "r78", "r9")):
+        n[f"bin_{k}"] = int(bins.get(b, 0))
+    u = pd.to_numeric(units, errors="coerce")
+    n["u5"], n["u7"] = int((u == 5).sum()), int((u == 7).sum())
+    j5 = ds.variants.loc[u.eq(5).reindex(ds.variants.index, fill_value=False), "topType"]
+    n["u5_slc"] = int(j5.eq("SLC").sum())
+    j7 = ds.variants.loc[u.eq(7).reindex(ds.variants.index, fill_value=False), "topType"]
+    n["u7_slc"] = int(j7.eq("SLC").sum())
+    grp = a2.propulsor_groups(ds.variants).where(units.notna())
+    n["grp1"], n["grp2"], n["grp3"] = (int((grp == k).sum()) for k in (1, 2, 3))
+    n["grp4"] = int((grp >= 4).sum())
+    # ---- technological proximity between firms (3.3.9)
+    px = a2.d14_firm_proximity(ds)
+    for k in ("firms", "min_aircraft", "aircraft", "mean_class", "mean_rotors", "pairs_high_class",
+              "pairs_zero_class", "pairs"):
+        n[f"px_{k}"] = px.attrs[k]
+    top = px.sort_values("proximity (class)", ascending=False).iloc[0]
+    n["px_top_pair"] = f"{top['firm']} and {top['closest firm (class)']}"
+    n["px_top_val"] = f"{top['proximity (class)']:.2f}"
+    pc = a2.firm_profiles(ds, n["px_min_aircraft"], "class")
+    xr = a2.proximity_matrix(a2.firm_profiles(ds, n["px_min_aircraft"], "class_rotors")
+                             .reindex(pc.index).fillna(0))
+    n["px_top_rot"] = f"{xr.loc[top['firm'], top['closest firm (class)']]:.2f}"
+    # ---- technology readiness (4.2)
+    tc = a2.d15_trl_by_class(ds)
+    for k, val in tc.attrs.items():
+        n[f"trl_{k}"] = val
+    n["trl_above_share"] = f"{n['trl_above'] / n['trl_aircraft']:.2f}"
+    n["trl_67"] = n["trl_trl6"] + n["trl_trl7"]
+    n["trl_35"] = n["trl_trl3"] + n["trl_trl4"] + n["trl_trl5"]
+    n["trl_89"] = n["trl_trl8"] + n["trl_trl9"]
+    body = tc[tc["class"] != "Total"]
+    big = body[body["unique aircraft"] >= 20]
+    best = big.sort_values(["share above TRL 2", "unique aircraft"], ascending=False).iloc[0]
+    n["trl_best_class"], n["trl_best_share"] = best["class"], f"{best['share above TRL 2']:.2f}"
+    top_n = int(body["above TRL 2"].max())
+    tied = list(body.loc[body["above TRL 2"] == top_n, "class"])
+    n["trl_most_class"] = " and ".join(tied) if len(tied) <= 2 else ", ".join(tied)
+    n["trl_most_verb"] = "hold" if len(tied) > 1 else "holds"
+    n["trl_most_n"] = top_n if len(tied) == 1 else f"{top_n} each"
+    zero = list(body.loc[(body["above TRL 2"] == 0) & (body["class"] != "no type"), "class"])
+    n["trl_zero_classes"] = (", ".join(zero[:-1]) + " or " + zero[-1]) if len(zero) > 1 else "".join(zero)
+    st = a2.d15_trl_status(ds).set_index("programme status")
+    up = st[["TRL 3-5", "TRL 6-7", "TRL 8-9"]].sum(axis=1)
+    for s_ in ("active", "paused", "superseded", "ended", "unknown"):
+        n[f"trl_st_{s_}"] = int(up.get(s_, 0))
+    # ---- patent label against the public aircraft (4.3)
+    pm = a2.d16_public_match(ds)
+    for k, val in pm.attrs.items():
+        n[f"pub_{k}"] = val
+    n["pub_yes_share"] = f"{n['pub_yes'] / n['pub_aircraft']:.2f}" if n["pub_aircraft"] else "0"
+    pdiff = a2.d16_public_differences(ds)
+    agree = pdiff[pdiff["drawing label"] == pdiff["patent text"]]
+    n["pub_no_names"] = ", ".join(agree["aircraft"].drop_duplicates())
+    img = list(pdiff.loc[pdiff["drawing label"] != pdiff["patent text"], "aircraft"])
+    words = {1: "one case", 2: "two cases", 3: "three cases"}
+    n["pub_image_phrase"] = (f"{words.get(len(img), f'{len(img)} cases')} ({' and '.join(img) if len(img) <= 2 else ', '.join(img)})"
+                             if img else "no case")
+    n["pub_diff"] = n["pub_no"] + n["pub_image"]
+    # ---- repeat filings over time (3.3.8)
+    sp = a2.d9_aircraft_spans(ds)
+    n["sp_repeat"] = int((sp["repeats"] > 0).sum())
+    n["sp_single"] = int((sp["repeats"] == 0).sum())
+    n["sp_span"] = int((sp["span_years"] > 0).sum())
+    n["sp_sameyear"] = n["sp_repeat"] - n["sp_span"]
+    n["sp_multiwin"] = int((sp["window_first"] != sp["window_last"]).sum())
+    n["sp_earlier"] = int((sp["first"] < sp["primary_year"]).sum())
+    n["sp_move"] = int((sp["window_first"] != sp["window_primary"]).sum())
+    n["sp_max"] = int(sp["span_years"].max())
+    act = a2.d9_architecture_by_window_active(ds)
+    once = act[act["count"].str.startswith("once")].set_index("window")
+    whil = act[act["count"].str.startswith("while")].set_index("window")
+    diff = (whil.drop(columns=["count", "unique aircraft"]) - once.drop(columns=["count", "unique aircraft"])).abs()
+    n["sp_maxdiff"] = f"{diff.to_numpy().max():.2f}"
     # ---- string forms with the thousands space
     for k, v in list(n.items()):
         if isinstance(v, (int,)) and not isinstance(v, bool):

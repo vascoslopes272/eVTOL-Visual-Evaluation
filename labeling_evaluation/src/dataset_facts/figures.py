@@ -11,6 +11,7 @@ into ``<out_dir>/figures`` and returns ``{name: path}``.
 
 from __future__ import annotations
 
+import shutil
 from html import escape
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -20,8 +21,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import a1, a2, numbers
+from . import a1, a2, numbers, register
 from .loaders import Dataset
+
+#: the two codebook drawings (Figure 3.3a/b), kept in labeling_evaluation/assets/codebook/
+CODEBOOK_DIR = Path(__file__).resolve().parents[2] / "assets" / "codebook"
+CODEBOOK_DRAWINGS: Dict[str, Path] = {
+    "codebook_classes": CODEBOOK_DIR / "codebook_architecture_classes.png",
+    "codebook_dimensions": CODEBOOK_DIR / "codebook_every_dimension.png",
+}
 
 GREYS = ["#1a1a1a", "#4d4d4d", "#808080", "#b3b3b3", "#d9d9d9", "#f0f0f0"]
 HATCHES = ["", "////", "....", "xxxx", "\\\\\\\\", "++++"]
@@ -88,23 +96,66 @@ def fill_rate_matrix(ds: Dataset, fields: Optional[List[str]] = None) -> pd.Data
     return out
 
 
+#: the part a field belongs to (2026-09-22): each field is measured only on the aircraft that
+#: have that part, so a boom question is never "unanswered" on an aircraft without booms
+FIELD_PARENT = {
+    "topType": "all", "fusShape": "all", "fusKin": "all", "gearArch": "all", "latSym": "all",
+    "wCount": "all", "boomsPresent": "all",
+    "wingConf": "wings", "wing1_posV": "wings", "wing1_posL": "wings", "wing1_plan": "wings",
+    "empType": "wings",
+    "boom1_orient": "booms", "boom1_attach": "booms", "boom1_count": "booms", "boom_count": "booms",
+}
+
+
+def fill_rate_by_parent(ds: Dataset, fields: Optional[List[str]] = None) -> pd.DataFrame:
+    """Share answered of each field on the aircraft that have its part (one base per field).
+
+    Rule 1: a value an override hides leaves the base. Columns: field name, part, base
+    (aircraft with the part), answered, share.
+    """
+    v, dd = ds.variants, ds.data_dictionary
+    winged = pd.to_numeric(v["wCount"], errors="coerce").fillna(0) > 0
+    boomed = v["boomsPresent"].fillna(False).astype(bool)
+    parts = {"all": ("every aircraft", pd.Series(True, index=v.index)),
+             "wings": ("wings present", winged), "booms": ("booms present", boomed)}
+    rows = []
+    for f in [f for f in (fields or HEATMAP_FIELDS) if f in v.columns]:
+        label, mask = parts[FIELD_PARENT.get(f, "all")]
+        base = mask & ~a2.hidden_by_override(v, f, dd)
+        answered = int(v.loc[base, f].notna().sum())
+        rows.append({"field": a2.FIELD_NAMES.get(f, f), "part": label, "base": int(base.sum()),
+                     "answered": answered, "share": answered / int(base.sum()) if base.any() else np.nan})
+    return pd.DataFrame(rows)
+
+
 def fill_rate_heatmap(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
-    m = fill_rate_matrix(ds)
-    fig, ax = plt.subplots(figsize=(6.0, 0.30 * len(m) + 1.1))
-    im = ax.imshow(m.to_numpy(), cmap="Greys", vmin=0, vmax=1, aspect="auto")
-    ax.set_xticks(range(m.shape[1]))
-    ax.set_xticklabels(m.columns, fontsize=8)
-    ax.set_yticks(range(m.shape[0]))
-    ax.set_yticklabels(m.index, fontsize=8)
-    for i in range(m.shape[0]):
-        for j in range(m.shape[1]):
-            val = m.iat[i, j]
-            ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=7.5,
-                    color="white" if val > 0.55 else "black")
-    ax.set_title("Fill rate of each field, conditional on the parent part being present")
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02).set_label("share answered", fontsize=8)
+    """Figure 3.3.2 — one bar per field, measured where its part exists (was a 3-column heatmap)."""
+    t = fill_rate_by_parent(ds)
+    order = ["every aircraft", "wings present", "booms present"]
+    t["_o"] = t["part"].map({p: i for i, p in enumerate(order)})
+    t = t.sort_values(["_o"], kind="stable").reset_index(drop=True)
+    y = np.arange(len(t))[::-1]
+    fig, ax = plt.subplots(figsize=(6.4, 0.27 * len(t) + 1.2))
+    ax.barh(y, t["share"], color=GREYS[1], height=0.62)
+    for yi, s, a, b in zip(y, t["share"], t["answered"], t["base"]):
+        ax.text(min(s, 1.0) - 0.015, yi, f"{s:.2f}  ({a} of {b})", va="center", ha="right",
+                fontsize=7, color="white")
+    ax.set_yticks(y)
+    ax.set_yticklabels(t["field"], fontsize=7.8)
+    ax.set_xlim(0, 1.3)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
+    ax.set_xlabel("share answered, among the aircraft that have the part")
+    # one bracket label per part, right of the bars
+    for p in order:
+        rows = y[t["part"].eq(p).to_numpy()]
+        if len(rows):
+            ax.axhline(rows.min() - 0.5, color="#999999", linewidth=0.5, linestyle=":")
+            b = int(t.loc[t["part"].eq(p), "base"].max())
+            ax.text(1.03, rows.mean(), f"{p}\n(n={b})", ha="left", va="center", fontsize=7.2,
+                    style="italic", color="#333333")
+    ax.set_title("Share answered where the part exists")
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="y", length=0)
     return _save(fig, path)
 
 
@@ -190,11 +241,11 @@ def lorenz(raw_counts: pd.Series, canonical_counts: pd.Series,
 
 
 # --------------------------------------------------------------------------
-# 3.3.1 slots answered per aircraft
+# 3.3.1 questions answered per aircraft (the dimension register)
 # --------------------------------------------------------------------------
 def slots_histogram(slots: pd.Series, path: Optional[Path] = None) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(6.0, 2.6))
-    ax.hist(slots, bins=range(int(slots.min()), int(slots.max()) + 3, 2), color=GREYS[3],
+    ax.hist(slots, bins=np.arange(slots.min() - 0.5, slots.max() + 1.5, 1), color=GREYS[3],
             edgecolor="black", linewidth=0.5)
     q1, med, q3 = (slots.quantile(q) for q in (0.25, 0.5, 0.75))
     for val, style in ((q1, ":"), (med, "-"), (q3, ":")):
@@ -204,7 +255,7 @@ def slots_histogram(slots: pd.Series, path: Optional[Path] = None) -> plt.Figure
             f"maximum {int(slots.max())}",
             transform=ax.transAxes, ha="right", va="top", fontsize=8, color=GREYS[1],
             linespacing=1.4)
-    ax.set_xlabel("answerable slots answered per unique aircraft")
+    ax.set_xlabel("slots of Figure 3.3b answered per unique aircraft")
     ax.set_ylabel("aircraft")
     ax.set_title("Completeness of one label, as a distribution")
     return _save(fig, path)
@@ -218,8 +269,13 @@ def archetype_levels(card: pd.DataFrame, path: Optional[Path] = None) -> plt.Fig
     df = card
     x = np.arange(len(df))
     n = int(df["aircraft"].iloc[0])
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.0, 2.7), gridspec_kw={"wspace": 0.3})
-    ax1.bar(x, df["singletons"], color=GREYS[2], edgecolor="black", linewidth=0.5, width=0.6)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.6, 2.9), gridspec_kw={"wspace": 0.25})
+    counted = df["level"].astype(str).str.endswith("c").to_numpy()
+    ax1.bar(x[~counted], df["singletons"][~counted], color=GREYS[2], edgecolor="black",
+            linewidth=0.5, width=0.6, label="level")
+    ax1.bar(x[counted], df["singletons"][counted], color="white", edgecolor="black",
+            linewidth=0.5, width=0.6, hatch="////", label="+ propulsor count (c)")
+    ax1.legend(fontsize=7, loc="upper left")
     ax1.axhline(0.05 * n, color="black", linestyle="--", linewidth=1)
     ax1.text(-0.4, 0.05 * n, f"5 % of {n}", ha="left", va="bottom", fontsize=7.5)
     for xi, s in zip(x, df["singletons"]):
@@ -298,6 +354,179 @@ def class_share_stacked_area(windows: pd.DataFrame, partial_label: str = "partia
     ax.set_ylabel("share of unique aircraft")
     ax.set_title("Architecture class shares per window (hatched = partial window)")
     ax.legend(fontsize=7.5, loc="upper left", bbox_to_anchor=(1.01, 1.0))
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
+# 3.3.8 repeat filings over time
+# --------------------------------------------------------------------------
+def aircraft_spans_timeline(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
+    """Figure 3.3.8b — every aircraft filed in more than one year, first to last filing.
+
+    One row per aircraft, grouped by class: a line from the first to the last priority year,
+    a dot per filing, the primary record filled. Aircraft filed once (or re-filed in the same
+    year) are single points and are only counted in the note.
+    """
+    obs = a2.aircraft_observations(ds)
+    sp = a2.d9_aircraft_spans(ds)
+    long = sp[sp["span_years"] > 0].copy()
+    long["cls"] = long["topType"].map(lambda t: a2.metrics.ARCH_NAMES.get(t, t))
+    order = long["cls"].value_counts().index.tolist()
+    long["_o"] = long["cls"].map({c: i for i, c in enumerate(order)})
+    long = long.sort_values(["_o", "first", "last"], ascending=[True, True, True]).reset_index(drop=True)
+    y = np.arange(len(long))[::-1]
+    ymap = dict(zip(long["aircraft_id"], y))
+    fig, ax = plt.subplots(figsize=(7.4, 0.085 * len(long) + 1.6))
+    for (lo, hi), shade in zip([(w[1], w[2]) for w in a2.WINDOWS], [0, 1, 0, 1, 0]):
+        if shade:
+            ax.axvspan(max(lo, 1997.5) - 0.5, hi + 0.5, color="#f0f0f0", zorder=0)
+    ax.hlines(y, long["first"], long["last"], color=GREYS[1], linewidth=1.1, zorder=2)
+    o = obs[obs["aircraft_id"].isin(ymap)]
+    ax.scatter(o.loc[~o["is_primary"], "year"], o.loc[~o["is_primary"], "aircraft_id"].map(ymap),
+               s=12, facecolor="white", edgecolor="black", linewidth=0.7, zorder=3, label="O1 / O2 re-filing")
+    ax.scatter(o.loc[o["is_primary"], "year"], o.loc[o["is_primary"], "aircraft_id"].map(ymap),
+               s=14, color="black", zorder=4, label="primary record (sets the window)")
+    for c in order:
+        rows = y[long["cls"].eq(c).to_numpy()]
+        ax.axhline(rows.min() - 0.5, color="#999999", linewidth=0.4, linestyle=":")
+        ax.text(1998.2, rows.mean(), f"{c} ({len(rows)})", va="center", ha="left", fontsize=7,
+                style="italic", color="#333333")
+    for name, lo, hi in a2.WINDOWS:
+        ax.text((max(lo, 2004) + min(hi, 2026)) / 2, y.max() + 1.6, name, ha="center", va="bottom",
+                fontsize=7)
+    ax.set_yticks([])
+    ax.set_ylim(-1, y.max() + 3.2)
+    ax.set_xlim(1997.5, 2026.5)
+    ax.set_xlabel("priority year")
+    ax.spines["left"].set_visible(False)
+    ax.legend(fontsize=7, loc="upper left", bbox_to_anchor=(0.0, 0.93), frameon=True,
+              framealpha=0.95, edgecolor="#cccccc")
+    ax.set_title(f"Aircraft filed in more than one year ({len(long)} of {len(sp)})")
+    return _save(fig, path)
+
+
+def window_shares_two_counts(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
+    """Figure 3.3.8c — class share per window, counted once against counted while filed."""
+    t = a2.d9_architecture_by_window_active(ds)
+    classes = [c for c in t.columns if c not in ("window", "count", "unique aircraft")]
+    wins = t["window"].drop_duplicates().tolist()
+    x = np.arange(len(wins))
+    fig, axes = plt.subplots(1, len(classes), figsize=(9.2, 2.5), sharey=True,
+                             gridspec_kw={"wspace": 0.12})
+    for ax, c in zip(axes, classes):
+        for mode, style, label in (("once", "-o", "once, at the primary record"),
+                                   ("while", "--s", "while filed, first to last")):
+            s = t[t["count"].str.startswith(mode)].set_index("window").loc[wins, c]
+            ax.plot(x, s.to_numpy(), style, color="black" if mode == "once" else GREYS[2],
+                    linewidth=1.3, markersize=3.5, label=label)
+        ax.axvspan(len(wins) - 1.5, len(wins) - 0.5, color="#eeeeee", zorder=0)
+        ax.set_title(c, fontsize=9)
+        ax.set_xticks(x)
+        ax.set_xticklabels([w.replace(" (partial)", "*") for w in wins], fontsize=6.8, rotation=35)
+        ax.set_xlim(-0.4, len(wins) - 0.6)
+        ax.grid(axis="y", color="#e6e6e6", linewidth=0.6)
+    axes[0].set_ylabel("share of the window")
+    axes[0].set_ylim(0, 0.42)
+    axes[-1].legend(fontsize=7, loc="upper right", bbox_to_anchor=(1.0, 1.0))
+    fig.suptitle("Class share per window, counted two ways (* partial window, shaded)", fontsize=9.5,
+                 fontweight="bold", y=1.03)
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
+# 3.3.9 technological proximity between firms
+# --------------------------------------------------------------------------
+def proximity_heatmap(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
+    """Figure 3.3.9 — Jaffe proximity of the firms' architecture profiles, clustered order."""
+    prof = a2.firm_profiles(ds, 5, "class")
+    prox = a2.proximity_matrix(prof)
+    order = a2.proximity_order(prox)
+    m = prox.loc[order, order]
+    size = prof.sum(axis=1).loc[order]
+    labels = [f"{f} ({int(size[f])})" for f in order]
+    fig, ax = plt.subplots(figsize=(7.0, 6.2))
+    shown = m.to_numpy().copy()
+    np.fill_diagonal(shown, np.nan)
+    im = ax.imshow(shown, cmap="Greys", vmin=0, vmax=1)
+    for i in range(len(m)):
+        for j in range(len(m)):
+            val = round(float(m.iat[i, j]), 2)
+            if i != j and val >= 0.5:
+                ax.text(j, i, "1" if val >= 1 else f"{val:.2f}"[1:], ha="center",
+                        va="center", fontsize=6, color="white" if val > 0.6 else "black")
+    ax.set_xticks(range(len(m)))
+    ax.set_xticklabels(labels, rotation=60, ha="right", fontsize=7)
+    ax.set_yticks(range(len(m)))
+    ax.set_yticklabels(labels, fontsize=7)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_title("Technological proximity between firms, architecture class")
+    fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02).set_label(
+        "proximity: 1 = same mix of classes, 0 = none in common", fontsize=7.5)
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
+# 4.2 technology readiness per architecture class
+# --------------------------------------------------------------------------
+def trl_by_class(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
+    """Figure 4.2 — per class, the unique aircraft that reached TRL 3 or higher, by band."""
+    tab = a2.d15_trl_by_class(ds)
+    tab = tab[tab["class"] != "Total"].iloc[::-1]
+    bands = ["TRL 3-5", "TRL 6-7", "TRL 8-9"]
+    shade = {"TRL 3-5": GREYS[3], "TRL 6-7": GREYS[1], "TRL 8-9": GREYS[0]}
+    y = np.arange(len(tab))
+    fig, ax = plt.subplots(figsize=(6.6, 3.5))
+    left = np.zeros(len(tab))
+    for b in bands:
+        w = tab[b].to_numpy(dtype=float)
+        ax.barh(y, w, left=left, height=0.62, color=shade[b], edgecolor="white", linewidth=1.0, label=b)
+        left += w
+    top = max(left.max(), 1)
+    for yi, above, n in zip(y, tab["above TRL 2"], tab["unique aircraft"]):
+        ax.text(left[list(y).index(yi)] + top * 0.02, yi, f"{int(above)} of {int(n)}",
+                va="center", fontsize=7.5, color="#333333")
+    ax.set_yticks(y)
+    ax.set_yticklabels(tab["class"], fontsize=8.5)
+    ax.set_xlim(0, top * 1.28)
+    ax.set_xlabel("unique aircraft above TRL 2 (label: of all the class's unique aircraft)")
+    ax.set_title("Technology readiness reached, per architecture class")
+    ax.legend(fontsize=7.5, loc="lower right", title="NASA level", title_fontsize=7.5)
+    fig.text(0.0, -0.17, "Source: levels of NASA NPR 7123.1D, App. E; evidence from the evtol.news directory "
+             "(crawl 2026-09-17) and web checks (2026-09-22).\nHow to read: each bar counts the aircraft "
+             "of the class with public evidence of hardware; the rest of the class is TRL 2, patent only.",
+             fontsize=6.8, color="#555555", ha="left", va="top", transform=ax.transAxes)
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
+# 4.3 patent label against the public aircraft
+# --------------------------------------------------------------------------
+def public_match_bars(ds: Dataset, path: Optional[Path] = None) -> plt.Figure:
+    """Figure 4.3 — named aircraft: does the patent's class match the aircraft the firm showed or flew?"""
+    tab = a2.d16_public_match(ds)
+    tab = tab[tab.iloc[:, 0] != "Total"].iloc[::-1]
+    y = np.arange(len(tab))
+    shade = [GREYS[1], GREYS[3], GREYS[2], GREYS[4]][::-1]
+    fig, ax = plt.subplots(figsize=(5.6, 2.2))
+    ax.barh(y, tab["unique aircraft"], height=0.58, color=shade, edgecolor="black", linewidth=0.5)
+    top = max(tab["unique aircraft"].max(), 1)
+    for yi, c, sh in zip(y, tab["unique aircraft"], tab["share"]):
+        ax.text(c + top * 0.015, yi, f"{int(c)}  ({sh:.2f})", va="center", fontsize=8)
+    ax.set_yticks(y)
+    short = {"same class as the public aircraft": "same class",
+             "same aircraft; the directory draws its classes elsewhere": "same aircraft, other directory class",
+             "the patent describes another configuration (drawing and text agree)": "patent's own other configuration",
+             "drawing label differs from the patent text; the text matches the public aircraft": "drawing label differs from text"}
+    ax.set_yticklabels([short.get(t, t) for t in tab.iloc[:, 0]], fontsize=8)
+    ax.set_xlim(0, top * 1.18)
+    ax.set_xlabel("unique aircraft with a named public counterpart (share in brackets)")
+    ax.set_title("The patent's architecture class against the public aircraft")
+    fig.text(-0.62, -0.36, "Source: drawing label (card G1) and architecture ground truth (text reading) against the\\n"
+             "class of the aircraft shown or flown (evtol.news directory, web checks 2026-09-22).\n"
+             "How to read: the bottom two bars disagree. Third bar: the patent's own text confirms the drawing, so the label\n"
+             "is right and the patent is an alternative embodiment. Bottom bar: the drawing label departs from the text.",
+             fontsize=6.8, color="#555555", ha="left", va="top", transform=ax.transAxes)
     return _save(fig, path)
 
 
@@ -402,7 +631,7 @@ def handover_svg(n: Dict, path: Path) -> Path:
         ("3.3.6", f"A1t: {n['a1t_distinct']} archetypes over {n['n_arch']} aircraft"),
         ("3.3.4 · 3.3.2", f"{n['informative']} informative fields; a blank is absence"),
         ("3.1.2", f"{n['named_companies']} named firms; {n['non_corporate_share']} not corporate"),
-        ("3.2.4 · 4.1", f"{n['sens']} thin-evidence aircraft, carried; labels hold"),
+        ("3.2.4 · 4.1", f"{n['sens']} thin-evidence aircraft, carried; top label = public product {n['flagship_match']}/{n['flagship_public']}"),
         ("3.3.8", f"no class above {n['max_window_share']} in any window"),
     ]
     right = [
@@ -439,7 +668,93 @@ def handover_svg(n: Dict, path: Path) -> Path:
 
 
 def refinement_funnel_svg(n: Dict, path: Path) -> Path:
-    """Figure 2.1 — the acquisition and refinement funnel, three refinements, three levels."""
+    """Figure 2.1 — the funnel with its arithmetic: every stage number is the line above minus what left.
+
+    Left: the four stages. Right, between two stages: the refinement as a sum, one line per
+    step (operator, count, what it is), the results in bold. 2026-09-22: the user asked
+    that every number of the funnel be derivable on the figure itself.
+    """
+    W = 780
+    s = _Svg(W, 10)
+    fs = 8.1
+    stages = [
+        (f"{n['acquired_s']} patents acquired", f"PatSeer query, snapshot {n['snapshot']}", "patent level"),
+        (f"{n['representative_s']} representative patents",
+         "electric, vertical take-off, occupied, readable from the figures", "patent level"),
+        (f"{n['unique']} unique aircraft", f"on {n['primary']} primary patents", "unique-aircraft level"),
+        (f"{n['figures_approved_s']} whole-aircraft figures",
+         f"on {n['fig_patents']} patents, median {n['median_figs']} per aircraft", "image level"),
+    ]
+    r_other = n["r_nocontent"] + n["r_notvtol"] + n["r_otherreason"]
+    refinements = [
+        ("Refinement 1 — representativity (Tables 2.1.1, 2.1.2)", [
+            ("", n["acquired_s"], "patents acquired", False),
+            ("−", n["disapproved_wizard"], "disapproved at labelling: no usable image "
+             f"{n['r_noimg']}, pure UAV {n['r_uav']}, out of TD {n['r_ood']}, other {r_other}", False),
+            ("=", n["wizard_approved_s"], "approved at labelling", True),
+            ("−", n["gated_patents"], "approved, but every aircraft is “but similar”: "
+             f"UAV {n['r_sim_uav']}, not electric {n['r_sim_el']}", False),
+            ("=", n["representative_s"], "representative patents", True),
+        ]),
+        ("Refinement 2 — patents to unique aircraft (Tables 2.2.1, 2.2.2)", [
+            ("", n["representative_s"], "representative patents, one aircraft each", False),
+            ("+", n["rep_extra"], f"further aircraft: {n['rep_multi_terms']} = "
+             f"{n['rep_multi_aircraft']} aircraft on {n['rep_multi']} patents "
+             f"({n['rep_multi_aircraft']} − {n['rep_multi']})", False),
+            ("=", n["observations_s"], "aircraft observations", True),
+            ("−", n["o2_obs"], "O2: the same aircraft again, same figures", False),
+            ("−", n["o1_obs"], "O1: the same aircraft again, new figures", False),
+            ("=", n["unique"], f"unique aircraft = {n['orig_obs']} originals + {n['s3']} S3 similars "
+             "(a new similar aircraft)", True),
+            ("", n["primary"], f"primary patents = {n['representative_s']} − {n['o12_patents']} (O2+O1) "
+             "patents that only repeat an aircraft", False),
+        ]),
+        ("Refinement 3 — figure approval (Table 2.3.1)", [
+            ("", n["figures_total_s"], f"figures on file for the {n['representative_s']} representative "
+             "patents", False),
+            ("−", n["figures_not_approved_s"],
+             "not approved: the architecture cannot be read" if not n.get("figures_nostatus") else
+             f"not approved: {numbers.fmt(n['figures_disapproved'])} disapproved, "
+             f"{n['figures_nostatus']} without a status", False),
+            ("=", n["figures_approved_all_s"], "approved", True),
+            ("−", n["detail_figs"], "approved detail figures, set aside (tilt mechanism, rotor)", False),
+            ("=", n["figures_approved_s"], "whole-aircraft figures: the image set", True),
+        ]),
+    ]
+    x0, sw, h = 12, 262, 48
+    rx, rw, dy = 292, W - 292 - 10, 13.2
+    y = 12
+    ys = []
+    for i, (title, sub, level) in enumerate(stages):
+        fill = "#f0f0f0" if i in (1, 3) else "#ffffff"
+        s.rect(x0, y, sw, h, fill=fill, sw=1.1)
+        s.text(x0 + 10, y + 20, title, size=12, weight="bold")
+        s.text(x0 + 10, y + 37, sub, size=7.9, fill="#333333")
+        s.text(x0 + sw - 7, y + 12, level, size=7.4, anchor="end", style="italic", fill="#4d4d4d")
+        ys.append(y)
+        if i < len(refinements):
+            head, lines = refinements[i]
+            by = y + h + 8
+            bh = 22 + dy * len(lines) + 6
+            s.rect(rx, by, rw, bh, fill="#ffffff", sw=0.8, dash="3,2")
+            s.text(rx + 9, by + 14, head, size=8.8, weight="bold")
+            for k, (op, num, what, bold) in enumerate(lines):
+                ly = by + 30 + k * dy
+                if bold:
+                    s.line(rx + 8, ly - 10, rx + 72, ly - 10, sw=0.6, color="#000000")
+                s.text(rx + 20, ly, op, size=fs, anchor="end", weight="bold")
+                s.text(rx + 66, ly, num, size=fs, anchor="end", weight="bold" if bold else "normal")
+                s.text(rx + 74, ly, what, size=fs, weight="bold" if bold else "normal")
+            s.line(x0 + 44, by + bh / 2, rx - 2, by + bh / 2, sw=0.7, dash="2,2", color="#888888")
+            next_y = by + bh + 8
+            s.arrow(x0 + 40, y + h + 2, x0 + 40, next_y - 3, sw=1.3)
+            y = next_y
+    s.h = int(y + h + 12)
+    return s.write(path)
+
+
+def _refinement_funnel_svg_v1(n: Dict, path: Path) -> Path:
+    """The funnel before 2026-09-22 (counts only, no arithmetic); kept for comparison."""
     s = _Svg(760, 372)
     stages = [
         (f"{n['acquired_s']} patents acquired", f"PatSeer query, snapshot {n['snapshot']}",
@@ -489,33 +804,41 @@ def refinement_funnel_svg(n: Dict, path: Path) -> Path:
 
 
 def design_space_order_svg(n: Dict, path: Path) -> Path:
-    """Figure 3.3 — the four label cards of one unique aircraft, and the order of the analysis."""
-    s = _Svg(760, 268)
-    s.text(12, 17, f"One unique aircraft: {n['slots']} answerable slots on {n['unique']} aircraft, "
-           f"{n['concepts']} concepts behind them", size=10.5, weight="bold")
+    """Figure 3.3c — the four label cards of one unique aircraft, and the order of the analysis."""
+    s = _Svg(760, 278)
+    s.text(12, 17, f"One unique aircraft: {n['questions']} slots on four label cards "
+           f"({n['q_dim']} dimensions, {n['q_tick']} ticks, {n['q_num']} numbers), "
+           f"filling {n['cols']} export columns", size=10.5, weight="bold")
+
+    def kinds(card):
+        parts = [(n[f"qd_{card}"], "dimension"), (n[f"qt_{card}"], "tick"), (n[f"qn_{card}"], "number")]
+        return " · ".join(f"{k} {w}{'s' if k != 1 else ''}" for k, w in parts if k)
+
     cards = [
-        ("G1 · architecture", f"{n['slots_G1']} slots", ["architecture class,", "mixed flag, tags"]),
-        ("M1 · body", f"{n['slots_M1']} slots", ["fuselage, booms,", "landing gear, symmetry"]),
-        ("M2 · wings and tail", f"{n['slots_M2']} slots", ["wing count, planform,", "height, tail type"]),
-        ("M3 · propulsion", f"{n['slots_M3']} slots", ["units per carrier, tilt,", "ducting, span / chord zones"]),
+        ("G1 · Architecture", "G1", ["class, notPureArch"]),
+        ("M1 · Structure", "M1", ["fuselage, boom group ×0..n"]),
+        ("M2 · Aero", "M2", ["wing, wing panel ×1..4,", "integrated surface, empennage"]),
+        ("M3 · Propulsion", "M3", ["propulsor card per host,", "propulsor type ×1..n"]),
     ]
-    x0, w, h, y0, gap = 12, 172, 74, 30, 16
+    cards = [(title, f"{n[f'q_{c}']} slots", [kinds(c)] + body + [f"{n[f'cols_{c}']} export columns"])
+             for title, c, body in cards]
+    x0, w, h, y0, gap = 12, 172, 84, 30, 16
     for i, (title, slots, body) in enumerate(cards):
         x = x0 + i * (w + gap)
         s.rect(x, y0, w, h, fill="#ffffff", sw=1.1)
         s.text(x + 9, y0 + 18, title, size=10, weight="bold")
         s.text(x + w - 8, y0 + 18, slots, size=8.2, anchor="end", fill="#4d4d4d")
-        s.lines(x + 9, y0 + 38, body, size=8.6, dy=13)
+        s.lines(x + 9, y0 + 36, body, size=8.4, dy=12)
         if i < 3:
             s.arrow(x + w + 2, y0 + h / 2, x + w + gap - 2, y0 + h / 2, sw=1.1)
     # the bridge: what the reading of the four cards together gives
     s.arrow(380, y0 + h + 4, 380, y0 + h + 42, sw=1.3)
-    s.text(392, y0 + h + 21, f"read together: {n['informative']} fields carry the information, "
-           f"{n['near_constant']} are near-constant,", size=8.6, fill="#333333")
-    s.text(392, y0 + h + 34, f"{n['slots_lt5']} slots are answered on fewer than 5 % of aircraft",
-           size=8.6, fill="#333333")
+    s.text(392, y0 + h + 21, f"read together: an aircraft answers a median of {n['median_q']} of the "
+           f"{n['questions']} slots;", size=8.6, fill="#333333")
+    s.text(392, y0 + h + 34, f"{n['informative']} export columns carry the information, "
+           f"{n['near_constant']} are near-constant", size=8.6, fill="#333333")
     steps = [
-        ("3.3.1", "slots answered", "completeness"),
+        ("3.3.1", "completeness", "slots answered"),
         ("3.3.2", "missingness", "gap or absence"),
         ("3.3.3", "common answers", "the boundaries"),
         ("3.3.4", "field inventory", "the shortlist"),
@@ -565,15 +888,23 @@ def render_all(ds: Dataset, out_dir: Path, partial_window_start: int = 2024, **_
             a1.time_coverage(ds), partial_start=partial_window_start, path=p),
         "provenance_bars": lambda p: provenance_bars(prov["region"], prov["pub_office"], p),
         "lorenz": lambda p: lorenz(raw, canonical, p),
-        "slots_histogram": lambda p: slots_histogram(a2.d2_slots_per_aircraft(ds), p),
+        "slots_histogram": lambda p: slots_histogram(register.per_aircraft(ds), p),
         "archetype_levels": lambda p: archetype_levels(a2.d5_archetype_cardinality(ds), p),
         "class_balance_bars": lambda p: class_balance_bars(a2.d3_architecture_balance(ds), p),
         "class_share_stacked_area": lambda p: class_share_stacked_area(
             a2.d9_architecture_by_window(ds), path=p),
+        "aircraft_spans_timeline": lambda p: aircraft_spans_timeline(ds, p),
+        "window_shares_two_counts": lambda p: window_shares_two_counts(ds, p),
+        "proximity_heatmap": lambda p: proximity_heatmap(ds, p),
+        "trl_by_class": lambda p: trl_by_class(ds, p),
+        "public_match_bars": lambda p: public_match_bars(ds, p),
     }
     for name, job in jobs.items():
         path = out_dir / f"{name}.png"
         fig = job(path)
         plt.close(fig)
         paths[name] = path
+    # the codebook drawings are static (drawn by the author, not from data): copied, not drawn
+    for name, src in CODEBOOK_DRAWINGS.items():
+        paths[name] = Path(shutil.copyfile(src, out_dir / src.name))
     return paths
