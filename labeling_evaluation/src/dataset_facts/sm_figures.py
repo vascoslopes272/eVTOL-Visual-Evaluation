@@ -130,16 +130,16 @@ def panel_duct(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
     bars = ax.bar(x, bands["_s"], width=0.62, color=BLUE(0.78), zorder=3)
     _bar_pct(ax, bars, bands["_s"].tolist())
     ax.axhline(overall, color=INK, lw=1.1, ls="--", zorder=4)
-    # over the lowest bar, where the label has the line to itself
-    ax.text(float(np.argmin(bands["_s"].to_numpy())), overall + 0.014,
-            f"every band together, {overall:.0%} of {total} aircraft",
-            ha="center", va="bottom", fontsize=7.5, color=INK2, zorder=5)
+    # clear of every bar, at the height of the line it names
+    ax.text(len(bands) - 0.35, overall, f"every band\ntogether, {overall:.0%}",
+            ha="left", va="center", fontsize=7.5, color=INK2, zorder=5, linespacing=1.2)
     ax.set_xticks(x, [f"{g}\nn {int(n)}" for g, n in zip(bands["group"], bands["_n"])], fontsize=8)
-    ax.set_xlabel("propulsive units per aircraft", fontsize=8)
+    ax.set_xlim(-0.65, len(bands) + 0.5)
+    ax.set_xlabel(f"propulsive units per aircraft ({total} aircraft fall in a band)", fontsize=8)
     ax.set_ylabel("aircraft with at least\none ducted unit", fontsize=8)
-    _pct_axis(ax, float(bands["_s"].max()) + 0.13)
-    ax.set_title("Ducting against rotor count: commonest at the fewest units and at the most, "
-                 "rarest in between", fontsize=9)
+    _pct_axis(ax, float(bands["_s"].max()) + 0.10)
+    ax.set_title("Ducting against rotor count: commonest at the fewest units and at the most",
+                 fontsize=9)
     return _save(fig, path)
 
 
@@ -377,8 +377,12 @@ def panel_trl_tracked(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
             ax.barh(yi, share, left=left, height=0.52, color=col, zorder=3,
                     label=lab if yi == y[0] else None)
             if share >= 0.045:
+                # ink or paper, decided by the fill's own luminance rather than by its
+                # position, so the same band is labelled the same way in both bars
+                from matplotlib.colors import to_rgb
+                lum = sum(c * w for c, w in zip(to_rgb(col), (0.299, 0.587, 0.114)))
                 ax.text(left + share / 2, yi, f"{val}", ha="center", va="center", fontsize=7.5,
-                        color="#ffffff" if k >= 3 else INK, zorder=5)
+                        color="#ffffff" if lum < 0.55 else INK, zorder=5)
             left += share
         ax.text(1.008, yi, f"n {base}", va="center", ha="left", fontsize=7.5, color=INK2)
     above_all = int(tot["unique aircraft"] - tot["TRL 2"])
@@ -438,9 +442,9 @@ def panel_cite_rank(tables: Dict[str, pd.DataFrame], path: Path,
     hb, _ = np.histogram(b, bins=CITE_BINS)
     wid = 0.042
     bars_a = ax.bar(centres - wid / 1.9, ha / ha.sum(), width=wid, color=CAT[0], zorder=3,
-                    label=f"aircraft of the firms the index rates (n {len(a)})")
+                    label=f"the index firms' aircraft (n {len(a)})")
     bars_b = ax.bar(centres + wid / 1.9, hb / hb.sum(), width=wid, color=CONTEXT, zorder=3,
-                    label=f"every other aircraft in the corpus (n {len(b)})")
+                    label=f"every other aircraft (n {len(b)})")
     for bar in bars_a:
         bar.set_hatch("////")
     top = max((ha / ha.sum()).max(), (hb / hb.sum()).max())

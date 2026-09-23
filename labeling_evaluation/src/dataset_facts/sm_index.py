@@ -521,8 +521,8 @@ TEXTS: Dict[str, str] = {
         "citation rank of {sm_cite_idx} against {sm_cite_rest} for every other aircraft in the "
         "corpus — a full cohort rank apart, q {sm_cite_q} after correction over the whole table, "
         "and it holds on the US-published patents alone (p {sm_cite_us}), so it is not the office "
-        "effect that removes two of the other differences. It is the cohort-citation-rank row of "
-        "{sm_here_la_ari_gap}.\n\n"
+        "effect that removes two of the other differences. The panel is the two distributions "
+        "the medians come from; the row itself is in {sm_here_la_ari_gap}.\n\n"
         "**Why it is a question.** The cohort rank is computed against patents of the same year, "
         "so it is not an age effect. That leaves three readings that this corpus cannot tell "
         "apart: the rated firms file better patents; the rated firms are cited more because they "
@@ -592,6 +592,28 @@ FIGURE_CAPTIONS.update({
                      "single configuration. A configuration is one aircraft's combination of "
                      "propulsive units (banded), ducted or open, booms or no booms, and tail "
                      "type; every class with 5+ aircraft in 3+ windows is drawn",
+    # ---- the six panels of the new questions. Each caption names the object and nothing else:
+    # the reading is the grey line under it and the question is the heading above it.
+    "sm_duct_bands": "a ducted unit against the number of propulsive units. Each bar is the "
+                     "share of that band's AIRCRAFT carrying at least one ducted unit, never a "
+                     "share of rotors; the dashed line is the same share over every band",
+    "sm_weighting": "condition 3 of the dominant-design test — ΔQ per priority window against "
+                    "the permutation band — under both weightings and at both archetype "
+                    "levels. A ringed point falls below the lower edge of its own band, which "
+                    "is the condition met; the hatched window is still incomplete",
+    "sm_archetype_filers": "distinct filers per aircraft, for every archetype holding twenty "
+                           "aircraft or more. 1.00 means no filer holds two of the archetype's "
+                           "aircraft; CVT · 5-6 and the neighbouring CVT · 4 are marked",
+    "sm_tw_entry": "Tilt Wing's share of each window's aircraft beside its share of that "
+                   "window's entering firms — five separate comparisons, one per window, and "
+                   "not a trend: the two counts have different units and different bases, both "
+                   "printed on the tick",
+    "sm_trl_tracked": "technology readiness over the whole corpus and over the tracked aircraft "
+                      "alone, with the aircraft no public source follows as a band of their own "
+                      "rather than inside TRL 2",
+    "sm_cite_rank": "the cohort citation rank of the index firms' aircraft against every other "
+                    "aircraft in the corpus, as two distributions. A rank is taken inside the "
+                    "patent's own priority year, so age is already out of it",
 })
 
 TABLE_CAPTIONS.update({
@@ -893,6 +915,22 @@ NUMBERS: Dict[str, Dict] = {
     "sm_duct_9_n": dict(table="la_duct_units",
                         where=[("level", "propulsive units"), ("group", "9+")],
                         col="with a ducted unit", fmt="int"),
+    # ---- the bases the six panels rest on, for the grey line under each of them
+    "sm_duct_total": dict(table="la_duct_units",
+                          where=[("level", "propulsive units"), ("group", "all bands")],
+                          col="aircraft", fmt="int"),
+    "sm_tw_ent_n_2023": dict(table="la_cohort_mix",
+                             where=[("window", "2020-23"), ("class", "TW")],
+                             col="entering with this class", fmt="int"),
+    "sm_tw_ent_base_2023": dict(table="la_cohort_mix",
+                                where=[("window", "2020-23"), ("class", "TW")],
+                                col="firms entering", fmt="int"),
+    "sm_tw_air_n_2023": dict(table="la_cohort_mix",
+                             where=[("window", "2020-23"), ("class", "TW")],
+                             col="aircraft of this class", fmt="int"),
+    "sm_tw_air_base_2023": dict(table="la_cohort_mix",
+                                where=[("window", "2020-23"), ("class", "TW")],
+                                col="aircraft in the window", fmt="int"),
 }
 
 #: The items printed here that ``la_index.GRADE`` does not grade **core**, each with the
@@ -918,6 +956,14 @@ NOT_CORE: Dict[str, str] = {
                            "the whole labelling effort",
     "la_duct_units": "it is the measure the first of the new questions is about, and the "
                      "question cannot be read without the five bands in front of it",
+    # the six panels of the new questions. They carry no grade because the question map grades
+    # the ITEMS of the eight answered questions, and these are not evidence for an answer —
+    # each is the measure a question is about, printed so the question can be read without
+    # turning back twenty pages to the figure it was cut from.
+    **{name: "a panel of the new questions: it is the measure the question names, cut to that "
+             "measure alone from a table the full render already wrote"
+       for name in ("sm_duct_bands", "sm_weighting", "sm_archetype_filers", "sm_tw_entry",
+                    "sm_trl_tracked", "sm_cite_rank")},
 }
 
 
@@ -951,6 +997,62 @@ def _d3_numbers(tables: Optional[Dict]) -> Dict:
             "sm_d3_drop_share": _la._tk_fmt(D3_DROP_SHARE, "pct")}
 
 
+def _panel_numbers(tables: Optional[Dict]) -> Dict:
+    """The four numbers the new-question panels put on the page that no single cell of a built
+    table holds — each one a difference between two cells of the same row, computed here rather
+    than typed, so it cannot drift from the panel drawn beside it.
+
+    ``sm_c3_gap_main`` / ``sm_c3_gap_alt``: how far 2020-23's ΔQ falls below, or stops above,
+    the lower edge of its OWN permutation band, under each of the two weightings. That distance
+    is the whole of the second question and it is what the panel draws.
+    ``sm_trl_tracked_n`` / ``sm_trl_tracked_share``: the aircraft a public source follows at
+    all, and the share of THOSE above TRL 2 — the denominator the fifth question asks for.
+    """
+    from . import sm_figures as _sf          # lazy: keeps matplotlib out of a plain import
+    out: Dict = {}
+    q = (tables or {}).get("la_dd_q")
+    if q is not None and {"level", "weighting", "window"} <= set(q.columns):
+        import pandas as _pd
+        for key, wt in (("sm_c3_gap_main", _la_q_weighting(0)), ("sm_c3_gap_alt", _la_q_weighting(1))):
+            row = q[q["level"].eq("A0c") & q["weighting"].eq(wt) & q["window"].eq("2020-23")]
+            if len(row):
+                dq = float(_pd.to_numeric(row["ΔQ"], errors="coerce").iloc[0])
+                lo = float(_pd.to_numeric(row["ΔQ permutation low"], errors="coerce").iloc[0])
+                out[key] = f"{abs(dq - lo):.4f}"
+    z = (tables or {}).get("la_zones")
+    if z is not None and "aircraft" in z.columns:
+        import pandas as _pd
+        big = _pd.to_numeric(z["aircraft"], errors="coerce").ge(_sf.ZONE_MIN).sum()
+        out["sm_zones_big_n"] = _la._tk_fmt(int(big), "int")
+        out["sm_zones_min"] = _la._tk_fmt(_sf.ZONE_MIN, "int")
+    co = (tables or {}).get("la_cohorts")
+    if co is not None and "TW" in co.columns:
+        import pandas as _pd
+        thin = _pd.to_numeric(co["TW"], errors="coerce").lt(_sf.THIN_FIRMS).sum()
+        out["sm_tw_thin_n"] = _la._tk_fmt(int(thin), "int")
+        out["sm_tw_thin_cut"] = _la._tk_fmt(_sf.THIN_FIRMS, "int")
+    st = (tables or {}).get("a2_d15_trl_status")
+    if st is not None and "programme status" in st.columns:
+        import pandas as _pd
+        col = lambda r, c: float(_pd.to_numeric(
+            st.loc[st["programme status"].eq(r), c], errors="coerce").iloc[0])
+        try:
+            tracked = col("Total", "unique aircraft") - col("not tracked", "unique aircraft")
+            above = col("Total", "unique aircraft") - col("Total", "TRL 2")
+            out["sm_trl_tracked_n"] = _la._tk_fmt(tracked, "int")
+            out["sm_trl_tracked_share"] = _la._tk_fmt(above / tracked, "pct") if tracked else ""
+        except (IndexError, KeyError, ValueError):
+            pass
+    return out
+
+
+def _la_q_weighting(k: int) -> str:
+    """The k-th of the two weightings the dominant-design test is run under, named where the
+    test names them (``la_tables.Q_WEIGHTINGS``) rather than spelled out here."""
+    from . import la_tables as _ltb
+    return _ltb.Q_WEIGHTINGS[k]
+
+
 def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
     """``values`` extended with every number this document's prose can ask for.
 
@@ -968,6 +1070,7 @@ def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
     out = dict(values or {})
     out.update(_window_numbers(tables, out))
     out.update(_d3_numbers(tables))
+    out.update(_panel_numbers(tables))
     # cross-references, never typed: ``{sm_ref_<name>}`` is the item's number in the FULL
     # document at this render (``set_full_reference`` has already run), ``{sm_here_<name>}``
     # its number in this one. The full document was renumbered twice on 2026-09-23; a typed
@@ -1169,6 +1272,16 @@ NOT_IN_FULL: Dict[str, str] = {
     "a2_d15_trl_by_class": "Full table: `tables/a2_d15_trl_by_class.csv`",
     "a2_d16_public_match": "Full table: `tables/a2_d16_public_match.csv`",
     "la_duct_units": "Full table: `tables/la_duct_units.csv`",
+    # the six panels: drawn for this document, so what closes their grey line is where the
+    # numbers on them come from
+    "sm_duct_bands": "Drawn from `tables/la_duct_units.csv`",
+    "sm_weighting": "Drawn from `tables/la_dd_q.csv`",
+    "sm_archetype_filers": "Drawn from `tables/la_zones.csv`",
+    "sm_tw_entry": "Drawn from `tables/la_cohorts.csv`, `tables/la_cohort_mix.csv` and "
+                   "`tables/la_class_cycles.csv`",
+    "sm_trl_tracked": "Drawn from `tables/a2_d15_trl_status.csv`",
+    "sm_cite_rank": "The two medians are the `la_ari_gap` row; the distributions behind them "
+                    "are the same rank and the same split that table is built from",
 }
 
 
@@ -1221,6 +1334,42 @@ TAKEAWAY: Dict[str, str] = {
         "units or fewer carry a ducted unit, {sm_duct_78} at seven or eight, {sm_duct_9} at nine "
         "or more, against {sm_duct_all} over the corpus. The dip survives holding the class "
         "fixed, so it is not the class mix.",
+    # ---- the six panels of the new questions: one reading each, and the base it rests on
+    "sm_duct_bands":
+        "Ducting is U-shaped in rotor count, not flat: {sm_duct_13} at three units or fewer, "
+        "{sm_duct_78} at seven or eight, {sm_duct_9} at nine or more, against {sm_duct_all} of "
+        "the {sm_duct_total} aircraft that fall in a band at all. The dip survives holding the "
+        "class fixed, so it is not the class mix — and one ducted fan among twelve open rotors "
+        "counts here exactly like twelve ducted ones, which is what the question is about.",
+    "sm_weighting":
+        "The same window, the same test, two answers: at 2020-23 the main weighting falls "
+        "{sm_c3_gap_main} below the lower edge of its own permutation band — the condition met "
+        "— and the uniform weighting stops {sm_c3_gap_alt} above the edge of its own. The two "
+        "levels agree with each other and disagree on nothing; the weighting is the whole of "
+        "the difference. Bases on the tick; the last window is incomplete.",
+    "sm_archetype_filers":
+        "CVT · 5-6 rests on {sm_cvt56_filers} filers for its {sm_cvt56_air} aircraft — "
+        "{sm_cvt56_fpa} per aircraft, the lowest of the {sm_zones_big_n} archetypes with "
+        "{sm_zones_min} aircraft or more, against {sm_cvt4_fpa} for CVT · 4 next door. A low "
+        "value is the shape a firm's own line of variants leaves; it is not proof of one.",
+    "sm_tw_entry":
+        "In 2020-23 Tilt Wing takes {sm_tw_ent_2023} of the entering firms "
+        "({sm_tw_ent_n_2023} of {sm_tw_ent_base_2023}) against {sm_tw_air_2023} of the "
+        "window's aircraft ({sm_tw_air_n_2023} of {sm_tw_air_base_2023}) — the one window "
+        "where the firms arriving and the aircraft filed point opposite ways. Five windows "
+        "compared one at a time and not a trend: {sm_tw_thin_n} of them rest on fewer than "
+        "{sm_tw_thin_cut} firms entering with the class and are marked ‡.",
+    "sm_trl_tracked":
+        "The tenth is a coverage rate before it is a build rate: {trl_above_s} of "
+        "{trl_aircraft_s} aircraft are above TRL 2 ({sm_trl_share}), but {sm_trl_nottracked} of "
+        "the {trl_aircraft_s} are followed by no public source at all and sit at TRL 2 for that "
+        "reason alone. Over the {sm_trl_tracked_n} that are followed, the same {trl_above_s} "
+        "are {sm_trl_tracked_share}.",
+    "sm_cite_rank":
+        "The gap is the whole distribution and not one heavily cited patent: the rated firms' "
+        "aircraft are thin below the median of their year and pile up in the top decile, median "
+        "{sm_cite_idx} against {sm_cite_rest}, q {sm_cite_q} over the whole table and p "
+        "{sm_cite_us} on the US-published patents alone. Bases in the legend.",
     # Q5. The full document's line runs to 149 words; the numbers are the same
     "coverage":
         "There is no top tier: {tk_seg_top_firms} firms hold {tk_seg_top_air} aircraft, the next "

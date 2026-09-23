@@ -40,7 +40,7 @@ PILLAR = Path(__file__).resolve().parent.parent
 REPO = PILLAR.parent
 sys.path.insert(0, str(PILLAR))
 from src.config_loader import load_config                                        # noqa: E402
-from src.dataset_facts import la_index, numbers, report, sm_index                 # noqa: E402
+from src.dataset_facts import la_index, numbers, report, sm_figures, sm_index    # noqa: E402
 from src.dataset_facts import load_dataset                                        # noqa: E402
 
 #: name -> file stem, where the drawn file is not ``<name>.png``. Same mapping the full
@@ -89,12 +89,21 @@ def load_tables(out: Path) -> dict:
 
 
 def load_figures(out: Path) -> dict:
-    """Every figure the full render drew, by name. Nothing is redrawn."""
+    """Every figure the full render drew, by name, plus the brief's own panels. Nothing the
+    full document owns is redrawn.
+
+    The six panels of the new-questions section are the one exception to "never redrawn": they
+    do not exist in the full document at all, they are drawn by ``sm_figures`` into the same
+    ``figures/`` folder from the tables the full render wrote, and ``la_figures`` is untouched,
+    so every figure of ``LABELLING_ANALYSIS.md`` is still the file that render produced.
+    """
     fdir = out / "figures"
     if not fdir.is_dir():
         raise SystemExit(f"no figures/ under {out} — run render_labelling_analysis.py first")
     figs = {}
-    for name in {n for node in la_index.NODES for n in node.get("figures", [])}:
+    wanted = ({n for node in la_index.NODES for n in node.get("figures", [])}
+              | {n for node in sm_index.NODES for n in node.get("figures", [])})
+    for name in wanted:
         path = fdir / SPECIAL.get(name, f"{name}.png")
         if path.exists():
             figs[name] = path
@@ -160,6 +169,12 @@ def main(argv) -> int:
     before = (full_md.stat().st_mtime_ns, full_md.stat().st_size) if full_md.exists() else None
 
     tables = load_tables(out)
+    ds = load_dataset(cfg)
+    # the six panels of the new-questions section, drawn into out/figures before they are
+    # looked up. Five read the tables just loaded; the sixth needs the shape of a distribution
+    # the tables do not carry, and gets it from the two functions the printed table is built
+    # from. Nothing here touches la_figures or the full document's figures.
+    sm_figures.render(out, tables, ds)
     figs = load_figures(out)
     problems = check_selection(figs, tables)
     if problems:
@@ -171,7 +186,6 @@ def main(argv) -> int:
     # the item's number in the FULL document, computed the way that document numbers it
     sm_index.set_full_reference(set(figs), set(tables))
 
-    ds = load_dataset(cfg)
     values = sm_index.resolve(numbers.live(ds, partial), tables)
     values["partial_start"] = partial
 
