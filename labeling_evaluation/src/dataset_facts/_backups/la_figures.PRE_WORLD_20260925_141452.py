@@ -2204,20 +2204,15 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
             # three times faster than this baseline"; the dashed line at 1 is "only as fast".
             # The 2018 peak of each line carries its multiple, which is the sentence the figure
             # exists to show.
-            # 2026-09-25: all three denominators are WORLDWIDE FAMILIES (PatSeer B64 and section B,
-            # WIPO all patents), the corpus's own unit — replacing the nine-office PATENTSCOPE
-            # publication counts, which undercount the recent years (see la_baseline and
-            # assets/external/aviation_baseline/patseer_worldwide/README.md).
+            base = la_baseline.load().reindex(done.index)
             _e = pd.to_numeric(done["patents acquired"], errors="coerce")
-            series = [("B64", pd.to_numeric(done[la_baseline.COLS["base"]], errors="coerce"), INK, "-", "o",
+            series = [("B64", pd.to_numeric(done["B64 patents (same offices)"], errors="coerce"), INK, "-", "o",
                        "aeronautics (B64)")]
-            _wb = la_baseline.series(la_baseline.PATSEER_WORLD_B).reindex(done.index)
-            if _wb.notna().any():
-                series.append(("cpcB", pd.to_numeric(_wb, errors="coerce"), INK2, "--", "s",
+            if "cpcB_offices" in base.columns and base["cpcB_offices"].notna().any():
+                series.append(("cpcB", pd.to_numeric(base["cpcB_offices"], errors="coerce"), INK2, "--", "s",
                                "all section B (transport)"))
-            _wa = la_baseline.series(la_baseline.WIPO_WORLD_ALL).reindex(done.index)
-            if _wa.notna().any():
-                series.append(("all", pd.to_numeric(_wa, errors="coerce"), "#5a5a5a", "-.", "^",
+            if "all_offices" in base.columns and base["all_offices"].notna().any():
+                series.append(("all", pd.to_numeric(base["all_offices"], errors="coerce"), "#5a5a5a", "-.", "^",
                                "all patents"))
             peak_year = None
             idx_lines = {}
@@ -2237,7 +2232,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
             top = max(float(v.max()) for v in idx_lines.values())
             ax2.set_ylim(0, top * 2.15)              # an empty band above the lines for the legend and the recipe
             ax2.legend(loc="upper left", fontsize=7, frameon=True,
-                       title="each line = eVTOL families \u00f7 one baseline's\nfamilies (worldwide, same year),\n"
+                       title="each line = eVTOL patents \u00f7 one baseline's\npatents (same offices, same year),\n"
                              f"as a multiple of its {lo}-{hi} starting level", title_fontsize=6.5)
             # a worked example, so the axis needs no prior reading
             _rs, _re = r.get("ratio_start"), float((_e / series[0][1]).loc[peak_year] * 1000)
@@ -2247,7 +2242,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
             _base = float(_frac.reindex(range(lo, hi + 1)).mean())
             ax2.text(0.99, 0.98,
                      f"How a line is built (aeronautics as example)\n"
-                     f"1  {peak_year}: {_e.loc[peak_year]:.0f} eVTOL \u00f7 {_den:,.0f} aeronautics families = {_frac.loc[peak_year]:.1f} per 1 000\n"
+                     f"1  {peak_year}: {_e.loc[peak_year]:.0f} eVTOL \u00f7 {_den:,.0f} aeronautics patents = {_frac.loc[peak_year]:.1f} per 1 000\n"
                      f"2  same for {lo}-{hi}, averaged = {_base:.1f} per 1 000: the starting level\n"
                      f"3  {_frac.loc[peak_year]:.1f} \u00f7 {_base:.1f} = \u00d7{_m:.1f} \u2014 the point drawn for {peak_year}",
                      transform=ax2.transAxes, ha="right", va="top", fontsize=6.2, color=INK, linespacing=1.35,
@@ -2282,9 +2277,9 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
                           f"indexed to their own {lo}-{hi} mean", fontsize=9.5)
         _hgrid(ax2, "y")
         # str.capitalize() would lower-case CPC, B64 and the office codes, so only the first letter moves
-        src += (" " + la_baseline.SOURCE[0].upper() + la_baseline.SOURCE[1:] + ". Both sides of (ii) are simple families counted "
-                "by earliest priority year, so (ii) is drawn from the corpus's own family count and not from the "
-                "aircraft of the bars.")
+        src += (" " + la_baseline.SOURCE[0].upper() + la_baseline.SOURCE[1:] + ". Both sides of (ii) are counted by "
+                "priority year; the baseline counts patent publications, so (ii) is drawn from the corpus's own "
+                "patent count and not from the aircraft of the bars.")
         mult = r.get("ratio_multiple") or r.get("growth")
         gained = r.get("first_above")
         if ratio_col in ti.columns:
@@ -2294,23 +2289,21 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
             m_b64, m_b, m_all = mults.get("B64"), mults.get("cpcB"), mults.get("all")
             wider = ""
             if m_b is not None and m_all is not None:
-                wider = (f", {m_b:.1f}\u00d7 faster than all of transport and operations (CPC section B) and "
-                         f"{m_all:.1f}\u00d7 faster than patenting as a whole")
+                wider = (f", {m_b:.0f}\u00d7 faster than all of transport and operations (CPC section B) and "
+                         f"{m_all:.0f}\u00d7 faster than patenting as a whole")
             read += (f" (ii) asks whether the rise is the sector's own: patenting at large also grew. Each line is built "
                      f"in three steps, aeronautics for example: (1) for each year, this corpus's eVTOL patents divided by "
-                     f"ALL aeronautics patent families (CPC B64) filed worldwide with that priority year — "
+                     f"ALL aeronautics patents (CPC B64) filed at the same nine offices with that priority year — "
                      f"{peak_year}: {_e.loc[peak_year]:.0f} of {_den:,.0f}, {_frac.loc[peak_year]:.1f} per 1 000; "
                      f"(2) the same fraction averaged over {lo}-{hi}, {_base:.1f} per 1 000, is the starting level — five "
                      f"years rather than one because a single early year holds under twenty eVTOL patents; (3) each "
                      f"year's fraction divided by the starting level is the point drawn, so every line starts at 1 and "
                      f"{peak_year} reads \u00d7{_m:.1f}. The other two lines repeat the recipe with all CPC section-B "
-                     f"families (transport and operations) and with all patent families of any kind as the denominator; the "
+                     f"patents (transport and operations) and with all patents of any kind as the denominator; the "
                      f"starting level is what lets three fractions of very different size share one axis. By "
-                     f"{peak_year} eVTOL had grown {m_b64:.1f}\u00d7 faster than aeronautics{wider}. The rise outruns "
-                     f"transport and the patent system by a wide margin, but it runs close to aeronautics, whose own "
-                     f"worldwide family count more than doubled between 2014 and 2016; over the whole window the two "
-                     f"growth rates cannot be told apart (doubling-time table, 1.1). In absolute terms the corpus holds "
-                     f"{r.get('ratio_end')} eVTOL families per 1 000 B64 families by {last} against {r.get('ratio_start')} in "
+                     f"{peak_year} eVTOL had grown {m_b64:.0f}\u00d7 faster than aeronautics{wider}; the rise is not "
+                     f"aviation's tide, not transport's, and not the patent system's. In absolute terms the corpus holds "
+                     f"{r.get('ratio_end')} eVTOL patents per 1 000 B64 patents by {last} against {r.get('ratio_start')} in "
                      f"{lo}-{hi} (Table 1.1a). The hatched years are incomplete on both sides and are not drawn; (ii) does "
                      f"not pool: its first point is {FILINGS_FIRST_YEAR} alone.")
         else:

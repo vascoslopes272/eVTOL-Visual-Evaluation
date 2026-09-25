@@ -55,9 +55,9 @@ FIGURES = {
 #: chapter headings are long two-clause questions; at one chapter per page the question is the
 #: heading and the long form would wrap three times.
 CHAPTERS = [
-    ("1", "How far ahead of the sector does the patent record run?"),
-    ("2", "Is there a dominant eVTOL design, or is the field still experimenting?"),
-    ("3", "Who is patenting eVTOL aircraft?"),
+    ("1", "Does the patent record see the sector before it exists?"),
+    ("2", "Is there one eVTOL design, or several?"),
+    ("3", "Who is designing it?"),
     ("4", "Does geography shape the design?"),
     ("M", "Can the drawing alone carry the architecture?"),
 ]

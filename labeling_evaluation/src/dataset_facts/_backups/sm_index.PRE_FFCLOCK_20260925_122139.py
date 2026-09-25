@@ -108,31 +108,25 @@ OLD_NODES: List[Dict] = [
               "**2018** holds {tk_y2018} aircraft against {sm_pat_2018} patents: the large filers of "
               "that year filed several patents on each design — the gap between the two is exactly "
               "what counting aircraft removes.\n\n"
-              "**The record grows at about the pace of the aeronautics around it — not faster.** "
+              "**The record is growing about twice as fast as the aeronautics it sits inside.** "
               "Fitted on the complete years, eVTOL aircraft double every {sm_dbl_evtol} years "
-              "({sm_dbl_evtol_ci}); aeronautics — every CPC B64 patent family filed worldwide, the "
-              "corpus's own unit and database — doubles every {sm_dbl_b64} years ({sm_dbl_b64_ci}). "
-              "eVTOL is {sm_dbl_ratio} times as fast ({sm_dbl_ratio_ci}): **the interval takes in 1, "
-              "so the two rates cannot be told apart.** An earlier reading of about twice as fast "
-              "rested on a nine-office baseline that undercounts the recent years — on it aeronautics "
-              "doubled only every {sm_dbl_b64_offices} years — and does not survive the correction. "
-              "Cutting the fit at 2019 gives {sm_dbl_ratio_sens}, so the answer does not rest on the "
-              "last four years. Where eVTOL does pull away is against transport and against "
-              "patenting as a whole (Figure 1, ii); against aeronautics, it grew inside a wave that "
-              "lifted the whole class, whose family count more than doubled between 2014 and 2016.",
+              "({sm_dbl_evtol_ci}); the aeronautics baseline — CPC B64 filings **at the same nine "
+              "offices this corpus is drawn from**, never aeronautics worldwide — doubles every "
+              "{sm_dbl_b64} years ({sm_dbl_b64_ci}). The ratio is {sm_dbl_ratio} "
+              "({sm_dbl_ratio_ci}). Read the baseline figure with one caveat: the B64 series bends "
+              "downward across the window while the eVTOL series does not, so {sm_dbl_b64} years is "
+              "an average over the window and not a rate aeronautics held throughout. Cutting the "
+              "fit at 2019 leaves eVTOL {sm_dbl_ratio_sens} times faster, so the conclusion does not "
+              "rest on the last four years.",
          figures=["filings_per_year"]),
     # 2026-09-24: the lapse paragraph and its figure are their own section, under sub-question 1.2
     dict(id="Q1b",
          text="**Out of force** = the PatSeer legal status of the aircraft's primary patent reads "
               "INACTIVE at the snapshot — lapsed for non-payment, withdrawn, refused or expired. It "
               "is read on the {tk_lapsed_n} primary patents with priority **2019 or earlier**, and "
-              "on no younger cohort, because a patent needs about seven years from priority before its "
-              "fate is decided — and the corpus itself confirms it: of its {sm_lapse_grants} dated "
-              "grants, {sm_lapse_7y} arrive within seven years of priority (median "
-              "{sm_lapse_median} years), and the share still pending collapses at exactly that "
-              "boundary — {sm_lapse_p2019} of the 2019 cohort against {sm_lapse_p2022} of 2022 "
-              "and {sm_lapse_p2023} of 2023. A younger patent that is 'alive' is mostly undecided, "
-              "not surviving. "
+              "on no younger cohort, because a lapse needs about seven years from priority to show: "
+              "18 months to publication, two to four years of examination, then the first renewal "
+              "decisions. A 2022 patent that is 'alive' is alive because it is young. "
               "{tk_lapsed_all} of the cohort is out of force and the classes sit around that line "
               "(Tilt Rotor {tk_lapsed_tr}, Lift + Cruise {tk_lapsed_slc}, CVT {tk_lapsed_cvt}).",
          figures=["abandonment"]),
@@ -517,15 +511,16 @@ FOLD = {
 # 1c — the questions (2026-09-24, author's ruling: "only the important ones are questions,
 # the rest are observations of that section")
 # --------------------------------------------------------------------------
-#: the chapter question, printed whole as the chapter heading. Since 2026-09-25 the wording is
-#: identical to ``la_lines.QUESTIONS4`` (the full document) — keep the two in step.
+#: the chapter question, printed whole as the chapter heading. Overrides the wording of
+#: ``la_index.QUESTIONS`` for THIS document only; the full document keeps its own.
 SM_QUESTIONS = {
-    "1": "How far ahead of the sector does the patent record run?",
-    "2": "Is there a dominant eVTOL design or is the field still experimenting, and where has "
-         "twenty years of filing moved the design space?",
-    "3": "Who is patenting eVTOL aircraft, and which designs and filing strategies do firms of "
-         "different maturity follow?",
-    "4": "Does geography shape the design, or only its timing and its filing strategy?",
+    "1": "Do patents see the eVTOL sector before it exists — or are they a graveyard of "
+         "concepts that never flew?",
+    "2": "Twenty years in, is there an eVTOL the way there is an airliner — or three rival "
+         "answers and no winner?",
+    "3": "Is eVTOL held by a few large firms, or open to anyone — and does the newcomer change "
+         "what gets built?",
+    "4": "Does geography shape the design — or only its timing and its filing strategy?",
 }
 
 #: the sub-questions: (chapter, printed before the FOLD member with this order, number, wording).
@@ -538,8 +533,9 @@ SUBQ = [
     ("2", 1, "2.1", "One winner, or three branches that refuse to merge?"),
     ("2", 3, "2.2", "Is the design space filling up, or still opening?"),
     ("2", 4, "2.3", "What forces a design to change — and is it one move dressed as four?"),
-    ("3", 1, "3.1", "Does anyone hold enough of the record to steer it?"),
-    ("3", 3, "3.2", "When the design mix moves, who moves it?"),
+    ("3", 1, "3.1", "Is there a top tier, or a crowd of one-aircraft firms?"),
+    ("3", 3, "3.2", "Do newcomers bring the shift, or do the firms already there change their "
+                    "minds?"),
     ("4", 1, "4.1", "Regional design blocs — or a null the sector should hear?"),
     ("4", 2, "4.2", "Who moves first, who follows, and is the lag a constant?"),
     ("4", 3, "4.3", "Go deep or go wide: does a firm re-file one design, spread across classes, "
@@ -1845,23 +1841,18 @@ def _la_q_weighting(k: int) -> str:
 # ---------------------------------------------------------------------------
 NUMBERS.update({
     # ---- 1.1 doubling time (sm_open.la_doubling_time / la_doubling_ratio). The baseline is
-    # CPC B64 WORLDWIDE simple families (PatSeer) since 2026-09-25 — the nine-office series is
-    # now the comparison row; the label travels in the table's
+    # CPC B64 at the NINE CORPUS OFFICES, never worldwide; the label travels in the table's
     # own ``series`` cell and the prose states it.
     "sm_dbl_evtol": dict(table="la_doubling_time", fmt="1f", col="doubling time (years)",
                          where=[("series", "eVTOL aircraft (this corpus)"), ("primary", "True")]),
     "sm_dbl_evtol_ci": dict(table="la_doubling_time", col="95 % interval",
                             where=[("series", "eVTOL aircraft (this corpus)"), ("primary", "True")]),
     "sm_dbl_b64": dict(table="la_doubling_time", fmt="1f", col="doubling time (years)",
-                       where=[("series", "aeronautics — CPC B64, worldwide simple families (PatSeer)"),
+                       where=[("series", "aeronautics — CPC B64, nine corpus offices"),
                               ("primary", "True")]),
     "sm_dbl_b64_ci": dict(table="la_doubling_time", col="95 % interval",
-                          where=[("series", "aeronautics — CPC B64, worldwide simple families (PatSeer)"),
+                          where=[("series", "aeronautics — CPC B64, nine corpus offices"),
                                  ("primary", "True")]),
-    "sm_dbl_b64_offices": dict(table="la_doubling_time", fmt="1f", col="doubling time (years)",
-                               where=[("series", "aeronautics — CPC B64, nine corpus offices "
-                                                 "(PATENTSCOPE publications)"),
-                                      ("primary", "True")]),
     "sm_dbl_ratio": dict(table="la_doubling_ratio", fmt="2f", col="times faster",
                          where=[("corpus series", "eVTOL aircraft (this corpus)"),
                                 ("primary", "True")]),
@@ -1963,48 +1954,6 @@ TABLE_CAPTIONS.update({
                         "holds both main effects",
 })
 
-
-def _ari_clock_numbers(tables: Optional[Dict]) -> Dict:
-    """The patent-clock-against-market-clock numbers of the chapter 1 answer, from
-    ``la_ari_timeline`` (settled 2026-09-25, ``CLOSING_TAKEAWAYS_2026-09-25.md``; the author
-    approved all three takeaways). Medians over a filtered column, which the ``NUMBERS`` spec
-    language cannot say, hence a function. Every gap in that table is a floor — the clock
-    starts at the firm's first patent IN THIS CORPUS — and the prose states it."""
-    frame = (tables or {}).get("la_ari_timeline")
-    if frame is None:
-        return {}
-    import pandas as pd    # the module deliberately imports no dataframe machinery; only this
-    try:                   # function needs it, and a missing pandas must cost the numbers, not the build
-        ff = pd.to_numeric(frame["years to first flight"], errors="coerce").dropna()
-        eis = pd.to_numeric(frame["years to entry into service"], errors="coerce").dropna()
-    except Exception:
-        return {}
-    if not len(ff):
-        return {}
-    pos = ff[ff > 0]
-    return {"sm_ff_dated": f"{len(ff):d}",
-            "sm_ff_before": f"{int((ff > 0).sum()):d}",
-            "sm_ff_neg": f"{int((ff <= 0).sum()):d}",
-            "sm_ff_lead": f"{pos.median():.0f}" if len(pos) else "",
-            "sm_ff_eis": f"{eis.median():.0f}" if len(eis) else ""}
-
-NUMBERS.update({
-    # 2026-09-25: the seven-year rule of 1.2, measured on the corpus (author-supplied check,
-    # sm_open.la_lapse_check) — the lapse-cohort rule is now confirmed, not argued.
-    "sm_lapse_grants": dict(table="la_lapse_check", col="value",
-                            where=("measure", "dated grants in the corpus")),
-    "sm_lapse_7y": dict(table="la_lapse_check", col="value",
-                        where=("measure", "grants arriving within 7 years of priority")),
-    "sm_lapse_median": dict(table="la_lapse_check", col="value",
-                            where=("measure", "median priority-to-grant lag (years)")),
-    "sm_lapse_p2019": dict(table="la_lapse_check", col="value",
-                           where=("measure", "families still pending, 2019 cohort")),
-    "sm_lapse_p2022": dict(table="la_lapse_check", col="value",
-                           where=("measure", "families still pending, 2022 cohort")),
-    "sm_lapse_p2023": dict(table="la_lapse_check", col="value",
-                           where=("measure", "families still pending, 2023 cohort")),
-})
-
 def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
     """``values`` extended with every number this document's prose can ask for.
 
@@ -2024,7 +1973,6 @@ def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
     out.update(_d3_numbers(tables))
     out.update(_panel_numbers(tables))
     out.update(_duct_conditional_numbers(tables))
-    out.update(_ari_clock_numbers(tables))
     out.update(_method_numbers())
     out.update(_driver_numbers(tables))
     out.update(_importance_numbers(tables))
@@ -2204,13 +2152,8 @@ def why(name, values=None, kind="figure", tables=None):
 SM_ANSWER: Dict[str, str] = {
     "1":
         "**Yes as a census of what is being designed — no as a ranking of what will fly.**\n\n"
-        "- **It is early.** Of the {sm_ff_dated} index firms here with a dated first flight, "
-        "{sm_ff_before} filed before they flew, a median of {sm_ff_lead} years earlier — so a "
-        "class is visible in the filings before the aircraft exists. Entry into service sits a "
-        "median of {sm_ff_eis} years after the first patent, and every gap is a floor: the "
-        "clock starts at the firm's first patent in this corpus, which is why "
-        "{sm_ff_neg} firms print a negative year and none of them flew before they "
-        "patented.\n"
+        "- **It is early.** A firm's first patent here comes years before its first flight, so a "
+        "class is visible in the filings before the aircraft exists.\n"
         "- **It is incomplete by construction.** A priority year cannot be read until its "
         "publication lag has run, which is why every trend in this document stops at 2023.\n"
         "- **It is not permanent.** {tk_lapsed_all} of the {tk_lapsed_n} primary patents with "
@@ -2250,10 +2193,9 @@ SM_ANSWER: Dict[str, str] = {
         "- **No class is one company's programme.** Dropping the firm that moves the reading most "
         "({tk_lev_firm}) shifts no class share by more than {tk_lev_pp} percentage points, and the "
         "largest classes each divide as if between twenty-five equally sized filers.\n"
-        "- **Arrival moves the mix, not conversion.** Entry dominates every window — most of the "
-        "firms active in one are filing for the first time, so the population cannot be read "
-        "for firm strategy. The firms entering a window bring a different class mix than the "
-        "window holds, while a firm that files again usually files in the same class.\n"
+        "- **Arrival moves the mix, not conversion.** The firms entering a window bring a different "
+        "class mix than the window holds, while a firm that files again usually files in the same "
+        "class.\n"
         "- **Tilt Wing is the exception and the diagnostic.** Firms keep arriving with it after its "
         "share has peaked, and only about one succession in six stays: it is a step on the way.\n"
         "- **What this record cannot say.** It holds no funding, capitalisation or headcount, so "
@@ -2298,14 +2240,7 @@ def _fill_block(text_: str, values: Optional[Dict], tables: Optional[Dict]) -> s
     placeholder, and the line breaks left alone."""
     out = _pa._fill(text_, _la._vals(values, tables, text_))
     out = _re.sub(r"\s*\(n \{[^{}]*\}\)", "", out)
-    # 2026-09-25: an unresolved placeholder in a STATED ANSWER fails the build instead of
-    # degrading. The ellipsis is the grey lines' honest fallback; here it shipped "… index
-    # firms" into the document's headline answer without any guard noticing, because the
-    # render's own check looks for surviving braces and the braces were already gone.
-    left = _re.findall(r"\{[^{}]*\}", out)
-    if left:
-        raise KeyError(f"unresolved in a stated answer: {', '.join(sorted(set(left)))}")
-    return out
+    return _re.sub(r"\{[^{}]*\}", "…", out)
 
 
 def answer(question, values=None, tables=None):

@@ -43,43 +43,22 @@ BASE_FILE = BASE_DIR / "b64_by_priority_year.csv"
 #: publication offices of the corpus (Table A.1 provenance), used to restrict the baseline
 CORPUS_OFFICES: List[str] = ["US", "CN", "DE", "WO", "EP", "KR", "FR", "GB", "IT"]
 
-#: the nine-office PATENTSCOPE column — the document's baseline until 2026-09-25, now the
-#: office-controlled comparison (see ``patseer_worldwide/README.md`` for why it was replaced)
-OFFICES_B64 = "cpc_offices"
+#: the stored column the document reads. ``cpc_offices`` = CPC B64, the nine corpus offices.
+PRIMARY = "cpc_offices"
 #: the same query worldwide, and the IPC readings of both, kept as robustness checks
-ALTERNATES: List[str] = [OFFICES_B64, "cpc_world", "ipc_offices", "ipc_world"]
-
-#: 2026-09-25, user-supplied: CPC B64 worldwide counted in SIMPLE FAMILIES by earliest priority
-#: year, exported from PatSeer — the same unit and the same database as the corpus's 1 639
-#: families, and complete at the recent edge where the PATENTSCOPE fetch decays (2020: 15 520
-#: here against 10 684 in ``cpc_world``, an indexing lag, not a real fall). The doubling-time
-#: fit reads this; Figure 1 (ii) deliberately keeps the nine-office series, because holding the
-#: offices fixed is that figure's point. Provenance: the README beside the file.
-PATSEER_WORLD = "cpc_world_patseer_families"
-PATSEER_WORLD_FILE = BASE_DIR / "patseer_worldwide" / "patseer_B64_worldwide_by_priority_year.csv"
-PATSEER_SOURCE = ("aeronautics baseline (doubling time): PatSeer, query CPC:(B64*), no country "
-                  "filter, simple families by earliest priority year, exported 2026-09-25; "
-                  "stored in assets/external/aviation_baseline/patseer_worldwide")
-#: the other two worldwide baselines of Figure 1 (ii), same export (2026-09-25)
-PATSEER_WORLD_B = "cpc_sectionB_world_patseer_families"
-PATSEER_WORLD_B_FILE = BASE_DIR / "patseer_worldwide" / "patseer_sectionB_worldwide_by_priority_year.csv"
-WIPO_WORLD_ALL = "all_patents_world_wipo_families"
-WIPO_WORLD_ALL_FILE = BASE_DIR / "patseer_worldwide" / "baselines_2000_2023.csv"
-#: the column the document reads. Since 2026-09-25: CPC B64 worldwide, PatSeer simple families
-#: — the corpus's own unit and database, complete at the recent edge.
-PRIMARY = PATSEER_WORLD
+ALTERNATES: List[str] = ["cpc_world", "ipc_offices", "ipc_world"]
 
 #: index base. A single year is too small a denominator (2005 holds 9 aircraft), so the
 #: index is taken against the mean of a five-year base window.
 BASE_YEARS: Tuple[int, int] = (2005, 2009)
 
 #: printed under Figure 2.1.1 and in the README
-SOURCE = ("baselines: PatSeer, CPC B64 and all CPC section B, worldwide, simple families by "
-          "earliest priority year, and WIPO patent families by origin (all patents), exported by the "
-          "author 2026-09-25; stored in assets/external/aviation_baseline/patseer_worldwide")
+SOURCE = ("aviation baseline: WIPO PATENTSCOPE, query CPC:B64* AND PD:<year> restricted to the "
+          "nine publication offices of the corpus (US, CN, DE, WO, EP, KR, FR, GB, IT), fetched "
+          "2026-09-22; stored in assets/external/aviation_baseline")
 
 COLS = {
-    "base": "B64 families (worldwide)",
+    "base": "B64 patents (same offices)",
     "air_ratio": "aircraft per 1 000 B64",
     "pat_ratio": "patents per 1 000 B64",
     "evtol_ix": "eVTOL index (2005-09 = 100)",
@@ -89,7 +68,7 @@ COLS = {
 
 def available() -> bool:
     """True when the stored baseline exists, so a render can fall back to the raw counts."""
-    return BASE_FILE.exists() and PATSEER_WORLD_FILE.exists()
+    return BASE_FILE.exists()
 
 
 def load() -> pd.DataFrame:
@@ -104,14 +83,7 @@ def load() -> pd.DataFrame:
 
 
 def series(column: str = PRIMARY) -> pd.Series:
-    """One stored column, year-indexed. :data:`PATSEER_WORLD` lives in its own file."""
-    if column in (PATSEER_WORLD, PATSEER_WORLD_B):
-        u = pd.read_csv(PATSEER_WORLD_FILE if column == PATSEER_WORLD else PATSEER_WORLD_B_FILE)
-        u.columns = ["year", "count"]
-        return u.set_index("year")["count"].sort_index()
-    if column == WIPO_WORLD_ALL:
-        u = pd.read_csv(WIPO_WORLD_ALL_FILE)
-        return u.set_index("y")["world"].sort_index()
+    """One baseline column as a year-indexed integer series."""
     return pd.to_numeric(load()[column], errors="coerce")
 
 

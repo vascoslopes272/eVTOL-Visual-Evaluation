@@ -43,15 +43,9 @@ from .loaders import Dataset
 #: nine-office CPC B64 series; when the worldwide series arrives, change these two lines (and
 #: nothing else) to ``"cpc_world"`` / "worldwide" -- ``la_baseline.ALTERNATES`` lists what the
 #: CSV already holds. Ruling of 2026-09-25: fit on the nine offices now, label it everywhere.
-#: 2026-09-25: swapped to the worldwide PatSeer family series the user exported — same unit
-#: (simple families) and same database as the corpus, complete at the recent edge.
-BASELINE_COLUMN: str = la_baseline.PATSEER_WORLD
+BASELINE_COLUMN: str = la_baseline.PRIMARY
 #: how the baseline is named in every row, caption and sentence that quotes it
-BASELINE_LABEL: str = "CPC B64, worldwide simple families (PatSeer)"
-#: the office-controlled reading, kept as a printed comparison row; it is the baseline of
-#: Figure 1 (ii), so the two stay reconcilable.
-BASELINE_ALT_COLUMN: str = la_baseline.OFFICES_B64
-BASELINE_ALT_LABEL: str = "CPC B64, nine corpus offices (PATENTSCOPE publications)"
+BASELINE_LABEL: str = "CPC B64, nine corpus offices"
 
 #: the fitted window. The document's trend rule ends at :data:`la_tables.LAST_COMPLETE` (2023,
 #: ruling 2026-09-10); 2005 is the corpus's family-level lower bound and the start of
@@ -155,12 +149,7 @@ def _series_for_fit(ds: Dataset, v: pd.DataFrame) -> Dict[str, pd.Series]:
            .value_counts().sort_index())
     return {"eVTOL aircraft (this corpus)": ac,
             "eVTOL patents (this corpus)": pat,
-            f"aeronautics — {BASELINE_LABEL}": baseline_series().dropna().astype(int),
-            # the office-controlled comparison (2026-09-25): worldwide families are the primary
-            # baseline since the user's PatSeer export arrived; the nine-office row stays printed
-            # so the reader can see how much the choice of baseline moves the answer.
-            f"aeronautics — {BASELINE_ALT_LABEL}":
-                la_baseline.series(BASELINE_ALT_COLUMN).dropna().astype(int)}
+            f"aeronautics — {BASELINE_LABEL}": baseline_series().dropna().astype(int)}
 
 
 def _window_frame(s: pd.Series, lo: int, hi: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -179,9 +168,8 @@ def doubling_time(ds: Dataset, v: pd.DataFrame,
     One row per series per window; the first :data:`FIT_WINDOW` rows are the ones the document
     quotes and the rest are the sensitivity.
 
-    The aeronautics rows are BOTH baselines: worldwide simple families (PatSeer, the primary
-    since 2026-09-25 — same unit and database as the corpus) and the nine-office PATENTSCOPE
-    subset as the office-controlled comparison; each says which it is in its own ``series`` cell. Both sides are priority-year counts and both are
+    The aeronautics row is the NINE-OFFICE subset (:data:`BASELINE_LABEL`), not the world, and
+    says so in its own ``series`` cell. Both sides are priority-year counts and both are
     truncated at the recent edge by publication lag; that is why the window stops at 2023 and
     why the 2005-2019 sensitivity row is printed beside it.
     """
@@ -249,7 +237,7 @@ def doubling_ratio(ds: Dataset, v: pd.DataFrame,
     is a paired bootstrap over YEARS (:data:`DRAWS` draws, seed :data:`SEED`): a draw resamples
     the years of the window with replacement and refits both series on the same drawn years, so
     the two fits stay paired and the shared truncation at the recent edge is resampled with
-    them. Ruling 2026-09-25; the aeronautics side is :data:`BASELINE_LABEL` — worldwide simple families since the user's PatSeer export of the same day.
+    them. Ruling 2026-09-25; the aeronautics side is :data:`BASELINE_LABEL`.
 
     A bootstrap over years, not over patents: the fit has one observation per year, and it is
     the year-to-year scatter around the exponential, not the counting of documents, that the
@@ -832,40 +820,6 @@ def fig_discovery_curve(curve: pd.DataFrame, path, levels: Optional[Sequence[str
 
 
 # --------------------------------------------------------------------------- entry point
-
-# --------------------------------------------------------------------------- lapse check
-LAPSE_DIR = la_baseline.ASSETS / "external" / "lapse_check"
-
-
-def lapse_check() -> pd.DataFrame:
-    """The seven-year rule of 1.2, measured on the corpus instead of argued (user, 2026-09-25).
-
-    The user ran ``seven_year_check.py`` on the full PatSeer record export (1 639 simple
-    families) and supplied the outputs; this reads them verbatim from
-    ``assets/external/lapse_check`` into one table so the brief's prose can quote them as
-    placeholders. Two facts carry the rule: 97.7 % of the corpus's own grants arrive within
-    seven years of priority (781 dated grants, median 3.06 y, p90 5.28 y), and the pending
-    share per cohort collapses exactly at the rule's boundary — 4 % at 2019 against 24 % at
-    2022 and 57 % at 2023. A cohort younger than the rule is undecided, not alive.
-    """
-    lag = pd.read_csv(LAPSE_DIR / "grant_lag_summary.csv", index_col=0)["value"]
-    st = pd.read_csv(LAPSE_DIR / "status_by_priority_year.csv")
-    rows = [
-        {"measure": "dated grants in the corpus", "value": f"{int(lag['with_grant_date']):d}"},
-        {"measure": "median priority-to-grant lag (years)", "value": f"{lag['median_lag_years']:.1f}"},
-        {"measure": "90th percentile lag (years)", "value": f"{lag['p90_lag_years']:.1f}"},
-        {"measure": "grants arriving within 7 years of priority", "value": f"{lag['pct_granted_within_7y']:.1f} %"},
-    ]
-    for y in (2019, 2021, 2022, 2023):
-        r = st[st["priority_year"].eq(y)]
-        if len(r):
-            rows.append({"measure": f"families still pending, {y} cohort",
-                         "value": f"{float(r['pending_pct'].iloc[0]):.1f} %"})
-    out = pd.DataFrame(rows)
-    out.attrs["source"] = ("seven_year_check.py on the PatSeer record export (snapshot 2026-06-08), "
-                           "run by the author 2026-09-25; assets/external/lapse_check")
-    return out
-
 def build_all(ds: Dataset, v: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """Every frame this module owns, keyed by table id — the module's single entry point.
 
@@ -882,6 +836,4 @@ def build_all(ds: Dataset, v: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         "la_discovery_estimators": discovery_estimators(ds, v, curve),
         "la_lag_offsets": lag_offsets(v),
         "la_lag_constancy": lag_constancy(v),
-        # 2026-09-25: the seven-year rule measured on the corpus (user-supplied check)
-        "la_lapse_check": lapse_check(),
     }

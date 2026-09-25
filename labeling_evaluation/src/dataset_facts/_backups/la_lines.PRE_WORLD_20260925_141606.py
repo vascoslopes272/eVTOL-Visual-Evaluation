@@ -40,8 +40,7 @@ SOURCES: Dict[str, str] = {
                             "drawing — the ground truth the labels are checked against",
     "PatSeer": "the PatSeer bibliographic export (priority and filing dates, applicant and country, "
                "legal status, family, claims, citations, CPC), snapshot 2026-06",
-    "CPC-B64 baseline": "all aeronautics patenting (CPC B64) worldwide, in simple families by "
-                        "priority year (PatSeer, the corpus's own unit and database), "
+    "CPC-B64 baseline": "all aeronautics patenting (CPC B64) of the same offices and priority years, "
                         "used as the denominator when a count has to be told apart from a trend in "
                         "patenting at large",
     "evtol.news": "the evtol.news public aircraft directory (crawl 2026-09-17), joined to the corpus "
@@ -120,13 +119,11 @@ UA = "unique aircraft"
 # data-quality appendix. ORDER IS PRINTED ORDER.
 
 QUESTIONS4: Dict[str, str] = {
-    # wording settled 2026-09-25 with the author; kept identical to SM_QUESTIONS in sm_index.py
-    "1": "How far ahead of the sector does the patent record run?",
-    "2": "Is there a dominant eVTOL design or is the field still experimenting, and where has "
-         "twenty years of filing moved the design space?",
-    "3": "Who is patenting eVTOL aircraft, and which designs and filing strategies do firms of "
-         "different maturity follow?",
-    "4": "Does geography shape the design, or only its timing and its filing strategy?",
+    "1": "Is the patent record a usable indicator of the sector — is it early, is it live, "
+         "and does it describe the aircraft the industry actually builds?",
+    "2": "What is being designed, and is the sector converging on a dominant design?",
+    "3": "Who designs it — is the field held by a few established firms, or open to newcomers?",
+    "4": "Where is it designed, and does the jurisdiction change what is designed?",
     "M": "Method (RQ4): does the figure alone carry the architecture the text states — "
          "not a question about the sector, and printed in Appendix B",
 }
@@ -282,15 +279,15 @@ _item("filings_per_year", [PS, HL, B64],
       _u(UA, "{unique_s}", "priority year", "against B64 patenting"),
       "(i) bars: unique aircraft per priority year; line: the acquired patents. (ii) three lines, one "
       "per baseline, each built in three steps — aeronautics for example: (1) for each priority year, "
-      "this corpus's eVTOL families divided by ALL aeronautics patent families (CPC B64) filed worldwide "
-      "that year; (2) the same fraction averaged over 2005-09 is the starting level; (3) each year's "
-      "fraction divided by the starting level is the point drawn, so every line starts at 1. The box on "
-      "the figure works the three steps with the real numbers for the peak year. The other two lines "
-      "repeat the recipe with all CPC section-B families (transport and operations) and with all patent "
-      "families of any kind; the starting level is only what lets three fractions of very different "
-      "size share one axis. Complete years only. Sources: PatSeer worldwide families for B64 and "
-      "section B, WIPO patent families by origin for all patents (exported 2026-09-25); CPC B64* "
-      "includes B64U, the UAV class created in 2022.",
+      "this corpus's eVTOL patents divided by ALL aeronautics patents (CPC B64) filed at the same nine "
+      "offices with that year: 2018, 193 of about 10 400, 18.6 per 1 000; (2) the same fraction averaged "
+      "over 2005-09, 5.6 per 1 000, is the starting level; (3) each year's fraction divided by the "
+      "starting level is the point drawn, so every line starts at 1 and 2018 reads \u00d73.3. The other "
+      "two lines repeat the recipe with all CPC section-B patents (transport and operations) and with "
+      "all patents of any kind as the denominator; the starting level is only what lets three fractions "
+      "of very different size share one axis. Complete years only. Source of the three baselines: WIPO "
+      "PATENTSCOPE, counted by priority year at the corpus's nine offices; CPC B64* includes B64U, "
+      "the UAV class created in 2022.",
       "Years are used, not windows, because the question is when the record starts; 1999-2005 is "
       "pooled into one bar because no single year in it reaches five aircraft, and the last years "
       "are hatched because the snapshot is inside their publication lag.")

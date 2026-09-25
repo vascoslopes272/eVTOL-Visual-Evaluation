@@ -120,13 +120,11 @@ UA = "unique aircraft"
 # data-quality appendix. ORDER IS PRINTED ORDER.
 
 QUESTIONS4: Dict[str, str] = {
-    # wording settled 2026-09-25 with the author; kept identical to SM_QUESTIONS in sm_index.py
-    "1": "How far ahead of the sector does the patent record run?",
-    "2": "Is there a dominant eVTOL design or is the field still experimenting, and where has "
-         "twenty years of filing moved the design space?",
-    "3": "Who is patenting eVTOL aircraft, and which designs and filing strategies do firms of "
-         "different maturity follow?",
-    "4": "Does geography shape the design, or only its timing and its filing strategy?",
+    "1": "Is the patent record a usable indicator of the sector — is it early, is it live, "
+         "and does it describe the aircraft the industry actually builds?",
+    "2": "What is being designed, and is the sector converging on a dominant design?",
+    "3": "Who designs it — is the field held by a few established firms, or open to newcomers?",
+    "4": "Where is it designed, and does the jurisdiction change what is designed?",
     "M": "Method (RQ4): does the figure alone carry the architecture the text states — "
          "not a question about the sector, and printed in Appendix B",
 }

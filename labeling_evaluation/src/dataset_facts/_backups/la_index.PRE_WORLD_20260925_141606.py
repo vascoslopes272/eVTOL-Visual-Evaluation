@@ -230,7 +230,7 @@ FIGURE_CAPTIONS: Dict[str, str] = {
     "linked_check": "whether the aircraft linked to an evtol.news page stand for the whole analysis set",
     "ari_history": "how each index firm's score moved, and disclosed funding against patented aircraft",
     "ari_clock": "the patent clock against the market clock for the index firms, one row per firm",
-    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars; then how much faster eVTOL grew than the patenting around it — this corpus's eVTOL families as a fraction of all aeronautics (CPC B64) families, of all CPC section-B families and of all patent families filed worldwide in the same priority year, each drawn as a multiple of its own 2005-09 starting level; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
+    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars; then how much faster eVTOL grew than the patenting around it — this corpus's eVTOL patents as a fraction of all aeronautics (CPC B64) patents, of all CPC section-B patents and of all patents filed at the same offices in the same priority year, each drawn as a multiple of its own 2005-09 starting level; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
     "dominant_design_q": "condition 3 of the dominant-design test: Q per window against the level of the earliest windows and the permutation band",
     "dominant_design": "the dominant-design test per window: top archetype share against the 50 % line, and ²D against the permutation band",
     "class_configs": "within-class convergence: how far each architecture class settles on a single configuration. "
@@ -277,7 +277,7 @@ FIGURE_PANELS: Dict[str, List] = {
     # 1.1.1 gains (ii) only when the stored aviation baseline is installed; without it the figure
     # holds one graph and the marks are skipped (see la_baseline, user ruling 2026-09-22).
     "filings_per_year": [("filings per priority year, by applicant region", 1),
-                         ("how much faster eVTOL grew than aeronautics, than all section-B and than all patenting, worldwide", 1)],
+                         ("how much faster eVTOL grew than aeronautics, than all section-B and than all patenting of the same offices", 1)],
     "atlas_arch_time": [("architecture share per window", 1), ("the five largest classes over time", 1)],
     "dominant_design_q": [("Q per window, both weightings", 1), ("condition 3: ΔQ at A0c against the band", 1),
                           ("condition 3: ΔQ at A1t against the band", 1)],
@@ -783,10 +783,10 @@ APPENDIX = ("A", "B", "C", "D")
 #: new chapter id -> its title. The title is the question, shortened to fit a heading; the
 #: question itself is printed in full under it, out of ``la_lines.QUESTIONS4``.
 CHAPTER_TITLES: Dict[str, str] = {
-    "1": "How far ahead of the sector does the patent record run?",
-    "2": "Is there a dominant eVTOL design, or is the field still experimenting?",
-    "3": "Who is patenting eVTOL aircraft?",
-    "4": "Does geography shape the design?",
+    "1": "Is the patent record a usable indicator of the sector?",
+    "2": "What is being designed, and is it converging?",
+    "3": "Who designs it: a concentrated field, or an open one?",
+    "4": "Where is it designed, and does region change the design?",
     "A": "Data Sets Construction",
     "B": "Data Quality, and the label against the text",
     "C": "Questions asked, and what the corpus could not answer",
