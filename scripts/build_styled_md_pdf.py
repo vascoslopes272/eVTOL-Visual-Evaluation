@@ -52,6 +52,26 @@ sup, sub { line-height: 0; }
         padding: 0 0 9px 0; margin: 0 0 11px 0; text-align: left; }
 .meta p { margin: 0.25em 0; text-align: left; }
 
+/* ---- margin stickers: open items flagged beside their heading (no-op elsewhere) ---- */
+div.sticker { float: right; width: 26mm; margin: 2px 0 6px 9px; padding: 3px 5px 4px 5px; transform: rotate(1.5deg);
+              box-shadow: 1px 1px 0 #9a8a3a;
+              background: #fff1a8; border: 0.6pt solid #a88a00; border-left: 3pt solid #c9a400;
+              font-family: Inter, sans-serif; font-size: 6.4pt; line-height: 1.25; font-weight: 500;
+              color: #2e2500; text-align: left; hyphens: auto; break-inside: avoid; page-break-inside: avoid; }
+div.sticker b { display: block; font-size: 7.6pt; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 2px; }
+
+/* ---- front-page index (a no-op on any document that does not emit div.toc) ---- */
+div.toc { margin: 2px 0 0 0; }
+div.toc .toc-h { font-family: Inter, sans-serif; font-size: 11pt; font-weight: 700; color: #000;
+                 border-bottom: 0.5pt solid #b8b8b8; padding-bottom: 5px; margin: 0 0 10px 0; }
+div.toc-row { display: flex; align-items: baseline; margin: 4px 0; break-inside: avoid; page-break-inside: avoid; }
+div.toc-row.toc-l0 { font-family: Inter, sans-serif; font-weight: 700; font-size: 8.8pt; color: #000; margin-top: 11px; }
+div.toc-row.toc-l1 { font-family: "Noto Serif", serif; font-weight: 400; font-size: 8.2pt; color: #262626;
+                      margin-left: 16px; }
+div.toc-row .toc-t { flex: 0 1 auto; }
+div.toc-row .toc-d { flex: 1 1 auto; border-bottom: 0.5pt dotted #a0a0a0; margin: 0 5px 2px 5px; }
+div.toc-row .toc-p { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
 /* ---- reading guide ---- */
 .guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 10px 0 8px 0; }
 .guide div { font-family: Inter, sans-serif; background: #fff; border: 0.5pt solid #b8b8b8; border-top: 2pt solid #000;
@@ -123,6 +143,56 @@ p.prov + p.prov.take { margin-top: 0.22em; }
 /* the question line sits last, under the takeaway: same grey again */
 p.prov + p.prov.quest { margin-top: 0.22em; }
 p.prov.quest em { font-style: italic; }
+/* the four short lines (2026-09-23): Source · Unit · How to read · Why this way. They are one
+   block under the caption — tight between themselves, with the air kept under the last of them. */
+p.prov.src, p.prov.read, p.prov.why { margin-bottom: 0; }
+p.prov.src + p.prov, p.prov + p.prov.read, p.prov + p.prov.why { margin-top: 0.12em; }
+p.prov.why { margin-bottom: 0.75em; }
+p.prov.src em { font-style: normal; letter-spacing: 0.01em; }
+/* the Answer that closes a question: the one place in the document where a finding is stated */
+div.answer { break-inside: avoid; page-break-inside: avoid; margin: 0.9em 0 0.4em 0;
+             padding: 0.55em 0.75em; border-left: 2.5pt solid #2a2a2a; background: #f4f4f4; }
+div.answer p { margin: 0; text-align: justify; font-size: 9.5pt; line-height: 1.45; }
+
+/* ---- the chapter Answer panel (<div class="answer-box">) ----
+   The most important thing on its page, and it has to survive a greyscale printer: the emphasis is
+   carried by a heavy black rule top and bottom plus a light tint, never by a hue. It stays whole on
+   one page. A no-op in any document that does not emit the wrapper. */
+div.answer-box { break-inside: avoid; page-break-inside: avoid; margin: 1.15em 0 1.05em 0;
+                 padding: 8px 12px 9px 12px; background: #eeeeee;
+                 border: 0.6pt solid #000; border-top: 3pt solid #000; border-bottom: 1.6pt solid #000;
+                 box-shadow: none; }
+div.answer-box > *:first-child { margin-top: 0; }
+div.answer-box > *:last-child { margin-bottom: 0; }
+div.answer-box p { margin: 0.34em 0; text-align: justify; font-size: 9.6pt; line-height: 1.42; color: #000; }
+div.answer-box strong { font-weight: 800; }
+/* an "Answer" label, written as the box's first heading or a leading bold run on its own line */
+div.answer-box > h3, div.answer-box > h4, div.answer-box > h5 {
+    font-family: Inter, sans-serif; font-size: 8pt; font-weight: 800; letter-spacing: 0.16em;
+    text-transform: uppercase; color: #000; border: none; padding: 0; margin: 0 0 5px 0; }
+div.answer-box ul, div.answer-box ol { margin: 0.25em 0 0.25em 0; padding-left: 1.15em; }
+div.answer-box li { margin: 0.12em 0; line-height: 1.36; font-size: 9.4pt; text-align: left; }
+div.answer-box li > ul, div.answer-box li > ol { margin: 0.08em 0; }
+div.answer-box ul > li::marker { color: #000; }
+div.answer-box table { margin: 0.4em 0; background: #fff; }
+div.answer-box p.prov, div.answer-box p.caption { color: #3a3a3a; }
+
+/* ---- the quieter reference panel (<div class="methods-box">) ----
+   Smaller type, a hairline rule, no fill; it may break across pages. */
+div.methods-box { margin: 0.85em 0 0.95em 0; padding: 6px 10px 6px 10px; background: #fbfbfb;
+                  border: 0.4pt solid #c0c0c0; border-left: 1.6pt solid #808080;
+                  break-inside: auto; page-break-inside: auto; }
+div.methods-box > *:first-child { margin-top: 0; }
+div.methods-box > *:last-child { margin-bottom: 0; }
+div.methods-box p { margin: 0.3em 0; font-size: 8.2pt; line-height: 1.4; color: #333333; text-align: justify; }
+div.methods-box strong { color: #000; font-weight: 700; }
+div.methods-box > h3, div.methods-box > h4, div.methods-box > h5 {
+    font-family: Inter, sans-serif; font-size: 7.4pt; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #4d4d4d; border: none; padding: 0; margin: 0 0 4px 0; }
+div.methods-box ul, div.methods-box ol { margin: 0.2em 0; padding-left: 1.1em; }
+div.methods-box li { margin: 0.1em 0; font-size: 8.2pt; line-height: 1.38; color: #333333; text-align: left; }
+div.methods-box table { font-size: 7.4pt; margin: 0.35em 0; }
+div.methods-box code { font-size: 0.8em; }
 
 /* ---- lists ---- */
 ul, ol { margin: 0.35em 0 0.65em 0; padding-left: 1.35em; }
@@ -194,6 +264,11 @@ table { font-size: 7.5pt; line-height: 1.25; margin: 0.45em 0 0.7em 0; }
 th, td { padding: 2.5px 6px 2.5px 0; }
 img { margin: 0.4em auto 0.2em auto; }
 .meta { font-size: 7.6pt; padding-bottom: 6px; margin-bottom: 8px; }
+div.answer-box { margin: 0.85em 0 0.8em 0; padding: 6px 10px 7px 10px; }
+div.answer-box p { font-size: 9pt; line-height: 1.36; margin: 0.25em 0; }
+div.answer-box li { font-size: 8.9pt; line-height: 1.3; margin: 0.08em 0; }
+div.methods-box { margin: 0.6em 0 0.7em 0; padding: 5px 9px; }
+div.methods-box p, div.methods-box li { font-size: 7.8pt; line-height: 1.34; }
 """
 
 def fix_lists(md):
@@ -207,6 +282,17 @@ def fix_lists(md):
         out.append(ln); prev=ln
     return "\n".join(out)
 rest = fix_lists(rest)
+
+# the two styled blocks of 2026-09-25 (<div class="answer-box"> / <div class="methods-box">): the
+# generator writes the wrapper, this adds the markdown="1" that md_in_html needs to parse the
+# contents. Harmless where the attribute is already there, a no-op where the wrapper is absent.
+def arm_boxes(md):
+    def add(m):
+        tag = m.group(0)
+        return tag if "markdown=" in tag else tag[:-1] + ' markdown="1">'
+    return re.sub(r'<div class="(?:answer-box|methods-box)(?:[^"]*)"[^>]*>', add, md)
+rest = arm_boxes(rest)
+
 html_body = markdown.markdown(rest, extensions=["tables", "attr_list", "sane_lists", "md_in_html", "fenced_code"])
 
 # ---- post-processing
@@ -269,6 +355,13 @@ html_body = re.sub(r"<p><em>(Takeaway: [^<]*)</em></p>", r"<p class='prov take'>
 # eight sector questions the item answers, and in what way. Same grey; a no-op in a
 # document that does not emit it.
 html_body = re.sub(r"<p><em>(Question: [^<]*)</em></p>", r"<p class='prov quest'><em>\1</em></p>", html_body)
+
+# the four short lines of the second reorganisation (2026-09-23): Source / Unit / How to read /
+# Why this way, printed under every figure and table INSTEAD of the older trio. "Unit:" is already
+# styled above. Each rule is a no-op in a document that does not emit its line.
+for _label, _cls in (("Source", "prov src"), ("How to read", "prov read"), ("Why this way", "prov why")):
+    html_body = re.sub(rf"<p><em>({_label}: [^<]*)</em></p>",
+                       rf"<p class='{_cls}'><em>\1</em></p>", html_body)
 
 # narrow tables (2-3 columns) do not need the full text width
 def narrow(m):

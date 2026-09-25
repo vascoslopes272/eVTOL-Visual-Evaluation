@@ -619,10 +619,10 @@ def abandonment_by_class(v: pd.DataFrame, max_year: int = 2019) -> pd.DataFrame:
 GRID_VARIABLES = {
     "class": ("topType", None),
     # the bin labels must match the relabelled ``rotorBin`` of :func:`base`, or the bottom
-    # category silently drops out of Figure 1.3.2a
+    # category silently drops out of Figure 4.2a
     "propulsive units": ("rotorBin", ["1-3", "4", "5-6", "7-8", "9+"]),
     "tilting unit": ("any_tilting", [True, False]),
-    # Parked 2026-09-23, author's ruling on Figure 1.3.2b ("why do I need to talk about powertrain?
+    # Parked 2026-09-23, author's ruling on Figure 4.2b ("why do I need to talk about powertrain?
     # ... about the ducted unit, is there any correlation that I could do there?"). Both stay in this
     # registry so either can be drawn again by naming it in la_figures.render_all; neither is drawn
     # by any figure of the region-over-time section now, and each finding was moved to the
@@ -792,31 +792,71 @@ def coverage_segments(v: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+#: What a "distinct filer" count is and is not, printed beside every one of them (ruling
+#: 2026-09-25, comment C43). An organisation is resolved to a firm; a person is not, and is
+#: counted by the name the office prints.
+FILER_COUNT_CAVEAT = (
+    "an organisation is counted by its firm identity; an individual inventor has no firm identity "
+    "and is counted by the assignee name the patent office prints, so the individual count is a "
+    "count of distinct NAMES — a transliteration or name-order variant splits one person in two, "
+    "and a shared name merges two people into one"
+)
+
+
+def filer_key(v: pd.DataFrame) -> pd.Series:
+    """The identity a filer is counted by: the firm for an organisation, the printed assignee name
+    for an individual inventor, blank where no assignee is named (ruling 2026-09-25, comment C43).
+
+    One series, so the per-type counts and the "all filers" count of :func:`filer_mix` and
+    :func:`entrant_mix` are the same key and cannot disagree. See :data:`FILER_COUNT_CAVEAT` for
+    what the individual half of it can and cannot say.
+    """
+    firm = v["firm"] if "firm" in v.columns else v["company_canonical"]
+    person = v["assignee_raw"].map(first_assignee).replace("", np.nan)
+    key = firm.where(firm.notna() & firm.astype(str).ne("None"), person)
+    return key.where(~v["filer"].eq(NO_ASSIGNEE))
+
+
 def filer_mix(v: pd.DataFrame) -> pd.DataFrame:
     """Who filed, counted in both units at once: primary patents and the share of them, unique
     aircraft and the share of them, and the aircraft a filer type gets out of one patent. The
     patent columns reproduce the Preliminary Analysis table; the aircraft columns are what makes
-    the two denominators of this chapter comparable (author's request, 2026-09-23)."""
+    the two denominators of this chapter comparable (author's request, 2026-09-23).
+
+    "Distinct filers" is counted for every band since 2026-09-25 (user, comment C43: "why aren't
+    there values here, on the all filers and the individual inventors?"). An organisation is
+    counted by its firm identity, which is the canonical name where grouper.py resolved one; an
+    individual inventor has no canonical name and is counted by the first assignee string the
+    patent office prints (:func:`first_assignee`), normalised for case and punctuation only. That
+    count is a count of NAMES, not of people: a person whose name is transliterated two ways, or
+    printed once given-name-first and once family-name-first, is counted twice, and two people who
+    share a name are counted once. It is therefore printed with the caveat in
+    :data:`FILER_COUNT_CAVEAT` rather than as an exact headcount, which the ruling of 2026-09-25
+    prefers to the em dash it replaces. "All filers" is the union of the three keys.
+    """
     pat = v.drop_duplicates("patent_id")
     order = list(FILER_TYPES)
     names = {"Named company": "Named companies", "University / institute": "Universities and institutes",
              "Individual inventor": "Individual inventors", NO_ASSIGNEE: "No assignee named"}
+    key = filer_key(v)
     rows = []
     for k in order:
         p, a = int(pat["filer"].eq(k).sum()), int(v["filer"].eq(k).sum())
         if not (p or a):
             continue
+        n_filers = int(key[v["filer"].eq(k)].dropna().nunique())
         rows.append({"filer": names[k],
-                     "distinct filers": (int(v.loc[v["filer"].eq(k), "company_canonical"].nunique())
-                                         if k in ("Named company", "University / institute") else "not identified"),
+                     "distinct filers": (str(n_filers) if k in ("Named company", "University / institute")
+                                         else f"{n_filers} distinct names"),
                      "primary patents": p, "share per primary patent": round(p / len(pat), 2),
                      "unique aircraft": a, "share of the analysis set": round(a / len(v), 2),
                      "aircraft per patent": round(a / p, 2) if p else np.nan})
     out = pd.DataFrame(rows)
-    out.loc[len(out)] = {"filer": "all filers", "distinct filers": "",
+    out.loc[len(out)] = {"filer": "all filers", "distinct filers": f"{int(key.dropna().nunique())} distinct names",
                          "primary patents": int(len(pat)), "share per primary patent": 1.0,
                          "unique aircraft": int(len(v)), "share of the analysis set": 1.0,
                          "aircraft per patent": round(len(v) / len(pat), 2)}
+    out.attrs["caveat"] = FILER_COUNT_CAVEAT
     return out
 
 
@@ -1103,7 +1143,7 @@ def ari_history_corpus(v: pd.DataFrame) -> pd.DataFrame:
     return long.dropna(subset=["score"]).sort_values(["company", "date"]).reset_index(drop=True)
 
 
-#: What Spearman's rho is, printed under Table 1.2.7b. Kept here so the table, the figure and the
+#: What Spearman's rho is, printed under `tables/la_ari_correlation.csv`. Kept here so the table, the figure and the
 #: provenance line can never give three different accounts of the same statistic.
 SPEARMAN_NOTE = (
     "Spearman's rho is Pearson's correlation computed on **ranks** instead of values. Each column is "
@@ -1212,7 +1252,7 @@ ARI_GAP_VARS = [("cohort citation rank", "cohort citation rank", "number", True)
 def ari_gap(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
     """The real correlation test: the aircraft of the index firms against every other aircraft.
 
-    Eighteen firms is too few to correlate anything reliably (Table 1.2.7b), but those eighteen firms
+    Eighteen firms is too few to correlate anything reliably (`tables/la_ari_correlation.csv`), but those eighteen firms
     hold 150 of the {n} unique aircraft, and *that* comparison has power. For each labelled or
     bibliographic variable the table asks one question — do the aircraft of the firms the market calls
     real differ from the rest of the corpus? — and answers it with a distribution-free test: a
@@ -1604,7 +1644,11 @@ def dominant_design(v: pd.DataFrame, n: int = 40, perms: int = 200, seed: int = 
             h = hill_numbers(sub["key"], n=n, draws=300)
             top = sub["key"].value_counts(normalize=True)
             obs[name] = {"level": level, "window": name, "aircraft": int(len(sub)), "top archetype": top.index[0],
-                         "top share": round(float(top.iloc[0]), 3), "D2": h["D2"], "D2 low": h["D2 low"], "D2 high": h["D2 high"]}
+                         "top share": round(float(top.iloc[0]), 3),
+                         # the two-designs case (author, 2026-09-24): condition 1 is written for one
+                         # archetype; the top-2 share shows a duopoly where one exists
+                         "top-2 share": round(float(top.iloc[:2].sum()), 3),
+                         "D2": h["D2"], "D2 low": h["D2 low"], "D2 high": h["D2 high"]}
         # permutation band: shuffle keys across all windows
         band = {name: [] for name in obs}
         keys = ww["key"].to_numpy()
@@ -2129,13 +2173,13 @@ def unit_band(v: pd.DataFrame) -> pd.Series:
 
 #: a ducted share is not reported on fewer than this many aircraft: below it the share moves a
 #: full band on two or three machines. The figure draws such a row hollow and breaks the line
-#: across it rather than leaving it out (Figure 2.2 (iii)).
+#: across it rather than leaving it out (`tables/mission.csv` (iii)).
 DUCT_THIN = 20
 
 
 def duct_by_units(v: pd.DataFrame) -> pd.DataFrame:
     """Share of aircraft carrying at least one ducted propulsive unit, by propulsive-unit band
-    and by architecture class — the frame behind Figure 2.2 (iii).
+    and by architecture class — the frame behind `tables/mission.csv` (iii).
 
     THE UNIT IS THE AIRCRAFT AND SO IS THE BASE. ``any_ducted`` is one answer per aircraft
     ("does any recorded thrust source run in a duct"), so ``share ducted`` is the share of the
@@ -2150,7 +2194,7 @@ def duct_by_units(v: pd.DataFrame) -> pd.DataFrame:
     their own rows with a blank share.
 
     ``attrs`` carries the three chi-square tests the reading rests on — band, class, and the
-    two negatives (region and window) that moved this variable out of Figure 1.3.2b.
+    two negatives (region and window) that moved this variable out of Figure 4.2b.
     """
     w = v.copy()
     w["band"] = unit_band(w)
@@ -2361,7 +2405,7 @@ DRIVER_KIND_NAMES = {"A1": "A1 technological", "A2": "A2 physical", "B": "B requ
 #: ("+" more, "-" less, "±" the driver names the trace without a direction over time — every A2
 #: driver, which is fixed, and the requirement and cost drivers where the author's table gives
 #: no sign). ``drawn`` = a panel of the figure; the rest are in the tables only. ``from_215``
-#: marks the four traces Figure 1.1.5 already draws: they are computed here by the same formula
+#: marks the four traces Figure 2.3b already draws: they are computed here by the same formula
 #: so the two figures cannot disagree, and are read in the verdict table, not redrawn. ``show_mean``
 #: prints the mean beside the median of a small-integer count (a median of 1 or 2 can stand still
 #: while the distribution moves); propulsive units has no mean, because a handful of hull arrays
@@ -2434,7 +2478,7 @@ def trace_frame(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
 
     Rule 1 (2026-09-19) throughout: a value an override hides is <NA>, never 0 or False. A
     thrust type is a propulsor type with units that are not control-only; the M3 cards are read
-    type by type as :func:`a2.propulsion_states` reads them. The four Figure 1.1.5 traces are the
+    type by type as :func:`a2.propulsion_states` reads them. The four Figure 2.3b traces are the
     same formulas as :func:`dimension_drift` on the same base frame.
     """
     raw = ds.variants
@@ -2482,7 +2526,7 @@ def trace_frame(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
     t = pd.DataFrame(rows)
     keep = v[["aircraft_id", "topType", "window", "year", "units", "any_ducted", "nBooms", "empType"]]
     t = keep.merge(t, on="aircraft_id", how="left")
-    # the four Figure 1.1.5 traces, by the formulas of dimension_drift
+    # the four Figure 2.3b traces, by the formulas of dimension_drift
     t["ducted"] = t["any_ducted"].map({True: True, False: False}).astype(object).where(t["any_ducted"].notna())
     t["tailless"] = t["empType"].astype(str).eq("Tailless").where(t["empType"].notna())
     nb = pd.to_numeric(t["nBooms"], errors="coerce")
@@ -2504,7 +2548,7 @@ def _trace_values(sub: pd.DataFrame, key: str) -> pd.Series:
 
 def trace_drift(ds: Dataset, v: pd.DataFrame, classes: Optional[List[str]] = None) -> pd.DataFrame:
     """Per class and window, one column per trace: the share (or median) and the aircraft it
-    rests on — the frame behind Figure 1.4.1. Same rules as :func:`dimension_drift`: the drawn
+    rests on — the frame behind Figure 2.6a. Same rules as :func:`dimension_drift`: the drawn
     classes are the 5-in-3-windows rule, a window under :data:`MIN_CELL` aircraft of the class
     keeps its row with the count and blank measures, and a share is a share of the row's aircraft
     that answer the trace (printed beside it as ``<trace> n``), never of rotors. Two pooled rows
@@ -2689,7 +2733,7 @@ def driver_verdicts(ds: Dataset, v: pd.DataFrame, trends: Optional[pd.DataFrame]
                 verdict += f"; {', '.join(_driver_name(c) for c in fixed)} fixed, coupling only"
         rows.append({"trace": tr["label"] + ("" if tr["kind"] == "share" else " (median)"),
                      "driver kind": DRIVER_KIND_NAMES[DRIVERS[next(iter(drv))][0]],
-                     "where drawn": ("Figure 1.1.5" if tr.get("from_215") else "Figure 1.4.1" if tr.get("drawn") else "tables only"),
+                     "where drawn": ("Figure 2.3b" if tr.get("from_215") else "Figure 2.6a" if tr.get("drawn") else "tables only"),
                      "what moved": moved, "drivers that predict it": names, "verdict": verdict})
     for name, codes in UNLABELLED_TRACES:
         rows.append({"trace": name, "driver kind": DRIVER_KIND_NAMES[DRIVERS[codes.split(",")[0].strip()][0]],
@@ -2951,7 +2995,7 @@ def ip_strategy(ds: Dataset, v: pd.DataFrame, min_aircraft: int = FIRM_MIN) -> p
     self-citation share.
 
     Two citation columns are printed side by side on purpose (user review 2026-09-23): the raw mean,
-    which is what the bubbles of Figure 1.2.5a are sized by, and the age-normalised median cohort rank
+    which is what the bubbles of Figure 3.4b are sized by, and the age-normalised median cohort rank
     of :func:`cohort_citation_rank`. Where the two disagree the firm is old, not influential. The
     claims column is a median and carries the publication office beside it, because claim counts are an
     office convention before they are a strategy — US patents in this corpus have a median of 20 claims
@@ -3001,7 +3045,7 @@ def ip_by_class(v: pd.DataFrame, ds: Optional[Dataset] = None) -> pd.DataFrame:
 
     *Forward citations* are printed as a **mean and a median** because their distribution is very
     skewed: most patents are cited a few times and a few are cited a hundred times. The mean is the
-    total attention the class has drawn (and is what the bubbles of Figure 1.2.5a are sized by); the
+    total attention the class has drawn (and is what the bubbles of Figure 3.4b are sized by); the
     median is what a typical patent of that class draws. Where the two are far apart, the class rests
     on one or two patents. Both are raw, so both reward age. The third column, ``median cohort
     citation rank``, is the age-normalised reading — each patent ranked against the patents of its
@@ -3043,7 +3087,7 @@ def cohorts(v: pd.DataFrame) -> pd.DataFrame:
     return tab.reset_index()
 
 
-#: Where the two market dates come from, printed under Figure 1.2.7c and Tables 1.2.7d/e.
+#: Where the two market dates come from, printed under Figure 1.3 and Tables 1.2.7d/e.
 ARI_DATE_SRC = (
     "first flight and entry into service are the index's own `first_flight` and `eis` fields, stored in "
     "`assets/external/aam_reality_index/ari_may2026.csv` — the May 2026 release of the AAM Reality "
@@ -3239,13 +3283,13 @@ def flags() -> pd.DataFrame:
         # quality, the open questions and the taxonomy as Appendices A, B, C and D at the end —
         # which is why the chapters are 1 and 2); the "section" column is the section as it is now
         # numbered, so a row can be found by reading down the document.
-        ("Table A.1b publication lag", "A.1", "a data-quality fact, already in the PA"),
-        ("Table A.2b aircraft per patent", "A.2", "one number (627 / 44) the funnel already gives"),
-        ("Figure A.3 evidence per aircraft", "A.3", "refinement detail; the table beside it carries the counts"),
-        ("Figure D.1a the four cards", "D", "repeats Figure D.1b"),
-        ("Table B.1 missingness", "B.1", "the figure shows the same shares"),
-        ("Table B.3a flagship", "B.3", "the figure shows the same matches"),
-        ("Table B.5 field inventory", "B.5", "the figure shows the same ranking"),
+        ("Table 1.1b publication lag", "A.1", "a data-quality fact, already in the PA"),
+        ("`tables/a2_d7_aircraft_per_patent.csv` aircraft per patent", "A.2", "one number (627 / 44) the funnel already gives"),
+        ("Figure A.4 evidence per aircraft", "A.3", "refinement detail; the table beside it carries the counts"),
+        ("`tables/design_space_cards.csv` the four cards", "D", "repeats `tables/design_space_cards.csv`"),
+        ("`tables/a2_d4_missingness.csv` missingness", "B.1", "the figure shows the same shares"),
+        ("`tables/a2_d13_flagship_check.csv` flagship", "B.3", "the figure shows the same matches"),
+        ("`tables/a2_d2_informative_fields.csv` field inventory", "B.5", "the figure shows the same ranking"),
         # 2026-09-22: the two robustness figures of 1.1.2 and its table were cut on the author's ruling,
         # so they are no longer candidates. Their builders are kept (fig_firm_weighted, fig_two_counts).
         # 2026-09-23: the table of 1.1.7 was cut on the author's ruling ("basically the same thing as
@@ -3257,28 +3301,28 @@ def flags() -> pd.DataFrame:
          "figure carries no readable difference; the one signal this statistic does find in this "
          "corpus (²D below the permutation band in the two earliest windows) is already tested and "
          "reported in 1.1.3.3, against a null instead of a sampling band"),
-        ("Table 1.1.6a zones", "1.1.6", "20 rows; the figure carries it"),
+        ("`tables/la_zones.csv` zones", "1.1.6", "20 rows; the figure carries it"),
         # 2026-09-23, author's ruling on 1.2.1: the firm-tier table was cut once the curve started
         # printing the firms and the aircraft of each segment. firm_tiers() still writes the CSV.
         # 2026-09-23, 1.2.3: the firm tiles were replaced by the firm-influence figure; fig_firm_tiles
         # is kept and parked in la_figures.render_all.
         ("1.2.2 the body of filers over time, figure and both tables", "1.2.2",
          "DECIDE (2026-09-23): the section was kept and normalised rather than cut. Panel (i) and "
-         "Table 1.2.2a are firm demographics that nothing else shows; panel (ii) and Table 1.2.2b "
+         "Table 3.1b are firm demographics that nothing else shows; panel (ii) and Table 3.2 "
          "now compare the class mix of the entering FIRMS with the class mix of the window's "
          "AIRCRAFT, which is the one claim 1.1.2 cannot make. If the section still has to go, the "
          "part to keep is panel (ii) — it could be folded into 1.2.4, whose successions answer the "
          "same question from the other side"),
-        ("Figure 1.2.5b re-filing spans", "1.2.5", "its one useful number is in the IP figure"),
+        ("`tables/spans_by_firm.csv` re-filing spans", "1.2.5", "its one useful number is in the IP figure"),
         # 2026-09-23: the per-firm proximity table was cut on the author's ruling ("take that out, it is
         # not necessary — it is already all that I need in the heat map"), so it is no longer a candidate.
-        # The figure now groups the firms in region blocks and Table 1.2.6 gives the region-pair means.
+        # The figure now groups the firms in region blocks and `tables/la_proximity_region.csv` gives the region-pair means.
         # 2026-09-23, author's ruling: the TABLE of 1.3.4 is cut, and so are the tables of 1.3.3, 2.1
         # and the industry-by-class table of 2.5. Only the figure of 1.3.4 is still a candidate, so the
         # row says so.
-        ("Figure 1.3.4 country × class", "1.3.4", "the specialisation index (1.3.3) answers it at archetype level; its table was cut on 2026-09-23"),
+        ("Figure 4.1b country × class", "1.3.4", "the specialisation index (1.3.3) answers it at archetype level; its table was cut on 2026-09-23"),
         ("2.4 image-level answers", "2.4", "T2 detail; keep only if the image chapter needs it here"),
-        ("Tables 2.5b–f mission crosstabs", "2.5", "five small tables the mission figure already shows"),
+        ("`tables/la_mission_capacity.csv`–f mission crosstabs", "2.5", "five small tables the mission figure already shows"),
     ]
     return pd.DataFrame(rows, columns=["item", "section", "why it could go"])
 
@@ -3348,7 +3392,9 @@ def open_questions() -> pd.DataFrame:
         return re.sub(r"\[\[([^\]]+)\]\]", lambda m: ref(m.group(1)), txt or "")
 
     def group_of(name: str) -> str:
-        q = str(L.QUESTION.get(name, "none")).split(" ")[0]
+        # the per-item register still carries the OLD question id (Q1-Q8); QFOLD translates it to
+        # the four chapters of 2026-09-23 so this appendix groups exactly as the document reads
+        q = L.QFOLD.get(str(L.QUESTION.get(name, "none")).split(" ")[0], "none")
         return q if q in L.QUESTIONS else "none"
 
     entries = [(k, dict(e)) for k, e in L.OPEN_QUESTIONS.items()]
@@ -3357,8 +3403,8 @@ def open_questions() -> pd.DataFrame:
         e.setdefault("q", "Q4")
         e.setdefault("sub", "design drivers")
         entries.append((k, e))
-    for _, e in entries:
-        e.setdefault("q", "Q4")
+    for _, e in entries:                     # every entry still names one of the eight; fold it
+        e["q"] = L.QFOLD.get(e.get("q", "Q4"), "2")
 
     order = list(L.QUESTIONS) + ["none"]
     cited: set = set()
@@ -3416,6 +3462,875 @@ def open_questions() -> pd.DataFrame:
                                        "weak items unplaced"])
 
 
+# ------------------------------------------------------- 2026-09-24, the brief's review ---------
+#: The M3 propulsor groups and their type slots: ``<group>_t<k>_count`` is the number of units
+#: of that type, ``_bmech`` whether they run in a duct (Open / Ducted), ``_propKin`` whether the
+#: type tilts (Fixed / Tilt) and ``_rmech`` whether it retracts or folds (Fixed / Retracting /
+#: BladeFold). Read from the base frame, never recomputed.
+_TYPE_COUNT_RE = re.compile(r"^(boom|wing[123]|emp|fuselage|hull_array)_t(\d)_count$")
+
+
+_GROUPS = ("boom", "wing1", "wing2", "wing3", "emp", "fuselage", "hull_array")
+
+
+def _type_slots(v: pd.DataFrame) -> List[str]:
+    return [c[:-len("_count")] for c in v.columns if _TYPE_COUNT_RE.match(c)]
+
+
+def _per_aircraft_units(v: pd.DataFrame) -> pd.DataFrame:
+    """Per aircraft: units in a duct, units that tilt, units that retract or fold, distinct
+    propulsor types, and the sum of the counts (a check against ``units``).
+
+    A group with ONE type keeps its answers on the group columns (``boom_count``,
+    ``boom_bmech``, ``boom_propKin``, ``boom_rmech``); a group with two or more types keeps them
+    on the ``_t<k>_`` slots and the group columns are blank. So each group is read from its
+    slots when any slot carries a count, and from the group columns otherwise.
+    """
+    out = pd.DataFrame(0.0, index=v.index, columns=["slot units", "ducted units", "tilting units",
+                                                    "retracting units", "tilting types", "fixed types", "types"])
+    for g in _GROUPS:
+        slots = [s for s in _type_slots(v) if s.startswith(f"{g}_t")]
+        slot_cnt = {s: pd.to_numeric(v[f"{s}_count"], errors="coerce") for s in slots}
+        has_slots = sum(c.notna() for c in slot_cnt.values()) > 0 if slots else pd.Series(False, index=v.index)
+        readings = [(slot_cnt[s].fillna(0).where(has_slots, 0), v[f"{s}_bmech"], v[f"{s}_propKin"], v[f"{s}_rmech"])
+                    for s in slots]
+        if f"{g}_count" in v.columns:
+            gc = pd.to_numeric(v[f"{g}_count"], errors="coerce").fillna(0).where(~has_slots, 0)
+            readings.append((gc, v.get(f"{g}_bmech"), v.get(f"{g}_propKin"), v.get(f"{g}_rmech")))
+        for cnt, bmech, kin, rmech in readings:
+            b = bmech.astype(str) if bmech is not None else pd.Series("", index=v.index)
+            k = kin.astype(str) if kin is not None else pd.Series("", index=v.index)
+            r = rmech.astype(str) if rmech is not None else pd.Series("", index=v.index)
+            out["slot units"] += cnt
+            out["ducted units"] += cnt.where(b.eq("Ducted"), 0)
+            out["tilting units"] += cnt.where(k.eq("Tilt"), 0)
+            out["retracting units"] += cnt.where(r.isin(["Retracting", "BladeFold"]), 0)
+            out["tilting types"] += ((cnt > 0) & k.eq("Tilt")).astype(int)
+            out["fixed types"] += ((cnt > 0) & k.eq("Fixed")).astype(int)
+            out["types"] += (cnt > 0).astype(int)
+    return out
+
+
+def duct_count_by_units(v: pd.DataFrame) -> pd.DataFrame:
+    """How MUCH of an aircraft is ducted, by propulsive-unit band — the count the yes/no of
+    ``duct_by_units`` cannot give (author, 2026-09-24: "a count of ducted units per aircraft: we
+    have that ... each group has a number of propulsors").
+
+    Unit: the aircraft; base: the aircraft of the band whose duct answer can be read. Columns:
+    aircraft, with any ducted unit, share with any, share of the band's UNITS that are ducted
+    (pooled), share of aircraft that duct EVERY unit, and the median ducted units among the
+    aircraft that duct at all.
+    """
+    w = v.copy()
+    w["band"] = unit_band(w)
+    u = _per_aircraft_units(w)
+    w = w.join(u)
+    w["_u"] = pd.to_numeric(w["units"], errors="coerce")
+    w = w[w["band"].isin(UNIT_BANDS[1]) & w["any_ducted"].notna() & w["_u"].gt(0)]
+    rows = []
+    for g in UNIT_BANDS[1] + ["all bands"]:
+        sub = w if g == "all bands" else w[w["band"].eq(g)]
+        if not len(sub):
+            continue
+        ducted = sub[sub["ducted units"] > 0]
+        rows.append({"propulsive units": g, "aircraft": int(len(sub)),
+                     "with any ducted unit": int(len(ducted)),
+                     "share with any": round(float(len(ducted) / len(sub)), 3),
+                     "share of units ducted": round(float(sub["ducted units"].sum() / sub["_u"].sum()), 3),
+                     "share ducting every unit": round(float((sub["ducted units"] >= sub["_u"]).mean()), 3),
+                     "median ducted units (ducted aircraft)": (float(ducted["ducted units"].median())
+                                                              if len(ducted) else np.nan)})
+    return pd.DataFrame(rows)
+
+
+#: The labels that tell two aircraft of the SAME class apart — ruled 2026-09-24 ("each architecture
+#: should have their intra-differentiating labels defined"). A configuration is the aircraft's
+#: answers on these and nothing else; the wing, the booms and the tail are left out where the class
+#: itself already fixes them. Every rule is printed with the table.
+#:
+#: Revised 2026-09-25 (user ruling on comment C17 of the brief's review: "having the ducted/open is
+#: not a characteristic of the L+C I believe, should not be here … the same thing for TW and TR and
+#: MR"). Ducted-or-open is dropped from Lift + Cruise, Tilt Rotor, Tilt Wing and Multirotor: inside
+#: those four classes a duct is an installation choice, not the thing that tells one design of the
+#: class from another, and it was splitting every configuration in two. CVT is untouched — it
+#: carried no duct field to begin with. Ducting itself is not lost to the document: it is read on
+#: its own in :func:`duct_by_units`, :func:`duct_count_by_units` and :func:`duct_conditional`, where
+#: the question is about ducting rather than about within-class variety.
+CLASS_CONFIG_RULES: Dict[str, Tuple[str, List[str]]] = {
+    "SLC": ("lift units: fixed / retract or fold · propulsive-unit band",
+            ["lift kinematics", "band"]),
+    "TR": ("tilting types: 1 / 2+ · propulsive-unit band",
+           ["tilting types", "band"]),
+    "CVT": ("tilting types × fixed types · propulsive-unit band",
+            ["tilt mix", "band"]),
+    "TW": ("wings: 1 / 2+ · propulsive-unit band",
+           ["wings", "band"]),
+    "MR": ("booms or no booms · propulsive-unit band",
+           ["booms", "band"]),
+}
+
+
+def class_configs_own(v: pd.DataFrame) -> pd.DataFrame:
+    """Within-class convergence on each class's OWN differentiating labels.
+
+    Same shape as :func:`class_configs` — the class's most common configuration per window, the
+    share of its aircraft in it, and the distinct configurations — but the configuration key is
+    the class's rule from :data:`CLASS_CONFIG_RULES`, not the one four-field key for every
+    class. A class without a rule is not drawn. Windows under :data:`MIN_CELL` are blank.
+    """
+    w = v.dropna(subset=["window", "topType"]).copy()
+    u = _per_aircraft_units(w)
+    w["band"] = unit_band(w).astype(str)
+    w["duct"] = w["any_ducted"].map({True: "ducted", False: "open"}).fillna("duct n/d")
+    w["lift kinematics"] = np.where(u["retracting units"] > 0, "lift units retract/fold", "lift units fixed")
+    w["tilting types"] = np.where(u["tilting types"] >= 2, "2+ tilting types", "1 tilting type")
+    w["tilt mix"] = (u["tilting types"].astype(int).astype(str) + " tilting × "
+                     + u["fixed types"].astype(int).astype(str) + " fixed")
+    w["wings"] = np.where(pd.to_numeric(w["wCount"], errors="coerce").fillna(0) >= 2, "2+ wings", "1 wing")
+    w["booms"] = np.where(w["nBooms"].fillna(0) > 0, "booms", "no booms")
+    rows = []
+    for code, (rule, fields) in CLASS_CONFIG_RULES.items():
+        sub_c = w[w["topType"].eq(code)].copy()
+        sub_c["config"] = sub_c[fields].astype(str).agg(" · ".join, axis=1)
+        for name in WINDOW_NAMES:
+            sub = sub_c[sub_c["window"].eq(name)]
+            row = {"class": metrics.ARCH_NAMES.get(code, code), "code": code, "window": name,
+                   "rule": rule, "aircraft": int(len(sub)),
+                   "distinct configurations": int(sub["config"].nunique()),
+                   "most common configuration": "", "share in it": np.nan}
+            if len(sub) >= MIN_CELL:
+                vc = sub["config"].value_counts(normalize=True)
+                row["most common configuration"] = vc.index[0]
+                row["share in it"] = round(float(vc.iloc[0]), 3)
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def _representativeness(w: pd.DataFrame, mask: pd.Series, label: str) -> pd.DataFrame:
+    """Does the subset ``mask`` stand for the rest of the analysis set? One row per level of each
+    categorical attribute (chi-square on the attribute) and one per continuous one (Mann-Whitney).
+    ``label`` names the subset's columns; the rest is always ``rest``."""
+    from scipy.stats import chi2_contingency, mannwhitneyu
+    rows = []
+    a_all, b_all = w[mask], w[~mask]
+    for name, col in LINKED_CATEGORICAL:
+        a, b = a_all[col], b_all[col]
+        levels = list(pd.concat([a, b]).dropna().value_counts().index)
+        if col == "window":
+            levels = [x for x in WINDOW_NAMES if x in levels]
+        ca, cb = a.value_counts().reindex(levels).fillna(0), b.value_counts().reindex(levels).fillna(0)
+        obs = np.vstack([ca.to_numpy(), cb.to_numpy()])
+        obs = obs[:, obs.sum(axis=0) > 0]
+        try:
+            p = float(chi2_contingency(obs)[1])
+        except Exception:
+            p = float("nan")
+        for k, lev in enumerate(levels):
+            pa, pb = float(ca[lev]) / max(len(a), 1) * 100, float(cb[lev]) / max(len(b), 1) * 100
+            rows.append({"attribute": name, "level": str(lev), label: int(ca[lev]), f"{label} %": round(pa, 1),
+                         "rest": int(cb[lev]), "rest %": round(pb, 1), "gap pp": round(pa - pb, 1),
+                         "test": "chi-square" if k == 0 else "", "p": round(p, 4) if k == 0 else np.nan,
+                         "verdict": (("matches the rest" if p >= 0.05 else "does NOT match the rest")
+                                     if k == 0 else "")})
+    for name, col in LINKED_CONTINUOUS:
+        a = pd.to_numeric(a_all[col], errors="coerce").dropna()
+        b = pd.to_numeric(b_all[col], errors="coerce").dropna()
+        try:
+            p = float(mannwhitneyu(a, b)[1])
+        except Exception:
+            p = float("nan")
+        rows.append({"attribute": name, "level": "median", label: len(a), f"{label} %": round(float(a.median()), 1),
+                     "rest": len(b), "rest %": round(float(b.median()), 1),
+                     "gap pp": round(float(a.median() - b.median()), 1), "test": "Mann-Whitney",
+                     "p": round(p, 6), "verdict": "matches the rest" if p >= 0.05 else "does NOT match the rest"})
+    out = pd.DataFrame(rows)
+    # the test row of each attribute carries the two group sizes and the level the groups differ
+    # most on, so a reader of the test rows alone is never shown a per-level count as a total
+    n_in, n_rest = int(mask.sum()), int((~mask).sum())
+    out[f"n {label}"] = np.where(out["test"].ne(""), n_in, np.nan)
+    out["n rest"] = np.where(out["test"].ne(""), n_rest, np.nan)
+    gaps = []
+    for attr in out["attribute"].unique():
+        sub = out[out["attribute"].eq(attr)]
+        k = sub["gap pp"].abs().idxmax()
+        gaps.append((attr, f"{sub.loc[k, 'level']} ({sub.loc[k, 'gap pp']:+.1f} pp)"
+                     if sub.loc[k, "level"] != "median" else f"median {sub.loc[k, 'gap pp']:+.1f}"))
+    gap_of = dict(gaps)
+    out["largest gap"] = [gap_of[a] if t else "" for a, t in zip(out["attribute"], out["test"].ne(""))]
+    out.attrs.update({"in": n_in, "rest": n_rest})
+    return out
+
+
+def ari_representativeness(v: pd.DataFrame) -> pd.DataFrame:
+    """Do the 150 aircraft of the AAM Reality Index firms stand for the corpus? Same test as the
+    TRL and evtol.news checks (author, 2026-09-24)."""
+    firms = set(ari_firms(v)["company"])
+    return _representativeness(v.copy(), v["company_canonical"].isin(firms), "index firms")
+
+
+def public_pairwise(ds: Dataset) -> pd.DataFrame:
+    """The three sources of an aircraft's class compared two at a time, on the aircraft that have a
+    public counterpart (author, 2026-09-24: "compare the image label to the patent label, the image
+    label to the public and the patent label to the public").
+
+    drawing label = the class read from the patent figures in the wizard; patent text = the class the
+    whole-patent reading gives; public aircraft = the class of the firm's aircraft on evtol.news,
+    matched by name. ``match`` of :func:`a2.public_arch_frame`: yes / taxonomy = drawing agrees with
+    the public aircraft; no = drawing and text agree with each other and not with the public one;
+    image = the drawing departs from the text and the text matches the public aircraft.
+    """
+    f = a2.public_arch_frame(ds)
+    n = int(len(f))
+    m = f["match"].astype(str)
+    img_pub = int(m.isin(["yes", "taxonomy"]).sum())
+    txt_pub = int(m.isin(["yes", "taxonomy", "image"]).sum())
+    gt = f["arch_gt"].fillna("").astype(str) if "arch_gt" in f else pd.Series("", index=f.index)
+    has_gt = gt.ne("")
+    img_txt = int((gt.eq(f["topType"].astype(str)) & has_gt).sum())
+    rows = [
+        {"comparison": "drawing label against the public aircraft", "agree": img_pub, "of": n,
+         "share": round(img_pub / n, 2) if n else np.nan,
+         "the disagreements": "the patent describes another configuration than the one the firm built, "
+                              "or the drawing was misread"},
+        {"comparison": "patent text against the public aircraft", "agree": txt_pub, "of": n,
+         "share": round(txt_pub / n, 2) if n else np.nan,
+         "the disagreements": "the patent describes another configuration than the one the firm built"},
+        {"comparison": "drawing label against the patent text", "agree": img_txt, "of": int(has_gt.sum()),
+         "share": round(img_txt / int(has_gt.sum()), 2) if has_gt.sum() else np.nan,
+         "the disagreements": "the drawing was read as one class and the text states another"},
+    ]
+    return pd.DataFrame(rows)
+
+
+#: the interpretive frame the author uses (methodology framework, Part C): what each measure does in
+#: each evolutionary era. Fixed text; the last column is read from this corpus at build time.
+ERA_FRAME = [
+    ("Rao's entropy Q (condition 3 — form)",
+     "high: maximum disparity between designs",
+     "sharp, statistically significant drop",
+     "low: minimal disparity"),
+    ("inverse Simpson ²D (condition 2 — balance)",
+     "high: many competing concepts",
+     "collapses toward 1.0-1.5",
+     "low: a single design above 60 % share"),
+    ("MCA centroid shift",
+     "large, non-linear jumps",
+     "decelerates and stabilises",
+     "near zero: local clustering"),
+    ("locus of innovation",
+     "core components (high pleiotropy)",
+     "transition from core to peripheral",
+     "peripheral subsystems and processes"),
+]
+
+
+def era_frame(dd: pd.DataFrame, q: pd.DataFrame, result: pd.DataFrame) -> pd.DataFrame:
+    """The era table with a fifth column, what this corpus shows on each measure, read out of the
+    built dominant-design tables. The two measures the document does not compute say so."""
+    met = dict(zip(result["condition"].astype(str), result["met"].astype(str)))
+    d2 = pd.to_numeric(dd["D2"], errors="coerce")
+    d2_min = float(d2.min()) if d2.notna().any() else float("nan")
+    d2_last = dd[dd["window"].astype(str).eq("2020-23") & dd["level"].astype(str).eq("A0c")]
+    d2_last = float(pd.to_numeric(d2_last["D2"], errors="coerce").iloc[0]) if len(d2_last) else float("nan")
+    here = [
+        f"no drop that survives both weightings: {met.get('3 — form', '')}",
+        f"never collapses: lowest ²D in any window {d2_min:.1f} equally common archetypes, "
+        f"{d2_last:.1f} at A0c in 2020-23; {met.get('2 — balance', '')}",
+        "not computed in this document (probed on the label space: the centroid path is longer than "
+        "chance, p 0.047, and dispersion falls 2.7 → 2.5 — position converges, variety does not)",
+        "not computed in this document (probed: the architecture class is the only field coupled to "
+        "the others; below it the fields are nearly free — the locus is still the core)",
+    ]
+    return pd.DataFrame([{"measure": m, "era of ferment": a, "dominant design emerging": b,
+                          "incremental change": c, "this corpus": h}
+                         for (m, a, b, c), h in zip(ERA_FRAME, here)])
+
+
+def top_archetypes(v: pd.DataFrame, k: int = 3) -> pd.DataFrame:
+    """After 'no archetype holds 50 %': what DOES hold the corpus (author, 2026-09-24: "are there 2
+    dominant designs? 3 branches? make statements"). Per level and window: the three largest
+    archetypes with their share of the window, and the share the top 3 and top 5 hold together.
+    Levels: A0 (the class), A1t (the design species), A0c (class × propulsive-unit bin)."""
+    w = v.dropna(subset=["window"]).copy()
+    rows = []
+    for level in ("A0", "A1t", "A0c"):
+        key = w["topType"] if level == "A0" else _archetype_key(w, level)
+        ww = w[key.notna()].assign(key=key[key.notna()].astype(str))
+        for name in WINDOW_NAMES:
+            sub = ww[ww["window"].eq(name)]
+            if len(sub) < 10:
+                continue
+            vc = sub["key"].value_counts(normalize=True)
+            row = {"level": level, "window": name, "aircraft": int(len(sub))}
+            for i in range(k):
+                row[f"top {i + 1}"] = f"{vc.index[i]} {vc.iloc[i]:.0%}" if i < len(vc) else ""
+            row["top 3 together"] = round(float(vc.head(3).sum()), 3)
+            row["top 5 together"] = round(float(vc.head(5).sum()), 3)
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def trl_representativeness(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
+    """Are the aircraft above TRL 2 a fair picture of the analysis set? (author, 2026-09-24: "pick the
+    63 patents that have a TRL and see if they are representative of our data set"). Same test as the
+    evtol.news check: the subset against the rest on class, region, window, filer type, priority year
+    and propulsive units."""
+    t = a2.trl_frame(ds)[["aircraft_id", "trl"]]
+    w = v.merge(t, on="aircraft_id", how="left")
+    mask = pd.to_numeric(w["trl"], errors="coerce").fillna(2).gt(2)
+    return _representativeness(w, mask, "above TRL 2")
+
+
+
+# ================================================================================================
+# 2026-09-25 — the review of the brief of 2026-09-24, comments C2, C17, C24, C29, C32, C36, C40,
+# C43, C47. Six new readings, each of them a number the review asked for and none of them a
+# restatement of one already printed. Every one carries the ruling that produced it in its own
+# docstring, and the two post-hoc ones say so in a column of the table itself.
+# ================================================================================================
+
+# ------------------------------------------------- C29 / C32: joints, normalised per unit -------
+#: What the normalised trace is, printed with the table. The absolute count and the ratio are two
+#: different questions and the table prints both, never the ratio alone.
+JOINTS_PER_UNIT_NOTE = (
+    "tilting joint groups divided by the aircraft's propulsive units. A tilting wing panel, a "
+    "tilting boom group, a tilting propulsor type and a tilting empennage each count one joint "
+    "group; the divisor is the aircraft's propulsive-unit count. An aircraft with no recorded "
+    "propulsor count, or with a count of zero, is left out of the ratio and stays in the absolute "
+    "count"
+)
+
+JOINTS_MEASURES = (("tilting joint groups", "joints"),
+                   ("tilting joint groups per propulsive unit", "joints per unit"))
+
+
+def joints_per_unit(ds: Dataset, v: pd.DataFrame, classes: Optional[List[str]] = None) -> pd.DataFrame:
+    """Tilting joint groups per propulsive unit, beside the absolute count, per class and window.
+
+    The ruling behind it (user, 2026-09-25, comments C29 and C32 on the brief): the document read
+    the rise in tilting joint groups inside Tilt Rotor and CVT as a move "against both cost
+    drivers", and that reading is not safe, because the joint count rose while the propulsor count
+    rose with it — "certifying a forward tilting set and an aft tilting set on the same aircraft is
+    not two independent costs". The ratio is the control: if the joint count rose only because
+    there are more propulsors to tilt, the cost the aircraft carries per unit did not rise and the
+    verdict cannot stand.
+
+    The test is the one every other trace uses (:func:`trace_trends`): Spearman's rho between the
+    priority year and the measure over the aircraft of the class with a value and a complete
+    priority year (to :data:`LAST_COMPLETE`), read on :data:`TREND_MIN` aircraft or more, and
+    ``rises`` / ``falls`` at p < :data:`TREND_ALPHA`. Both measures are computed on exactly the
+    aircraft that can carry the ratio, so the two rows of a class rest on the same base and the
+    comparison is not a change of population. The window columns are medians of that same base.
+    """
+    from scipy import stats as _st
+    classes = classes or drawn_classes(v)
+    t = trace_frame(ds, v).dropna(subset=["window", "topType"]).copy()
+    t["_u"] = pd.to_numeric(t["units"], errors="coerce")
+    t["_j"] = pd.to_numeric(t["joints"], errors="coerce")
+    t["joints"] = t["_j"].where(t["_u"].gt(0))
+    t["joints per unit"] = t["_j"] / t["_u"].where(t["_u"].gt(0))
+    rows = []
+    for code in classes + list(POOLED):
+        sub_c = t[t["topType"].eq(code)] if code in classes else (
+            t[t["topType"].isin(classes)] if code == "ALL5" else t)
+        for label, col in JOINTS_MEASURES:
+            row = {"measure": label, "class": metrics.ARCH_NAMES.get(code, POOLED.get(code, code)),
+                   "code": code}
+            for name in WINDOW_NAMES:
+                vals = sub_c.loc[sub_c["window"].eq(name), col].dropna()
+                row[WIN_SHORT.get(name, name)] = (round(float(vals.median()), 3)
+                                                  if len(vals) >= MIN_CELL else np.nan)
+            s = pd.DataFrame({"y": pd.to_numeric(sub_c["year"], errors="coerce"),
+                              "x": sub_c[col]}).dropna()
+            s = s[s["y"].le(LAST_COMPLETE)]
+            row["aircraft"] = int(len(s))
+            row["rho"], row["p"] = np.nan, np.nan
+            if len(s) < TREND_MIN:
+                row["movement"] = "too thin"
+            elif s["x"].nunique() < 2:
+                row["movement"] = "constant"
+            else:
+                rho, p = _st.spearmanr(s["y"], s["x"])
+                row["rho"], row["p"] = round(float(rho), 2), float(p)
+                row["movement"] = ("rises" if rho > 0 else "falls") if p < TREND_ALPHA else "flat"
+            rows.append(row)
+    out = pd.DataFrame(rows)
+    # the verdict the ruling asks for, one per class: what the normalisation does to the absolute
+    # reading. Written from the two rows, never typed.
+    verdicts = {}
+    for code in out["code"].unique():
+        pair = out[out["code"].eq(code)].set_index("measure")
+        absr = pair.loc[JOINTS_MEASURES[0][0]]
+        rel = pair.loc[JOINTS_MEASURES[1][0]]
+        if absr["movement"] == "rises" and rel["movement"] == "rises":
+            verdicts[code] = "the rise survives normalisation"
+        elif absr["movement"] == "rises" and rel["movement"] == "falls":
+            verdicts[code] = "the rise reverses under normalisation: fewer joints per unit"
+        elif absr["movement"] == "rises":
+            verdicts[code] = "the rise does not survive normalisation: flat per unit"
+        elif absr["movement"] in ("flat", "falls") and rel["movement"] == "falls":
+            verdicts[code] = "falls per unit, with no rise in the count to explain away"
+        else:
+            verdicts[code] = f"count {absr['movement']}, per unit {rel['movement']}"
+    out["what normalisation does"] = out["code"].map(verdicts)
+    out.attrs["note"] = JOINTS_PER_UNIT_NOTE
+    out.attrs.update(class_selection(v))
+    return out
+
+
+# --------------------------------------------- C24 / C36: is ducting all-or-nothing? ------------
+#: The shares of an aircraft's units that run in a duct, binned for the distribution columns. The
+#: top bin is exact equality, not "95 % or more": the claim under test is that ducting is
+#: all-or-nothing, so "every unit" has to mean every unit.
+DUCT_SHARE_BINS: List[Tuple[str, float, float]] = [
+    ("under a quarter", 0.0, 0.25), ("a quarter to half", 0.25, 0.50),
+    ("half to three quarters", 0.50, 0.75), ("three quarters, not all", 0.75, 1.0),
+]
+DUCT_EVERY = "every unit"
+
+
+def duct_conditional(v: pd.DataFrame) -> pd.DataFrame:
+    """Given that ONE unit is ducted, are they all? The conditional distribution of the ducted
+    share, per propulsive-unit band and over all bands.
+
+    The ruling behind it (user, 2026-09-25, comments C24 and C36 on the brief): beside the share of
+    aircraft that duct at all, "if one is ducted, they should all be ducted" is a claim the record
+    can test, and the document should test it rather than assert it. This table sits beside
+    :func:`duct_count_by_units`, which answers how MUCH of a band is ducted; here the base is
+    narrowed to the aircraft that duct anything at all, which is what makes the question
+    conditional.
+
+    Base: the aircraft of the band whose duct answer can be read, that carry a propulsive-unit
+    count above zero, and that have at least one ducted unit. The ducted share is the aircraft's
+    ducted units over its units, clipped at 1 — the M3 slot counts and the stored unit count
+    disagree on a handful of aircraft, and the number of those is printed in the last column so the
+    disagreement is visible rather than silently rounded away.
+    """
+    w = v.copy()
+    w["band"] = unit_band(w)
+    w = w.join(_per_aircraft_units(w))
+    w["_u"] = pd.to_numeric(w["units"], errors="coerce")
+    w = w[w["band"].isin(UNIT_BANDS[1]) & w["any_ducted"].notna() & w["_u"].gt(0)]
+    w["_raw"] = w["ducted units"] / w["_u"]
+    w["_share"] = w["_raw"].clip(upper=1.0)
+    rows = []
+    for g in UNIT_BANDS[1] + ["all bands"]:
+        sub = w if g == "all bands" else w[w["band"].eq(g)]
+        d = sub[sub["ducted units"] > 0]
+        if not len(d):
+            continue
+        row = {"propulsive units": g, "aircraft in the band": int(len(sub)),
+               "of them, duct at least one unit": int(len(d)),
+               "share that duct every unit": round(float((d["_share"] >= 1.0).mean()), 3),
+               "median ducted share": round(float(d["_share"].median()), 3),
+               "mean ducted share": round(float(d["_share"].mean()), 3)}
+        for name, lo, hi in DUCT_SHARE_BINS:
+            row[name] = int((d["_share"].ge(lo) & d["_share"].lt(hi)).sum())
+        row[DUCT_EVERY] = int((d["_share"] >= 1.0).sum())
+        row["unit counts that disagree"] = int((d["_raw"] > 1.0).sum())
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    allr = out[out["propulsive units"].eq("all bands")]
+    if len(allr):
+        r = allr.iloc[0]
+        out.attrs["verdict"] = (
+            f"mostly, not entirely: of the {int(r['of them, duct at least one unit'])} aircraft that "
+            f"duct at least one unit, {r['share that duct every unit']:.0%} duct every one of them and "
+            f"the median ducted share is {r['median ducted share']:.0%}, but "
+            f"{int(r[DUCT_SHARE_BINS[0][0]])} aircraft duct under a quarter of their units, so ducting "
+            f"is a property of the aircraft far more often than of the single unit without being "
+            f"all-or-nothing")
+    return out
+
+
+# ------------------------------- C36: the CVT + Lift + Cruise family, POST HOC -------------------
+#: Said in every place this family is reported, and repeated in a column of both tables. The
+#: three dominant-design conditions were fixed before any curve of this corpus was drawn
+#: (Preliminary Analysis 5.7) and they were fixed on the twelve G1 classes. This family is not one
+#: of them: it was defined on 2026-09-25 after reading the ducting result of the brief, and it
+#: therefore cannot be reported as a pre-registered test of anything.
+FAMILY_POSTHOC = (
+    "POST HOC — this grouping was defined on 2026-09-25, after the 2026-09-24 result it came from; "
+    "it is not one of the pre-registered classes and no result here is a pre-registered test"
+)
+
+#: The three readings of "the distributed-propulsion family", as
+#: ``id -> (printed name, what it adds to Lift + Cruise)``. (c) is the ruling; (b) is the
+#: sensitivity the user asked to see beside it; (b∩c) is their intersection.
+FAMILY_DEFS: Dict[str, Tuple[str, str]] = {
+    "c": ("(c) Lift + Cruise + CVT on booms",
+          "every Lift + Cruise aircraft, plus the CVT aircraft that carry propulsive units on booms"),
+    "b": ("(b) Lift + Cruise + CVT tilting-rotor, no tilting wing",
+          "every Lift + Cruise aircraft, plus the CVT aircraft with a tilting propulsor set and no "
+          "tilting wing panel"),
+    "bc": ("(b ∩ c) both conditions",
+           "every Lift + Cruise aircraft, plus the CVT aircraft that satisfy (b) and (c) at once"),
+}
+FAMILY_ORDER = ["c", "b", "bc"]
+FAMILY_BASE = "SLC"
+
+
+def family_flags(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
+    """Per aircraft, the three facts the family definitions are built from: units carried on booms,
+    a tilting propulsor set, a tilting wing panel.
+
+    Read off ``ds.variants`` by exactly the rules :func:`trace_frame` uses — the same M3 override
+    skip, the same control-only exclusion, the same ``propKin``/``wingN_tilt`` fields — so an
+    aircraft is in the family here if and only if the traces of 1.4 would say the same of it.
+    """
+    raw = ds.variants
+    ovs = a2.override_sets(raw)
+    _s, _n = a2._s, a2._n
+    rows = []
+    for (_, r), ov in zip(raw.iterrows(), ovs):
+        g = lambda c: r[c] if c in r.index else None
+        kins, cards = [], []
+        for card in _TRACE_CARDS:
+            if f"M3:{card}" in ov:
+                continue
+            nt = _n(g(f"{card}_ntypes")) or 1
+            for pre in ([f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]):
+                if _n(g(pre + "count")) <= 0 or _s(g(pre + "ctrlOnly")) == "True":
+                    continue
+                kins.append(_s(g(pre + "propKin")))
+                cards.append(card)
+        rows.append(dict(aircraft_id=r["aircraft_id"],
+                         units_on_booms=("boom" in cards),
+                         tilting_set=any(k == "Tilt" for k in kins),
+                         tilting_wing=any(_s(g(f"wing{k}_tilt")) == "Tilt" for k in range(1, 5))))
+    f = pd.DataFrame(rows)
+    return v[["aircraft_id", "topType", "window", "year"]].merge(f, on="aircraft_id", how="left")
+
+
+def family_mask(flags: pd.DataFrame, definition: str) -> pd.Series:
+    """The membership of one family definition, as a boolean over the rows of ``flags``."""
+    slc = flags["topType"].eq(FAMILY_BASE)
+    cvt = flags["topType"].eq("CVT")
+    c = cvt & flags["units_on_booms"].fillna(False)
+    b = cvt & flags["tilting_set"].fillna(False) & ~flags["tilting_wing"].fillna(False)
+    add = {"c": c, "b": b, "bc": b & c}[definition]
+    return slc | add
+
+
+def family_share(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
+    """The family's share of the aircraft of each priority window, for the three definitions.
+
+    This is condition 1 of the dominant-design test (Preliminary Analysis 5.7) applied to the
+    family instead of to an archetype: one design over half of a window, twice in a row. The
+    ruling behind the family (user, 2026-09-25, comment C36 on the brief): the late CVT aircraft
+    are "a Lift+Cruise-like open-rotor layout on booms with one tilting set added", so the question
+    is whether Lift + Cruise and those CVT aircraft, read as one design family, hold what neither
+    holds alone. Definition (c) is the one settled with the user; (b) is reported beside it as a
+    sensitivity, and (b ∩ c) is their intersection.
+
+    The grouping is post-hoc and every row says so: see :data:`FAMILY_POSTHOC`.
+    """
+    flags = family_flags(ds, v)
+    w = v.dropna(subset=["window"])
+    rows = []
+    for key in FAMILY_ORDER:
+        name, what = FAMILY_DEFS[key]
+        m = family_mask(flags, key)
+        ids = set(flags.loc[m, "aircraft_id"])
+        fam = w[w["aircraft_id"].isin(ids)]
+        for wname in WINDOW_NAMES:
+            sub, fsub = w[w["window"].eq(wname)], fam[fam["window"].eq(wname)]
+            rows.append({"definition": name, "id": key, "window": wname,
+                         "aircraft in the window": int(len(sub)),
+                         "family aircraft": int(len(fsub)),
+                         "of them Lift + Cruise": int(fsub["topType"].eq(FAMILY_BASE).sum()),
+                         "of them CVT": int(fsub["topType"].eq("CVT").sum()),
+                         "family share": round(float(len(fsub) / len(sub)), 3) if len(sub) else np.nan,
+                         "over the 50 % line": bool(len(sub) and len(fsub) / len(sub) > 0.5),
+                         "note": FAMILY_POSTHOC, "what it holds": what})
+    return pd.DataFrame(rows)
+
+
+def _family_c1(share: pd.DataFrame, key: str) -> Tuple[str, str]:
+    """Condition 1 for one definition, read off :func:`family_share`: the largest share of a
+    complete window, and whether two consecutive complete windows clear the 50 % line."""
+    complete = [w for w in WINDOW_NAMES if "partial" not in w]
+    s = share[share["id"].eq(key) & share["window"].isin(complete)].set_index("window").reindex(complete)
+    top = s["family share"].astype(float)
+    best = top.idxmax()
+    over = top.gt(0.5).tolist()
+    twice = any(a and b for a, b in zip(over[:-1], over[1:]))
+    txt = (f"the family holds {top.max():.1%} of {best}, its largest complete window, against the "
+           f"50 % line; it clears the line in {int(sum(over))} of the {len(over)} complete windows"
+           + (", and in two consecutive ones" if twice else ", so never in two consecutive ones"))
+    return txt, ("yes" if twice else "no")
+
+
+def family_dominant_design(ds: Dataset, v: pd.DataFrame, share: Optional[pd.DataFrame] = None,
+                           perms: int = 200, seed: int = 42) -> pd.DataFrame:
+    """The three dominant-design conditions run on the family, for each of the three definitions.
+
+    Condition 1 is read twice, because "dominant" is a claim about the whole corpus and
+    "design family" is a claim about the family itself:
+
+    * **in the corpus** — the family's share of a window against the 50 % line, twice in a row.
+      This is :func:`_family_c1` on :func:`family_share`, and it is the reading the user's question
+      asks for ("if we evaluate CVT and L+C as the same group, are they a dominant design?").
+    * **inside the family** — the largest archetype's share of the family's own window, at the two
+      levels of :func:`dominant_design`, which says whether the family is one design or a bag.
+
+    Conditions 2 and 3 are :func:`dominant_design` and :func:`dominant_design_q` run unchanged on
+    the family's aircraft: ²D against the same year-shuffle permutation band, and Rao's Q on the
+    Gower distance of Preliminary Analysis 5.3 against the family's own two earliest windows.
+    Nothing in either routine is modified; only the frame handed to them is narrower.
+
+    The grouping is post-hoc (:data:`FAMILY_POSTHOC`) and every row of the table repeats it.
+    """
+    share = family_share(ds, v) if share is None else share
+    flags = family_flags(ds, v)
+    complete = [w for w in WINDOW_NAMES if "partial" not in w]
+    rows = []
+    for key in FAMILY_ORDER:
+        name, _what = FAMILY_DEFS[key]
+        ids = set(flags.loc[family_mask(flags, key), "aircraft_id"])
+        fam = v[v["aircraft_id"].isin(ids)].copy()
+        n_fam = int(len(fam))
+
+        def add(condition: str, observed: str, met: str,
+                cells_met=None, cells_total=None) -> None:
+            rows.append({"definition": name, "id": key, "aircraft": n_fam, "condition": condition,
+                         "observed": observed, "met": met,
+                         # 2026-09-25: the same counts the ``observed`` sentence states, as
+                         # numbers, so stated prose can quote "x of y level-windows" from the
+                         # table instead of re-deriving it from the number of condition rows —
+                         # which is what first printed "0 of 5" for a 0-of-8 result.
+                         "cells met": cells_met, "cells total": cells_total,
+                         "note": FAMILY_POSTHOC})
+
+        c1_txt, c1_met = _family_c1(share, key)
+        add("1 counts — the family against the 50 % line, in the corpus", c1_txt, c1_met)
+
+        # conditions 1 (inside the family), 2 and 3, on complete windows only: the pre-registered
+        # test is recorded on complete windows and asks condition 1 for two consecutive ones
+        dd = dominant_design(fam, perms=perms, seed=seed)
+        q = dominant_design_q(ds, fam, perms=perms, seed=seed)
+        main = q[q["weighting"].eq(Q_WEIGHTINGS[0])]
+        ddc = dd[dd["window"].isin(complete)]
+        qc = main[main["window"].isin(complete)]
+        fired1, fired2, fired3 = set(), set(), set()
+        if len(ddc):
+            best = ddc.loc[ddc["top share"].idxmax()]
+            twice = False
+            for lvl in ddc["level"].unique():
+                s_ = ddc[ddc["level"].eq(lvl)].set_index("window").reindex(complete)
+                over = s_["top share"].astype(float).gt(0.5).fillna(False).tolist()
+                twice |= any(a and b for a, b in zip(over[:-1], over[1:]))
+                fired1 |= {(lvl, w) for w, o in zip(complete, over) if o}
+            add("1 counts — the largest archetype inside the family",
+                f"the largest archetype of any complete window of the family is "
+                f"{best['top archetype']} at {best['top share']:.1%} ({best['level']}, "
+                f"{best['window']}); it clears the 50 % line in {len(fired1)} of the {len(ddc)} "
+                f"complete level-windows"
+                + (", and in two consecutive ones" if twice else ", never in two consecutive ones"),
+                "yes" if twice else "no", len(fired1), len(ddc))
+            below = ddc[ddc["below band"].astype(bool)]
+            fired2 = {(r["level"], r["window"]) for _, r in below.iterrows()}
+            add("2 balance — ²D below the permutation band",
+                f"²D falls below the band in {len(below)} of the {len(ddc)} complete level-windows "
+                f"of the family"
+                + ("" if not len(below) else ": " + "; ".join(
+                    f"{r['level']} {r['window']}, ²D {r['D2']:.2f} against "
+                    f"{r['D2 permutation low']:.2f}–{r['D2 permutation high']:.2f}"
+                    for _, r in below.iterrows())),
+                f"in {len(below)} of {len(ddc)} complete level-windows" if len(below) else "no",
+                len(below), len(ddc))
+        if len(qc):
+            hit = qc[qc["below band"].astype(bool)]
+            fired3 = {(r["level"], r["window"]) for _, r in hit.iterrows()}
+            add("3 form — Rao's Q below the family's earliest windows",
+                f"under the subsystem weighting, Q falls below the level of the family's two "
+                f"earliest windows by more than the permutation band in {len(hit)} of the "
+                f"{len(qc)} complete level-windows"
+                + ("" if not len(hit) else ": " + "; ".join(
+                    f"{r['level']} {r['window']}, ΔQ {r['ΔQ']:+.4f} against "
+                    f"{r['ΔQ permutation low']:+.4f}–{r['ΔQ permutation high']:+.4f}"
+                    for _, r in hit.iterrows())),
+                f"in {len(hit)} of {len(qc)} complete level-windows" if len(hit) else "no",
+                len(hit), len(qc))
+
+        # the verdict: the pre-registered test asks the three conditions of the SAME window, and
+        # condition 1 of two consecutive ones. Counting conditions across different windows would
+        # be a different, easier test, and is not what 5.7 fixed.
+        together = sorted(fired1 & fired2 & fired3)
+        corpus_ok = c1_met == "yes"
+        add("verdict",
+            (f"no complete window of the family satisfies the three conditions together"
+             if not together else
+             f"the three conditions meet in {len(together)} complete level-window(s): "
+             + "; ".join(f"{lvl} {w}" for lvl, w in together))
+            + f", and the family holds over half a window of the corpus in "
+              f"{'two consecutive windows' if corpus_ok else 'no window'}. "
+            + ("Read as one design family, Lift + Cruise and the CVT aircraft do not pass where "
+               "the separate classes fail: the family is larger than any class, and still not a "
+               "dominant design." if not (together and corpus_ok) else
+               "Read as one design family, the grouping passes where the separate classes fail."),
+            "no" if not (together and corpus_ok) else "yes")
+    return pd.DataFrame(rows)
+
+
+# ------------------------------------------- C2: named against unnamed aircraft ------------------
+def name_coverage(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
+    """Unique aircraft by name status, and what a name buys: whether the aircraft could be matched
+    to a public product at all.
+
+    The ruling behind it (user, 2026-09-25, comment C2 on the brief): "88 of the 98 aircraft that
+    can be matched to a public product carry its class" cannot be stated without saying how many
+    aircraft were never matched, and why — "some aircraft were not matched because I did not know
+    the aircraft". The 98 are not a sample of the corpus and were never drawn as one: an aircraft
+    can only be matched to a public product if it was recognised in the first place, and the record
+    of that recognition is the name. An aircraft the labeller recognised carries the product's real
+    name (``name_is_real``, from NAME_DECISIONS.csv through the master labels); an aircraft nobody
+    recognised carries a generated identifier, ``<patent id>_uaN``.
+
+    Reuses the two functions that already touch this ground — :func:`linked_aircraft` for the
+    evtol.news page and :func:`a2.public_arch_frame` for the class comparison the brief's sentence
+    is about — and recomputes neither.
+    """
+    named = v["name_is_real"].fillna(False).astype(bool)
+    linked = set(linked_aircraft(v)["aircraft_id"])
+    try:
+        compared = set(a2.public_arch_frame(ds)["aircraft_id"])
+    except Exception:
+        compared = set()
+    rows = [{
+        "aircraft": "carry a real product name",
+        "unique aircraft": int(named.sum()),
+        "share of the analysis set": round(float(named.mean()), 3),
+        "linked to an evtol.news page": int(v.loc[named, "aircraft_id"].isin(linked).sum()),
+        "compared with the public aircraft": int(v.loc[named, "aircraft_id"].isin(compared).sum()),
+        "filed by a named organisation": int(v.loc[named, "named"].sum()),
+        "why": "the labeller recognised the aircraft and NAME_DECISIONS.csv records the product name",
+    }, {
+        "aircraft": "carry a generated identifier",
+        "unique aircraft": int((~named).sum()),
+        "share of the analysis set": round(float((~named).mean()), 3),
+        "linked to an evtol.news page": int(v.loc[~named, "aircraft_id"].isin(linked).sum()),
+        "compared with the public aircraft": int(v.loc[~named, "aircraft_id"].isin(compared).sum()),
+        "filed by a named organisation": int(v.loc[~named, "named"].sum()),
+        "why": "no public product was recognised behind the drawing, so no match could be attempted",
+    }]
+    out = pd.DataFrame(rows)
+    out.loc[len(out)] = {
+        "aircraft": "all unique aircraft", "unique aircraft": int(len(v)),
+        "share of the analysis set": 1.0,
+        "linked to an evtol.news page": int(v["aircraft_id"].isin(linked).sum()),
+        "compared with the public aircraft": int(v["aircraft_id"].isin(compared).sum()),
+        "filed by a named organisation": int(v["named"].sum()),
+        "why": "",
+    }
+    # the named aircraft that still have no public counterpart, named one by one: three rows, and
+    # a reader is entitled to see which
+    miss = v[named & ~v["aircraft_id"].isin(linked)]
+    out.attrs["named without a page"] = "; ".join(
+        f"{r['aircraft_name']} ({r['company_canonical'] if pd.notna(r['company_canonical']) else 'no firm'})"
+        for _, r in miss.iterrows())
+    out.attrs["caveat"] = (
+        "the matched set is not a sample: matching required recognising the aircraft, so it is the "
+        "aircraft the labeller could name, and it over-represents the firms whose products are "
+        "publicly documented")
+    return out
+
+
+# --------------------------------------- C47: where the Tilt Wing firms go ----------------------
+def tw_successions(v: pd.DataFrame, min_pairs: int = 10) -> pd.DataFrame:
+    """Where a firm goes after a Tilt Wing aircraft, against the same for the other classes.
+
+    The ruling behind it (user, 2026-09-25, comment C47 on the brief): the document says Tilt Wing
+    takes 12 % of the entrants against 8.1 % of the aircraft and that within-firm successions stay
+    in Tilt Wing only 16 % of the time against 48–59 % elsewhere — "and why is it like that? this
+    is an important thing". Staying is only half the answer; the other half is where they go, and
+    the record can say it.
+
+    Unit: the within-firm succession pair of :func:`transitions` — a named firm's aircraft in
+    priority order, every consecutive pair. One row per class of origin holding ``min_pairs``
+    pairs or more, the share of its successions that stay, and the destination that takes the most
+    of the rest. The destination columns are shares of the origin's pairs, so a row sums to 1.
+    """
+    t = transitions(v)
+    piv = t.pivot_table(index="from", columns="to", values="pairs", aggfunc="sum", fill_value=0)
+    rows = []
+    for code in piv.index:
+        r = piv.loc[code]
+        tot = int(r.sum())
+        if tot < min_pairs:
+            continue
+        shares = (r / tot).sort_values(ascending=False)
+        away = shares.drop(index=code, errors="ignore")
+        row = {"class of origin": metrics.ARCH_NAMES.get(code, code), "code": code,
+               "successions": tot,
+               "stays in the class": round(float(shares.get(code, 0.0)), 3),
+               "largest destination": metrics.ARCH_NAMES.get(away.index[0], away.index[0]) if len(away) else "",
+               "share to it": round(float(away.iloc[0]), 3) if len(away) else np.nan,
+               "second destination": metrics.ARCH_NAMES.get(away.index[1], away.index[1]) if len(away) > 1 else "",
+               "share to it, second": round(float(away.iloc[1]), 3) if len(away) > 1 else np.nan}
+        for dest in BIG4 + ["MR"]:
+            row[f"→ {metrics.ARCH_NAMES.get(dest, dest)}"] = round(float(shares.get(dest, 0.0)), 3)
+        rows.append(row)
+    out = pd.DataFrame(rows).sort_values("successions", ascending=False).reset_index(drop=True)
+    tw = out[out["code"].eq("TW")]
+    if len(tw):
+        r = tw.iloc[0]
+        out.attrs["verdict"] = (
+            f"Tilt Wing does not lose its firms to nowhere: of its {int(r['successions'])} "
+            f"successions, {r['stays in the class']:.0%} stay, {r['share to it']:.0%} go to "
+            f"{r['largest destination']} and {r['share to it, second']:.0%} to "
+            f"{r['second destination']} — the firms that arrive in Tilt Wing leave it for the two "
+            f"classes that grow, and the tilting wing is the step they take on the way")
+    out.attrs["pairs"] = t.attrs.get("pairs")
+    out.attrs["firms"] = t.attrs.get("firms")
+    return out
+
+
+# --------------------------------------- C40: what kind of filer is entering --------------------
+def entrant_mix(v: pd.DataFrame) -> pd.DataFrame:
+    """What kind of filer enters each window, and how many of the entering firms the market rates.
+
+    The ruling behind it (user, 2026-09-25, comment C40 on the brief): reading "in every window
+    most active firms are filing for the first time" as "new high-capitalised firms are entering"
+    is a step the corpus cannot take — it holds no capitalisation, no funding round and no
+    headcount. What it can say is what KIND of filer enters, and whether the entrants are firms the
+    market has since taken seriously enough to rate. The AAM Reality Index membership
+    (:func:`ari_listed`) is the only outside signal of standing available here, and it is
+    membership, not money: a rated entrant is a firm that later built enough of an aircraft to be
+    listed, which is an outcome and not a starting capital.
+
+    Unit: the filer, entering in the window it first appears in. An organisation is its firm; an
+    individual inventor is counted by the assignee name the office prints (:func:`filer_key`, with
+    the caveat of :data:`FILER_COUNT_CAVEAT`). A filer enters once, in one window.
+    """
+    w = v.dropna(subset=["window"]).copy()
+    w["_key"] = filer_key(w)
+    w = w[w["_key"].notna()]
+    first = w.groupby("_key")["window"].agg(lambda s: min(s, key=WINDOW_NAMES.index))
+    kind = w.drop_duplicates("_key").set_index("_key")["filer"]
+    rated = ari_listed(v)
+    rows = []
+    for name in WINDOW_NAMES:
+        ent = first[first.eq(name)].index
+        k = kind.reindex(ent)
+        n = int(len(ent))
+        row = {"window": name, "filers entering": n}
+        for t in FILER_TYPES[:3]:
+            c = int(k.eq(t).sum())
+            row[t] = c
+            row[f"{t}, share"] = round(c / n, 3) if n else np.nan
+        row["rated by the AAM Reality Index"] = int(len(set(ent) & rated))
+        row["rated, share"] = round(len(set(ent) & rated) / n, 3) if n else np.nan
+        row["aircraft in the window"] = int(w["window"].eq(name).sum())
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    out.attrs["caveat"] = (
+        "the corpus holds no capitalisation, funding or headcount: this table says what kind of "
+        "filer entered, not how large or how well funded it was. " + FILER_COUNT_CAVEAT)
+    out.attrs["rated firms in the corpus"] = int(len(rated))
+    return out
+
+
 # ------------------------------------------------------- everything ---------
 def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     v = base(ds)
@@ -3433,7 +4348,7 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     tables["la_hill_by_window"] = hill_by_window(v)
     tables["la_zones"] = zones(v)
     tables["la_class_filer_weight"] = class_filer_weight(v)
-    # written to tables/ and read by Figure 1.1.6b; not placed in a node of its own
+    # written to tables/ and read by Figure 3.3b; not placed in a node of its own
     tables["la_class_window_filer_weight"] = class_window_filer_weight(v)
     tables["la_abandonment_by_class"] = abandonment_by_class(v)
     shares, n = country_class(v)
@@ -3462,7 +4377,7 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     tables["la_name_arch_check"] = name_arch_check(v)
     linked = linked_aircraft(v)
     tables["la_linked_aircraft"] = linked
-    # written to tables/ and read by Figure 2.5c; not placed in a node of its own
+    # written to tables/ and read by Figure 1.4c; not placed in a node of its own
     tables["la_linked_representativeness"] = linked_representativeness(v)
     for k, t in mission_tables(linked).items():
         tables[f"la_mission_{k}"] = t
@@ -3476,6 +4391,30 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     tables["la_dd_q"] = dominant_design_q(ds, v)
     tables["la_dd_result"] = dominant_design_result(tables["la_dominant_design"], q=tables["la_dd_q"])
     tables["la_class_configs"] = class_configs(v)
+    # 2026-09-24, the brief's review: each class read on its own differentiating labels, the
+    # ducted-unit COUNT per aircraft, and whether the aircraft above TRL 2 stand for the corpus
+    tables["la_class_configs_own"] = class_configs_own(v)
+    tables["la_duct_count"] = duct_count_by_units(v)
+    # 2026-09-25, the review of the brief: the joint count normalised per propulsive unit (C29,
+    # C32), the conditional ducting test (C24, C36), the post-hoc CVT + Lift + Cruise family (C36),
+    # the name coverage behind the public match (C2), where the Tilt Wing firms go (C47) and what
+    # kind of filer enters (C40).
+    tables["la_joints_per_unit"] = joints_per_unit(ds, v)
+    tables["la_duct_conditional"] = duct_conditional(v)
+    _fam_share = family_share(ds, v)
+    tables["la_family_share"] = _fam_share
+    tables["la_family_dd"] = family_dominant_design(ds, v, share=_fam_share)
+    tables["la_name_coverage"] = name_coverage(ds, v)
+    tables["la_tw_successions"] = tw_successions(v)
+    tables["la_entrant_mix"] = entrant_mix(v)
+    tables["la_ari_representativeness"] = ari_representativeness(v)
+    tables["la_top_archetypes"] = top_archetypes(v)
+    tables["la_era_frame"] = era_frame(tables["la_dominant_design"], tables["la_dd_q"], tables["la_dd_result"])
+    try:
+        tables["la_trl_representativeness"] = trl_representativeness(ds, v)
+        tables["la_public_pairwise"] = public_pairwise(ds)
+    except FileNotFoundError:
+        pass
     # written to tables/ and read by the propulsive-units figure (panel iii, la_figures.fig_units)
     # and its takeaway; not placed in a node of its own — the figure carries the reading and the
     # CSV keeps every share checkable beside its n. To print it, add "la_duct_units" to the node
@@ -3483,7 +4422,7 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     tables["la_duct_units"] = duct_by_units(v)
     tables["la_dimension_drift"] = dimension_drift(v)
     # 1.4 design drivers and their traces (2026-09-23). la_trace_drift and la_trace_trends are
-    # written to tables/ and read by Figure 1.4.1 and by the verdict table; they are not placed in
+    # written to tables/ and read by Figure 2.6a and by the verdict table; they are not placed in
     # a node of their own (35 x 38 and 119 rows). The three printed tables are generated from the
     # trends frame, so the figure, the verdicts and the three answers cannot disagree.
     tables["la_trace_drift"] = trace_drift(ds, v)
@@ -3497,7 +4436,7 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     # Built again 2026-09-23 but still not placed in any node: the 12x12 matrix is unreadable as a
     # markdown table (the author's complaint about the table of 1.2.4, which he called "table 4.2.4"
     # before the 2026-09-23 renumbering, is about the figure, which is the
-    # matrix), while the takeaway of Figure 1.2.4 reads its pair counts out of this frame and the CSV
+    # matrix), while the takeaway of Figure 3.2b reads its pair counts out of this frame and the CSV
     # keeps them checkable. To print it, add "la_transitions" to node 1.2.4 in la_index.NODES.
     tables["la_transitions"] = transitions(v)
     tables["la_ip_strategy"] = ip_strategy(ds, v)

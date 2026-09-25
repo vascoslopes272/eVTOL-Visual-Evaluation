@@ -99,6 +99,59 @@ def _quest_md(name: str, idx, values: Optional[Dict], kind: str,
     return f"\n*Question: {line}*\n"
 
 
+#: the four short lines of the second reorganisation (2026-09-23), in printed order. An index
+#: module that offers ``source`` prints these INSTEAD of the older Unit/Takeaway/Question trio,
+#: so the Preliminary Analysis — which offers none of them — renders byte-for-byte as before.
+FOUR_LINES = (("source", "Source"), ("unit", "Unit"),
+              ("read", "How to read"), ("why", "Why this way"))
+
+
+def _four_md(name: str, idx, values: Optional[Dict], kind: str,
+             tables: Optional[Dict] = None) -> str:
+    """Source / Unit / How to read / Why this way, one grey paragraph each, or ``""``.
+
+    A graph carries these four and nothing else: the finding is written once, at the end of the
+    question the graphs answer (:func:`_answer_md`). A missing register costs its line, never the
+    build.
+    """
+    if getattr(idx, "source", None) is None:
+        return ""
+    out = []
+    for attr, label in getattr(idx, "FOUR_LINES", FOUR_LINES):   # the brief prints its own set
+        fn = getattr(idx, attr, None)
+        if fn is None:
+            continue
+        try:
+            line = fn(name, values, kind, tables)
+        except Exception:                                  # a bad entry never breaks the document
+            continue
+        if line:
+            out.append(f"\n*{label}: {line}*\n")
+    return "".join(out)
+
+
+def _answer_md(question: str, idx, values: Optional[Dict],
+               tables: Optional[Dict] = None) -> str:
+    """The block that closes a question — the finding, big, once, under the graphs that earned it."""
+    fn = getattr(idx, "answer", None)
+    if fn is None:
+        return ""
+    try:
+        text = fn(question, values, tables)
+    except Exception:                                      # a bad Answer never breaks the document
+        return ""
+    if not text:
+        return ""
+    # 2026-09-25: the brief returns a fully formed ``answer-box`` block of its own (a heading
+    # plus bullets, styled by ``build_styled_md_pdf``). Wrapping that in the old ``answer`` div
+    # nested one panel inside another and printed a stray "Answer." stub above it, so a block
+    # that already carries its own wrapper is emitted as it stands. The full document and the
+    # Preliminary Analysis return bare prose and are unaffected.
+    if text.lstrip().startswith("<div"):
+        return text if text.endswith("\n") else text + "\n"
+    return f'<div class="answer" markdown="1">\n\n**Answer.** {text}\n\n</div>\n'
+
+
 def _table_md(name: str, table: pd.DataFrame, number: str, idx=index,
               values: Optional[Dict] = None, tables: Optional[Dict] = None) -> str:
     t = md_safe(table)
@@ -111,6 +164,9 @@ def _table_md(name: str, table: pd.DataFrame, number: str, idx=index,
         note = f"\n\n*First {cap} of {len(t)} rows; the full table is `tables/{name}.csv`.*"
         t = t.head(cap)
     caption = idx.TABLE_CAPTIONS.get(name, name)
+    four = _four_md(name, idx, values, "table", tables)
+    if four:                                               # the four lines replace the old trio
+        return (f"**Table {number} — {caption}.**\n\n{t.to_markdown(index=False)}{note}\n{four}")
     prov = _prov_md(name, idx, values, "table", tables)
     take = _take_md(name, idx, values, "table", tables)
     quest = _quest_md(name, idx, values, "table", tables)
@@ -129,11 +185,12 @@ def _figure_md(name: str, path: Path, out_dir: Path, number: str, idx=index,
     sub = ""
     if len(marks) > 1:
         sub = " " + " ".join(f"**{m}** {lbl};" for m, lbl in marks).rstrip(";") + "."
+    four = _four_md(name, idx, values, "figure", tables)
+    lines_ = four or (f"{_prov_md(name, idx, values, 'figure', tables)}"
+                      f"{_take_md(name, idx, values, 'figure', tables)}"
+                      f"{_quest_md(name, idx, values, 'figure', tables)}")
     md = (f"![Figure {number} — {caption}.{sub}]({rel.as_posix()}){{: width=\"{width}\" }}\n\n"
-          f"*Figure {number} — {caption}.{sub}*\n"
-          f"{_prov_md(name, idx, values, 'figure', tables)}"
-          f"{_take_md(name, idx, values, 'figure', tables)}"
-          f"{_quest_md(name, idx, values, 'figure', tables)}")
+          f"*Figure {number} — {caption}.{sub}*\n{lines_}")
     if name in idx.LANDSCAPE:   # its own landscape page (the renderer's div.landscape)
         md = f'<div class="landscape" markdown="1">\n\n{md}\n</div>\n'
     return md
@@ -159,11 +216,29 @@ def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[s
             "Every number comes from the tables in `tables/`; the prose is edited in "
             "`src/dataset_facts/index.py`."),
         "",
+    ]
+    # the front-page index (2026-09-24): present only on a module that defines it (sm_index),
+    # so index.py and la_index.py render exactly as before
+    toc = getattr(idx, "index_md", None)
+    if toc:
+        lines += [toc(), ""]
+    lines += [
         "---",
         "",
     ]
+    prev_chapter: Optional[str] = None
     for n in idx.NODES:
         nid = n["id"]
+        # a chapter IS a question since the second reorganisation, so it closes with its Answer —
+        # printed when the walk leaves the chapter, and after the loop for the last one. An index
+        # module with no ``answer`` (the Preliminary Analysis) prints nothing here.
+        top = nid.split(".")[0]
+        if top != prev_chapter:
+            if prev_chapter is not None:
+                ans = _answer_md(prev_chapter, idx, values, tables)
+                if ans:
+                    lines += [ans, ""]
+            prev_chapter = top
         # an appendix opens a page like a chapter; ``APPENDIX`` is optional, so an index module
         # without it (the Preliminary Analysis) renders byte-for-byte as before
         chapter = idx.depth(nid) == 0 and (nid[0].isdigit()
@@ -218,6 +293,10 @@ def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[s
         tail = idx.after(nid, values)
         if tail:
             lines += [tail, ""]
+    if prev_chapter is not None:                           # the Answer of the last chapter
+        ans = _answer_md(prev_chapter, idx, values, tables)
+        if ans:
+            lines += [ans, ""]
     path = out_dir / filename
     path.write_text("\n".join(lines), encoding="utf-8")
     return path

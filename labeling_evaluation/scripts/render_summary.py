@@ -146,6 +146,35 @@ def check_placeholders(md: Path) -> list:
     return sorted(set(re.findall(r"\{[a-z_][a-z0-9_]*\}", text)))
 
 
+def scan_toc_pages(pdf: Path) -> dict:
+    """The page number of every front-page index entry, found by scanning the already-built
+    PDF for the entry's own heading text (:func:`sm_index.toc_search_text`) — Chrome's
+    print-to-pdf has no cross-reference primitive, so this is the second half of the two-pass
+    build ``main`` runs when ``--pdf`` is given. Page 1 holds the index itself, so the scan
+    starts at page 2; a heading never spans two pages (``h1,h2,h3,h4 { break-inside: avoid }``
+    in the stylesheet), so the first page a snippet appears on is the page it is on. An entry
+    the scan cannot find is dropped, not fatal: :func:`sm_index.index_md` prints an em dash for
+    any id ``set_toc_pages`` was not given, so one bad match costs a row, never the build.
+    """
+    info = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True).stdout
+    n_pages = int(next(l for l in info.splitlines() if l.startswith("Pages:")).split()[-1])
+    remaining = {nid: sm_index.toc_search_text(nid) for nid, _ in sm_index._toc_ids()}
+    found = {}
+    for i in range(2, n_pages + 1):
+        if not remaining:
+            break
+        txt = subprocess.run(["pdftotext", "-f", str(i), "-l", str(i), str(pdf), "-"],
+                             capture_output=True, text=True).stdout
+        norm = " ".join(txt.split())
+        for nid, snippet in list(remaining.items()):
+            if snippet and snippet in norm:
+                found[nid] = str(i)
+                del remaining[nid]
+    if remaining:
+        print("TOC: no page found for", ", ".join(remaining))
+    return found
+
+
 def main(argv) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pdf", action="store_true")
@@ -229,6 +258,26 @@ def main(argv) -> int:
                         str(md), str(pdf), "--compact"], check=True)
         info = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True).stdout
         print(pdf.name, [l for l in info.splitlines() if l.startswith("Pages")])
+
+        # second pass: the front-page index above was built with every page number blank
+        # (Chrome's print-to-pdf has no cross-reference primitive); now that pass 1's PDF
+        # exists, find where each entry actually landed and rebuild with the real numbers
+        if hasattr(sm_index, "index_md"):
+            pages = scan_toc_pages(pdf)
+            if pages:
+                sm_index.set_toc_pages(pages)
+                md = report.write_markdown(None, sm_index.filter_rows(tables), figs, out,
+                                           filename="LABELLING_ANALYSIS_BRIEF.md",
+                                           values=values, partial_window_start=partial, idx=sm_index,
+                                           generated_by=generated, keep_with_next=KEEP, panels=panels)
+                scan_left = check_placeholders(md)
+                if scan_left:
+                    print("UNRESOLVED PLACEHOLDERS (second pass):", ", ".join(scan_left))
+                    return 3
+                subprocess.run([sys.executable, str(REPO / "scripts" / "build_styled_md_pdf.py"),
+                                str(md), str(pdf), "--compact"], check=True)
+                info = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True).stdout
+                print("with page numbers,", pdf.name, [l for l in info.splitlines() if l.startswith("Pages")])
 
     if before is not None:
         now = (full_md.stat().st_mtime_ns, full_md.stat().st_size)

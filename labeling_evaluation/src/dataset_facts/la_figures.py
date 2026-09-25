@@ -460,6 +460,16 @@ def _mark_keeping_width(fig, path: Path, read: str = "") -> str:
 
 
 def _save(fig, path: Path, source: str, read: str = "") -> Path:
+    # 2026-09-23, author's ruling: the stamp on the PNG says the SOURCE AS A TAG and one short
+    # how-to-read sentence — the long provenance prose moved to the four grey lines under the
+    # figure. Both come from ``la_lines``, keyed by the figure's own file name, so the stamp and
+    # the lines can never disagree. A figure with no entry keeps the strings its builder passed.
+    from . import la_lines as _ln
+    name = Path(path).stem
+    if name in _ln.SOURCE:
+        source = " · ".join(_ln.SOURCE[name])
+        read = ""      # the how-to-read is one of the four lines under the figure; stamping it on
+        #                the PNG as well printed it twice on the same page
     with plt.rc_context(STYLE):
         _bw(fig)
         _wrap_texts(fig)
@@ -593,7 +603,7 @@ def fig_spans_by_firm(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     ax2.set_title("Share of each firm's aircraft filed more than once (any O1 / O2)", fontsize=9)
     _hgrid(ax2, "y")
     _legend_arch(fig, ARCH_ORDER + ["Other"])
-    return _save(fig, path, SRC + "; aircraft observations O1/O2 (Table A.2a); firms with 5 or more unique aircraft.",
+    return _save(fig, path, SRC + "; aircraft observations O1/O2 (Table A.3); firms with 5 or more unique aircraft.",
                  "(i) Each vertical line is one aircraft that was filed in more than one year: the line runs from its "
                  "first filing to its last and the dot is the record the labels were read from, so a long line is a "
                  "design a firm kept coming back to. Only the aircraft filed more than once are drawn, so an empty "
@@ -634,7 +644,7 @@ def fig_lead_lag(v: pd.DataFrame, path: Path) -> Path:
 
     Author's ruling 2026-09-23: "the tables are the best now because from the graphs I can't
     see it … I would like a better way for me to correlate … class and region". So panel (i)
-    *is* Tables 1.1.8a/b — one row per group, the bar running from its 25 % year to its 75 %
+    *is* `tables/la_lead_lag_region.csv`/b — one row per group, the bar running from its 25 % year to its 75 %
     year with the median marked — with regions and classes on one shared year axis so they can
     be compared against each other, which two separate line charts could not do. Panel (ii) is
     the crossing the tables cannot show at all: the median year of each class inside each
@@ -710,7 +720,7 @@ def fig_lead_lag(v: pd.DataFrame, path: Path) -> Path:
                  x=0.01, y=1.0, ha="left", fontsize=10, fontweight="bold")
     return _save(fig, path, SRC + "; complete priority years only (≤ 2023), so 2024-26 is excluded "
                  "throughout; unit = unique aircraft, each group divided by its own total, never by the "
-                 "corpus; a cell of the matrix with fewer than 5 aircraft is printed “–”; Tables 1.1.8a/b/c. "
+                 "corpus; a cell of the matrix with fewer than 5 aircraft is printed “–”; `tables/la_lead_lag_region.csv`/b/c. "
                  "NOT normalised against B64 aviation patenting, and it does not need to be: every group is "
                  "divided by its own total, and the stored baseline (1.1.1) has one series for all offices, "
                  "so it would multiply every group by the same yearly factor and could not change which "
@@ -846,7 +856,7 @@ def fig_hill(v: pd.DataFrame, path: Path) -> Path:
     fig._bw_keep_marker = True
     fig.suptitle("How many kinds of aircraft a window holds, every window cut to the same 40 aircraft",
                  x=0.01, y=1.06, ha="left", fontsize=10, fontweight="bold")
-    return _save(fig, path, SRC + "; unit = unique aircraft; Table 1.1.9; A0 = the architecture class "
+    return _save(fig, path, SRC + "; unit = unique aircraft; `tables/la_hill_by_window.csv`; A0 = the architecture class "
                  "alone, A0c = the class together with the number of propulsive units. Each point is the "
                  "mean of 1 000 random draws of 40 aircraft from that window, and the vertical whisker "
                  "through it is the 95 % band of those draws — how much the point would move if a "
@@ -860,7 +870,7 @@ def fig_hill(v: pd.DataFrame, path: Path) -> Path:
                  f"overlaps every other one — {sep} of the 60 pairs of windows separate — so at equal "
                  "sample size the corpus holds about as many kinds of aircraft in 2020-23 as it did "
                  "before 2011. Filings per year rose by an order of magnitude over the same span "
-                 "(Figure 1.1.1): the field grew hard and did not widen. Whether the early windows were already narrower "
+                 "(Figure 1.1): the field grew hard and did not widen. Whether the early windows were already narrower "
                  "than chance is a different question, and 1.1.3.3 answers it against a null.")
 
 
@@ -880,7 +890,7 @@ def fig_filer_weight(v: pd.DataFrame, path: Path) -> Path:
     "if you see a filer with sixty-four patents, and twenty-four of those are CVT … how do I
     know the weight that that filer is contributing with CVT? THIS IS VERY IMPORTANT TO ANSWER".
 
-    Nothing else in the document answers it. Table 1.1.6a counts *distinct filers* per archetype,
+    Nothing else in the document answers it. `tables/la_zones.csv` counts *distinct filers* per archetype,
     which says how many there are and not how unevenly they divide it, and the one-vote-per-filer
     check of 1.1.2 was cut on 2026-09-22. So this figure carries the answer in two readings: how
     much of a whole class its three biggest filers hold, and how much of one class in one window
@@ -950,7 +960,7 @@ def fig_filer_weight(v: pd.DataFrame, path: Path) -> Path:
     return _save(fig, path, SRC + "; unit = unique aircraft, so a firm that filed four patents on one "
                  "aircraft counts once and only a firm with several different aircraft moves these "
                  "numbers; a filer is an organisation, and an individual inventor's patent is its own "
-                 "filer, so no two lone inventors are merged; Table 1.1.6b, and per window "
+                 "filer, so no two lone inventors are merged; Table 3.3a, and per window "
                  "tables/la_class_window_filer_weight.csv.",
                  "Top: each class divided among its three biggest filers, the biggest named on the bar; "
                  "the rest of the bar is everyone else. Bottom: the same for one class in one window, "
@@ -964,7 +974,7 @@ def fig_filer_weight(v: pd.DataFrame, path: Path) -> Path:
                  f"window: Bell / Textron holds {cw.set_index(['code', 'window']).loc[('TR', '2016-19'), 'its share']:.0%} "
                  f"of Tilt Rotor in 2016-19 and {cw.set_index(['code', 'window']).loc[('CVT', '2020-23'), 'its share']:.0%} "
                  "of Combined vectored thrust in 2020-23 — real, but a fifth of the bar, not the bar. "
-                 "Table 1.1.6b counts the same thing a third way: give every filer one vote instead of "
+                 "Table 3.3a counts the same thing a third way: give every filer one vote instead of "
                  "counting aircraft and no class changes rank.")
 
 
@@ -1008,11 +1018,11 @@ def fig_zones(v: pd.DataFrame, path: Path) -> Path:
         sp.set_visible(False)
     ax.set_title("Aircraft per window for each archetype (darker = the archetype's busiest window)", fontsize=9)
     _legend_arch(fig, ARCH_ORDER + ["Other"])
-    return _save(fig, path, SRC + "; A0c archetypes (class × propulsive-unit bin) with 5 or more aircraft; Table 1.1.6a.",
+    return _save(fig, path, SRC + "; A0c archetypes (class × propulsive-unit bin) with 5 or more aircraft; `tables/la_zones.csv`.",
                  "Top: an archetype far right holds a big share of recent aircraft; high up it is filed by many different "
                  "filers per aircraft (open field), low down by few filers holding many aircraft (crowded by a few). Bubble "
                  "size = aircraft. Bottom: the same archetypes over the windows, count in the cell.")
-#: what each PatSeer legal status means, spelled out under Figure 1.1.10 (author, 2026-09-23:
+#: what each PatSeer legal status means, spelled out under Figure 1.2a (author, 2026-09-23:
 #: "how do you know that the patents are no longer in force? This needs to be stated on the source")
 LEGAL_STATUS_MEANING = [
     ("ACTIVE - GRANTED", "granted and in force at the snapshot"),
@@ -1070,7 +1080,7 @@ def fig_abandonment(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
                  "EXPIRED is the office's own "
                  "word and is not always the end of a 20-year term: it appears on filings too recent for "
                  "that, so it is read as “the register no longer carries the right”, nothing more. "
-                 "Table 1.1.10.",
+                 "`tables/la_abandonment_by_class.csv`.",
                  "Share of each class's primary patents that are no longer in force, among patents filed "
                  "early enough (priority ≤ 2019) to have been granted and then kept or dropped; the label "
                  "on each bar is the raw count. A high share is money withdrawn from that class. The "
@@ -1084,7 +1094,7 @@ def fig_abandonment(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
 
 
 # ------------------------------------------------------- 1.2 provenance ----
-#: A percentage of a handful of aircraft is not a trend. Every cell of Figure 1.3.2a/b that holds
+#: A percentage of a handful of aircraft is not a trend. Every cell of Figure 4.2a/b that holds
 #: fewer than this many aircraft is blanked in the mix panels (``la_tables.region_window_shares``)
 #: and drawn hollow, with its share greyed, in the share-of-window row (author, 2026-09-23:
 #: "as this is in percentage, I can misstalk about some things").
@@ -1266,7 +1276,7 @@ def fig_region_grid(v: pd.DataFrame, path: Path, variables: Optional[List[str]] 
         norm += (f"The corpus as a whole went from {got.iloc[0]:.1f} patents per 1 000 B64 patents in "
                  f"{WIN_SHORT.get(got.index[0], got.index[0])} to {got.iloc[-1]:.1f} in "
                  f"{WIN_SHORT.get(got.index[-1], got.index[-1])}, the last complete window, so a part "
-                 f"of every raw rise here is the general one and a part is not (Figure 1.1.1). ")
+                 f"of every raw rise here is the general one and a part is not (Figure 1.1). ")
     return _save(fig, path,
                  SRC + "; region = applicant region (identity), not publication office; " + norm
                  + f"Cells under {GRID_THIN} aircraft are blanked in the mix panels and drawn hollow in the "
@@ -1287,7 +1297,7 @@ def fig_country_class(v: pd.DataFrame, path: Path) -> Path:
     fig, ax = plt.subplots(figsize=(W, 3.4))
     _heat(ax, mat, fmt="{:.0%}", vmax=0.5)
     ax.set_xticks(range(mat.shape[1]), mat.columns, rotation=0)
-    ax.set_title("Class share per applicant country, eight largest countries (codes as Figure D.1a)")
+    ax.set_title("Class share per applicant country, eight largest countries (codes as `tables/design_space_cards.csv`)")
     return _save(fig, path, SRC + "; assignee_country of the primary patent's identity record.",
                  "Rows sum to 100 %. Read across a row for a country's mix; down a column for where a class is filed. "
                  "Capped at 50 % so that the middle of the range keeps contrast.")
@@ -1368,7 +1378,7 @@ def fig_coverage(v: pd.DataFrame, path: Path) -> Path:
     ax.set_xlim(0, len(sizes) + 1)
     ax.set_ylim(0, 1.06)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    ax.set_xlabel("named companies ranked by unique aircraft (largest first); they are named in Figure 1.2.3a")
+    ax.set_xlabel("named companies ranked by unique aircraft (largest first); they are named in Figure 3.4a")
     ax.set_ylabel("cumulative share of the analysis set")
     ax.set_title("How much of the analysis set the top N firms cover", fontsize=9)
     ax.legend(fontsize=7, loc="lower right", bbox_to_anchor=(1.0, 0.11), framealpha=0.92)
@@ -1431,7 +1441,7 @@ def fig_coverage(v: pd.DataFrame, path: Path) -> Path:
     _repel(ax3, [xs[i] for i in big], [ys[i] for i in big],
            [a["company"].iloc[i].replace(" / ", "/") for i in big], fs=6.5, marker_pt=5,
            avoid=list(zip(xs, ys)))
-    return _save(fig, path, SRC + "; Table 1.2.1 and Table 1.2.7a; the segment counts of (i) are "
+    return _save(fig, path, SRC + "; Table 1.4c and Table 1.4a; the segment counts of (i) are "
                  "tables/la_coverage_segments.csv and the nested tiers behind them "
                  "tables/la_firm_tiers.csv; index membership and scores from " + ARI_SRC + ".",
                  "The curve climbs steeply over the first firms and then flattens; the boxes split the ranking "
@@ -1507,7 +1517,7 @@ def fig_filers_over_time(v: pd.DataFrame, path: Path) -> Path:
                  "the two last windows are still inside the publication lag, so a firm that has filed may simply not "
                  "have published. Right, both bars are normalised, so the height is a mix and not a size: the left bar "
                  "counts FIRMS (the class each entrant enters with, one vote per firm) and the right bar counts "
-                 "AIRCRAFT (the same window's class mix, the quantity Figure 1.1.2 draws). Where the left bar runs "
+                 "AIRCRAFT (the same window's class mix, the quantity Figure 2.1a draws). Where the left bar runs "
                  "ahead of the right one, the class is being carried into the field by new firms rather than by the "
                  "firms already inside it.")
 def fig_firm_tiles(v: pd.DataFrame, path: Path) -> Path:
@@ -1685,7 +1695,7 @@ def fig_proximity_region(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     cb.ax.tick_params(labelsize=7)
     fig._bw_off = True
     return _save(fig, path, SRC + "; Jaffe (1986) cosine of firm × class vectors, firms with 5 or more aircraft; "
-                 "Table 1.2.6. " + txt + ".",
+                 "`tables/la_proximity_region.csv`. " + txt + ".",
                  "Two firms score 1 when they file the same mix of architecture classes and 0 when they share none; "
                  "values of 0.75 and above are printed in the cell. The firms are grouped by region and the boxed "
                  "square on the diagonal of each block is that region on its own, so a region whose firms all design "
@@ -1728,7 +1738,7 @@ def fig_ari(v: pd.DataFrame, path: Path) -> Path:
         sp_.set_visible(False)
     ax_m.set_xlabel("class mix", fontsize=7.5)
     _legend_arch(fig, ARCH_ORDER + ["Other"])
-    return _save(fig, path, ARI_SRC + "; corpus counts from " + SRC + "; Table 1.2.7a.",
+    return _save(fig, path, ARI_SRC + "; corpus counts from " + SRC + "; Table 1.4a.",
                  "Bars: the index score; light bars are firms no longer listed, with the last score they had. Right: the "
                  "firm's patented aircraft by class.")
 
@@ -1792,7 +1802,7 @@ def fig_ari_history(v: pd.DataFrame, path: Path) -> Path:
            [c.replace(" Flight Technologies", "").replace(" / Geely Aviation", " / Geely") for c in disclosed["company"]],
            marker_pt=6)
     undisclosed = ", ".join(fc[fc["funding"].isna()]["company"])
-    return _save(fig, path, ARI_SRC + "; Table 1.2.7a. " + str(len(disclosed)) + " of the " + str(len(fc))
+    return _save(fig, path, ARI_SRC + "; Table 1.4a. " + str(len(disclosed)) + " of the " + str(len(fc))
                  + " index firms that file in this corpus publish a funding figure; the other "
                  + str(len(fc) - len(disclosed)) + " are corporate-backed or were dropped from the index before it "
                  "carried funding, and are not in (ii): " + undisclosed + ".",
@@ -1846,7 +1856,7 @@ def fig_ari_clock(v: pd.DataFrame, path: Path) -> Path:
                  "into service it reports as planned. "
                  f"{flew} of the {len(tl)} firms have a first flight on record; a marker to the right of the dotted "
                  "'today' line has not happened yet and is a plan. The gap between the bar and the first-flight marker "
-                 "is the years from a firm's first patent here to its first flight, and Table 1.2.7e groups that gap by "
+                 "is the years from a firm's first patent here to its first flight, and `tables/la_ari_clock_region.csv` groups that gap by "
                  "region and by certifying authority. The number after a firm is its unique aircraft in this corpus. "
                  "Nothing on this figure is a flight record: both market dates are the index's own statements.")
 def fig_mission(v: pd.DataFrame, path: Path) -> Path:
@@ -1880,20 +1890,20 @@ def fig_mission(v: pd.DataFrame, path: Path) -> Path:
     ax_h.tick_params(axis="y", labelsize=7.5)
     fig.suptitle(f"Mission of the {len(linked)} aircraft linked to an evtol.news page, by the patent's class folded to the "
                  "directory's five classes", x=0.01, y=0.995, ha="left", fontsize=9.5, fontweight="bold")
-    return _save(fig, path, EVN_SRC + "; G1 class folded as Table 2.5a (VT vectored thrust, LC lift + cruise, WM wingless, "
+    return _save(fig, path, EVN_SRC + "; G1 class folded as Table 1.4d (VT vectored thrust, LC lift + cruise, WM wingless, "
                  "ER electric rotorcraft, HB hover bikes); capacity, piloting, power source and status read off the "
                  "directory page by keyword rules over one field each — no model is involved and nothing comes from the "
                  "patent; the links are the hand-reviewed patent_links.csv (aircraft name + company against the directory "
                  "index, plus the URLs recorded in NAME_DECISIONS.csv).",
                  "(i) to (iv): each bar is 100 % of the linked aircraft of one folded class. Bottom: how often the folded "
                  "patent class agrees with the directory's class of the same aircraft (count in the cell). These are the "
-                 "publicly announced aircraft of the corpus, not a sample of it — Figure 2.5c tests how far they stand "
+                 "publicly announced aircraft of the corpus, not a sample of it — Figure 1.4c tests how far they stand "
                  "for the rest, and the answer is that the class mix and the geography carry back while the filer mix, "
                  "the dates and the size of the aircraft do not.")
 
 
 def fig_linked_check(v: pd.DataFrame, path: Path) -> Path:
-    """Figure 2.5c: whether the aircraft linked to an evtol.news page stand for the whole set.
+    """Figure 1.4c: whether the aircraft linked to an evtol.news page stand for the whole set.
 
     Section 2.5 is a description of the linked aircraft; the author's ruling of 2026-09-23 is that
     it is only worth reading if those aircraft are representative, and that the answer has to be
@@ -1969,10 +1979,10 @@ def fig_linked_check(v: pd.DataFrame, path: Path) -> Path:
           "of its aircraft cannot.")
 
 
-#: Figure 1.1.1 opens here. (i) pools everything earlier into this bar; (ii) starts here as a single year.
+#: Figure 1.1 opens here. (i) pools everything earlier into this bar; (ii) starts here as a single year.
 FILINGS_FIRST_YEAR = 2005
 
-#: Dated sector events on the timeline of Figure 1.1.1 — the author's ruling of 2026-09-23: the
+#: Dated sector events on the timeline of Figure 1.1 — the author's ruling of 2026-09-23: the
 #: overall rise in eVTOL patenting is read against what happened outside the patent record (the
 #: Uber Elevate paper, first flights, certification rules, listings, insolvencies), and is not
 #: tested against morphology. The figure reads the CSV at render time, so the list is edited in
@@ -2093,7 +2103,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     # ruling of 2026-09-23 those years were filtered away while the tick still said "≤2005", which
     # hid 17 aircraft and 47 patents. (ii) is a per-year index and cannot pool -- a seven-year
     # bucket is not a year -- so it is drawn from the unpooled frame and opens on 2005 alone.
-    # Table 1.1.1 keeps every year as its own row; the How-to-read line says so.
+    # Table 1.1a keeps every year as its own row; the How-to-read line says so.
     t = la_baseline.pool_to_first(full, FILINGS_FIRST_YEAR)
     ti = full[full.index >= FILINGS_FIRST_YEAR]
     p90 = t.attrs["p90"]
@@ -2151,7 +2161,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     if strip_in:
         _event_strip(fig, ax, ev, FILINGS_FIRST_YEAR, int(t.index.max()), strip_in, ticks, tick_labels)
 
-    src = (SRC + f"; Table 1.1.1; PatSeer snapshot {t.attrs['snapshot']}; "
+    src = (SRC + f"; Table 1.1a; PatSeer snapshot {t.attrs['snapshot']}; "
                  f"90th-percentile priority-to-publication lag = {p90:.0f} years.")
     if strip_in:
         src += " " + EVENTS_SRC[0].upper() + EVENTS_SRC[1:] + "."
@@ -2162,7 +2172,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
         first_row = t.loc[FILINGS_FIRST_YEAR]
         read += (f" The first bar is the only pooled one: it holds {pooled[0]}-{FILINGS_FIRST_YEAR} together "
                  f"({int(first_row['unique aircraft'])} aircraft, {int(first_row['patents acquired'])} patents), "
-                 f"hence its tick ≤{FILINGS_FIRST_YEAR}; Table 1.1.1 keeps those years as separate rows.")
+                 f"hence its tick ≤{FILINGS_FIRST_YEAR}; Table 1.1a keeps those years as separate rows.")
     if strip_in:
         read += (" Strip under the bars: dated sector events from the CSV, the author's first pass. The axis is the "
                  "priority year of the filings, so an event stands on its calendar year even when most of that year's "
@@ -2173,44 +2183,140 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
         # ti, not t: a per-year index must be built on single years (see la_baseline.pool_to_first)
         r = la_baseline.readings(ti)
         lo, hi = la_baseline.BASE_YEARS
-        ax2.plot(ti.index, ti[ix_e], color=INK, lw=2, marker="o", ms=3.5,
-                 label="eVTOL: patents acquired, this corpus")
-        ax2.plot(ti.index, ti[ix_a], color=MUTED, lw=2, ls="--", marker="s", ms=3.5,
-                 label="aviation: all B64 patents, same offices")
-        ax2.axhline(100, color=INK2, lw=0.8, ls=":")
+        # 2026-09-24, author's review: the "index, 2005-09 mean = 100" was unreadable and the B64
+        # count looked wrong — it is the SAME-OFFICE subset of B64, not worldwide aeronautics.
+        # Panel (ii) now draws the plain ratio, eVTOL patents per 1 000 B64 patents of the same
+        # offices and priority year, and the title says what the denominator is.
+        ratio_col = "patents per 1 000 B64"
+        if ratio_col in ti.columns:
+            # 2026-09-24, author's review: the counts-on-a-log-axis version (previous revision,
+            # same day) read a ratio as the vertical gap between two log-scaled lines, which
+            # needs scale literacy most readers do not bring to a brief. Panel (ii) now states
+            # the ratio directly, one line, linear axis: eVTOL patents per 1 000 B64 patents of
+            # the same nine offices and priority year. Complete years only — both sides are
+            # truncated by the publication lag and the baseline empties faster, so an incomplete
+            # year's ratio would read as a rise that is not real.
+            done = ti[ti["complete"].astype(bool)]
+            # 2026-09-24 (later): the single B64 ratio answered "how big" but lost the two wider
+            # baselines the author wanted kept. Panel (ii) now draws eVTOL's SHARE of each baseline
+            # — B64 aeronautics, all CPC section B, all patents of the same nine offices — each
+            # set to 1 at its own 2005-09 mean, on a linear axis. A line at 3 reads "eVTOL grew
+            # three times faster than this baseline"; the dashed line at 1 is "only as fast".
+            # The 2018 peak of each line carries its multiple, which is the sentence the figure
+            # exists to show.
+            base = la_baseline.load().reindex(done.index)
+            _e = pd.to_numeric(done["patents acquired"], errors="coerce")
+            series = [("B64", pd.to_numeric(done["B64 patents (same offices)"], errors="coerce"), INK, "-", "o",
+                       "aeronautics (B64)")]
+            if "cpcB_offices" in base.columns and base["cpcB_offices"].notna().any():
+                series.append(("cpcB", pd.to_numeric(base["cpcB_offices"], errors="coerce"), INK2, "--", "s",
+                               "all section B (transport)"))
+            if "all_offices" in base.columns and base["all_offices"].notna().any():
+                series.append(("all", pd.to_numeric(base["all_offices"], errors="coerce"), "#5a5a5a", "-.", "^",
+                               "all patents"))
+            peak_year = None
+            idx_lines = {}
+            for key, denom, col, ls, mk, lab in series:
+                ratio = _e / denom
+                base_v = ratio.reindex(range(lo, hi + 1)).mean()
+                ix = ratio / base_v
+                idx_lines[key] = ix
+                ax2.plot(ix.index, ix, color=col, lw=2, ls=ls, marker=mk, ms=3.8, label=f"\u00f7 {lab}")
+            ax2.axhline(1, color=INK2, lw=0.8, ls=":")
+            ax2.text(ti.index.max() + 0.4, 1.25, "dotted line:\nstarting level = 1", fontsize=6.5, color=INK2, ha="right")
+            peak_year = int(idx_lines["B64"].idxmax())
+            for k, (key, _d, col, _ls, _mk, _lab) in enumerate(series):
+                val = float(idx_lines[key].loc[peak_year])
+                ax2.annotate(f"\u00d7{val:.1f}", (peak_year, val), textcoords="offset points",
+                             xytext=(6, -2 + 4 * (k == 0)), fontsize=8, fontweight="bold", color=col)
+            top = max(float(v.max()) for v in idx_lines.values())
+            ax2.set_ylim(0, top * 2.15)              # an empty band above the lines for the legend and the recipe
+            ax2.legend(loc="upper left", fontsize=7, frameon=True,
+                       title="each line = eVTOL patents \u00f7 one baseline's\npatents (same offices, same year),\n"
+                             f"as a multiple of its {lo}-{hi} starting level", title_fontsize=6.5)
+            # a worked example, so the axis needs no prior reading
+            _rs, _re = r.get("ratio_start"), float((_e / series[0][1]).loc[peak_year] * 1000)
+            _m = idx_lines["B64"].loc[peak_year]
+            _den = float(series[0][1].loc[peak_year])
+            _frac = _e / series[0][1] * 1000
+            _base = float(_frac.reindex(range(lo, hi + 1)).mean())
+            ax2.text(0.99, 0.98,
+                     f"How a line is built (aeronautics as example)\n"
+                     f"1  {peak_year}: {_e.loc[peak_year]:.0f} eVTOL \u00f7 {_den:,.0f} aeronautics patents = {_frac.loc[peak_year]:.1f} per 1 000\n"
+                     f"2  same for {lo}-{hi}, averaged = {_base:.1f} per 1 000: the starting level\n"
+                     f"3  {_frac.loc[peak_year]:.1f} \u00f7 {_base:.1f} = \u00d7{_m:.1f} \u2014 the point drawn for {peak_year}",
+                     transform=ax2.transAxes, ha="right", va="top", fontsize=6.2, color=INK, linespacing=1.35,
+                     bbox=dict(fc="white", ec=GRID, lw=0.6, pad=3))
+        else:
+            ax2.plot(ti.index, ti[ix_e], color=INK, lw=2, marker="o", ms=3.5,
+                     label="eVTOL: patents acquired, this corpus")
+            ax2.plot(ti.index, ti[ix_a], color=MUTED, lw=2, ls="--", marker="s", ms=3.5,
+                     label="aviation: all B64 patents, same offices")
+            ax2.axhline(100, color=INK2, lw=0.8, ls=":")
         first_incomplete = int(ti.index[~ti["complete"]].min())
         ax2.axvspan(first_incomplete - 0.5, ti.index.max() + 0.5, color=GRID, alpha=0.75, zorder=0, hatch="//", lw=0)
-        ax2.text(first_incomplete - 0.35, ax2.get_ylim()[1] * 0.97,
+        ax2.text(first_incomplete - 0.35, ax2.get_ylim()[1] * (0.50 if ratio_col in ti.columns else 0.97),
+                 "both sides still filling:\nnot drawn" if ratio_col in ti.columns else
                  "both sides still filling:\nthe ratio is not read here", va="top", fontsize=7, color=INK2)
         # the last complete year carries the answer, so it is the only point labelled
         last = r.get("last_complete")
-        if last in ti.index:
-            for col, val in ((ix_e, ti.loc[last, ix_e]), (ix_a, ti.loc[last, ix_a])):
+        if ratio_col not in ti.columns and last in ti.index:
+            for col in (ix_e, ix_a):
+                val = ti.loc[last, col]
                 ax2.annotate(f"{val:.0f}", (last, val), textcoords="offset points", xytext=(4, 4),
                              fontsize=7, color=INK2)
         # (i) pools into its first tick, (ii) does not, so only (i) carries the "≤"
         ax2.set_xticks(list(ti.index), [str(y) for y in ti.index], rotation=45, fontsize=7.5)
-        ax2.set_ylabel(f"index, mean of {lo}-{hi} = 100")
-        ax2.legend(loc="upper left", fontsize=7.5)
-        ax2.set_title("The same filings against aeronautics patenting as a whole: both sides "
-                      f"indexed to their own {lo}-{hi} mean", fontsize=9.5)
+        if ratio_col in ti.columns:
+            ax2.set_ylabel(f"times the {lo}-{hi} starting level")
+            ax2.set_title("How much faster eVTOL grew than the patenting around it", fontsize=9.5)
+        else:
+            ax2.set_ylabel(f"index, mean of {lo}-{hi} = 100")
+            ax2.legend(loc="upper left", fontsize=7.5)
+            ax2.set_title("The same filings against aeronautics patenting as a whole: both sides "
+                          f"indexed to their own {lo}-{hi} mean", fontsize=9.5)
         _hgrid(ax2, "y")
         # str.capitalize() would lower-case CPC, B64 and the office codes, so only the first letter moves
         src += (" " + la_baseline.SOURCE[0].upper() + la_baseline.SOURCE[1:] + ". Both sides of (ii) are counted by "
                 "priority year; the baseline counts patent publications, so (ii) is drawn from the corpus's own "
                 "patent count and not from the aircraft of the bars.")
-        mult = r.get("growth")
+        mult = r.get("ratio_multiple") or r.get("growth")
         gained = r.get("first_above")
-        # shortened 2026-09-23 to make room for the event strip: the same facts, fewer lines
-        read += (f" (ii) asks whether the rise is the sector's own: aviation patenting also grew, so the corpus's "
-                 f"patents and all B64 patents are each indexed to their {lo}-{hi} mean = 100. eVTOL is above "
-                 f"aviation from {gained} onwards and by {last} stands {mult:g}× higher, so the rise is not the "
-                 f"tide: the corpus then holds {r.get('ratio_end')} eVTOL patents per 1 000 B64 patents against "
-                 f"{r.get('ratio_start')} in the base window (Table 1.1.1). The hatched years are incomplete on "
-                 f"both sides and the ratio there is unstable; the baseline covers only the nine publication "
-                 f"offices the corpus draws on. (ii) does not pool: its first point is {FILINGS_FIRST_YEAR} alone, "
-                 f"because an index of single years cannot take a seven-year bucket as a point and the two sides "
-                 f"would not pool by the same factor.")
+        if ratio_col in ti.columns:
+            # 2026-09-24: the ratio is now plotted directly on a linear axis, so the prose states
+            # it in the same terms as the figure — no index, no log, no second line to compare by eye.
+            mults = {k: float(v.loc[peak_year]) for k, v in idx_lines.items()}
+            m_b64, m_b, m_all = mults.get("B64"), mults.get("cpcB"), mults.get("all")
+            wider = ""
+            if m_b is not None and m_all is not None:
+                wider = (f", {m_b:.0f}\u00d7 faster than all of transport and operations (CPC section B) and "
+                         f"{m_all:.0f}\u00d7 faster than patenting as a whole")
+            read += (f" (ii) asks whether the rise is the sector's own: patenting at large also grew. Each line is built "
+                     f"in three steps, aeronautics for example: (1) for each year, this corpus's eVTOL patents divided by "
+                     f"ALL aeronautics patents (CPC B64) filed at the same nine offices with that priority year — "
+                     f"{peak_year}: {_e.loc[peak_year]:.0f} of {_den:,.0f}, {_frac.loc[peak_year]:.1f} per 1 000; "
+                     f"(2) the same fraction averaged over {lo}-{hi}, {_base:.1f} per 1 000, is the starting level — five "
+                     f"years rather than one because a single early year holds under twenty eVTOL patents; (3) each "
+                     f"year's fraction divided by the starting level is the point drawn, so every line starts at 1 and "
+                     f"{peak_year} reads \u00d7{_m:.1f}. The other two lines repeat the recipe with all CPC section-B "
+                     f"patents (transport and operations) and with all patents of any kind as the denominator; the "
+                     f"starting level is what lets three fractions of very different size share one axis. By "
+                     f"{peak_year} eVTOL had grown {m_b64:.0f}\u00d7 faster than aeronautics{wider}; the rise is not "
+                     f"aviation's tide, not transport's, and not the patent system's. In absolute terms the corpus holds "
+                     f"{r.get('ratio_end')} eVTOL patents per 1 000 B64 patents by {last} against {r.get('ratio_start')} in "
+                     f"{lo}-{hi} (Table 1.1a). The hatched years are incomplete on both sides and are not drawn; (ii) does "
+                     f"not pool: its first point is {FILINGS_FIRST_YEAR} alone.")
+        else:
+            # shortened 2026-09-23 to make room for the event strip: the same facts, fewer lines
+            read += (f" (ii) asks whether the rise is the sector's own: aviation patenting also grew, so the corpus's "
+                     f"patents and all B64 patents are each indexed to their {lo}-{hi} mean = 100. eVTOL is above "
+                     f"aviation from {gained} onwards and by {last} stands {mult:g}× higher, so the rise is not the "
+                     f"tide: the corpus then holds {r.get('ratio_end')} eVTOL patents per 1 000 B64 patents against "
+                     f"{r.get('ratio_start')} in the base window (Table 1.1a). The hatched years are incomplete on "
+                     f"both sides and the ratio there is unstable; the baseline covers only the nine publication "
+                     f"offices the corpus draws on. (ii) does not pool: its first point is {FILINGS_FIRST_YEAR} alone, "
+                     f"because an index of single years cannot take a seven-year bucket as a point and the two sides "
+                     f"would not pool by the same factor.")
 
     return _save(fig, path, src, read)
 
@@ -2247,7 +2353,7 @@ def fig_dominant_design(v: pd.DataFrame, path: Path) -> Path:
         _hgrid(ax, "y")
     fig.suptitle("The dominant-design test fixed in the Preliminary Analysis (5.7), applied per window",
                  x=0.01, y=1.04, ha="left", fontsize=10, fontweight="bold")
-    return _save(fig, path, SRC + "; levels defined in Table 1.1.3.1a, conditions in Table 1.1.3.2, numbers in Table 1.1.3.3b; "
+    return _save(fig, path, SRC + "; levels defined in Table 2.2a, conditions in Table 2.2c, numbers in Table 2.2e; "
                  "rarefied to 40 aircraft; 200 permutations; Q (condition 3) needs the Gower distance and is "
                  "not computed here.",
                  "(i) condition 1: a dominant design needs the top archetype above the dashed line in two consecutive complete windows; "
@@ -2348,7 +2454,7 @@ def fig_dominant_design_q(ds: Dataset, v: pd.DataFrame, path: Path,
     fig.suptitle("Condition 3 of the same test: have the aircraft themselves become more alike?",
                  x=0.01, y=1.04, ha="left", fontsize=10, fontweight="bold")
     return _save(fig, path, SRC + "; the Gower distance fixed in Preliminary Analysis 5.3, imported from "
-                 "its code; Q is Rao's quadratic entropy (5.5); numbers in Table 1.1.3.3c; 200 permutations.",
+                 "its code; Q is Rao's quadratic entropy (5.5); numbers in Table 2.2f; 200 permutations.",
                  "(i) Q is the distance between two aircraft of the window picked blind: high means the "
                  "window holds aircraft far apart in form. The dotted line is the level of the two earliest "
                  "windows, which is what condition 3 asks a later window to fall below. (ii) and (iii): the "
@@ -2382,7 +2488,7 @@ def fig_class_configs(v: pd.DataFrame, path: Path) -> Path:
     fig.suptitle("Within-class convergence: does a class settle on one configuration?\n"
                  "a configuration = propulsive units (banded) · ducted or open · booms or none · tail type",
                  x=0.01, y=1.06, ha="left", fontsize=9.5, fontweight="bold")
-    return _save(fig, path, SRC + "; Table 1.1.4 names the most common configuration per class and window; "
+    return _save(fig, path, SRC + "; `tables/la_class_configs.csv` names the most common configuration per class and window; "
                  "windows with fewer than 5 aircraft of the class are left blank.",
                  "A line is an architecture class (the G1 top type), not an archetype; every point counts unique aircraft. "
                  "A configuration is one aircraft's combination of four label fields: propulsive units banded "
@@ -2436,14 +2542,14 @@ def fig_dimension_drift(v: pd.DataFrame, path: Path) -> Path:
     # every line must stay under TEXT_W * 0.98 or _wrap_to flattens the whole suptitle and re-wraps it wider
     stated, total = int(t["powertrain stated"].sum()), int(t["aircraft"].sum())
     fig.suptitle("Dimension drift inside each class: panels (i)–(iv) are the four fields the configuration\n"
-                 "of Figure 1.1.4 is made of, read one at a time, then powertrain",
+                 "of Figure 2.3a is made of, read one at a time, then powertrain",
                  x=0.01, y=1.10, ha="left", fontsize=9.5, fontweight="bold")
-    return _save(fig, path, SRC + "; Table 1.1.5, where a window with fewer than 5 aircraft of the class keeps its "
+    return _save(fig, path, SRC + "; `tables/la_dimension_drift.csv`, where a window with fewer than 5 aircraft of the class keeps its "
                  "row and its count and only its measures are blank.",
                  "A line is an architecture class (the G1 top type), not an archetype; every point counts unique aircraft. "
-                 "Panels (i)–(iv) take the configuration of Figure 1.1.4 apart, one field per panel, so the two figures "
+                 "Panels (i)–(iv) take the configuration of Figure 2.3a apart, one field per panel, so the two figures "
                  "read together. Their percentages divide by the class's own aircraft in that window (the `aircraft` "
-                 "column of Table 1.1.5, every one of them answered) — never by a count of rotors. Panel (v) is the one "
+                 "column of `tables/la_dimension_drift.csv`, every one of them answered) — never by a count of rotors. Panel (v) is the one "
                  f"exception and does not share that base: a patent that never states a powertrain is excluded, so it "
                  f"divides by the smaller `powertrain stated` column ({stated} of the {total} aircraft drawn here), and a "
                  "cell resting on fewer than 5 stated powertrains is left blank. Substitution shows here before a class "
@@ -2451,7 +2557,7 @@ def fig_dimension_drift(v: pd.DataFrame, path: Path) -> Path:
                  "whose propulsive-unit count climbs, or whose ducted share falls, is changing what it is while keeping "
                  "its name. Tilting is not drawn because it is flat by construction — Tilt Rotor, Combined vectored thrust "
                  "and Tilt Wing carry tilting units by definition of the class and Lift + Cruise carries none; its column "
-                 "stays in Table 1.1.5, where the two points off 100 % (CVT 0.93 in 2016-19, TR 0.98 in 2020-23) are an "
+                 "stays in `tables/la_dimension_drift.csv`, where the two points off 100 % (CVT 0.93 in 2016-19, TR 0.98 in 2020-23) are an "
                  "internal check on the labelling. " + _selection_line(t))
 
 
@@ -2500,7 +2606,7 @@ def fig_transitions(v: pd.DataFrame, path: Path) -> Path:
                  "not the patent. (i) rows are the earlier aircraft's class and sum to 100 %, the number in the cell "
                  "is pairs, and the diagonal is a firm repeating itself. (ii) the diagonal read on its own: the share "
                  "of each class's successions that stay in it, with the class most of the leavers go to. It separates "
-                 "a class the field is leaving from a class the field never stays in — and read with Figure 1.2.2 it "
+                 "a class the field is leaving from a class the field never stays in — and read with Figure 3.2a it "
                  "says whether a class share moves because the firms inside it change course or because different "
                  "firms arrive.")
 
@@ -2801,7 +2907,7 @@ def fig_c1_removal(ds: Dataset, path: Path) -> Path:
     ax2.set_title(f"Aircraft removed by the gate ({int(tab.values.sum())}), by class", fontsize=9)
     ax2.legend(fontsize=7, loc="upper right")
     _hgrid(ax2, "y")
-    return _save(fig, path, SRC + "; wizard disapproval reasons and the Similar tags (Table A.1a); class codes as Figure D.1a.",
+    return _save(fig, path, SRC + "; wizard disapproval reasons and the Similar tags (Table A.2a); class codes as in Appendix D.",
                  "Left: patents by the reason they left, plain at labelling, hatched by the domain gate. Right: the unique "
                  "aircraft the gate removed, by the class they were labelled with; above each bar its total and, under the "
                  f"total, the share of that bar tagged {share_tag.replace('Similar', '-similar')}" +
@@ -2858,7 +2964,7 @@ def fig_c1_evidence(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     ax2.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     ax2.set_title("Share resting on one figure, by class (n under code)", fontsize=9)
     _hgrid(ax2, "y")
-    return _save(fig, path, SRC + "; Table A.3; whole-aircraft figures only.",
+    return _save(fig, path, SRC + "; Table A.4; whole-aircraft figures only.",
                  "Left: how many approved whole-aircraft figures each aircraft rests on; the hatched bar = one only. Right: the "
                  "share of each class resting on one figure; the dashed line is the overall share.")
 
@@ -2880,7 +2986,7 @@ def fig_c3_fill(ds: Dataset, path: Path) -> Path:
               fontsize=7, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.0), frameon=False)
     ax.set_title("Share answered of each field, measured only on the aircraft that have its part", fontsize=9)
     _hgrid(ax, "y")
-    return _save(fig, path, SRC + "; Table B.1; a value an override hides is left out of the base.",
+    return _save(fig, path, SRC + "; `tables/a2_d4_missingness.csv`; a value an override hides is left out of the base.",
                  "One bar per field. A wing field is measured on the winged aircraft, a boom field on the aircraft with "
                  "booms, so a blank means a missing answer, not a missing part. Every field is at or above the dashed "
                  "95 % line. The axis starts at 80 %.")
@@ -2889,7 +2995,7 @@ def fig_c3_fill(ds: Dataset, path: Path) -> Path:
 # ------------------------------------------------------- reuse of atlas ----
 #: atlas figures reused as they are: name -> atlas function
 ATLAS_REUSE: Dict[str, Callable] = {
-    # parked 2026-09-22: superseded by Figure 1.1.1 (filings_per_year) and placed in no node, so it was
+    # parked 2026-09-22: superseded by Figure 1.1 (filings_per_year) and placed in no node, so it was
     # drawn on every run and never printed. Un-comment to draw it again, and put it back in la_index.NODES.
     # "atlas_years": atlas.fig_years,
     "atlas_region": atlas.fig_region,
@@ -2904,7 +3010,7 @@ ATLAS_REUSE: Dict[str, Callable] = {
 
 
 #: classes a reused atlas figure must show on their own instead of folding into "Other".
-#: User rulings: the rotorcraft must be visible in Figure 1.1.2 (2026-09-22), and the hoverbikes and
+#: User rulings: the rotorcraft must be visible in Figure 2.1a (2026-09-22), and the hoverbikes and
 #: the personal flying vehicles too (2026-09-23). SRW and DS stay inside "Other" by the author's choice,
 #: so "Other" is now those two classes only.
 #: {figure name: {class code: colour}}. Every colour must be one the black-and-white pass knows:
@@ -2918,8 +3024,8 @@ ATLAS_EXTRA_CLASSES: Dict[str, Dict[str, str]] = {
 #: graphs of a reused atlas figure the Labelling Analysis does not print: {figure name: axes indices},
 #: in the order the atlas function draws them. The drop happens after the shared function has returned,
 #: so ``atlas.py`` is untouched and the Preliminary Analysis keeps both graphs.
-#: User ruling 2026-09-22: Figure B.5 keeps only "label depth by architecture" (the dot cloud of every
-#: coded column goes), Figure B.6 only the agreement / confusion heatmap (the class bars go).
+#: User ruling 2026-09-22: Figure 2.5c keeps only "label depth by architecture" (the dot cloud of every
+#: coded column goes), Figure B.2a only the agreement / confusion heatmap (the class bars go).
 ATLAS_DROP: Dict[str, List[int]] = {
     "atlas_fields": [0],       # "Every coded export column, by kind" — the scatter
     "atlas_arch_gt": [0],      # "Architecture classes: N unique aircraft" — the paired bars
@@ -2947,7 +3053,7 @@ ATLAS_NOTE: Dict[str, tuple] = {
         "the drawing alone reads as a different class from the whole patent."),
 }
 
-#: ISO 3166-1 alpha-2 written out. The author read the country axis of Figure 1.3.1 and did not
+#: ISO 3166-1 alpha-2 written out. The author read the country axis of Figure 4.1a and did not
 #: recognise "IL" (2026-09-23), so every code on that axis is spelled out; the code is kept beside
 #: the name because the rest of the document indexes countries by it. Covers every code the identity
 #: record holds, so a change of the top-12 cut cannot silently reintroduce a bare code.
@@ -2971,7 +3077,7 @@ def _country_name(code) -> str:
 
 
 def _post_region(fig, ds: Dataset) -> None:
-    """Figure 1.3.1, left panel: spell the country codes out and print each country's share of the
+    """Figure 4.1a, left panel: spell the country codes out and print each country's share of the
     analysis set beside its bar.
 
     The atlas draws the panel with bare ISO codes and prints "kept / acquired (rate)", which answers
@@ -3008,12 +3114,12 @@ def _post_region(fig, ds: Dataset) -> None:
         f"its own. (ii) one row per region, each 100 % of its own aircraft.")
 
 
-#: the three classes whose propulsors move — the split Figure 2.4 turns out to measure
+#: the three classes whose propulsors move — the split Figure B.2b turns out to measure
 TILTING_CLASSES = ("TR", "CVT", "TW")
 
 
 def _post_state_by_arch(fig, ds: Dataset) -> None:
-    """Figure 2.4: say what the flight state is actually evidence of.
+    """Figure B.2b: say what the flight state is actually evidence of.
 
     The author asked why the figure is needed at all (2026-09-23). The answer is not a design
     finding: it is that the state drawn is very nearly a restatement of whether the design has a
@@ -3112,7 +3218,7 @@ def fig_design_heatmaps(ds: Dataset, av: pd.DataFrame, path: Path) -> Path:
                 ax.set_yticklabels([])
             ax.tick_params(axis="x", labelsize=7, labelrotation=40)
             ax.tick_params(axis="y", labelsize=7.5)
-    return _save(fig, path, SRC + "; archetype_frame (boom bin, any tilting unit); class codes as Figure D.1a.",
+    return _save(fig, path, SRC + "; archetype_frame (boom bin, any tilting unit); class codes as in Appendix D.",
                  "Each row is one class and sums to 100 % across a panel's columns. n/d = not determinable, a value "
                  "an override hides; 'no M3 card' marks HB and PFV, which have no propulsor card. Blank = design "
                  "absence. Some rows are true by definition rather than by measurement: a Hoverbike has no wing, no "
@@ -3126,7 +3232,7 @@ def fig_units(ds: Dataset, av: pd.DataFrame, path: Path, base_v: Optional[pd.Dat
     """The atlas propulsion figure stacked for a portrait page: units per class on top, shares
     below, and ducting against rotor count at the foot.
 
-    Panel (iii) was added 2026-09-23. The author asked of Figure 1.3.2b whether ducting
+    Panel (iii) was added 2026-09-23. The author asked of Figure 4.2b whether ducting
     correlates with anything; it does not correlate with region or with time, which is why it
     left that figure, but it correlates strongly with the number of propulsive units — and this
     is the section that owns the number of propulsive units, so the finding is drawn here.
@@ -3187,7 +3293,7 @@ def fig_units(ds: Dataset, av: pd.DataFrame, path: Path, base_v: Optional[pd.Dat
     # joined, against the flat line of the whole corpus. The frame comes from la_tables so the
     # figure and tables/la_duct_units.csv can never disagree. A band resting on fewer than
     # la_tables.DUCT_THIN aircraft is drawn hollow with its own n and the line is broken on both
-    # sides of it — the convention of Figure 1.3.2a/b: a thin cell is suppressed visibly, never
+    # sides of it — the convention of Figure 4.2a/b: a thin cell is suppressed visibly, never
     # dropped. Every share here is a share of AIRCRAFT: any_ducted is one answer per aircraft, so
     # one ducted fan among twelve open rotors counts exactly as much as twelve ducted ones.
     ax3 = fig.add_subplot(gs[2])
@@ -3282,7 +3388,7 @@ def fig_units(ds: Dataset, av: pd.DataFrame, path: Path, base_v: Optional[pd.Dat
                           f"against {cls.loc[c_lo, 'share ducted']:.0%} of "
                           f"{int(cls.loc[c_lo, 'aircraft'])} for {cls.loc[c_lo, 'class']}. ")
     return _save(fig, path, SRC + "; propulsive_units, propulsion states (rules of 2026-09-19); class codes as "
-                 "Figure D.1a; the band shares of (iii) are tables/la_duct_units.csv, with the chi-square "
+                 "`tables/design_space_cards.csv`; the band shares of (iii) are tables/la_duct_units.csv, with the chi-square "
                  "tests behind them.",
                  why_median +
                  " Top: one dot per aircraft, jittered so equal counts do not hide each other; the bar spans the "
@@ -3444,8 +3550,8 @@ def _atlas_save(fig, path: Path) -> None:
 
 # ------------------------------------------------------- 1.4 design drivers and their traces
 def fig_trace_drift(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
-    """Figure 1.4.1: every labelled trace of :data:`la_tables.TRACES` marked ``drawn``, one panel
-    each, per class and window — the machinery of Figure 1.1.5 extended from four dimensions to
+    """Figure 2.6a: every labelled trace of :data:`la_tables.TRACES` marked ``drawn``, one panel
+    each, per class and window — the machinery of Figure 2.3b extended from four dimensions to
     the trace set, ordered by the kind of driver that predicts the trace (A1, A2, B, C)."""
     t = la_tables.trace_drift(ds, v)
     drawn = [tr for tr in la_tables.TRACES if tr.get("drawn")]
@@ -3485,11 +3591,11 @@ def fig_trace_drift(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     # of the 7 in canvas), or _wrap_to flattens the block and re-wraps it wider, and the width fit
     # then shrinks every panel to pay for it
     fig.suptitle("The labelled traces inside each class, per window: one panel per trace,\n"
-                 "ordered by the kind of driver that predicts it (the four of Figure 1.1.5 not redrawn)",
+                 "ordered by the kind of driver that predicts it (the four of Figure 2.3b not redrawn)",
                  x=0.01, y=1.02, ha="left", fontsize=9.5, fontweight="bold")
     a = t.attrs
-    return _save(fig, path, SRC + "; tables/la_trace_drift.csv (the frame of Table 1.4.3a), the same class rule and "
-                 "window cells as Table 1.1.5.",
+    return _save(fig, path, SRC + "; tables/la_trace_drift.csv (the frame of Table 2.6a), the same class rule and "
+                 "window cells as `tables/la_dimension_drift.csv`.",
                  "A line is an architecture class, not an archetype; every point counts unique aircraft, and a "
                  "percentage divides by the class's own aircraft in that window that answer the trace (the `n` column "
                  "beside each trace in the CSV), never by a count of rotors. Two panels sit on a narrower base and say "
@@ -3505,7 +3611,7 @@ def fig_trace_drift(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
 
 
 def fig_trace_couplings(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
-    """Figure 1.4.2: the couplings the fixed physical drivers (A2) predict, as bias-corrected
+    """Figure 2.6b: the couplings the fixed physical drivers (A2) predict, as bias-corrected
     Cramér's V, read against the distribution of every other pair of label fields; the
     definitional pairs are shown hollow and kept out of that distribution."""
     P = la_tables.trace_couplings(ds, v)
@@ -3600,11 +3706,11 @@ def render_all(ds: Dataset, out_dir: Path, partial_window_start: int = 2024, **_
         "filer_weight": lambda p: fig_filer_weight(v, p),
         "abandonment": lambda p: fig_abandonment(ds, v, p),
         "region_grid": lambda p: fig_region_grid(v, p, ["class", "propulsive units", "tilting unit"], ds),
-        # 2026-09-23, author's ruling: Figure 1.3.2b keeps filer type alone. Powertrain and ducting
+        # 2026-09-23, author's ruling: Figure 4.2b keeps filer type alone. Powertrain and ducting
         # left the pair for the sections that own them (atlas_powertrain and atlas_units) — the reasons are written out
         # beside the parked entries of la_tables.GRID_VARIABLES. Kept as a figure of its own rather
         # than merged into region_grid for a mechanical reason: fig_region_grid is 2.45 in per variable
-        # row, so a fourth row puts Figure 1.3.2a at roughly 13.5 in of drawn height against the
+        # row, so a fourth row puts Figure 4.2a at roughly 13.5 in of drawn height against the
         # 10.2 in of an A4 text block, and the merged figure could not be placed on a page.
         "region_grid_b": lambda p: fig_region_grid(v, p, ["filer type"], ds),
         "country_class": lambda p: fig_country_class(v, p),

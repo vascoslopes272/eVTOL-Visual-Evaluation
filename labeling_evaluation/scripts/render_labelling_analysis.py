@@ -21,6 +21,7 @@ REPO = PILLAR.parent
 sys.path.insert(0, str(PILLAR))
 from src.config_loader import load_config  # noqa: E402
 from src.dataset_facts import export, la_figures, la_index, la_tables, load_dataset, numbers, report  # noqa: E402
+from src.dataset_facts import sm_open  # noqa: E402
 
 
 def write_index(md: Path, out: Path) -> Path:
@@ -64,7 +65,17 @@ def main(argv):
     values = numbers.live(ds, partial)
     tables = export.build_all(ds, facts)
     tables.update(la_tables.build_all(ds))
+    # 2026-09-25: the three analyses the document used to print as OPEN — the doubling-time
+    # fit, the archetype discovery curve and the test of whether the regional lag is a
+    # constant. Built in their own module so the review could run them without touching
+    # la_tables; written to tables/ like every other table, and read from there by the brief.
+    tables.update(sm_open.build_all(ds, la_tables.base(ds)))
     figs = la_figures.render_all(ds, out, partial)
+    # the one figure that module owns
+    _disc = out / "figures" / "discovery_curve.png"
+    _disc.parent.mkdir(parents=True, exist_ok=True)
+    sm_open.fig_discovery_curve(tables["la_discovery_curve"], _disc)
+    figs["discovery_curve"] = _disc
     export.write_all(tables, out)
     # every PNG prints at its drawn size (200 dpi, 7.09 in text width): a 7-pt letter stays 7 pt on paper
     from PIL import Image

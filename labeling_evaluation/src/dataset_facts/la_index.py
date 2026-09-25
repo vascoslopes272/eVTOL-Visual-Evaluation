@@ -14,8 +14,9 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from . import index as _pa
+from . import la_lines as _ln   # the four lines, the four questions and the running order
 
-TITLE = "Labelling Analysis — the labelled eVTOL patent data set in tables and figures"
+TITLE ="Labelling Analysis — the labelled eVTOL patent data set in tables and figures"
 
 TABLE_CAPTIONS: Dict[str, str] = {
     **_pa.TABLE_CAPTIONS,
@@ -72,20 +73,20 @@ TABLE_CAPTIONS: Dict[str, str] = {
                      "with the class beside the share of the window's AIRCRAFT in it",
     "la_filers_by_window": "Named firms per window: active, new, continuing, last seen, and the individuals' share",
     "la_proximity_region": (
-        "Mean technological proximity by pair of regions. Every pair of the firms in Figure 1.2.6 is put in "
+        "Mean technological proximity by pair of regions. Every pair of the firms in Figure 4.2c is put in "
         "one of six boxes by the two regions it joins, and the table gives the number of pairs in the box "
         "and the mean, median, lowest and highest proximity in it. The three `within` rows are a region against itself and are "
         "the diagonal boxes of the figure; the three `across` rows are the rest of it. Read down the mean "
         "column: a high `within` row is a region whose firms design alike, a low one a region that is "
         "internally split. The question the table settles is whether firms resemble their own region more "
-        "than another, and the Source line of Figure 1.2.6 carries the permutation test that answers it"),
+        "than another, and the Source line of Figure 4.2c carries the permutation test that answers it"),
     "la_ari_firms": "AAM Reality Index firms that file in the corpus: score, funding, patented aircraft and class mix",
     "la_ari_correlation": (
         "Spearman rank correlation between the index side and the patent side, firm by firm. Every pair of "
         "one index quantity and one patent-side measure is tested and the whole family is corrected: `q` is "
         "the Benjamini-Hochberg adjustment of `p` over all the rows, and `holds?` reads it — `yes` at q below "
         "0.10, `chance-level` where p alone is under 0.05 but the correction does not survive, `no` "
-        "otherwise. With at most 18 firms this table is not where the answer is; Table 1.2.7c is"),
+        "otherwise. With at most 18 firms this table is not where the answer is; Table 1.4b is"),
     "la_ari_gap": (
         "What actually separates the index firms from the rest of the corpus — one row per labelled or "
         "bibliographic variable, comparing the unique aircraft of the AAM Reality Index firms with every "
@@ -102,7 +103,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
     "la_mission_power source": "Power source stated on the page, by folded class",
     "la_mission_status": "Development status of the page, by folded class",
     "la_mission_agreement": "Folded patent class against the directory's own class of the same aircraft",
-    "la_filings_per_year": "Representative unique aircraft and acquired patents per priority year, and the same counts against all aeronautics (B64) patents of the same priority years and publication offices; every year has its own row here, while the first bar of Figure 1.1.1 pools 1999-2005; a year is incomplete while the snapshot is within the 90th-percentile publication lag of it",
+    "la_filings_per_year": "Representative unique aircraft and acquired patents per priority year, and the same counts against all aeronautics (B64) patents of the same priority years and publication offices; every year has its own row here, while the first bar of Figure 1.1 pools 1999-2005; a year is incomplete while the snapshot is within the 90th-percentile publication lag of it",
     "la_flags": "Items flagged as candidates to leave out of the high-level document — the author decides. Already removed and therefore no longer listed (numbered as this document now numbers, after the reorganisation of 2026-09-23): the two 1.1.2 robustness figures and the table of 1.1.2 (2026-09-22), and the tables of 1.1.7, 1.3.3, 1.3.4, 2.1 and the industry-by-class table of 2.5 (2026-09-23). A removed table's builder is kept, so its CSV is still written to tables/",
     # Appendix C (2026-09-23): built by la_tables.open_questions from OPEN_QUESTIONS, UNLABELLED_DRIVERS
     # and GRADE at the end of this module; every item number in it is resolved from NODES at build time.
@@ -127,7 +128,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
     "la_ip_strategy": (
         "IP strategy per firm (5+ aircraft): patents per aircraft, family size, claims, citations. Two "
         "citation columns are printed on purpose. `mean forward citations` is the raw count and is what the "
-        "bubbles of Figure 1.2.5a are sized by; it rewards age, because a patent from 2013 has had thirteen "
+        "bubbles of Figure 3.4b are sized by; it rewards age, because a patent from 2013 has had thirteen "
         "years to be cited. `median cohort citation rank` takes the age out — each of the firm's patents is "
         "ranked against every corpus patent of its own priority year and the firm's median rank is printed, "
         "so 0.50 is a firm cited like the median patent of its years and 0.90 a firm in the top tenth of "
@@ -139,7 +140,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
         "`mean forward citations`, and each choice is deliberate: claims and family size are small skewed "
         "counts where one very long application would drag a mean, so the median is the value a reader can "
         "check against a typical patent of the class; citations are given as both a mean (the total "
-        "attention the class has drawn, and the bubble size of Figure 1.2.5a) and a median (what a typical "
+        "attention the class has drawn, and the bubble size of Figure 3.4b) and a median (what a typical "
         "patent of the class draws), because their distribution is so skewed that the two say different "
         "things — where they are far apart the class rests on one or two patents. Both are raw and therefore "
         "reward age, which is why `median priority year` is printed beside them and why the column to "
@@ -157,7 +158,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
         "eVTOL patent the labelling reached and not the firm's first patent ever, so a firm that flew before "
         "it appears here prints a negative number and every figure in the two columns is a floor"),
     "la_ari_clock_region": (
-        "Which regions and authorities move from patent to flight fastest: the medians of Table 1.2.7d, "
+        "Which regions and authorities move from patent to flight fastest: the medians of Table 1.3, "
         "grouped first by the certifying authority the index names and then by the applicant region of the "
         "firm's patents. The firms behind each row are listed, because no row rests on more than five of "
         "them — the table ranks jurisdictions, it does not measure them, and the two truncations of Table "
@@ -167,7 +168,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
     "la_examination_office": "Legal status of the primary patents by publication office",
     "la_examination_class": "Legal status of the primary patents by class",
     # 1.4 design drivers and their traces (2026-09-23). The three printed tables are generated from
-    # tables/la_trace_trends.csv, the frame behind Figure 1.4.1, so no number in them is typed.
+    # tables/la_trace_trends.csv, the frame behind Figure 2.6a, so no number in them is typed.
     "la_trace_couplings": "The couplings the fixed physical drivers (A2) predict, as bias-corrected Cramér's V between "
                           "the two label fields, the aircraft answering both, and the pair's percentile among every "
                           "non-definitional pair of the same fields; the three strongest pairs of the whole matrix close "
@@ -176,7 +177,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
                           "class where it differs (first reportable window → 2020-23, Spearman ρ and p over the class's "
                           "aircraft with a complete priority year); the drivers that predict the trace, with the "
                           "direction each predicts where the table gives one; and the verdict. Generated from the same "
-                          "frame as Figure 1.4.1, so the two cannot disagree. Traces the label set does not carry close "
+                          "frame as Figure 2.6a, so the two cannot disagree. Traces the label set does not carry close "
                           "the table",
     "la_driver_questions": "Three questions put to the traces, each answered in one sentence generated from the trends "
                            "frame at render time",
@@ -229,7 +230,7 @@ FIGURE_CAPTIONS: Dict[str, str] = {
     "linked_check": "whether the aircraft linked to an evtol.news page stand for the whole analysis set",
     "ari_history": "how each index firm's score moved, and disclosed funding against patented aircraft",
     "ari_clock": "the patent clock against the market clock for the index firms, one row per firm",
-    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars, and the same filings indexed against all aeronautics (B64) patenting of the same offices; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
+    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars; then how much faster eVTOL grew than the patenting around it — this corpus's eVTOL patents as a fraction of all aeronautics (CPC B64) patents, of all CPC section-B patents and of all patents filed at the same offices in the same priority year, each drawn as a multiple of its own 2005-09 starting level; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
     "dominant_design_q": "condition 3 of the dominant-design test: Q per window against the level of the earliest windows and the permutation band",
     "dominant_design": "the dominant-design test per window: top archetype share against the 50 % line, and ²D against the permutation band",
     "class_configs": "within-class convergence: how far each architecture class settles on a single configuration. "
@@ -238,14 +239,14 @@ FIGURE_CAPTIONS: Dict[str, str] = {
                      "type. Every class with at least 5 aircraft in at least 3 of the 5 windows is drawn — the Source "
                      "line under the figure gives the classes and the share of the corpus they cover",
     "dimension_drift": "dimension drift inside each architecture class, per window: panels (i)–(iv) are the four label "
-                       "fields the configuration of Figure 1.1.4 is made of, read one at a time, then powertrain. A line "
+                       "fields the configuration of Figure 2.3a is made of, read one at a time, then powertrain. A line "
                        "is a class, not an archetype; every percentage is a share of that class's own unique aircraft in "
                        "that window, not of rotors — except the powertrain panel, which divides by the aircraft whose "
                        "patent states a powertrain and says so in its own title",
     "transitions": "within-firm successions: what class a firm's next aircraft takes",
     "trace_drift": "the labelled traces inside each architecture class, per window: one panel per trace, ordered by "
                    "the kind of driver that predicts it (A1 technological, A2 physical, B requirement, C life-cycle "
-                   "cost). The machinery of Figure 1.1.5 extended from four dimensions to the trace set; a line is a "
+                   "cost). The machinery of Figure 2.3b extended from four dimensions to the trace set; a line is a "
                    "class, not an archetype, and every percentage is a share of that class's own unique aircraft in "
                    "that window that answer the trace — never of rotors",
     "trace_couplings": "the couplings the fixed physical drivers predict, as bias-corrected Cramér's V between the two "
@@ -276,7 +277,7 @@ FIGURE_PANELS: Dict[str, List] = {
     # 1.1.1 gains (ii) only when the stored aviation baseline is installed; without it the figure
     # holds one graph and the marks are skipped (see la_baseline, user ruling 2026-09-22).
     "filings_per_year": [("filings per priority year, by applicant region", 1),
-                         ("the same filings against all aeronautics (B64) patenting, both indexed", 1)],
+                         ("how much faster eVTOL grew than aeronautics, than all section-B and than all patenting of the same offices", 1)],
     "atlas_arch_time": [("architecture share per window", 1), ("the five largest classes over time", 1)],
     "dominant_design_q": [("Q per window, both weightings", 1), ("condition 3: ΔQ at A0c against the band", 1),
                           ("condition 3: ΔQ at A1t against the band", 1)],
@@ -322,7 +323,7 @@ FIGURE_PANELS: Dict[str, List] = {
     "region_grid_b": [("filer type", 3), ("share of the window", 3)],
     # --- 5 low level
     "atlas_powertrain": [("by architecture", 1), ("by priority window", 1)],
-    # (iii) added 2026-09-23: ducting has no regional or period signal, so it left Figure 1.3.2b
+    # (iii) added 2026-09-23: ducting has no regional or period signal, so it left Figure 4.2b
     # for the section that owns the number of propulsive units, which is what it does track
     "atlas_units": [("propulsive units per class", 1), ("arrangement features per class", 1),
                     ("ducting against rotor count", 1)],
@@ -452,10 +453,10 @@ COLUMNS: Dict[str, List[str]] = {
                            "percentile among non-definitional pairs", "reading"],
 }
 
-NODES: List[Dict] = [
+OLD_NODES: List[Dict] = [
     dict(id="flags", title="Items flagged for the author's decision", tables=["la_flags"]),
     # The ORDER of this list is the order of the document (``report.write_markdown`` walks it) and the
-    # ids ARE the printed numbers (``figure_number`` / ``table_number`` build every "Figure 1.1.6a" from
+    # ids ARE the printed numbers (``figure_number`` / ``table_number`` build every "Figure 2.4" from
     # them). Reorganised 2026-09-23 on the author's ruling: the document leads with the findings, and the
     # two audit-trail chapters — data-set construction and data quality — became Appendix A and Appendix
     # B at the end, so a reader meets the analysis first and the provenance when they want to check it.
@@ -524,7 +525,7 @@ NODES: List[Dict] = [
     # so the section reads straight after the configuration (1.1.4) and its decomposition (1.1.5) —
     # those two are a pair and stay together, which is why this goes after 1.1.5 and not between them.
     # It also gained the filer-weight figure and table the same day: they answer how much of a class is
-    # one company repeating itself, which Table 1.1.6a cannot, because a count of distinct filers says
+    # one company repeating itself, which `tables/la_zones.csv` cannot, because a count of distinct filers says
     # how many there are and not how unevenly they divide the class.
     dict(id="1.1.6", title="Crowded and open zones of the design space, and the weight of each filer",
          figures=["zones", "filer_weight"], tables=["la_zones", "la_class_filer_weight"]),
@@ -554,18 +555,18 @@ NODES: List[Dict] = [
     dict(id="1.2.4", title="Within-firm successions", figures=["transitions"],
          after=("*How to read this section.* A **succession** is one firm's aircraft and the next "
                 "aircraft the same firm filed, ordered by priority year. A firm holding k aircraft "
-                "makes k − 1 successions, so the unit of Figure 1.2.4 is the pair — not the "
+                "makes k − 1 successions, so the unit of Figure 3.2b is the pair — not the "
                 "aircraft, not the patent, and the count of pairs is therefore smaller than the "
                 "count of aircraft. The pairs come from the named firms that hold two or more "
-                "aircraft, the same firms as the “2 aircraft or more” segment of Figure 1.2.1; a "
+                "aircraft, the same firms as the “2 aircraft or more” segment of Figure 3.1; a "
                 "firm with a single aircraft makes no pair and is absent by construction, which is "
-                "why the firm count under this figure is lower than the one under Figure 1.2.1. "
+                "why the firm count under this figure is lower than the one under Figure 3.1. "
                 "“Stays in class” counts the pairs whose two aircraft carry the same G1 class, and "
                 "the share over every class together is the dashed line in panel (ii). "
                 "*Why it is worth a section.* Section 1.1 shows the class mix of the corpus moving, "
                 "and that movement has two causes which the aircraft counts alone cannot separate: "
                 "the firms already filing change course, or different firms arrive. Panel (ii) here "
-                "measures the first and Figure 1.2.2 (ii) the second. A class whose bar sits above "
+                "measures the first and Figure 3.2a (ii) the second. A class whose bar sits above "
                 "the dashed line holds on to its firms, so a fall in its share is firms arriving "
                 "elsewhere rather than firms leaving it; a class far below the line is one the firms "
                 "themselves pass through, and the label on the bar names where they go next.")),
@@ -605,7 +606,7 @@ NODES: List[Dict] = [
                "the May 2026 release — the other five (Airbus, Bell / Textron, Kitty Hawk, Lilium, Overair) "
                "carry their last score and no dates. Those 18 firms are a segment and are treated as one "
                "throughout: they are the commercial end of the eVTOL industry, they hold 150 of the "
-               "corpus's unique aircraft, and Table 1.2.7c shows how they differ from the other 515 "
+               "corpus's unique aircraft, and Table 1.4b shows how they differ from the other 515 "
                "rather than assuming they represent them.\n\n"
                "**How the two sides were joined.** By hand, in `ari_company_map.csv`: each index OEM name "
                "was matched to the canonical company of the patent corpus, including the three cases where "
@@ -622,7 +623,7 @@ NODES: List[Dict] = [
                "because 18 firms support nothing stronger than a statement about order. It is run on the "
                "index side only because that is the only side that arrives as a score: everything else in "
                "this chapter is a count or a label, and counts and labels are compared with the tests of "
-               "Table 1.2.7c instead. Table 1.2.7b is nevertheless the weaker of the two — with 18 firms "
+               "Table 1.4b instead. `tables/la_ari_correlation.csv` is nevertheless the weaker of the two — with 18 firms "
                "and dozens of pairs, nothing in it survives the correction for multiple testing, which is "
                "the honest reading and is printed in its own `holds?` column."),
          figures=["ari", "ari_history", "ari_clock"],
@@ -631,7 +632,7 @@ NODES: List[Dict] = [
     dict(id="1.3", title="Where", level="patent → unique aircraft"),
     dict(id="1.3.1", title="Region, country and publication office", figures=["atlas_region"]),
     # 2026-09-23, author's ruling: down from six variables to four — powertrain and ducting left
-    # Figure 1.3.2b for the sections that own them (2.1 and 2.2 (iii)); the title follows the count.
+    # Figure 4.2b for the sections that own them (2.1 and 2.2 (iii)); the title follows the count.
     dict(id="1.3.2", title="Region over time, four variables", figures=["region_grid", "region_grid_b"]),
     # 2026-09-23, author's ruling: the table of this section is cut ("not needed, I already have the
     # info on other graphs"). The figure was rebuilt to carry the reading on its own. The builder still
@@ -694,12 +695,12 @@ NODES: List[Dict] = [
     dict(id="2.3", title="The design space as paired fields", figures=["atlas_design_heatmaps"]),
     dict(id="2.4", title="Image-level answers", figures=["atlas_state_by_arch"], tables=["a2_d2_figure_slot_answers"]),
     dict(id="2.5", title="Mission of the aircraft linked to evtol.news, and the industry named in the text",
-         # Figure 2.5c added 2026-09-23: the section describes a subset, so the first thing it owes
+         # Figure 1.4c added 2026-09-23: the section describes a subset, so the first thing it owes
          # the reader is whether that subset stands for the rest. It is placed last so that the
          # numbers of 2.5a and 2.5b do not move under the author's own review notes.
          figures=["mission", "industry_by_class", "linked_check"],
          # 2026-09-23, author's ruling: the industry-by-class table is cut — the industry field comes
-         # from a text classifier he has no way of verifying, and he does not want to. Figure 2.5b
+         # from a text classifier he has no way of verifying, and he does not want to. `tables/industry_by_class.csv`
          # keeps it, with the classifier named in its Source line.
          tables=["la_class_fold", "la_mission_capacity", "la_mission_piloting", "la_mission_power source",
                  "la_mission_status", "la_mission_agreement"]),
@@ -765,6 +766,90 @@ NODES: List[Dict] = [
 #: the top-level ids that are appendices, not numbered chapters. ``heading`` prints them as
 #: "Appendix A — …" and ``report.write_markdown`` starts a page on them like a chapter.
 APPENDIX = ("A", "B", "C", "D")
+
+# --------------------------------------------------------------------------
+# the running order, rebuilt from the four questions  (2026-09-23, 2nd reorganisation)
+# --------------------------------------------------------------------------
+# The author's ruling: the eight questions fold to four, and a chapter IS a question —
+# "question, graphs, then the answer, big". The order therefore stops being a hand-kept list of
+# nodes and becomes a projection of ``la_lines.ORDER``, so the chapter an item is printed under
+# and the question it is registered against can never disagree again. ``OLD_NODES`` above is kept
+# as the source of the explanatory prose (nothing is retyped) and as the record of where each
+# item used to sit; ``PROSE_FROM`` says which old node each new one inherits its text from.
+#
+# An item that appears in neither ``ORDER`` nor ``APPENDIX_ORDER`` is NOT printed — the cut list
+# is ``la_lines.CUT``, with a reason per item, and every builder and CSV stays exactly as it was.
+
+#: new chapter id -> its title. The title is the question, shortened to fit a heading; the
+#: question itself is printed in full under it, out of ``la_lines.QUESTIONS4``.
+CHAPTER_TITLES: Dict[str, str] = {
+    "1": "Is the patent record a usable indicator of the sector?",
+    "2": "What is being designed, and is it converging?",
+    "3": "Who designs it: a concentrated field, or an open one?",
+    "4": "Where is it designed, and does region change the design?",
+    "A": "Data Sets Construction",
+    "B": "Data Quality, and the label against the text",
+    "C": "Questions asked, and what the corpus could not answer",
+    "D": "Taxonomy",
+}
+
+#: new chapter id -> the unit of analysis the chapter is read at (printed under the heading).
+CHAPTER_LEVEL: Dict[str, str] = {
+    "1": "patent → unique aircraft",
+    "2": "unique aircraft",
+    "3": "firm",
+    "4": "patent → unique aircraft",
+}
+
+#: new node id -> the OLD node whose ``text`` / ``after`` prose it inherits. Only the passages the
+#: author asked for are carried: the archetype-level explanation, the successions note, the ARI
+#: note and the design-drivers frame. Everything else was navigation for an order that is gone.
+PROSE_FROM: Dict[str, str] = {
+    "1.4": "1.2.7",      # what the AAM Reality Index is, and why Spearman — asked for on 2026-09-23
+    "2.2": "1.1.3.1",    # how to read the archetype levels, and which two levels are read
+    "2.6": "1.4",        # the design drivers and their traces
+    "3.2": "1.2.4",      # what a succession is, and why the section exists
+    "C": "C",
+    "D": "D",
+}
+
+
+def _old(node_id: str) -> Dict:
+    for n in OLD_NODES:
+        if n["id"] == node_id:
+            return n
+    return {}
+
+
+def _build_nodes() -> List[Dict]:
+    figs = set(FIGURE_CAPTIONS)
+    out: List[Dict] = []
+    for chapter, sections in list(_ln.ORDER.items()) + list(_ln.APPENDIX_ORDER.items()):
+        src = _old(PROSE_FROM.get(chapter, ""))
+        head = dict(id=chapter, title=CHAPTER_TITLES[chapter])
+        if CHAPTER_LEVEL.get(chapter):
+            head["level"] = CHAPTER_LEVEL[chapter]
+        question = _ln.QUESTIONS4.get(chapter)
+        prose = src.get("text", "")
+        if question:                                   # the chapter opens with its own question
+            prose = f"**The question.** {question}\n\n{prose}".rstrip()
+        if prose:
+            head["text"] = prose
+        out.append(head)
+        for k, (title, items) in enumerate(sections, start=1):
+            sid = f"{chapter}.{k}"
+            src = _old(PROSE_FROM.get(sid, ""))
+            n = dict(id=sid, title=title,
+                     figures=[i for i in items if i in figs],
+                     tables=[i for i in items if i not in figs])
+            for slot in ("text", "after"):
+                if src.get(slot):
+                    n[slot] = src[slot]
+            out.append(n)
+    return out
+
+
+NODES: List[Dict] = _build_nodes()
 
 
 # --------------------------------------------------------------------------
@@ -1441,7 +1526,7 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
              "citation rank is taken against all 1 639 acquired patents of the same priority year, not "
              "against the firm's own",
         transform="ratios and order statistics — patents per aircraft, median family size, median claims, "
-                  "mean forward citations (raw, not age-normalised, and the bubble size of Figure 1.2.5a) "
+                  "mean forward citations (raw, not age-normalised, and the bubble size of Figure 3.4b) "
                   "and the median cohort citation rank, which is age-normalised and is the column to "
                   "compare firms on"),
     "la_ip_by_class": dict(
@@ -1481,7 +1566,7 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
         transform="mean, median and range of the proximities in each box; the pair count is printed "
                   "because the boxes are very different sizes (6 pairs to 42). The permutation test of "
                   "same-region against different-region proximity is printed in the Source line of "
-                  "Figure 1.2.6, on 10 000 shuffles of the region labels over the firms"),
+                  "Figure 4.2c, on 10 000 shuffles of the region labels over the firms"),
     "ari": dict(
         unit="AAM Reality Index firms that also file in the corpus (n {n_ari})",
         base="the index side is the index's own release; the patent side is this corpus's aircraft of "
@@ -1538,7 +1623,7 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
              "by the applicant region of their patents",
         base="each group's own firms; the firm count and the firm names are printed on every row because "
              "no group holds more than five",
-        transform="medians of the columns of Table 1.2.7d; no test is run and none would be supportable "
+        transform="medians of the columns of Table 1.3; no test is run and none would be supportable "
                   "at this n, so the table ranks jurisdictions rather than measuring them"),
     "la_trl_placeholder": dict(
         unit="no data yet — the TRL work is not installed",
@@ -1566,13 +1651,13 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
                   "normalised against the general rise in patenting — the stored B64 baseline has no "
                   "regional split, so the mix rows cancel the rise only because they are shares "
                   "inside one cell, and the bottom row is relative to the other regions, not "
-                  "absolute; Figure 1.1.1 carries the corpus-wide normalisation. A cell under 10 "
+                  "absolute; Figure 1.1 carries the corpus-wide normalisation. A cell under 10 "
                   "aircraft is blanked in the mix rows and drawn hollow with its n in the bottom row"),
     "region_grid_b": dict(
         unit="unique aircraft (n {unique_s}); the three main applicant regions in row (i), every "
              "region in the bottom row",
         base="(i) each region × window cell on its own; (ii) the whole window",
-        transform="shares as in Figure 1.3.2a, with the same n < 10 guard and the same absence of any "
+        transform="shares as in Figure 4.2a, with the same n < 10 guard and the same absence of any "
                   "B64 normalisation. This figure carried two more variables until 2026-09-23 and "
                   "carries them no longer. Powertrain went to the section that reads powertrain on "
                   "its own: electric is this corpus's "
@@ -1696,7 +1781,7 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
                   "'not stated' kept as an answer. The link itself is the reviewed patent_links.csv: "
                   "candidates found by aircraft name plus company against the directory index, plus "
                   "the URLs the author pasted into NAME_DECISIONS.csv, every row checked by hand. "
-                  "Whether these aircraft stand for the whole analysis set is tested in Figure 2.5c, "
+                  "Whether these aircraft stand for the whole analysis set is tested in Figure 1.4c, "
                   "and the short answer is that their class mix and their geography do carry back "
                   "while their filer mix, their dates and the size of their aircraft do not"),
     "linked_check": dict(
@@ -1849,6 +1934,16 @@ NOT_YET = "takeaway not written yet"
 #: of the group means is not the mean over the units).
 #: ``fmt``: ``raw`` (default) · ``int`` · ``pct`` (0.424 -> "42 %") · ``1f`` · ``2f``.
 TAKEAWAY_NUMBERS: Dict[str, Dict] = {
+    # 2026-09-24: the two subset sizes and the three-source agreement, read from the built tables
+    # so no document types "150 against 515" again (it is 152 against 513 since the filer fix)
+    "tk_ari_in": dict(table="la_ari_representativeness", where=("test", "chi-square"),
+                      col="n index firms", fmt="int"),
+    "tk_ari_rest": dict(table="la_ari_representativeness", where=("test", "chi-square"),
+                        col="n rest", fmt="int"),
+    "tk_pw_n": dict(table="la_public_pairwise",
+                    where=("comparison", "drawing label against the public aircraft"), col="of", fmt="int"),
+    "tk_pw_share": dict(table="la_public_pairwise",
+                        where=("comparison", "drawing label against the public aircraft"), col="share", fmt="pct"),
     "tk_flags_n": dict(table="la_flags", how="rows", fmt="int"),
     # Appendix C: questions on the list, and the weak items of the document the list accounts for
     "tk_open_questions_n": dict(table="la_open_questions", how="count", where=("kind", "question"), fmt="int"),
@@ -1911,7 +2006,7 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
     "tk_q_below": dict(table="la_dd_q", how="count", where=("below band", "True"), fmt="int"),
     "tk_q_cells": dict(table="la_dd_q", how="rows", fmt="int"),
     # 2026-09-23: the two column names below were `modal share` and `configurations`, which
-    # ``la_tables`` does not build — the specs resolved to nothing and Figure 1.1.4 and Table
+    # ``la_tables`` does not build — the specs resolved to nothing and Figure 2.3a and Table
     # 1.1.4 printed an ellipsis where the number belongs. Corrected against
     # tables/la_class_configs.csv; the takeaway sentences are unchanged and simply fill now.
     "tk_slc_modal_1619": dict(table="la_class_configs",
@@ -1923,7 +2018,7 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
                           where=[("code", "SLC"), ("window", "2020-23")], col="aircraft", fmt="int"),
     # 2026-09-23: `median propulsor units` and `boom share` are not columns of
     # tables/la_dimension_drift.csv — they are `median propulsive units` and `share with
-    # booms`. All five resolved to nothing, so Table 1.1.5's takeaway printed four ellipses.
+    # booms`. All five resolved to nothing, so `tables/la_dimension_drift.csv`'s takeaway printed four ellipses.
     "tk_slc_units_w1": dict(table="la_dimension_drift",
                             where=[("code", "SLC"), ("window", "<= 2011")],
                             col="median propulsive units", fmt="1f"),
@@ -2095,8 +2190,8 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
                              col="median claims", fmt="int"),
     # 2026-09-23: there is no `firm pair` column and no "same region" / "different regions"
     # row — tables/la_proximity_region.csv holds one row per ORDERED REGION PAIR, flagged
-    # `within` or `across` in `within a region?`. Both specs matched nothing, so Figure 1.2.6
-    # and Table 1.2.6 printed "… against …" in place of the null they exist to report. The
+    # `within` or `across` in `within a region?`. Both specs matched nothing, so Figure 4.2c
+    # and `tables/la_proximity_region.csv` printed "… against …" in place of the null they exist to report. The
     # mean is weighted by `pairs` because the six rows hold 6 to 42 pairs each, and the
     # takeaway states the mean over all 136 of them.
     "tk_prox_diff": dict(table="la_proximity_region", how="mean",
@@ -2119,7 +2214,7 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
     "tk_ari_timeline_n": dict(table="la_ari_timeline", how="rows", fmt="int"),
     # ---------------------------------------------------------------- 1.3
     # 2026-09-23: the archetype is printed "TR · 1-3" — the A0c bands start at 1, never at 0 —
-    # so "TR · 0-3" matched no row and Figure 1.3.3's takeaway named its clearest example
+    # so "TR · 0-3" matched no row and Figure 4.2d's takeaway named its clearest example
     # without the index that makes it one.
     "tk_spec_tr03_na": dict(table="la_specialisation", where=("archetype", "TR · 1-3"),
                             col="North America", fmt="1f"),
@@ -2148,7 +2243,7 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
                         col="not stated", fmt="int"),
     "tk_pw_el": dict(table="la_powertrain_by_class", how="sum", col="electric", fmt="int"),
     "tk_pw_ns": dict(table="la_powertrain_by_class", how="sum", col="not stated", fmt="int"),
-    # Figure 2.2 (iii), ducting against rotor count. Every share is a share of AIRCRAFT; the class
+    # `tables/mission.csv` (iii), ducting against rotor count. Every share is a share of AIRCRAFT; the class
     # pair is taken over the classes that clear la_tables.DUCT_THIN, so a 60 % read on five
     # aircraft cannot become the sentence the reader remembers.
     "tk_duct_b13": dict(table="la_duct_units", where=[("level", "propulsive units"), ("group", "1-3")],
@@ -2566,7 +2661,7 @@ TAKEAWAY: Dict[str, str] = {
         "filers is a shared choice, one held by few is a portfolio. The largest archetype "
         "({tk_zone_top}, {tk_zone_top_n} aircraft) is spread over {tk_zone_top_filers} filers, so "
         "it is the first kind."),
-    # added 2026-09-23 with Figure 1.1.6b and Table 1.1.6b
+    # added 2026-09-23 with Figure 3.3b and Table 3.3a
     "filer_weight": (
         "No class is one company's portfolio: the largest single filer holds {tk_fw_tr_share} of "
         "Tilt Rotor and {tk_fw_cvt_share} of CVT, and CVT divides as if between "
@@ -2666,7 +2761,7 @@ TAKEAWAY: Dict[str, str] = {
         "individual inventors beside firms everywhere instead of dropping them. This one table is "
         "built by the Preliminary Analysis builder a2.d8_filer_mix, which still reads the filer "
         "type off company_canonical: its 'unattributed or independent' row is the band Chapter 1 "
-        "no longer draws, and the two are reconciled in the Source line of Figure 1.3.2b."),
+        "no longer draws, and the two are reconciled in the Source line of Figure 4.2b."),
     "a2_d8_concentration": (
         "Concentration is an artefact of name cleaning, not a fact about the field: an HHI of "
         "{hhi_raw} on the raw assignee strings is near-zero, and canonicalising the names moves the "
@@ -2754,7 +2849,7 @@ TAKEAWAY: Dict[str, str] = {
         "entering in 2020-23 arrive with Lift + Cruise against {tk_cm_a_slc} of that window's "
         "aircraft. Entrants over-index on the class of their moment, which is what makes 1.1.2 a "
         "population effect rather than a set of firms redesigning."),
-    # ``filer_weight`` and ``la_class_filer_weight`` are entered above, with Figure 1.1.6b
+    # ``filer_weight`` and ``la_class_filer_weight`` are entered above, with Figure 3.3b
     "la_firm_leverage": (
         "Every class share in this document survives the loss of any one firm: the largest effect "
         "is {tk_lev_firm}, whose removal moves the {tk_lev_class} share by {tk_lev_pp} points, and "
@@ -2911,7 +3006,7 @@ TAKEAWAY: Dict[str, str] = {
         "was ({tk_dr_slc_units_mov}). Units move onto booms across the five classes ({tk_dr_all_booms_first} to "
         "{tk_dr_all_booms_last}) and moving fuselages go out ({tk_dr_all_fus_first} to {tk_dr_all_fus_last}); "
         "retraction (iii), pusher units (vii), wing count (viii) and planform (ix) do not trend in any class. "
-        "Read every slope with the test in Table 1.4.3a — the picture shows candidates, the table which "
+        "Read every slope with the test in Table 2.6a — the picture shows candidates, the table which "
         "survive."),
     "trace_couplings": (
         "Of the four couplings the physical drivers predict, one is there: empennage type against the wing "
@@ -2972,6 +3067,15 @@ def _tk_fmt(value, fmt: str) -> Optional[str]:
         return f"{x:.1f}"
     if fmt == "2f":
         return f"{x:.2f}"
+    if fmt == "3f":
+        return f"{x:.3f}"
+    if fmt == "p":
+        # 2026-09-25: p values in stated prose. Below a thousandth a decimal string is noise,
+        # so it prints as an inequality, which is also how the tables print it. Additive — no
+        # spec written before this date asks for this format.
+        if x < 0.001:
+            return "< 0.001"
+        return f"{x:.3f}".rstrip("0").rstrip(".") if x < 0.01 else f"{x:.2f}"
     if fmt == "pct":
         p = x * 100.0
         if abs(p) >= 10:
@@ -3077,6 +3181,85 @@ def takeaway(name: str, values: Optional[Dict] = None, kind: str = "figure",
     return line if line[-1:] in ".!?" else line + "."
 
 
+# --------------------------------------------------------------------------
+# the four short lines, and the Answer under each question  (2026-09-23, 2nd reorganisation)
+# --------------------------------------------------------------------------
+# The author's ruling: a graph carries Source / Unit / How to read / Why this way and nothing
+# else, and the finding is written once, big, at the end of the question the graphs answer. The
+# wording lives in ``la_lines`` — a register of its own so this module stays the structure and
+# that one stays the text (imported at the top of this module). Numbers are resolved exactly as
+# the takeaway lines resolved them, so nothing in an Answer is typed by hand.
+
+
+def _vals(values: Optional[Dict], tables: Optional[Dict], text_: str = "") -> Dict:
+    """Live numbers for a line: the ``{n_*}`` counts and every ``TAKEAWAY_NUMBERS`` spec the
+    text actually asks for (resolving all 247 for one line would cost a table scan each)."""
+    vals = dict(values or {})
+    for key, tname in N_FROM_TABLE.items():
+        frame = (tables or {}).get(tname)
+        if frame is not None:
+            vals[key] = len(frame)
+    for key, spec in TAKEAWAY_NUMBERS.items():
+        if text_ and ("{" + key + "}") not in text_:
+            continue
+        got = _tk_number(spec, tables)
+        if got is not None:
+            vals[key] = got
+    return vals
+
+
+def source(name: str, values: Optional[Dict] = None, kind: str = "figure",
+           tables: Optional[Dict] = None) -> str:
+    """``Source:`` — the data the item is made of, from the fixed vocabulary ``la_lines.SOURCES``."""
+    return _ln.source_line(name)
+
+
+def unit(name: str, values: Optional[Dict] = None, kind: str = "figure",
+         tables: Optional[Dict] = None) -> str:
+    """``Unit:`` — what is counted (with n), the time axis, and the normalisation, in that order."""
+    line = _ln.unit_line(name)
+    return _clean(_pa._fill(line, _vals(values, tables, line))) if line else ""
+
+
+def read(name: str, values: Optional[Dict] = None, kind: str = "figure",
+         tables: Optional[Dict] = None) -> str:
+    """``How to read:`` — one sentence, the same one the PNG is stamped with."""
+    line = _clean(_pa._fill(_ln.read_line(name), _vals(values, tables, _ln.read_line(name))))
+    return (line if line[-1:] in ".!?" else line + ".") if line else ""
+
+
+def why(name: str, values: Optional[Dict] = None, kind: str = "figure",
+        tables: Optional[Dict] = None) -> str:
+    """``Why this way:`` — why this level, this cut, this threshold. Written for a reader who has
+    never seen the codebook."""
+    line = _clean(_pa._fill(_ln.why_line(name), _vals(values, tables, _ln.why_line(name))))
+    return (line if line[-1:] in ".!?" else line + ".") if line else ""
+
+
+def answer(question: str, values: Optional[Dict] = None,
+           tables: Optional[Dict] = None) -> str:
+    """The block that closes a question: the finding, with every number resolved from the built
+    tables. An unresolved number prints an ellipsis rather than a stale figure."""
+    text_ = _ln.ANSWER.get(question)
+    if not text_:
+        return ""
+    line = _clean(_pa._fill(str(text_), _vals(values, tables, str(text_))))
+    return line if line[-1:] in ".!?" else line + "."      # _clean strips the closing stop
+
+
+def unresolved_answers(values: Optional[Dict] = None,
+                       tables: Optional[Dict] = None) -> Dict[str, List[str]]:
+    """Which Answer asks for a number that does not resolve — printed by the render script, so a
+    missing number is caught at build time instead of in the PDF."""
+    out: Dict[str, List[str]] = {}
+    for q, text_ in _ln.ANSWER.items():
+        vals = _vals(values, tables, str(text_))
+        miss = [k for k in _re.findall(r"\{([a-zA-Z0-9_]+)\}", str(text_)) if k not in vals]
+        if miss:
+            out[q] = miss
+    return out
+
+
 def _owner_level(name: str) -> str:
     """The ``level`` of the section that owns a figure or table, inherited from its parents."""
     owner = next((n["id"] for n in NODES
@@ -3165,20 +3348,19 @@ NO_QUESTION = "not mapped to a question yet — add it to QUESTION in la_index.p
 #: old -> new: Q8->Q1, Q3->Q2, Q2->Q3, Q1->Q4, Q4->Q5, Q5->Q6, Q6->Q7, Q7->Q8; M unchanged.
 #: THE ORDER OF THIS DICT IS PRINTED ORDER — Appendix C groups its rows by it, and
 #: ``sector_questions_line`` spells them out in it.
-QUESTIONS: Dict[str, str] = {
-    "Q1": "What is the patent record worth as an indicator of the sector — how early, how "
-          "complete, how live",
-    "Q2": "Which architectures are gaining and which are being abandoned, and when",
-    "Q3": "Is the space converging on a dominant design, or still branching",
-    "Q4": "What is being designed — which architectures the patent record holds, in what "
-          "proportion, and which label dimensions actually separate one design from another",
-    "Q5": "Who designs it — firms, individuals, universities; who enters and who stays",
-    "Q6": "Where is it designed, and does region change what is designed",
-    "Q7": "Is any of this one company, or one design filed many times",
-    "Q8": "Does the patent record describe the aircraft the industry actually builds",
-    "M":  "Method (RQ4): does the figure alone carry the architecture the text states — "
-          "not a question about the sector",
-}
+# 2026-09-23, second reorganisation: the eight fold to FOUR on the author's ruling — Q1+Q8 ask
+# one question about the record, Q2+Q3+Q4 are the same question about the design space asked three
+# ways, Q5+Q7 are concentration from two sides, Q6 stands alone. The four are the chapters, and
+# they live in ``la_lines.QUESTIONS4`` so that the chapter, the register and Appendix C cannot
+# drift apart. The eight are kept here only as :data:`QFOLD`, which translates the ``q="Q4"`` of
+# every OPEN_QUESTIONS entry and every per-item QUESTION string into the new number — no entry
+# below had to be re-typed, and a quotation of this file from before today still resolves.
+QUESTIONS: Dict[str, str] = dict(_ln.QUESTIONS4)
+
+#: old question id -> new chapter id. ``M`` is unchanged: it is not a sector question.
+QFOLD: Dict[str, str] = {"Q1": "1", "Q8": "1", "Q2": "2", "Q3": "2", "Q4": "2",
+                         "Q5": "3", "Q7": "3", "Q6": "4", "M": "M",
+                         "1": "1", "2": "2", "3": "3", "4": "4"}
 
 #: internal item name -> "<question id> <short name> — <way>". A few words, never a
 #: sentence: the reader is meant to take it in beside the caption. ``"none"`` is a real
@@ -3587,8 +3769,8 @@ def grade(name: str, values: Optional[Dict] = None, kind: str = "figure",
 # table ``la_open_questions`` from the two registers below and from GRADE:
 #
 #   * ``OPEN_QUESTIONS``     the questions, keyed by an internal name, each with the items that
-#                            tried to answer it (internal names, resolved to "Figure 1.1.7" /
-#                            "Table 1.2.7b" through ``item_numbers()`` at build time), the reason the
+#                            tried to answer it (internal names, resolved to "Figure 2.1b" /
+#                            "`tables/la_ari_correlation.csv`" through ``item_numbers()`` at build time), the reason the
 #                            record cannot (the weak items' own GRADE reasons are quoted first, word
 #                            for word, so they cannot drift; ``cannot`` adds the number the attempt
 #                            returned) and the record that would answer it.
@@ -3612,7 +3794,7 @@ def grade(name: str, values: Optional[Dict] = None, kind: str = "figure",
 
 
 def item_numbers() -> Dict[str, str]:
-    """Internal name -> ``"Figure 1.1.7"`` / ``"Table 1.2.7b"`` for every item in the running order,
+    """Internal name -> ``"Figure 2.1b"`` / ``"`tables/la_ari_correlation.csv`"`` for every item in the running order,
     from the same NODES walk ``report.write_markdown`` numbers by. An item that is built but placed
     in no node is absent, and the caller says so instead of inventing a number."""
     out: Dict[str, str] = {}
@@ -3947,7 +4129,7 @@ UNLABELLED_DRIVERS: Dict[str, Dict] = {
               "diameter half could not be built",
         cannot="No field of the codebook records a diameter, a span, an area or a scale, and a patent drawing "
                "carries none: the label set answers how many units and where, never how large. The count "
-               "rises inside Tilt Rotor and CVT (Table 1.4.3a), and whether the rotors shrank with it is "
+               "rises inside Tilt Rotor and CVT (Table 2.6a), and whether the rotors shrank with it is "
                "unreadable.",
         would="A rotor diameter per aircraft — from specification sheets or the certification basis of the "
               "flown aircraft — joined to the count already labelled; disc loading follows from the two and "
@@ -3995,7 +4177,7 @@ UNLABELLED_DRIVERS: Dict[str, Dict] = {
               "group, propulsor type or empennage each counted once), in [[trace_drift]] (i)",
         cannot="The label set records whether a part tilts, not how many actuators tilt it: a tilting wing "
                "with two nacelles and a tilting wing with eight are one group each. The group count rises "
-               "inside Tilt Rotor and CVT (Table 1.4.3a), which is the direction regime transition predicts "
+               "inside Tilt Rotor and CVT (Table 2.6a), which is the direction regime transition predicts "
                "and cost does not, but a joint count per aircraft would be needed to weigh the two.",
         would="A joint count read from the detail figures and claims of each primary patent — the "
               "mechanism level the labelling protocol deliberately stopped above."),

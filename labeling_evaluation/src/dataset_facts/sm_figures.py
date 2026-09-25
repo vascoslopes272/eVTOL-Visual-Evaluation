@@ -45,7 +45,9 @@ from .la_tables import WINDOW_NAMES
 
 #: the six panels, in the order the six questions are printed.
 NAMES = ["sm_duct_bands", "sm_weighting", "sm_archetype_filers",
-         "sm_tw_entry", "sm_trl_tracked", "sm_cite_rank"]
+         "sm_tw_entry", "sm_trl_tracked", "sm_cite_rank",
+         "sm_duct_count", "sm_entry_all", "sm_class_configs",
+         "sm_joints_per_unit", "sm_duct_conditional", "sm_family"]
 
 #: a panel is a single measure on a small canvas: one point smaller than the full document's
 #: body size everywhere, still well clear of the 7 pt floor.
@@ -400,6 +402,111 @@ def panel_trl_tracked(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
 
 
 # --------------------------------------------------------------------------
+# 2026-09-24, the brief's review: three new panels
+# --------------------------------------------------------------------------
+def panel_duct_count(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """How much of an aircraft is ducted, per propulsive-unit band: the share of the band's UNITS
+    that run in a duct (bars) beside the share of its AIRCRAFT with any duct (hollow), with the
+    median ducted count of the ducting aircraft on the bar. Base: the aircraft of the band."""
+    t = tables["la_duct_count"].copy()
+    t = t[t["propulsive units"].ne("all bands")]
+    for c in ("aircraft", "share with any", "share of units ducted", "share ducting every unit",
+              "median ducted units (ducted aircraft)"):
+        t[c] = _num(t, c)
+    fig, ax = plt.subplots(figsize=(W, 2.35))
+    x = np.arange(len(t))
+    b1 = ax.bar(x - 0.2, t["share with any"], width=0.38, color="none", edgecolor=INK, lw=1.0, zorder=3,
+                label="aircraft with at least one ducted unit")
+    b2 = ax.bar(x + 0.2, t["share of units ducted"], width=0.38, color=BLUE(0.78), zorder=3,
+                label="of the band's units, the share in a duct")
+    _bar_pct(ax, b1, t["share with any"].tolist())
+    _bar_pct(ax, b2, t["share of units ducted"].tolist())
+    for b, med, ev in zip(b2, t["median ducted units (ducted aircraft)"], t["share ducting every unit"]):
+        ax.text(b.get_x() + b.get_width() / 2, 0.012, f"med {med:.0f}\nall {ev:.0%}", ha="center",
+                va="bottom", fontsize=6.5, color="#ffffff", zorder=5, linespacing=1.1)
+    ax.set_xticks(x, [f"{g}\nn {int(n)}" for g, n in zip(t["propulsive units"], t["aircraft"])], fontsize=8)
+    ax.set_xlabel("propulsive units per aircraft · on the bar: median ducted units of the ducting "
+                  "aircraft, and the share that duct every unit", fontsize=7.5)
+    _pct_axis(ax, float(max(t["share with any"].max(), t["share of units ducted"].max())) + 0.12)
+    ax.legend(fontsize=7.5, loc="upper center", ncol=2, handlelength=1.4)
+    ax.set_title("Ducting by rotor count, counted in units: at nine and more the aircraft that duct, "
+                 "duct nearly everything", fontsize=9)
+    return _save(fig, path)
+
+
+ENTRY_CLASSES = ["SLC", "TR", "CVT", "TW", "MR"]
+
+
+def panel_entry_all(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """What the firms entering a window arrive with, for the five largest classes: the class's
+    share of the window's ENTERING FIRMS (hatched) beside its share of the window's AIRCRAFT
+    (grey), one small panel per class. Base on the tick. Generalises the Tilt Wing panel."""
+    mix = tables["la_cohort_mix"].copy()
+    for c in ("firms entering", "entering with this class", "share of entrants",
+              "aircraft in the window", "aircraft of this class", "share of aircraft"):
+        mix[c] = _num(mix, c)
+    fig, axes = plt.subplots(1, len(ENTRY_CLASSES), figsize=(W, 2.3), sharey=True)
+    x = np.arange(len(WINDOW_NAMES))
+    top = 0.0
+    for ax, code in zip(axes, ENTRY_CLASSES):
+        sub = mix[mix["class"].eq(code)].set_index("window").reindex(WINDOW_NAMES)
+        ea, aa = sub["share of entrants"].to_numpy(), sub["share of aircraft"].to_numpy()
+        top = max(top, float(np.nanmax(np.concatenate([ea, aa]))))
+        ax.bar(x - 0.19, aa, width=0.36, color=CONTEXT, zorder=3, label="share of the window's aircraft")
+        b2 = ax.bar(x + 0.19, ea, width=0.36, color=CAT[0], zorder=3, label="share of the entering firms")
+        for b in b2:
+            b.set_hatch("////")
+        for xi, (e, ne) in enumerate(zip(ea, sub["entering with this class"])):
+            if np.isfinite(e):
+                ax.text(xi + 0.19, e + 0.01, f"{int(ne)}", ha="center", va="bottom", fontsize=6.5, color=INK)
+        ax.set_xticks(x, [_lf.WIN_SHORT.get(w, w) for w in WINDOW_NAMES], fontsize=6.5, rotation=90)
+        ax.axvspan(x[-1] - 0.5, x[-1] + 0.5, color=GRID, alpha=0.55, zorder=0, hatch="//", lw=0)
+        ax.set_title(_lf._arch_name(code), fontsize=8.5)
+        _hgrid(ax, "y")
+    axes[0].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+    axes[0].set_ylim(0, top + 0.12)
+    axes[0].set_ylabel("share of the window", fontsize=8)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=7, loc="lower center", ncol=2, handlelength=1.4,
+               bbox_to_anchor=(0.5, -0.16), frameon=False)
+    fig.suptitle("What entering firms arrive with, against the window's own mix — the number on the bar "
+                 "is the firms entering with the class", fontsize=9, y=1.02)
+    return _save(fig, path)
+
+
+def panel_class_configs(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """Within-class convergence on each class's OWN differentiating labels (rules in the table):
+    (i) the share of the class in its single most common configuration; (ii) distinct
+    configurations per aircraft. A line is a class; a window under five aircraft is not drawn."""
+    t = tables["la_class_configs_own"].copy()
+    for c in ("aircraft", "distinct configurations", "share in it"):
+        t[c] = _num(t, c)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(W, 2.5))
+    x = np.arange(len(WINDOW_NAMES))
+    for code in t["code"].unique():
+        sub = t[t["code"].eq(code)].set_index("window").reindex(WINDOW_NAMES)
+        mk, ls = _lf._cs(code)
+        ok = sub["share in it"].notna()
+        a1.plot(x[ok], sub["share in it"][ok], marker=mk, ls=ls, color=_lf._color(code), lw=1.4, ms=4,
+                label=_lf._arch_name(code))
+        per = (sub["distinct configurations"] / sub["aircraft"]).where(ok)
+        a2.plot(x[ok], per[ok], marker=mk, ls=ls, color=_lf._color(code), lw=1.4, ms=4)
+    for ax, title in ((a1, "share of the class in its most common configuration"),
+                      (a2, "distinct configurations per aircraft")):
+        ax.set_xticks(x, [_lf.WIN_SHORT.get(w, w) for w in WINDOW_NAMES], fontsize=7.5)
+        ax.axvspan(x[-1] - 0.5, x[-1] + 0.5, color=GRID, alpha=0.55, zorder=0, hatch="//", lw=0)
+        ax.set_title(title, fontsize=8.5)
+        _hgrid(ax, "y")
+    a1.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+    a1.set_ylim(0, 0.7)
+    a2.set_ylim(0, 1.0)
+    handles, labels = a1.get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=6.5, loc="lower center", ncol=5, handlelength=1.8,
+               bbox_to_anchor=(0.5, -0.12), frameon=False, columnspacing=1.0)
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
 # 6 — the citation advantage of the rated firms, as a distribution
 # --------------------------------------------------------------------------
 #: the rank axis in ten bins: a decile is the coarsest split that still shows a shape, and the
@@ -472,6 +579,283 @@ def panel_cite_rank(tables: Dict[str, pd.DataFrame], path: Path,
 # --------------------------------------------------------------------------
 # the one entry point the render script calls
 # --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
+# 2026-09-24, the drivers section rewritten as observations with the correlation behind each
+# (author: "put this as a correlation with the possible reasons"). Both panels read the SAME
+# frame the verdict table is built from (``la_tables.trace_frame``) plus the per-aircraft unit
+# counts (``la_tables._per_aircraft_units``), so no number here can disagree with Table 12.
+# ---------------------------------------------------------------------------------------------
+_DRV_W = ["<= 2011", "2012-15", "2016-19", "2020-23"]
+_DRV_WL = ["≤2011", "12–15", "16–19", "20–23"]
+_DRV_CL = [("SLC", "Lift + Cruise", "o", "-", CAT[0], True),
+           ("TR", "Tilt Rotor", "s", "--", CAT[7], True),
+           ("CVT", "Comb. vectored thrust", "^", "-.", CAT[2], True),
+           ("TW", "Tilt Wing", "D", ":", CAT[3], False),
+           ("MR", "Multirotor", "v", "--", CAT[6], False)]
+
+
+def _driver_frame(ds) -> pd.DataFrame:
+    """One row per unique aircraft, priority year ≤ 2023: the traces of Table 12 and the
+    tilting / fixed propulsor-set counts read from the M3 groups."""
+    v = _lt.base(ds)
+    t = _lt.trace_frame(ds, v)
+    raw = ds.variants
+    pu = _lt._per_aircraft_units(raw)
+    pu["aircraft_id"] = raw["aircraft_id"].values
+    t = t.merge(pu, on="aircraft_id", how="left")
+    t = t[pd.to_numeric(t["year"], errors="coerce") <= 2023].copy()
+    for c in ("joints", "n_types", "units", "ducted", "on_booms", "tilting types", "fixed types"):
+        t[c] = pd.to_numeric(t[c], errors="coerce")
+    return t
+
+
+def _drv_series(t, cls, col, how, min_n=5):
+    d = t[t["topType"] == cls]
+    g = d.groupby("window")[col]
+    s = (g.median() if how == "median" else g.mean()).reindex(_DRV_W)
+    n = g.count().reindex(_DRV_W).fillna(0)
+    return s.where(n >= min_n)
+
+
+def _drv_pct(ax):
+    ax.set_ylim(0, 1.02)
+    ax.set_yticks([0, .25, .5, .75, 1])
+    ax.set_yticklabels(["0", "25", "50", "75", "100 %"])
+
+
+def panel_driver_traces(ds, path: Path) -> Optional[Path]:
+    """The four traces of the observations, per class and window: (i) tilting joint groups
+    (mean), (ii) propulsive units (median), (iii) propulsor types (mean), (iv) share with a
+    ducted unit. A point needs ≥ 5 aircraft in the class-window."""
+    if ds is None:
+        return None
+    t = _driver_frame(ds)
+    fig, axs = plt.subplots(1, 4, figsize=(W, 2.45))
+    spec = [("joints", "mean", "(i) tilting joint groups\nmean per aircraft", False),
+            ("units", "median", "(ii) propulsive units\nmedian per aircraft", False),
+            ("n_types", "mean", "(iii) propulsor types\nmean per aircraft", False),
+            ("ducted", "mean", "(iv) share with a\nducted unit", True)]
+    for ax, (col, how, title, pct) in zip(axs, spec):
+        for code, name, mk, ls, c, filled in _DRV_CL:
+            s = _drv_series(t, code, col, how)
+            ax.plot(range(4), s.values, marker=mk, ls=ls, color=c, ms=4.5, lw=1.3, label=name,
+                    mfc=c if filled else "white")
+        ax.set_title(title, loc="left", fontsize=8.5)
+        ax.set_xticks(range(4))
+        ax.set_xticklabels(_DRV_WL, rotation=35, ha="right", fontsize=7)
+        ax.grid(axis="y", lw=0.4, alpha=0.5)
+        if pct:
+            _drv_pct(ax)
+        else:
+            ax.set_ylim(bottom=0)
+    axs[0].set_ylim(0, 2.1)
+    axs[2].set_ylim(0, 3.2)
+    fig.legend(*axs[0].get_legend_handles_labels(), loc="lower center", ncol=5, frameon=False,
+               fontsize=7.5, bbox_to_anchor=(0.5, -0.02))
+    fig.tight_layout(rect=(0, 0.09, 1, 1))
+    return _save(fig, path)
+
+
+def panel_driver_correlations(ds, path: Path) -> Optional[Path]:
+    """The correlation behind each observation: (i) Tilt Rotor, share with ≥ 2 tilting
+    propulsor sets against share with any fixed set, per window; (ii) Tilt Rotor, median
+    propulsive units by number of tilting sets; (iii) CVT, share with units on booms, and share
+    ducted among the aircraft with and without units on booms (a point needs ≥ 4 aircraft)."""
+    if ds is None:
+        return None
+    t = _driver_frame(ds)
+    red = CAT[7]
+    fig, axs = plt.subplots(1, 3, figsize=(W, 2.55))
+    x = np.arange(4)
+    d = t[t["topType"] == "TR"]
+    two = (d["tilting types"] >= 2).groupby(d["window"]).mean().reindex(_DRV_W)
+    fx = (d["fixed types"] >= 1).groupby(d["window"]).mean().reindex(_DRV_W)
+    ax = axs[0]
+    ax.bar(x - 0.19, two.values, 0.38, color=red, label="≥ 2 tilting sets")
+    ax.bar(x + 0.19, fx.values, 0.38, color="white", edgecolor=red, hatch="///", label="≥ 1 fixed set")
+    ax.set_xticks(x)
+    ax.set_xticklabels(_DRV_WL, fontsize=7.5)
+    _drv_pct(ax)
+    ax.set_title("(i) Tilt Rotor: what the\nsecond propulsor type is", loc="left", fontsize=8.5)
+    ax.legend(frameon=False, loc="upper left", fontsize=7)
+    ax = axs[1]
+    k = d.groupby("tilting types")["units"].agg(["median", "size"])
+    k = k[(k.index >= 1) & (k.index <= 3)]
+    ax.bar([str(int(i)) for i in k.index], k["median"].values, color=red, width=0.6)
+    for i, (m, n) in enumerate(zip(k["median"], k["size"])):
+        ax.text(i, m + 0.15, f"n = {int(n)}", ha="center", fontsize=7)
+    ax.set_title("(ii) Tilt Rotor: median units\nby number of tilting sets", loc="left", fontsize=8.5)
+    ax.set_xlabel("tilting propulsor sets on the aircraft", fontsize=7.5)
+    ax.set_ylim(0, float(k["median"].max()) + 1.5)
+    d = t[t["topType"] == "CVT"]
+    onb = d.groupby("window")["on_booms"].mean().reindex(_DRV_W)
+    nb, b = d[d["on_booms"] == 0], d[d["on_booms"] == 1]
+    n_nb = nb.groupby("window").size().reindex(_DRV_W).fillna(0)
+    n_b = b.groupby("window").size().reindex(_DRV_W).fillna(0)
+    duct_nb = nb.groupby("window")["ducted"].mean().reindex(_DRV_W).where(n_nb >= 4)
+    duct_b = b.groupby("window")["ducted"].mean().reindex(_DRV_W).where(n_b >= 4)
+    ax = axs[2]
+    ax.plot(x, onb.values, marker="^", ls="-.", color=CAT[2], label="units on booms (share)", lw=1.3, ms=4.5)
+    ax.plot(x, duct_nb.values, marker="s", ls="-", color=INK, label="ducted · no booms", lw=1.3, ms=4.5)
+    ax.plot(x, duct_b.values, marker="s", ls="--", color=INK, mfc="white", label="ducted · units on booms",
+            lw=1.3, ms=4.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels(_DRV_WL, fontsize=7.5)
+    _drv_pct(ax)
+    ax.set_title("(iii) CVT: ducting against\nthe boom layout", loc="left", fontsize=8.5)
+    ax.legend(frameon=False, loc="upper center", fontsize=6.5, bbox_to_anchor=(0.5, -0.2), ncol=1)
+    for ax in axs:
+        ax.grid(axis="y", lw=0.4, alpha=0.5)
+    fig.tight_layout()
+    return _save(fig, path)
+
+
+# --------------------------------------------------------------------------
+# 2026-09-25, the review of the brief: three panels, each for a result that a
+# table alone does not carry — the normalised joint count (C29, C32), the
+# conditional ducting test (C24, C36) and the post-hoc design family (C36).
+# --------------------------------------------------------------------------
+#: the classes drawn on the joints panel, in the order the document names them
+JOINT_CLASSES = ["TR", "CVT", "TW", "MR", "SLC"]
+
+
+def panel_joints_per_unit(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """Tilting joint groups per window, absolute (i) and divided by the aircraft's propulsive
+    units (ii), one line per class. Base: the class's aircraft in the window, five or more.
+
+    The two panels are the whole of the point: the absolute count rises inside Tilt Rotor and CVT,
+    and the ratio does not follow it, so the rise is the propulsor count and not an independent
+    tilting cost. The Spearman rho and p of each line are printed in the table.
+    """
+    t = tables["la_joints_per_unit"].copy()
+    wins = [_lf.WIN_SHORT.get(w, w) for w in WINDOW_NAMES]
+    for c in wins:
+        t[c] = _num(t, c)
+    t["_rho"] = _num(t, "rho")
+    measures = list(dict.fromkeys(t["measure"]))
+    fig, axes = plt.subplots(1, 2, figsize=(W, 2.5))
+    x = np.arange(len(wins))
+    for ax, measure in zip(axes, measures):
+        sub_m = t[t["measure"].eq(measure)]
+        for code in JOINT_CLASSES:
+            r = sub_m[sub_m["code"].eq(code)]
+            if not len(r):
+                continue
+            y = r[wins].iloc[0].to_numpy(dtype=float)
+            ok = np.isfinite(y)
+            mk, ls = _lf._cs(code)
+            ax.plot(x[ok], y[ok], marker=mk, ls=ls, color=_lf._color(code), lw=1.4, ms=4,
+                    label=_lf._arch_name(code))
+        ax.set_xticks(x, wins, fontsize=7.5)
+        ax.axvspan(x[-1] - 0.5, x[-1] + 0.5, color=GRID, alpha=0.55, zorder=0, hatch="//", lw=0)
+        _hgrid(ax, "y")
+    axes[0].set_title("(i) median tilting joint groups", loc="left", fontsize=8.5)
+    axes[1].set_title("(ii) the same, per propulsive unit", loc="left", fontsize=8.5)
+    axes[0].set_ylim(bottom=0)
+    axes[1].set_ylim(0, 0.62)
+    # the two classes the verdict is about, with their test, written on the panel that decides it
+    said = []
+    for code in ("TR", "CVT"):
+        a = t[t["code"].eq(code) & t["measure"].eq(measures[0])]
+        b = t[t["code"].eq(code) & t["measure"].eq(measures[1])]
+        if len(a) and len(b):
+            said.append(f"{_lf._arch_name(code)}: count {a['movement'].iloc[0]} (ρ {a['_rho'].iloc[0]:+.2f}), "
+                        f"per unit {b['movement'].iloc[0]} (ρ {b['_rho'].iloc[0]:+.2f})")
+    axes[1].text(0.02, 0.03, "\n".join(said), transform=axes[1].transAxes, fontsize=6.5,
+                 color=INK2, va="bottom", ha="left", linespacing=1.3)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=6.5, loc="lower center", ncol=5, handlelength=1.8,
+               bbox_to_anchor=(0.5, -0.12), frameon=False, columnspacing=1.0)
+    fig.suptitle("The tilting joints rose with the propulsors, not against the cost of tilting",
+                 fontsize=9, y=1.02)
+    return _save(fig, path)
+
+
+def panel_duct_conditional(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """Given that one unit is ducted, how much of the aircraft is: the conditional distribution of
+    the ducted share, per propulsive-unit band. Base on the tick — the aircraft of the band with at
+    least one ducted unit."""
+    t = tables["la_duct_conditional"].copy()
+    bins = [c for c, _lo, _hi in _lt.DUCT_SHARE_BINS] + [_lt.DUCT_EVERY]
+    for c in bins + ["of them, duct at least one unit", "share that duct every unit"]:
+        t[c] = _num(t, c)
+    t = t[t["propulsive units"].ne("all bands")]
+    allrow = tables["la_duct_conditional"]
+    allrow = allrow[allrow["propulsive units"].eq("all bands")]
+    every = float(_num(allrow, "share that duct every unit").iloc[0])
+
+    fig, ax = plt.subplots(figsize=(W, 2.45))
+    x = np.arange(len(t))
+    n = t["of them, duct at least one unit"].to_numpy(dtype=float)
+    bottom = np.zeros(len(t))
+    # a light-to-dark grey ramp for the partial bins and the one colour for "every unit", so the
+    # four partial bins stay apart from each other in black and white as well as in colour
+    ramp = ["#ececea", "#d5d4d0", "#bebcb6", "#a7a49c"]
+    for i, b in enumerate(bins):
+        frac = t[b].to_numpy(dtype=float) / n
+        ax.bar(x, frac, bottom=bottom, width=0.62, zorder=3, label=b,
+               color=(BLUE(0.85) if b == _lt.DUCT_EVERY else ramp[i % len(ramp)]),
+               edgecolor=INK, lw=0.4)
+        for xi, (f, bt) in enumerate(zip(frac, bottom)):
+            if f >= 0.08:
+                ax.text(xi, bt + f / 2, f"{f:.0%}", ha="center", va="center", fontsize=6.5,
+                        color="#ffffff" if b == _lt.DUCT_EVERY else INK)
+        bottom = bottom + frac
+    ax.axhline(1 - every, color=INK, lw=1.1, ls="--", zorder=5)
+    ax.text(len(t) - 0.4, 1 - every, f"every band together:\nthe top block is {every:.0%}",
+            ha="left", va="center", fontsize=7, color=INK2, zorder=6, linespacing=1.2)
+    ax.set_xticks(x, [f"{g}\nn {int(v)}" for g, v in zip(t["propulsive units"], n)], fontsize=8)
+    ax.set_xlim(-0.6, len(t) + 0.55)
+    ax.set_xlabel("propulsive units per aircraft · base: the aircraft of the band with at least one "
+                  "ducted unit", fontsize=7.5)
+    ax.set_ylabel("share of the aircraft that\nduct at least one unit", fontsize=8)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+    ax.set_ylim(0, 1.0)
+    _hgrid(ax, "y")
+    ax.legend(fontsize=6.5, loc="lower center", ncol=5, handlelength=1.4, frameon=False,
+              bbox_to_anchor=(0.5, -0.46))
+    ax.set_title("If one unit is ducted, are they all? Mostly — but not as a rule", fontsize=9)
+    return _save(fig, path)
+
+
+def panel_family(tables: Dict[str, pd.DataFrame], path: Path) -> Path:
+    """The post-hoc Lift + Cruise + CVT family: its share of each priority window under the three
+    definitions, against the 50 % line of condition 1. Base: the aircraft of the window, on the
+    tick. POST HOC — the grouping was defined after the result it came from."""
+    t = tables["la_family_share"].copy()
+    t["_s"] = _num(t, "family share")
+    t["_n"] = _num(t, "family aircraft")
+    t["_w"] = _num(t, "aircraft in the window")
+    ids = [i for i in ("c", "b", "bc") if i in set(t["id"])]
+    fig, ax = plt.subplots(figsize=(W, 2.5))
+    x = np.arange(len(WINDOW_NAMES))
+    for i, key in enumerate(ids):
+        sub = t[t["id"].eq(key)].set_index("window").reindex(WINDOW_NAMES)
+        ax.plot(x, sub["_s"], marker=["o", "s", "^"][i % 3], ls=["-", "--", ":"][i % 3],
+                color=CAT[i % len(CAT)], lw=1.5, ms=4.5, label=str(sub["definition"].dropna().iloc[0]))
+        if key == ids[0]:
+            for xi, (s, nn) in enumerate(zip(sub["_s"], sub["_n"])):
+                if np.isfinite(s):
+                    ax.text(xi, s - 0.025, f"{int(nn)}", ha="center", va="top", fontsize=6.5, color=INK)
+    ax.axhline(0.5, color=INK, lw=1.2, ls="--", zorder=4)
+    ax.text(len(WINDOW_NAMES) - 0.55, 0.505,
+            "condition 1: one design over half a window, twice in a row",
+            transform=ax.transData, fontsize=7, color=INK2, va="bottom", ha="right")
+    wins = tables["la_family_share"]
+    base = wins[wins["id"].eq(ids[0])].set_index("window").reindex(WINDOW_NAMES)
+    ax.set_xticks(x, [f"{_lf.WIN_SHORT.get(w, w)}\nn {int(v)}" for w, v in
+                      zip(WINDOW_NAMES, _num(base.reset_index(), "aircraft in the window"))], fontsize=7.5)
+    ax.axvspan(x[-1] - 0.5, x[-1] + 0.5, color=GRID, alpha=0.55, zorder=0, hatch="//", lw=0)
+    ax.set_ylabel("share of the window's aircraft", fontsize=8)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
+    ax.set_ylim(0, 0.62)
+    _hgrid(ax, "y")
+    ax.legend(fontsize=7, loc="lower right", handlelength=2.0, frameon=False)
+    ax.set_title("POST HOC — Lift + Cruise and the CVT aircraft read as one design family: "
+                 "larger than any class, still under the line", fontsize=9)
+    return _save(fig, path)
+
+
 def render(out_dir: Path, tables: Dict[str, pd.DataFrame], ds=None) -> Dict[str, Path]:
     """Draw every panel into ``out_dir/figures``; returns ``{name: path}``.
 
@@ -490,6 +874,17 @@ def render(out_dir: Path, tables: Dict[str, pd.DataFrame], ds=None) -> Dict[str,
                         lambda p: panel_tw_entry(tables, p)),
         "sm_trl_tracked": (["a2_d15_trl_status"], lambda p: panel_trl_tracked(tables, p)),
         "sm_cite_rank": (["la_ari_gap"], lambda p: panel_cite_rank(tables, p, ds, frame)),
+        # 2026-09-24, the brief's review
+        "sm_duct_count": (["la_duct_count"], lambda p: panel_duct_count(tables, p)),
+        "sm_entry_all": (["la_cohort_mix"], lambda p: panel_entry_all(tables, p)),
+        "sm_class_configs": (["la_class_configs_own"], lambda p: panel_class_configs(tables, p)),
+        # 2026-09-25, the review of the brief
+        "sm_joints_per_unit": (["la_joints_per_unit"], lambda p: panel_joints_per_unit(tables, p)),
+        "sm_duct_conditional": (["la_duct_conditional"], lambda p: panel_duct_conditional(tables, p)),
+        "sm_family": (["la_family_share"], lambda p: panel_family(tables, p)),
+        # 2026-09-24, drivers as observations: drawn from the dataset, no table needed
+        "sm_driver_traces": ([], lambda p: panel_driver_traces(ds, p)),
+        "sm_driver_corr": ([], lambda p: panel_driver_correlations(ds, p)),
     }
     paths: Dict[str, Path] = {}
     with plt.rc_context(PANEL_STYLE):

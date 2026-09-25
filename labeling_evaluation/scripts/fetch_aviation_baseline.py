@@ -55,6 +55,12 @@ SERIES = {
     "ipc_world": "IC:B64* AND PD:{y}",
     "cpc_offices": "CPC:B64* AND PD:{y} AND OF:(" + OF + ")",
     "ipc_offices": "IC:B64* AND PD:{y} AND OF:(" + OF + ")",
+    # 2026-09-24, author's request: patenting in general and CPC section B (performing
+    # operations; transporting), both at the same nine offices, so the eVTOL count can be
+    # drawn beside them
+    "all_offices": "PD:{y} AND OF:(" + OF + ")",
+    # "CPC:B*" is refused (HTTP 400); the section on its own is accepted
+    "cpcB_offices": "CPC:B AND PD:{y} AND OF:(" + OF + ")",
 }
 
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
