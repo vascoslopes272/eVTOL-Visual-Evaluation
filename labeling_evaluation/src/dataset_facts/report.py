@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from pathlib import Path
-from typing import Dict, Optional
+from typing import List, Dict, Optional
 
 import pandas as pd
 
@@ -158,10 +158,19 @@ def _table_md(name: str, table: pd.DataFrame, number: str, idx=index,
     cols = idx.COLUMNS.get(name)
     if cols:
         t = t[[c for c in cols if c in t.columns]]
+    # 2026-09-25: a print-only formatter, for a document that defines one (the brief does; the
+    # full document and the Preliminary Analysis do not, so they render byte-for-byte as
+    # before). It changes what is PRINTED — rounding, "< 0.001", a row selection — never the
+    # CSV in tables/, which keeps full precision for the numbers the prose quotes.
+    _pf = getattr(idx, "print_format", None)
+    if _pf is not None:
+        t = _pf(name, t)
     cap = idx.ROW_CAP.get(name, MAX_ROWS)
     note = ""
     if len(t) > cap:
         note = f"\n\n*First {cap} of {len(t)} rows; the full table is `tables/{name}.csv`.*"
+        if not getattr(idx, "ROW_NOTE_POINTS_OUT", True):   # the brief points nowhere outside itself
+            note = f"\n\n*First {cap} of {len(t)} rows.*"
         t = t.head(cap)
     caption = idx.TABLE_CAPTIONS.get(name, name)
     four = _four_md(name, idx, values, "table", tables)
@@ -250,11 +259,25 @@ def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[s
         if lvl:
             head += [lvl, ""]
         body = idx.text(nid, values)
+        tail_body: List[str] = []
+        if body and nid in getattr(idx, "KEEP_HEAD_ONLY", ()):
+            # 2026-09-26 (the brief only): keep the heading with the first block of a long body,
+            # let the rest flow; never split inside a div
+            parts = body.split("\n\n")
+            k = 2 if parts[0].lstrip().startswith("#") else 1
+            kept = "\n\n".join(parts[:k])
+            if len(parts) > k and "<div" not in kept:
+                body, tail_body = kept, ["\n\n".join(parts[k:]), ""]
         if body:
             head += [body, ""]
         figs = [f for f in n.get("figures", []) if f in figures]
         tabs_ = [t for t in n.get("tables", []) if t in tables]
         first_fig = figs[0] if figs and figs[0] not in getattr(idx, "LANDSCAPE", set()) else None
+        # 2026-09-26: a node in the index module's optional ``TABLES_FIRST`` prints its tables
+        # before its figures (the brief; absent elsewhere, so the other documents are unchanged)
+        tables_first = nid in getattr(idx, "TABLES_FIRST", ())
+        if tables_first:
+            first_fig = None
         if keep_with_next:
             # the heading travels with the first block under it; a chapter opens a new page
             cls = "keep chapter-start" if chapter else "keep"
@@ -269,27 +292,29 @@ def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[s
                 first = [_figure_md(first_fig, figures[first_fig], out_dir,
                                     idx.figure_number(nid, 0, len(figs)), idx, panels,
                                     values, tables), ""]
-            elif not figs and tabs_:
+            elif (tables_first or not figs) and tabs_:
                 first = [_table_md(tabs_[0], tables[tabs_[0]], idx.table_number(nid, 0, len(tabs_)),
                                    idx, values, tables), ""]
-            lines += [f'<div class="{cls}" markdown="1">', ""] + head + first + ["</div>", ""]
+            lines += [f'<div class="{cls}" markdown="1">', ""] + head + first + ["</div>", ""] + tail_body
             done_fig = {first_fig} if (first_fig and first) else set()
-            done_tab = {tabs_[0]} if (not figs and tabs_ and first) else set()
+            done_tab = {tabs_[0]} if ((tables_first or not figs) and tabs_ and first) else set()
         else:
-            lines += head
+            lines += head + tail_body
             done_fig, done_tab = set(), set()
+        fig_md, tab_md = [], []
         for k, name in enumerate(figs):
             if name in done_fig:
                 continue
-            lines += [_figure_md(name, figures[name], out_dir,
-                                 idx.figure_number(nid, k, len(figs)), idx, panels,
-                                 values, tables), ""]
+            fig_md += [_figure_md(name, figures[name], out_dir,
+                                  idx.figure_number(nid, k, len(figs)), idx, panels,
+                                  values, tables), ""]
         tabs = [t for t in n.get("tables", []) if t in tables]
         for k, name in enumerate(tabs):
             if name in done_tab:
                 continue
-            lines += [_table_md(name, tables[name], idx.table_number(nid, k, len(tabs)),
-                                idx, values, tables), ""]
+            tab_md += [_table_md(name, tables[name], idx.table_number(nid, k, len(tabs)),
+                                 idx, values, tables), ""]
+        lines += (tab_md + fig_md) if tables_first else (fig_md + tab_md)
         tail = idx.after(nid, values)
         if tail:
             lines += [tail, ""]
@@ -298,5 +323,9 @@ def write_markdown(ds: Dataset, tables: Dict[str, pd.DataFrame], figures: Dict[s
         if ans:
             lines += [ans, ""]
     path = out_dir / filename
-    path.write_text("\n".join(lines), encoding="utf-8")
+    text = "\n".join(lines)
+    post = getattr(idx, "POST_TEXT", None)      # 2026-09-28: the brief's printed names
+    if post is not None:
+        text = post(text)
+    path.write_text(text, encoding="utf-8")
     return path

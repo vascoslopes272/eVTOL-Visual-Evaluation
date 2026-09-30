@@ -230,7 +230,7 @@ FIGURE_CAPTIONS: Dict[str, str] = {
     "linked_check": "whether the aircraft linked to an evtol.news page stand for the whole analysis set",
     "ari_history": "how each index firm's score moved, and disclosed funding against patented aircraft",
     "ari_clock": "the patent clock against the market clock for the index firms, one row per firm",
-    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars; then how much faster eVTOL grew than the patenting around it — this corpus's eVTOL families as a fraction of all aeronautics (CPC B64) families, of all CPC section-B families and of all patent families filed worldwide in the same priority year, each drawn as a multiple of its own 2005-09 starting level; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
+    "filings_per_year": "unique aircraft per priority year by applicant region, acquired patents as a line, with the dated sector events under the bars; then eVTOL's share of the patenting around it, relative to its 2005-09 share — this corpus's acquired patent families as a fraction of all aeronautics (CPC B64) families, of all CPC section-B families and of all patent families filed worldwide in the same priority year, each drawn as a multiple of its own 2005-09 starting level; hatched years are still incomplete at the snapshot (90th-percentile publication lag)",
     "dominant_design_q": "condition 3 of the dominant-design test: Q per window against the level of the earliest windows and the permutation band",
     "dominant_design": "the dominant-design test per window: top archetype share against the 50 % line, and ²D against the permutation band",
     "class_configs": "within-class convergence: how far each architecture class settles on a single configuration. "
@@ -277,7 +277,7 @@ FIGURE_PANELS: Dict[str, List] = {
     # 1.1.1 gains (ii) only when the stored aviation baseline is installed; without it the figure
     # holds one graph and the marks are skipped (see la_baseline, user ruling 2026-09-22).
     "filings_per_year": [("filings per priority year, by applicant region", 1),
-                         ("how much faster eVTOL grew than aeronautics, than all section-B and than all patenting, worldwide", 1)],
+                         ("eVTOL's share of aeronautics, of section B and of all patenting worldwide, relative to its 2005-09 share", 1)],
     "atlas_arch_time": [("architecture share per window", 1), ("the five largest classes over time", 1)],
     "dominant_design_q": [("Q per window, both weightings", 1), ("condition 3: ΔQ at A0c against the band", 1),
                           ("condition 3: ΔQ at A1t against the band", 1)],
@@ -291,7 +291,7 @@ FIGURE_PANELS: Dict[str, List] = {
     "hill": [("A0, the architecture class", 1), ("A0c, class × propulsive-unit count", 1)],
     "lead_lag": [("25 %, median and 75 % year of each region and each class", 1),
                  ("median year of each class inside each region", 1)],
-    "zones": [("crowded against open", 1), ("aircraft per window for each archetype", 1)],
+    "zones": [("the crowded core and the empty rim", 1), ("aircraft per window for each archetype", 1)],
     "filer_weight": [("the three largest filers of each class", 1),
                      ("the largest filer of each class inside each window", 1)],
     # --- 1.2 who designs it

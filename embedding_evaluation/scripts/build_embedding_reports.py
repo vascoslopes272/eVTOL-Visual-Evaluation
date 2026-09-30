@@ -14,6 +14,10 @@ Outputs
 Section 1 (which images, and the check of each step) is written here per source;
 Sections 2-8 come from src/embedding_reports.protocol_sections and are the same
 text for both sources.
+
+Twin reports on another checkpoint: scripts/build_registers_reports.py imports this
+script, sets ``embedding_reports.TAG`` and ``TWIN`` (below) and redirects every output;
+with ``TWIN = None`` (the default) this script builds the base reports as before.
 """
 
 from __future__ import annotations
@@ -34,6 +38,15 @@ from src import embedding_reports as ER  # noqa: E402
 from src.embedding_reports import EVN, PAT, REPO, n_, pct, table, wilson  # noqa: E402
 
 REFRESH_ARCHIVE = PAT / "_archive/embedding_pipeline_PRE_REFRESH_20260922_150338"
+
+# A twin report on another checkpoint; None builds the base reports. Set by build_registers_reports.py:
+#   base_doc         {source: the base report of this source, as the text cites it}
+#   base_tables      {source: Path of the base report's tables folder (read only, for the comparison)}
+#   companion_doc    {source: the other source's twin report, as the text cites it}
+#   companion_table  {source: Path of the other source's twin main table (cross_line)}
+#   matching         Path of this model's matching table (photos, Section 9)
+#   script           the wrapper that builds the twins
+TWIN: dict | None = None
 
 
 def _t(tno, caption):
@@ -57,6 +70,29 @@ def extraction_repro() -> dict:
     return {"n": len(pairs), "worst": worst, "old_date": json.loads((old / "manifest.json").read_text()).get("created", "")[:10]}
 
 
+def twin_extraction_check(root: Path) -> dict:
+    """A twin tag: the same figures, in the same order, from the same processed images as the base tag."""
+    d = root / "2_embedding_extraction/embeddings"
+    mt, mb = (json.loads((d / t / "manifest.json").read_text()) for t in (ER.TAG, ER.BASE_TAG))
+    same = (pd.read_parquet(d / ER.TAG / "metadata.parquet").figure_uid.tolist()
+            == pd.read_parquet(d / ER.BASE_TAG / "metadata.parquet").figure_uid.tolist())
+    return {"n": int(mt["n_figures"]), "date": mt["created"][:10], "model": mt["model"],
+            "same": bool(same and mt["processed_manifest"] == mb["processed_manifest"])}
+
+
+def twin_intro(S) -> list[str]:
+    """Twin only: what this report is, said before anything else in Section 1."""
+    if not TWIN:
+        return []
+    mi = ER.model_info()
+    return [f"**Registers twin.** This report repeats `{TWIN['base_doc'][S.key]}` with one change: the "
+            f"embeddings come from `{mi['model_name']}` ({mi['num_register_tokens']} register tokens, embedding tag "
+            f"`{ER.TAG}`) instead of `{ER.model_info(ER.BASE_TAG)['model_name']}` (tag `{ER.BASE_TAG}`). The images, the labels, the "
+            f"selection, the processing and the protocol are the same files and the same code, so every difference "
+            f"between the two reports comes from the checkpoint. Section 1 is therefore the same as in the base "
+            f"report except for the extraction step.", ""]
+
+
 def section1_patents(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
     rel = S.fig_sub
     a = S.aircraft
@@ -67,7 +103,7 @@ def section1_patents(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
     gt_n = int((a.arch_gt != "").sum())
     from sklearn.metrics import cohen_kappa_score
     kap = cohen_kappa_score(a.label[a.arch_gt != ""], a.arch_gt[a.arch_gt != ""])
-    rep = extraction_repro()
+    rep = twin_extraction_check(PAT) if TWIN else extraction_repro()
     picks = S.extra["picks"]
     single = {k: v.set_index("aircraft_id").fig_id for k, v in picks.items() if k != "exp4 view average"}
     order = a.aircraft_id
@@ -84,6 +120,7 @@ def section1_patents(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
                     "the G1 type and the main-figure marker are recorded per aircraft. Every label below is a human "
                     "label from the labelling wizard (Stage 04 tables of "
                     f"{date.today().isoformat()}); no model chooses a figure.", ""]
+    L += twin_intro(S)
     L += ["### 1.1 The chain, step by step", ""]
     steps = pd.DataFrame([
         ("1 Approved figures", "keep the figures the labeller approved, of approved in-domain aircraft",
@@ -101,9 +138,13 @@ def section1_patents(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
          "fixed orderings of view and flight state (notebook 23)", "Section 7: the score under every rule"),
         ("7 Processing", "rotate by the labelled angle, pad to a white square, resize to 518 px",
          "notebook 21, same code for both sources", "0 processed images older than their source"),
-        ("8 Extraction", "DINOv2-large, frozen, layers 18/22/24, CLS token and patch-token mean",
-         "notebook 22", f"re-extracted today: {rep['n']} figures shared with the {rep['old_date']} run, lowest "
-                        f"cosine old/new {rep['worst']:.6f}"),
+        ("8 Extraction", f"{ER.model_short()}, frozen, layers 18/22/24, CLS token and patch-token mean",
+         *((f"notebook 22's code, run with `{rep['model']['model_name']}` on {rep['date']} "
+            "(eVTOL-Embedding-Extraction/scripts/registers_experiment.py)",
+            f"{rep['n']} figures, {'the same figures, order and processed images' if rep['same'] else 'NOT the same figures or processed images'} "
+            f"as the {ER.model_short(ER.BASE_TAG)} run") if TWIN else
+           ("notebook 22", f"re-extracted today: {rep['n']} figures shared with the {rep['old_date']} run, lowest "
+                           f"cosine old/new {rep['worst']:.6f}"))),
     ], columns=["step", "what it does", "setting and how it was chosen", "check"])
     L += [table(steps, _t(tno, "The selection chain of the patent figures and the check of each step.")), ""]
     steps_f = [(r.step if r.step == "figures on file" else f"minus {r.step}", int(r.remaining))
@@ -170,8 +211,9 @@ def section1_patents(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
         L += ["Outside the interval: " + "; ".join(f"{r.variant} ({r.knn_bal_acc:.2f})" for r in out.itertuples())
               + ".", ""]
     L += ['<span class="stage-status passed">SELECTION: HUMAN LABELS, CHECKED</span>', "", "---", ""]
-    verdict = (f"human labels; G1 matches the whole-patent reading for {agree}/{gt_n}; extraction reproduces "
-               f"(cos ≥ {rep['worst']:.4f})", "PASSED")
+    verdict = (f"human labels; G1 matches the whole-patent reading for {agree}/{gt_n}; "
+               + (f"same processed figures as the {ER.model_short(ER.BASE_TAG)} run" if TWIN else
+                  f"extraction reproduces (cos ≥ {rep['worst']:.4f})"), "PASSED")
     return L, verdict
 
 
@@ -219,6 +261,7 @@ def section1_evtolnews(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
                     "The patent figures carry human labels for every choice. The directory images do not: a script "
                     "decides which images show the aircraft, so each of its steps is checked here, the filter itself "
                     "on a random sample judged by eye.", ""]
+    L += twin_intro(S)
     L += ["### 1.1 The chain, step by step", ""]
     steps = pd.DataFrame([
         ("1 Index", "read the five class lists of evtol.news/aircraft", "the directory's own lists (2026-09-17)",
@@ -246,9 +289,13 @@ def section1_evtolnews(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
          f"image 00 of the page for {hero00} of {len(main)} aircraft"),
         ("8 Label", "the class of the list the page sits in", "the directory's own classes (user ruling 2026-09-17)",
          f"parent check against the codebook on {len(pc)} linked patent aircraft: {int(pc.agrees.sum())} agree"),
-        ("9 Processing and extraction", "pad to a white square, 518 px; DINOv2-large, frozen",
-         "notebooks 21 and 22's code, unchanged", "same code as the patent figures, whose re-extraction reproduced "
-                                                  "every vector"),
+        ("9 Processing and extraction", f"pad to a white square, 518 px; {ER.model_short()}, frozen",
+         *((f"notebooks 21 and 22's code, unchanged; run with `{ER.model_info()['model_name']}` "
+            "(eVTOL-Embedding-Extraction/scripts/registers_experiment.py)",
+            (lambda c: f"{c['n']} images, {'the same images, order and processed files' if c['same'] else 'NOT the same images or processed files'} "
+                       f"as the {ER.model_short(ER.BASE_TAG)} run")(twin_extraction_check(EVN))) if TWIN else
+           ("notebooks 21 and 22's code, unchanged", "same code as the patent figures, whose re-extraction reproduced "
+                                                     "every vector"))),
     ], columns=["step", "what it does", "setting and how it was chosen", "check and result"])
     L += [table(steps, _t(tno, "The selection chain of the evtol.news images and the check of each step.")), ""]
     steps_f = [("images on the pages", len(im)),
@@ -353,7 +400,7 @@ def section1_evtolnews(S, R, F, tno) -> tuple[list[str], tuple[str, str]]:
 
 
 def section_matching(S, R, F, tno) -> list[str]:
-    m = ER.fig_matching(F)
+    m = ER.fig_matching(F, TWIN["matching"] if TWIN else None)
     best = P.mname(R["best"])
     b = m[m.matrix == best].iloc[0]
     t = pd.DataFrame({"matrix": m.matrix, "top 1": (m["R@1"] * 100).round(1), "top 10": (m["R@10"] * 100).round(1),
@@ -365,7 +412,9 @@ def section_matching(S, R, F, tno) -> list[str]:
             'compared with every hero image, and the rank of its own page is recorded.</div>', "",
             f"Links come from the naming rulings (NAME_DECISIONS, patent_links_manual.csv). Line drawings are "
             f"removed from the gallery, because some directory pages show the patent drawing itself (cosine 0.97 to "
-            f"0.99), which would make the match trivial.", "",
+            f"0.99{', measured with ' + ER.model_short(ER.BASE_TAG) if TWIN else ''}), which would make the match trivial."
+            + (f" The matching table of this model is `{TWIN['matching'].name}` in this report's tables folder, "
+               "computed by the same code on the same links." if TWIN else ""), "",
             table(t, _t(tno, "Share of patent aircraft (%) whose own page is ranked in the top k.")), "",
             F.md("f10_matching", S.fig_sub), "",
             f"With {best}, the right aircraft is in the top 10 for {100 * b['R@10']:.0f} % of the queries and in the top "
@@ -376,12 +425,17 @@ def section_matching(S, R, F, tno) -> list[str]:
 
 
 # ── assembly ─────────────────────────────────────────────────────────────────
-PROTOCOL_NOTE = ("**How to read this report.** Section 1 is specific to this source. Sections 2 to 8 apply one "
-                 "protocol, with the same code, parameters and wording, to the patent figures and to the evtol.news "
-                 "photos, each in its own report; a table number in one report answers the same question as in the "
-                 "other. The unit is the aircraft (one vector each). Every test that compares aircraft leaves out "
-                 "pairs and neighbours of the same maker. Six matrices are compared: DINOv2-large (frozen), layers "
-                 "18, 22 and 24, each as the CLS token and as the mean of the patch tokens, extracted at 518 px.")
+def protocol_note() -> str:
+    return ("**How to read this report.** Section 1 is specific to this source. Sections 2 to 8 apply one "
+            "protocol, with the same code, parameters and wording, to the patent figures and to the evtol.news "
+            "photos, each in its own report; a table number in one report answers the same question as in the "
+            "other. The unit is the aircraft (one vector each). Every test that compares aircraft leaves out "
+            f"pairs and neighbours of the same maker. Six matrices are compared: {ER.model_short()} (frozen), layers "
+            "18, 22 and 24, each as the CLS token and as the mean of the patch tokens, extracted at 518 px."
+            + (" The table numbers are also those of the base report of the same source." if TWIN else ""))
+
+
+PROTOCOL_NOTE = protocol_note()   # the base text, kept for importers
 
 
 def build(S, reuse: bool, pdf: bool) -> Path:
@@ -391,7 +445,7 @@ def build(S, reuse: bool, pdf: bool) -> Path:
     tno = [0]
     if S.key == "patents":
         s1, sel = section1_patents(S, R, F, tno)
-        title = "Patent Figures: DINOv2 Embedding Analysis"
+        title = f"Patent Figures: {model_title()} Embedding Analysis"
         what = (f"{len(S.aircraft)} aircraft from {S.aircraft.patent_id.nunique()} patents (1 639-patent dataset, "
                 "labelling closed 2026-09-19, domain tags of 2026-09-22)")
         note = ('<span class="provenance">Companion report: <code>EVTOLNEWS_DS/3_embedding_evaluation/'
@@ -400,7 +454,7 @@ def build(S, reuse: bool, pdf: bool) -> Path:
                 'that date and scored on separation only.</span>')
     else:
         s1, sel = section1_evtolnews(S, R, F, tno)
-        title = "evtol.news Photos: DINOv2 Embedding Analysis"
+        title = f"evtol.news Photos: {model_title()} Embedding Analysis"
         what = (f"{len(S.aircraft)} aircraft of the VFS World eVTOL Aircraft Directory (evtol.news, crawled "
                 "2026-09-17), one hero image each")
         note = ('<span class="internal"><strong>Internal document.</strong> Figures 2 and 3 reproduce images from '
@@ -409,6 +463,8 @@ def build(S, reuse: bool, pdf: bool) -> Path:
                 'Evaluation/docs/embedding_evaluation/PATENT_EMBEDDING_ANALYSIS.pdf</code> (the same protocol on '
                 'the patent figures). Supersedes the evaluation sections of <code>EVTOLNEWS_ADVISOR_REPORT</code> '
                 'of 2026-09-18.</span>')
+    if TWIN:
+        note = twin_note(S, note)
     body = s1 + ER.protocol_sections(S, R, F, tno)
     if S.key == "evtolnews":
         body += section_matching(S, R, F, tno)
@@ -417,9 +473,10 @@ def build(S, reuse: bool, pdf: bool) -> Path:
     head = [f"# {title}", "",
             f"**Images:** {what}  ",
             f"**Label:** {S.label_name}  ",
-            f"**Model:** `facebook/dinov2-large`, frozen; 518 px; layers 18, 22, 24 × CLS token / patch-token mean  ",
+            model_line(),
             f"**Date:** {date.today().isoformat()}", "", note, "", ER.style_block(), "", "---", "",
-            "## Summary", "", table(summ), "", cross_line(S, R), "", PROTOCOL_NOTE, "", "---", ""]
+            "## Summary", "", table(summ), "", cross_line(S, R), "", *twin_compare(S, R), protocol_note(), "",
+            "---", ""]
     tail = open_points(S, R) + sources(S)
     md = "\n".join(head + body + tail)
     out = S.doc_dir / S.doc_name
@@ -431,9 +488,66 @@ def build(S, reuse: bool, pdf: bool) -> Path:
     return out
 
 
+def model_title() -> str:
+    return "DINOv2" + (" with Registers" if ER.model_info().get("num_register_tokens", 0) else "")
+
+
+def model_line() -> str:
+    if not TWIN:
+        return "**Model:** `facebook/dinov2-large`, frozen; 518 px; layers 18, 22, 24 × CLS token / patch-token mean  "
+    mi = ER.model_info()
+    return (f"**Model:** `{mi['model_name']}` ({mi['num_register_tokens']} register tokens), frozen; 518 px; layers "
+            f"18, 22, 24 × CLS token / patch-token mean; embedding tag `{ER.TAG}`  ")
+
+
+def twin_note(S, note: str) -> str:
+    """The base header note with its companion and supersedes lines replaced by the twin's."""
+    keep = note.split('<span class="provenance">')[0]
+    return (keep + f'<span class="provenance">Registers twin of <code>{TWIN["base_doc"][S.key]}</code> '
+            f'(<code>{ER.model_info(ER.BASE_TAG)["model_name"]}</code>, tag <code>{ER.BASE_TAG}</code>): same images, labels, protocol '
+            f'and code, only the checkpoint differs; read the two side by side. Companion report: '
+            f'<code>{TWIN["companion_doc"][S.key]}</code> (the same model on the '
+            f'{"evtol.news photos" if S.key == "patents" else "patent figures"}).</span>')
+
+
+def twin_compare(S, R) -> list[str]:
+    """Twin only: this model against the base model, matrix by matrix, on the primary image rule."""
+    if not TWIN:
+        return []
+    d = TWIN["base_tables"][S.key]
+    runs = [(f"{len(S.classes)} classes", R["ev"]["main"], d / "t_main.csv")]
+    if "ev5" in R:
+        runs.append(("five parent classes", R["ev5"]["main"], d / "t_main_5classes.csv"))
+    base_name, own_name = ER.model_short(ER.BASE_TAG), ER.model_short()
+    L = [f"**Against the base model.** The same test (kNN-5 balanced accuracy, maker held out, "
+         f"{S.primary_rule}) with {own_name} and with {base_name}; the base numbers are read from the base "
+         f"report's tables (`{_rel(d, ER.DATA)}`).", ""]
+    for lab, own, f in runs:
+        if not f.exists():
+            L += [f"The base table `{f.name}` is missing; no comparison for the {lab}.", ""]
+            continue
+        b = pd.read_csv(f).set_index("matrix").reindex(own.matrix)
+        t = pd.DataFrame({"matrix": own.matrix.tolist(), f"kNN-5, {base_name}": b.knn_bal_acc.round(3).tolist(),
+                          f"kNN-5, {own_name}": own.knn_bal_acc.round(3).tolist(),
+                          "difference": ((own.knn_bal_acc.to_numpy() - b.knn_bal_acc.to_numpy()).round(3) + 0.0).tolist(),
+                          f"probe, {base_name}": b.probe_bal_acc.round(3).tolist(),
+                          f"probe, {own_name}": own.probe_bal_acc.round(3).tolist()})
+        L += [table(t, f"{base_name} and {own_name} on the same aircraft, {lab}."), ""]
+    lf = d / "t_layer.csv"
+    if lf.exists():
+        bl = pd.read_csv(lf).sort_values("mean_knn_over_rules", ascending=False).iloc[0].matrix
+        best = P.mname(R["best"])
+        L += [f"The layer rule (Section 8) carries forward {best} here and {bl} in the base report"
+              + ("." if best == bl else "; the primary matrix changes with the model.")
+              + " A paired bootstrap of the L24 CLS difference (same aircraft, same neighbours) is in "
+              "`1639_LABELLED/3_embedding_evaluation/registers_check/registers_paired.csv`.", ""]
+    return L
+
+
 def cross_line(S, R) -> str:
     """The one number both reports share: kNN-5 on the same five classes, same protocol."""
-    other = (EVN / "3_embedding_evaluation/embedding_analysis/tables/t_main.csv" if S.key == "patents"
+    other = (TWIN["companion_table"][S.key] if TWIN else
+             EVN / "3_embedding_evaluation/embedding_analysis/tables/t_main.csv" if S.key == "patents"
              else PAT / "3_embedding_evaluation/embedding_protocol/t_main_5classes.csv")
     if not other.exists():
         return ""
@@ -470,24 +584,38 @@ def open_points(S, R) -> list[str]:
               "2. **Directory conflicts.** The DF3000 appears on two pages under two makers and two classes; the "
               "Honghu page exists but is not in the index.",
               "3. **Status.** 506 pages give no status; the maturity test uses the 651 that do.",
-              "4. **Attention.** From layer 22 on, the CLS token of DINOv2 (without registers) concentrates on a "
-              "padding token (advisor report of 2026-09-18); a model with registers is the next test.", ""]
+              ("4. **Attention.** With the register tokens, the CLS attention of layers 22 and 24 no longer "
+               "concentrates on a padding token, as it does in the base model (advisor report of 2026-09-18); the "
+               "comparison is in `1639_LABELLED/3_embedding_evaluation/registers_check/REGISTERS_CHECK.md`."
+               if TWIN else
+               "4. **Attention.** From layer 22 on, the CLS token of DINOv2 (without registers) concentrates on a "
+               "padding token (advisor report of 2026-09-18); a model with registers is the next test."), ""]
     return L
+
+
+def _rel(p: Path, root: Path) -> str:
+    return str(p.relative_to(root)) if p.is_relative_to(root) else str(p)
 
 
 def sources(S) -> list[str]:
     if S.key == "patents":
         s = ("<code>1639_LABELLED/2_embedding_extraction/</code>: <code>selection/</code> (notebook 20), "
-             "<code>processed/518/</code> (21), <code>embeddings/dinov2-large_518/</code> (22), "
+             f"<code>processed/518/</code> (21), <code>embeddings/{ER.TAG}/</code> "
+             f"({'22, run by registers_experiment.py' if TWIN else '22'}), "
              "<code>view_state_experiments/</code> (23); labels <code>0_labelling/outputs/</code> (notebook 04). "
-             "Tables as CSV in <code>1639_LABELLED/3_embedding_evaluation/embedding_protocol/</code>.")
+             f"Tables as CSV in <code>{_rel(S.table_dir, ER.DATA)}/</code>.")
     else:
+        match = (f"{TWIN['matching'].relative_to(EVN)}, 3_embedding_evaluation/parent_check.csv" if TWIN else
+                 "3_embedding_evaluation/matching.csv, parent_check.csv")
         s = ("<code>EVTOLNEWS_DS/</code>: <code>0_source/</code> (crawl), <code>1_filter/</code> (filter and "
-             "<code>audit_2026-09-22/</code>), <code>2_embedding_extraction/</code> (sets, 518 px embeddings), "
-             "<code>3_embedding_evaluation/matching.csv, parent_check.csv</code>. Tables as CSV in "
-             "<code>3_embedding_evaluation/embedding_analysis/tables/</code>.")
+             "<code>audit_2026-09-22/</code>), <code>2_embedding_extraction/</code> (sets, 518 px embeddings"
+             f"{f', tag {ER.TAG}' if TWIN else ''}), "
+             f"<code>{match}</code>. Tables as CSV in "
+             f"<code>{_rel(S.table_dir, EVN)}/</code>.")
+    by = (f"{TWIN['script']}</code>, which runs <code>build_embedding_reports.py</code> on the tag "
+          f"<code>{ER.TAG}</code>," if TWIN else "build_embedding_reports.py</code>")
     return ["---", "", f'<span class="provenance">Generated by <code>embedding_evaluation/scripts/'
-            f'build_embedding_reports.py</code> with <code>src/embedding_protocol.py</code> (the shared protocol) and '
+            f'{by} with <code>src/embedding_protocol.py</code> (the shared protocol) and '
             f'<code>src/embedding_reports.py</code>. Sources: {s}</span>', ""]
 
 

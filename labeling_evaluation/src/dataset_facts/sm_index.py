@@ -56,8 +56,9 @@ from typing import Dict, List, Optional
 
 from . import index as _pa
 from . import la_index as _la
+from . import sm_text_methods as _methods_text
 
-TITLE = ("Labelling Analysis in brief — four questions about the eVTOL patent record, "
+TITLE = ("Labelling Analysis in brief: five questions about the eVTOL patent record, "
          "the evidence that answers them, and what to ask next")
 
 
@@ -91,51 +92,16 @@ OLD_NODES: List[Dict] = [
     # because ``report`` binds a portrait first figure to the heading and the filings figure is
     # 8.7 in tall. The pointer to the vocabulary stays in the opening paragraph, and now names
     # where it went.
+    # 2026-09-26 (chapter-1 review): the prose that stood here moved into the Method blocks
+    # (``TEXTS["1.q1"]`` and ``CHAPTER_METHOD["1"]``) and the takeaways; C6 — it repeated them.
+    # The market clock figure joins it (C41: the Answer quoted a figure the chapter did not show).
     dict(id="Q1",
-         text="**The unit, stated once for the whole document.** {acquired_s} patents were acquired "
-              "(PatSeer, snapshot {snapshot}); {representative_s} describe an electric VTOL aircraft "
-              "readable from its drawings; those describe **{unique_s} unique aircraft**, and the "
-              "unique aircraft is the row everywhere below. Not the patent, because a firm that files "
-              "the same design five times has one design, and the questions here are about designs; "
-              "the patents are drawn as a line beside the bars so the difference is visible. Not the "
-              "{observations_s} aircraft observations, because an observation is one drawing in one "
-              "patent and the same aircraft recurs across filings. The classes are those of Appendix D "
-              "of `LABELLING_ANALYSIS.pdf`.\n\n"
-              "**Time is the priority year** — the earliest filing date of the family, which is when "
-              "the design existed. Publication follows {lag_p90} years later at the 90th percentile, "
-              "so priority years from {partial_start} on are still filling at the snapshot, are "
-              "hatched in every figure, and no trend claim reaches past 2023.\n\n"
-              "**2018** holds {tk_y2018} aircraft against {sm_pat_2018} patents: the large filers of "
-              "that year filed several patents on each design — the gap between the two is exactly "
-              "what counting aircraft removes.\n\n"
-              "**The record grows at about the pace of the aeronautics around it — not faster.** "
-              "Fitted on the complete years, eVTOL aircraft double every {sm_dbl_evtol} years "
-              "({sm_dbl_evtol_ci}); aeronautics — every CPC B64 patent family filed worldwide, the "
-              "corpus's own unit and database — doubles every {sm_dbl_b64} years ({sm_dbl_b64_ci}). "
-              "eVTOL is {sm_dbl_ratio} times as fast ({sm_dbl_ratio_ci}): **the interval takes in 1, "
-              "so the two rates cannot be told apart.** An earlier reading of about twice as fast "
-              "rested on a nine-office baseline that undercounts the recent years — on it aeronautics "
-              "doubled only every {sm_dbl_b64_offices} years — and does not survive the correction. "
-              "Cutting the fit at 2019 gives {sm_dbl_ratio_sens}, so the answer does not rest on the "
-              "last four years. Where eVTOL does pull away is against transport and against "
-              "patenting as a whole (Figure 1, ii); against aeronautics, it grew inside a wave that "
-              "lifted the whole class, whose family count more than doubled between 2014 and 2016.",
-         figures=["filings_per_year"]),
+         figures=["filings_per_year", "ari_clock"]),
     # 2026-09-24: the lapse paragraph and its figure are their own section, under sub-question 1.2
+    # 2026-09-26 (C15): out of force is read per unique aircraft — out only when EVERY patent
+    # that describes it is inactive — so the primary-patent figure gives way to the brief's own
     dict(id="Q1b",
-         text="**Out of force** = the PatSeer legal status of the aircraft's primary patent reads "
-              "INACTIVE at the snapshot — lapsed for non-payment, withdrawn, refused or expired. It "
-              "is read on the {tk_lapsed_n} primary patents with priority **2019 or earlier**, and "
-              "on no younger cohort, because a patent needs about seven years from priority before its "
-              "fate is decided — and the corpus itself confirms it: of its {sm_lapse_grants} dated "
-              "grants, {sm_lapse_7y} arrive within seven years of priority (median "
-              "{sm_lapse_median} years), and the share still pending collapses at exactly that "
-              "boundary — {sm_lapse_p2019} of the 2019 cohort against {sm_lapse_p2022} of 2022 "
-              "and {sm_lapse_p2023} of 2023. A younger patent that is 'alive' is mostly undecided, "
-              "not surviving. "
-              "{tk_lapsed_all} of the cohort is out of force and the classes sit around that line "
-              "(Tilt Rotor {tk_lapsed_tr}, Lift + Cruise {tk_lapsed_slc}, CVT {tk_lapsed_cvt}).",
-         figures=["abandonment"]),
+         figures=["sm_force_aircraft"]),
 
     # ---------------------------------------------------------------- Q2
     # Second: what is gaining and dying, read before the archetype test (Q3) and before the
@@ -143,9 +109,10 @@ OLD_NODES: List[Dict] = [
     # is the figure the author asked for under Figure 2 (ii): propulsor counts inside one class
     # over the years.
     dict(id="Q2",
-         text="**Lift + Cruise overtakes Tilt Rotor and keeps the lead.** Tilt Rotor falls from "
+         text="**Lift + Cruise becomes the largest class in 2020-23.** Tilt Rotor falls from "
               "{tk_tr_w1} of the aircraft in the earliest window to {tk_tr_w4} in 2020-23; Lift + "
-              "Cruise rises from {tk_slc_w1} to {tk_slc_w4}; CVT stands at {tk_cvt_w4}. The earliest "
+              "Cruise rises from {tk_slc_w1} to {tk_slc_w4} over the same span; CVT stands at "
+              "{tk_cvt_w4}. The earliest "
               "window holds {sm_w1_n} aircraft, so its shares are coarse; the 2020-23 end rests on "
               "{sm_w4_n}. **This crossover has no external check.** No published source resolves "
               "eVTOL filings by architecture over time, and the nearest public series — the Vertical "
@@ -153,14 +120,14 @@ OLD_NODES: List[Dict] = [
               "families, as a cumulative stock rather than per filing cohort, and pools Tilt Rotor, "
               "Tilt Wing and CVT into one 'vectored thrust' category; on that pooled definition this "
               "corpus agrees with the directory that the tilting family is the largest. The movement "
-              "of Tilt Rotor on its own is a finding of this record, not a confirmation of one. "
+              "of Tilt Rotor on its own is a finding of this labelled dataset, not a confirmation of one. "
               "Shares are "
               "read per window, so a class can fall in share while its count still grows — and where "
               "the count itself falls (CVT from 2020-23 into the partial 2024-26 window) the fall is "
               "the incomplete window, not an abandonment. The shift arrives with new firms: "
               "{tk_cm_e_slc} of the firms entering in 2020-23 enter with Lift + Cruise against "
               "{tk_cm_a_slc} of that window's aircraft (Chapter 3).",
-         figures=["atlas_arch_time"]),
+         figures=["atlas_arch_time", "sm_evtolnews_check"]),
 
     # ---------------------------------------------------------------- Q3
     # Third, before Q4: the archetype has to be explained before Q4's archetype figure is read.
@@ -173,22 +140,17 @@ OLD_NODES: List[Dict] = [
               "Analysis (5.7) before any curve of this corpus was drawn, so a 'no' is a finding and "
               "not a description. What each condition measures, where it comes from and which "
               "published test it does and does not reproduce are set out in the methods box at the "
-              "head of this chapter."),
-    dict(id="Q3.1", title="What a design is here: the archetype",
+              "head of this chapter.",
+         figures=["dominant_design", "sm_weighting", "sm_family"],
+         tables=["la_dd_result", "la_top_archetypes"]),
+    # 2026-09-26 (chapter-2 review, C52/C67/C77): the archetype premise moved to the new
+    # chapter 2 (node "arch"); the class configurations are node "inclass" of chapter 3; the
+    # dominant-design evidence is carried by Q3 itself. The era table and the family verdict
+    # table are no longer printed (C51, C59).
+    dict(id="arch", title="Archetypes and the level of detail",
          tables=["la_archetype_levels"]),
-    # 2026-09-24: the screens table and the conditions table are no longer printed — the two
-    # paragraphs carry them, and the two tables cost a page each. Both stay in tables/.
-    dict(id="Q3.2", title="Which level the test is run at"),
-    dict(id="Q3.3", title="The three conditions, and the era they place the sector in",
-         tables=["la_era_frame"]),
-    dict(id="Q3.4", title="The result",
-         figures=["dominant_design", "sm_weighting"],
-         tables=["la_dd_result"]),
-    dict(id="Q3.4b", title="Not one design, then: how many, and which",
-         tables=["la_top_archetypes"]),
-    dict(id="Q3.5", title="Inside a class, on the class's own labels",
-         figures=["sm_class_configs"],
-         tables=["la_class_configs_own"]),
+    dict(id="inclass", title="Inside each class",
+         figures=["sm_class_configs"]),
 
     # ---------------------------------------------------------------- Q4
     # The answer is two or three sentences, never a page: everything else the corpus says about
@@ -207,7 +169,8 @@ OLD_NODES: List[Dict] = [
               "at 9+); counted in units, the aircraft at nine and more that duct, duct nearly "
               "everything — {sm_duct9_units} of that band's units run in a duct, a median of "
               "{sm_duct9_med} per ducting aircraft — where at 1-3 units it is a single ducted fan. "
-              "The two ends are two designs: a ducted-fan array, and a ducted cruise or tail unit.\n\n"
+              "The two ends follow two distinct patterns: a ducted-fan array, and a ducted cruise "
+              "or tail unit.\n\n"
               "**Whether the space is still opening depends on how finely a design is described, "
               "and that is the finding.** At the class level it is closed: twelve classes, and not "
               "one new class in the last hundred aircraft. At class plus propulsive-unit band it is "
@@ -217,11 +180,13 @@ OLD_NODES: List[Dict] = [
               "against an estimated {sm_disc_a1t_est} in the population, and "
               "{sm_disc_a1t_new100} new ones appeared in the last hundred aircraft where chance "
               "alone would give {sm_disc_a1t_exp100}. One assumption, stated because it bounds the "
-              "claim: the estimator treats the record as a closed population sampled at random, so "
-              "'unseen' means combinations already in the record and not yet drawn. It is a floor "
+              "claim: the estimator treats the labelled dataset as a closed population sampled at random, so "
+              "'unseen' means combinations already in the labelled dataset and not yet drawn. It is a floor "
               "on what remains, never a forecast of designs nobody has invented.",
-         figures=["zones", "sm_archetype_filers", "atlas_units", "sm_duct_count"],
-         tables=["a2_d3_selected_fields", "la_duct_count"]),
+         figures=["atlas_units", "sm_duct_count"],
+         tables=["a2_d3_selected_fields"]),
+    dict(id="space", title="Where designs concentrate",
+         figures=["sm_archetype_filers", "zones", "discovery_curve"]),
 
     # ---------------------------------------------------------------- Q5
     dict(id="Q5",
@@ -247,8 +212,8 @@ OLD_NODES: List[Dict] = [
               "Cruise at {tk_cn_slc}; everything else moves together.\n\n"
               "*What region does not do is organise design at firm level.* Firms in different "
               "regions are as close in architecture profile as firms in the same one — a null "
-              "result, carried by {sm_ref_proximity_region} of the full document.",
-         figures=["atlas_region", "region_grid"]),
+              "result ({sm_here_proximity_region}).",
+         figures=["atlas_region", "region_grid", "proximity_region"]),
     # 2026-09-24: timing is its own sub-question (4.2)
     dict(id="Q6b",
          text="**The regions do not run on one clock, and the lead is solid.** Every class is taken "
@@ -296,29 +261,18 @@ OLD_NODES: List[Dict] = [
          tables=["la_class_filer_weight"]),
 
     # ---------------------------------------------------------------- Q8
+    # 2026-09-26 (C21, C32): the name table opens the section — it says which aircraft CAN be
+    # compared before the comparison is shown; the index-gap table (old Table 5) is cut, the
+    # representativeness tables carry what the question needs.
+    # 2026-09-28 (K7, author's review): the name table read as a graph — the author asked twice
+    # for this to become a figure. It is now drawn by la_figures.fig_name_coverage and opens the
+    # section as a figure instead of a table; the underlying counts are unchanged and still feed
+    # the {sm_nc_*} numbers below (la_tables.name_coverage is still computed, only not printed
+    # as a table any more).
     dict(id="Q8",
-         text="**Where a public aircraft exists the label describes it; the record itself is a "
-              "record of concepts.** {sm_pw_img_pub} of the {sm_pw_n} aircraft that can be matched to "
-              "a public product carry its class ({tk_pw_share}; six of the rest are the directory's "
-              "coarser vocabulary, not a different aircraft). **Read that agreement as a statement "
-              "about those aircraft and not about the record.** The aircraft that can be matched "
-              "are exactly the aircraft that carry a real product name; the rest carry a name "
-              "generated for this study, and none of those could be matched, because matching "
-              "required recognising the aircraft in the first place. The matched set is therefore "
-              "not a sample of the corpus — it over-represents publicly documented firms. "
-              "**TRL** is NASA's Technology "
-              "Readiness Level, a 1-to-9 scale for how far a technology has got: 1-2 is an idea on "
-              "paper, 3-5 is a component or a subscale rig tested, 6-7 is a full-size prototype "
-              "flown, 8-9 is certified or in service. *Above TRL 2* therefore means the aircraft "
-              "exists as more than a drawing. {trl_above_s} of {trl_aircraft_s} "
-              "aircraft ({sm_trl_share}) are above TRL 2; {trl_zero_classes} have none. Those "
-              "{trl_above_s} match the corpus on class and on region and NOT on filer type, priority "
-              "year or propulsive units (table below), so every TRL statement describes the "
-              "company-backed, recent, many-rotor part of the record and is a floor for the rest. "
-              "The aircraft of the firms the market rates differ from everyone else's in citation "
-              "rank and in survival, not in architecture class.",
-         tables=["la_public_pairwise", "a2_d15_trl_by_class", "la_trl_representativeness",
-                 "la_ari_representativeness", "la_ari_gap"]),
+         figures=["la_name_coverage"],
+         tables=["la_public_pairwise", "a2_d15_trl_by_class",
+                 "la_trl_representativeness", "la_ari_representativeness"]),
 
     # ---------------------------------------------------------------- design drivers (2026-09-23)
     # Not a ninth question: the closing reading of Q2-Q4 (what is gaining, whether it converges,
@@ -334,7 +288,7 @@ OLD_NODES: List[Dict] = [
               "against priority year (Spearman ρ; p < 0.05 = it moves), never pooled, because the "
               "class mix moves on its own. Counts are medians, or means where a median of 1 or 2 "
               "stands still while the distribution moves. Four traces moved; under each, the "
-              "correlation the record shows and the reasons it *may* have — possible, not asserted.",
+              "correlation the labelled dataset shows and the reasons it *may* have — possible, not asserted.",
          figures=["sm_driver_traces"],
          tables=["la_driver_verdicts"]),
     # 2026-09-25 (C33): "make this easier to understand to a child of 14, I did not understand
@@ -385,7 +339,7 @@ OLD_NODES: List[Dict] = [
               "{sm_t_units_cvt_last}, \u03c1 {sm_t_units_cvt_rho}, p {sm_t_units_cvt_p}); Lift + Cruise "
               "is flat from {sm_t_units_slc_first}. *What it means.* Verdict: **{sm_v_units}** \u2014 "
               "distributed propulsion (A1), failure tolerance (B) and community noise (B) all "
-              "predict the same rise and the record cannot separate them. It is not a second event: "
+              "predict the same rise and the labelled dataset cannot separate them. It is not a second event: "
               "in Tilt Rotor the unit count follows the number of tilting sets almost exactly \u2014 two "
               "units with one set, four with two, six with three ({sm_here_sm_driver_corr} ii) \u2014 so "
               "observation 1 and observation 2 are one arrival, the multi-set tilt rotor. Electric "
@@ -403,16 +357,16 @@ OLD_NODES: List[Dict] = [
               "all, and ducting against year with the boom layout held fixed is not significant "
               "({sm_here_sm_driver_corr} iii). *What it means.* Verdict: **{sm_v_duct}** \u2014 community "
               "noise predicts more ducting and the share fell. The finding is structural and the "
-              "record supports it: **the duct is a property of the airframe the rotor sits in, not a "
+              "labelled dataset supports it: **the duct is a property of the airframe the rotor sits in, not a "
               "separate choice.** The reading that a duct is bought to keep noise and vibration away "
-              "from the cabin is a *hypothesis this record cannot test* \u2014 acoustics are not labelled "
+              "from the cabin is a *hypothesis this labelled dataset cannot test* \u2014 acoustics are not labelled "
               "and no patent states them \u2014 and it is written here as one, not as a finding. What the "
-              "record can say is that the noise requirement was met another way in the same years: "
+              "labelled dataset can say is that the noise requirement was met another way in the same years: "
               "more, smaller rotors (observation 2).\n\n"
               "**4 \u00b7 One more kind of propulsor, and it is observation 1 again.** *What changed on "
               "the aircraft:* a propulsor type is one set of like units on one station \u2014 lift rotors "
               "on the booms are one type, a cruise propeller on the tail a second, a tilting set on "
-              "the wing a third \u2014 and the tilt rotors gained a type. *The numbers.* The mean "
+              "the wing a third \u2014 and the tilt rotors added a type. *The numbers.* The mean "
               "{sm_t_types_tr_move} in Tilt Rotor ({sm_t_types_tr_first} to {sm_t_types_tr_last}, "
               "\u03c1 {sm_t_types_tr_rho}, p {sm_t_types_tr_p}) and pooled {sm_t_types_all_first} to "
               "{sm_t_types_all_last}. *What it means.* **Verdict: {sm_v_types_full}.** The type the "
@@ -424,18 +378,20 @@ OLD_NODES: List[Dict] = [
               "Production cost falls with commonality, and the codebook cannot see commonality.",
          figures=["sm_driver_corr"]),
     dict(id="drivers.answer", title="Do tilting joints fall (cost) or rise (regime transition)?",
-         text="**Counted per propulsive unit they fall, so cost wins \u2014 and the earlier reading, "
-              "that transition wins inside a class, does not survive the normalisation.** The raw "
+         text="**Counted per propulsive unit they fall, which favours cost over the earlier "
+              "reading that transition raises them inside a class \u2014 a reading that does not "
+              "survive the normalisation.** The raw "
               "count does rise inside the two classes that transition, Tilt Rotor and CVT, and is "
               "flat pooled over the corpus ({sm_t_joints_all_first} to {sm_t_joints_all_last}, "
-              "p {sm_t_joints_all_p}). But those same aircraft are gaining propulsors, and divided "
-              "by the units the joints have to move, tilting joints fall inside Tilt Rotor, are "
+              "p {sm_t_joints_all_p}). But those same aircraft add propulsors faster than they add "
+              "joints, and divided "
+              "by the units the joints have to move, tilting joints fall inside Tilt Rotor, stay "
               "flat inside CVT and fall pooled. The mechanism is therefore one thing and not two: "
               "a firm that accepts tilting rotors adds a second set \u2014 the set buys hover pitch "
               "control without a cyclic hub, redundancy and units at once, and observations 1, 2 "
               "and 4 are that one move \u2014 while the tilting hardware per rotor gets lighter as it "
               "does. The mix points the same way: the class growing fastest, Lift + Cruise, has no "
-              "tilting joint at all, and that is where the entrants of 2020-23 arrive. The record "
+              "tilting joint at all, and that is where the entrants of 2020-23 arrive. The labelled dataset "
               "shows the levels; it does not show which one any firm weighed. Of the couplings the "
               "fixed physical drivers predict, one exists \u2014 empennage type against wing "
               "configuration (V {tk_dr_emp_wing_v}); the others are no stronger than a random "
@@ -449,7 +405,7 @@ OLD_NODES: List[Dict] = [
               "{tk_gt_slc}) and badly for the small ones (Pitch-to-Cruise {tk_gt_ptc}, Hoverbike "
               "{tk_gt_hb}). Read every small-class number in this document as the least reliable on "
               "its page. Still owed: the labeller against himself — the relabel of 50 patents "
-              "(Appendix B.2 of the full document) has not been run.",
+              "has not been run.",
          figures=["atlas_arch_gt"]),
 
     # ---------------------------------------------------------------- new questions
@@ -477,7 +433,7 @@ OLD_NODES: List[Dict] = [
               "than the ones before them cannot be answered from it.",
          figures=["sm_entry_all"]),
 
-    dict(id="cannot", title="What this record will never tell you, and what it has not yet been asked"),
+    dict(id="cannot", title="What this labelled dataset will never tell you, and what it has not yet been asked"),
 
     # The taxonomy drawing closed this document until 2026-09-23; the author has printed it
     # already, so it is dropped here and stays Appendix D of the full document. The two
@@ -498,19 +454,24 @@ OLD_NODES: List[Dict] = [
 
 #: old section id -> (new chapter, order in it, the heading it now prints)
 FOLD = {
-    "Q1": ("1", 1, "The record itself: how early, how complete"),
+    "Q1": ("1", 1, "The labelled dataset itself: how early, how complete"),
     "Q1b": ("1", 2, "How live it is: what lapsed"),
-    "Q8": ("1", 3, "The record against what the industry actually builds"),
-    "Q2": ("2", 1, "What is gaining, and what is fading"),
-    "Q3": ("2", 2, "The dominant-design test"),
-    "Q4": ("2", 3, "What the design space is made of"),
-    "drivers": ("2", 4, "Design drivers and their traces"),
-    "Q5": ("3", 1, "Who files"),
-    "Q7": ("3", 2, "Whether one firm carries the reading"),
-    "entrants": ("3", 3, "What every class's entrants arrive with"),
-    "Q6": ("4", 1, "Where it is designed, and whether region changes the design"),
-    "Q6b": ("4", 2, "Whether region changes the timing"),
-    "portfolio": ("4", 3, "How a firm builds its portfolio"),
+    "Q8": ("1", 3, "The labelled dataset against what the industry actually builds"),
+    # 2026-09-26 (chapter-2 review): the old chapter 2 split in two — 2 the design space,
+    # 3 its evolution and the dominant-design test; old 3 and 4 become 4 and 5
+    "Q4": ("2", 1, "What the design space is made of"),
+    "arch": ("2", 2, "Archetypes and the level of detail"),
+    "space": ("2", 3, "Where designs concentrate"),
+    "Q2": ("3", 1, "How the classes' shares change over time"),
+    "Q3": ("3", 2, "The dominant-design test"),
+    "inclass": ("3", 3, "Inside each class"),
+    "drivers": ("3", 4, "Design drivers and their traces"),
+    "Q5": ("4", 1, "Who files"),
+    "Q7": ("4", 2, "Whether one firm carries the reading"),
+    "entrants": ("4", 3, "What every class's entrants arrive with"),
+    "Q6": ("5", 1, "Where it is designed, and whether region changes the design"),
+    "Q6b": ("5", 2, "Whether region changes the timing"),
+    "portfolio": ("5", 3, "How a firm builds its portfolio"),
 }
 
 # --------------------------------------------------------------------------
@@ -520,30 +481,50 @@ FOLD = {
 #: the chapter question, printed whole as the chapter heading. Since 2026-09-25 the wording is
 #: identical to ``la_lines.QUESTIONS4`` (the full document) — keep the two in step.
 SM_QUESTIONS = {
-    "1": "How far ahead of the sector does the patent record run?",
-    "2": "Is there a dominant eVTOL design or is the field still experimenting, and where has "
-         "twenty years of filing moved the design space?",
-    "3": "Who is patenting eVTOL aircraft, and which designs and filing strategies do firms of "
-         "different maturity follow?",
-    "4": "Does geography shape the design, or only its timing and its filing strategy?",
+    # 2026-09-29 (author's decision document, S4): each chapter heading is the chapter's name,
+    # then its big question, as the decision table's bold rows print them
+    "1": "Growth, protection and fidelity: how fast has eVTOL patenting grown, how much of it "
+         "is still protected, and do the patented aircraft stand for the aircraft the sector "
+         "builds?",
+    "2": "The design space: what is an eVTOL design made of, and where do designs concentrate?",
+    "3": "The evolution and the dominant-design test: is there a dominant eVTOL design or is the "
+         "field still experimenting, and how have the designs changed over twenty years of "
+         "filing?",
+    "4": "The filers: which kinds of firm, institute and inventor patent eVTOL aircraft, and "
+         "which designs and filing strategies do firms of different maturity follow?",
+    "5": "The regions: do North America, Europe and Asia-Pacific design different aircraft, or "
+         "the same aircraft at different times?",
 }
 
 #: the sub-questions: (chapter, printed before the FOLD member with this order, number, wording).
 #: Each is a heading of its own; the FOLD sections that follow it are its observations.
+#: 2026-09-29 (S4): worded as the decision document's table prints them. The chapter Answers
+#: print the same titles through ``[[N.N]]`` lines (:func:`answer`), so a title lives here only.
 SUBQ = [
-    ("1", 1, "1.1", "Do the patents come before the aircraft fly, and is that head start "
-                    "getting longer?"),
-    ("1", 2, "1.2", "Half the record is dead. Does dying tell us anything about the design?"),
-    ("1", 3, "1.3", "Do the aircraft that fly look like the aircraft that were patented?"),
-    ("2", 1, "2.1", "One winner, or three branches that refuse to merge?"),
-    ("2", 3, "2.2", "Is the design space filling up, or still opening?"),
-    ("2", 4, "2.3", "What forces a design to change — and is it one move dressed as four?"),
-    ("3", 1, "3.1", "Does anyone hold enough of the record to steer it?"),
-    ("3", 3, "3.2", "When the design mix moves, who moves it?"),
-    ("4", 1, "4.1", "Regional design blocs — or a null the sector should hear?"),
-    ("4", 2, "4.2", "Who moves first, who follows, and is the lag a constant?"),
-    ("4", 3, "4.3", "Go deep or go wide: does a firm re-file one design, spread across classes, "
-                    "or pass through one on the way to another?"),
+    # 2026-09-26 (C12, C19): a question comes BEFORE its result, so none of them may state one
+    ("1", 1, "1.1", "How fast has eVTOL patenting grown, and how early does it show a design?"),
+    ("1", 2, "1.2", "What share of the patented aircraft is still protected, and does it differ "
+                    "between classes?"),
+    ("1", 3, "1.3", "How faithfully do the patented aircraft describe the aircraft that get "
+                    "built?"),
+    ("2", 1, "2.1", "What is an eVTOL design made of: which features vary?"),
+    ("2", 2, "2.2", "How are designs grouped into archetypes, and in which archetype set is the "
+                    "space read?"),
+    ("2", 3, "2.3", "Where do designs concentrate, and is the design space still open?"),
+    ("3", 1, "3.1", "How do the class shares change over time, and does the public directory "
+                    "agree?"),
+    ("3", 2, "3.2", "Is there a dominant design?"),
+    ("3", 3, "3.3", "Do designs converge inside each class?"),
+    ("3", 4, "3.4", "What drives the changes inside the classes?"),
+    ("4", 1, "4.1", "Which kinds of assignees file, and does any single firm hold enough of a "
+                    "class to decide its share?"),
+    ("4", 3, "4.2", "How new are the sector's filers, do first-time or returning firms reshape "
+                    "the design space, and where does a firm's next design land?"),
+    ("5", 1, "5.1", "What does each region file, and how has its mix moved since 2012?"),
+    ("5", 2, "5.2", "Which region moves first on each class, do the others follow, and is North "
+                    "America's recent fall in filings real?"),
+    ("5", 3, "5.3", "Do the regions converge on the same design, and does any lean rest on one "
+                    "firm?"),
 ]
 
 #: new id of every old node, including the children of the archetype premise (Q3.1 … Q3.4)
@@ -564,7 +545,7 @@ def _rekey(d):
 
 def _build_nodes():
     out = []
-    for chapter in ("1", "2", "3", "4"):
+    for chapter in ("1", "2", "3", "4", "5"):
         out.append(dict(id=chapter, answer=True))
         kids = sorted(((v[1], k) for k, v in FOLD.items() if v[0] == chapter))
         for order, old_id in kids:
@@ -595,20 +576,21 @@ NODES: List[Dict] = _build_nodes()
 # the figure or table is appended to what that node already carries, never replacing it.
 # ---------------------------------------------------------------------------
 NEW_ITEMS: Dict[str, Dict[str, List[str]]] = {
-    # the aircraft that carry a real product name against the generated ones — the table the
-    # author asked for so the "90 % of the matched aircraft" sentence can state its own base
-    "1.3": dict(tables=["la_name_coverage"]),
-    # the post-hoc Lift + Cruise + CVT family, printed with the verdict table it fails
-    "2.2.4": dict(figures=["sm_family"], tables=["la_family_dd"]),
-    # the design space: the discovery curve that replaced the OPEN sticker, and the
-    # all-or-nothing reading of ducting
-    "2.3": dict(figures=["discovery_curve", "sm_duct_conditional"]),
+    # 2026-09-28 (K7): the name item moved into the Q8 node definition itself, as a figure
+    # (la_figures.fig_name_coverage) rather than a table — see the comment there.
+    # 2026-09-27 (F12): the AAM Reality Index timeline, next to Figure 2 (ari_clock) — first
+    # patent here against first flight and planned entry into service as the index reports them
+    "1.1": dict(tables=["la_ari_timeline"]),
+    # 2026-09-26: keys follow the five-chapter layout (old 2.3 → 2.1, 2.4 → 3.4, 3.3 → 4.3,
+    # 4.2 → 5.2); the family now sits on Q3 itself and its verdict table is cut (C59)
+    # the all-or-nothing reading of ducting
+    "2.1": dict(figures=["sm_duct_conditional"]),
     # the correction: tilting joints normalised by the propulsors they have to move
-    "2.4": dict(figures=["sm_joints_per_unit"], tables=["la_joints_per_unit"]),
+    "3.4": dict(figures=["sm_joints_per_unit"], tables=["la_joints_per_unit"]),
     # where the firms that leave Tilt Wing go
-    "3.3": dict(tables=["la_tw_successions"]),
+    "4.3": dict(tables=["la_tw_successions"]),
     # the test behind "the lead is real, the size of the gap is not settled"
-    "4.2": dict(tables=["la_lag_constancy"]),
+    "5.2": dict(tables=["la_lag_constancy"]),
 }
 for _node in NODES:
     _extra = NEW_ITEMS.get(_node["id"])
@@ -619,12 +601,22 @@ for _node in NODES:
         _node[_key] = _have + [x for x in _vals if x not in _have]
 del _node, _extra, _key, _vals, _have
 
+# 2026-09-29 (decision document, S5): the evtol.news comparison figure is printed in chapter 1,
+# right after the filings figure; 3.1 keeps its Method and points to it. Registered once: the
+# chapter-3 module no longer lists it.
+for _node in NODES:
+    if _node["id"] == "1.1":
+        _figs = [x for x in (_node.get("figures") or []) if x != "sm_evtolnews_check"]
+        _at = _figs.index("filings_per_year") + 1 if "filings_per_year" in _figs else 0
+        _node["figures"] = _figs[:_at] + ["sm_evtolnews_check"] + _figs[_at:]
+del _node
+
 
 
 #: the one section that opens a fresh page. ``report.write_markdown`` treats a top-level node
 #: whose id is in ``APPENDIX`` as a chapter, and ``build_styled_md_pdf`` breaks a page before a
 #: ``div.chapter-start``. Everything else flows, which is what keeps the document short.
-APPENDIX = ("new", "1", "2", "3", "4")
+APPENDIX = ("new", "1", "2", "3", "4", "5")
 
 #: ids that are their own page. Used by :func:`depth` — see its docstring.
 _TOP = set(APPENDIX)
@@ -715,11 +707,11 @@ TEXTS: Dict[str, str] = {
         "fires in {tk_q_below} of {tk_q_cells} cells, in 2020-23 and only under the subsystem "
         "weighting — under uniform weighting the same window stays inside its band (second figure), "
         "so the one signal the test finds is a choice of weighting, not a finding.\n\n"
-        "**One family, tested because the record suggested it — and it fails too.** Observation 3 "
+        "**One family, tested because the labelled dataset suggested it — and it fails too.** Observation 3 "
         "of the drivers section shows the late CVT converging on a Lift + Cruise layout: open "
         "rotors on booms, with one tilting set added. If distributed electric propulsion is the "
         "real commonality, Lift + Cruise and the boom-layout CVT should be read as one family "
-        "rather than as two classes. Tested on that definition — **post hoc**, after the curves "
+        "rather than as two classes. Tested on that definition — defined after the curves "
         "were drawn, and marked as such wherever it appears — the family holds {sm_fam_c_n} "
         "aircraft and reaches {sm_fam_c_peak} of the 2020-23 window; the widest definition tried "
         "reaches {sm_fam_b_peak}. That is the closest anything in this corpus comes to the 50 % "
@@ -768,7 +760,7 @@ TEXTS: Dict[str, str] = {
         "corpus. It is not the class mix in disguise — the dip is there inside Lift + Cruise, "
         "Tilt Rotor and CVT taken one at a time, and the band still moves the answer with the "
         "class held fixed. The per-class rows behind that control are `tables/la_duct_units.csv`, "
-        "and the same measure sits inside {sm_here_atlas_units} with the rest of the "
+        "and the same measure sits inside {sm_here_sm_propulsion_compact} with the rest of the "
         "propulsion picture.\n\n"
         "**Why it is a question.** A U-shaped curve means a duct is being bought for two "
         "different reasons at the two ends of the range and for neither reason in the middle. "
@@ -863,7 +855,7 @@ TEXTS: Dict[str, str] = {
         "corpus — a full cohort rank apart, q {sm_cite_q} after correction over the whole table, "
         "and it holds on the US-published patents alone (p {sm_cite_us}), so it is not the office "
         "effect that removes two of the other differences. The panel is the two distributions "
-        "the medians come from; the row itself is in {sm_here_la_ari_gap}.\n\n"
+        "the medians come from; the row itself is in `tables/la_ari_gap.csv` (cut from chapter 1 on 2026-09-26).\n\n"
         "**Why it is a question.** The cohort rank is computed against patents of the same year, "
         "so it is not an age effect. That leaves three readings that this corpus cannot tell "
         "apart: the rated firms file better patents; the rated firms are cited more because they "
@@ -877,22 +869,26 @@ TEXTS: Dict[str, str] = {
         "citation ranks are already computed per patent.",
 
     "cannot":
-        "Fourteen questions were put to this record by the industry side of the project. **Seven "
-        "are answered** in the chapters above: whether the sector is converging "
-        "({sm_here_dominant_design}, {sm_here_la_dd_result}), which sub-variants stay open "
-        "({sm_here_zones}, {sm_here_la_class_configs_own}), whether the field is concentrated "
+        "Fourteen questions were put to this labelled dataset by the industry side of the project. "
+        "**Six are answered** in the chapters above: whether the sector is converging "
+        "({sm_here_sm_dd_conditions}, {sm_here_la_dd_levels}), which sub-variants stay open "
+        "({sm_here_zones}, {sm_here_sm_class_configs}), whether the field is concentrated "
         "({sm_here_coverage}, {sm_here_la_class_filer_weight}), whether propulsor counts settle on "
-        "six to eight ({sm_here_atlas_units}), whether regions build differently "
-        "({sm_here_atlas_region}, {sm_here_la_class_region_timing}) and whether patents track "
-        "substance rather than press attention ({sm_here_la_ari_gap}). Two of those answer *no* to "
-        "the question as it was asked, which is still an answer. The other seven are printed here "
-        "with the reason, because a reader is owed the boundary of the instrument.\n\n"
+        "six to eight ({sm_here_sm_propulsion_compact}) and whether regions build differently "
+        "({sm_here_atlas_region}, {sm_here_la_class_region_timing}). Some of those answer *no* to "
+        "the question as it was asked, and convergence gets a qualified *yes*, resting on choices "
+        "made after the first readings (3.2). The other eight are listed here with the reason.\n\n"
+        "**{sm_next_table} — What this labelled dataset cannot answer, question by question: the "
+        "eight stakeholder questions it answers only in part or not at all, and the reason.**\n\n"
         "| Question | Verdict | Why |\n"
         "|---|---|---|\n"
+        "| Do patents track substance rather than press attention? | no | The only handle is the "
+        "citation rank of the index firms' patents, and a citation follows a firm's visibility as "
+        "much as the quality of the patent; the labelled dataset cannot tell the two apart. |\n"
         "| Do filings lead or lag commercial emergence? | partly | Holds for the five largest classes "
         "only; the commercial side rests on the {sm_pw_n} aircraft with a public counterpart and the "
         "{trl_above_s} above TRL 2. No per-class lead time for the small classes. |\n"
-        "| Are there hype cycles — exotic configurations later abandoned? | partly | Legal status is a "
+        "| Are there hype cycles, exotic configurations later abandoned? | partly | Legal status is a "
         "snapshot, alive or dead at the export date, with no lapse date in the labelled data, so "
         "*time* to abandonment cannot be drawn. |\n"
         "| Is convergence happening inside one mission segment while diversity persists elsewhere? | "
@@ -910,16 +906,58 @@ TEXTS: Dict[str, str] = {
         "| Are architectures specialising into mission niches, increasingly over time? | no | The "
         "mission gap again, and no size handle to substitute for it: there is no payload, mass, "
         "wingspan or size field anywhere in the labels, and patent drawings are unscaled. |\n\n"
-        "**Noise** and **wind or weather** were never labelled and are not stated in the patents; "
-        "**battery specific energy** is external to the corpus and can only ever be context.\n\n"
-        "**Not yet asked**, and reachable from the raw PatSeer export the analysis has never opened. "
-        "Full CPC codes crossed with architecture class give the white-space map; the B64D27 family "
-        "separates battery, hybrid and fuel cell in place of the yes/no powertrain field; the dated "
-        "register status turns the alive/dead snapshot of Figure 2 into time-to-abandonment by class; "
-        "the claims text gives claim breadth per architecture; and G05D1 with the B64U unmanned "
-        "family is the only autonomy proxy this record will ever have — a weak one. Nothing on disk "
-        "closes mission, payload, size, noise or certification: those need an external population and "
-        "a different unit of analysis, which is another study, not an extension of this one.",
+        "**Also out of reach, and why.**\n\n"
+        "- **Noise, wind and weather.** Never labelled, and not stated in the patents.\n"
+        "- **Battery energy against disc loading.** Disc loading needs rotor diameter, and no "
+        "size, span, area or mass field exists; patent drawings are unscaled.\n"
+        "- **A shakeout of firms.** Most firms whose last filing is 2019 or earlier filed only "
+        "once, so leaving the sector cannot be told apart from never having had a programme.\n"
+        "- **Firm design paths as sequences.** Too few firms file three aircraft or more to read "
+        "their paths as sequences.\n"
+        "- **Time from patent to flight, per architecture.** About a dozen firms carry a first-"
+        "flight date; split over twelve classes, too few per class to read.\n\n"
+        "**Questions still open, and within reach.** Each uses data already held; neither has been "
+        "run for this document.\n\n"
+        "- **Does the average design move while the variety stays?** The centre of the whole "
+        "label space per window, against a shuffled-year band. A first probe says the centre moves "
+        "further than chance while the spread does not shrink.\n"
+        "- **Who learns from whom?** Citations between aircraft of the corpus, if the PatSeer "
+        "export carries the field, read as flows between classes and regions: whether Lift + "
+        "Cruise builds on Tilt Rotor, whether Asia-Pacific builds on North America.\n\n"
+        "Mission, payload, size, noise and certification stay out of reach: they need an outside "
+        "population and another unit of analysis, which is another study.\n\n"
+        "**References**\n\n"
+        "Abernathy, W. J. and Utterback, J. M. (1978). Patterns of industrial innovation. "
+        "*Technology Review*, 80(7), 40-47.\n\n"
+        "Anderson, P. and Tushman, M. L. (1990). Technological discontinuities and dominant "
+        "designs: a cyclical model of technological change. *Administrative Science Quarterly*, "
+        "35(4), 604-633.\n\n"
+        "Efron, B. (1979). Bootstrap methods: another look at the jackknife. *The Annals of "
+        "Statistics*, 7(1), 1-26.\n\n"
+        "Fisher, R. A. (1922). On the interpretation of chi-square from contingency tables, and "
+        "the calculation of P. *Journal of the Royal Statistical Society*, 85(1), 87-94.\n\n"
+        "Fisher, R. A. (1925). *Statistical Methods for Research Workers*. Oliver and Boyd.\n\n"
+        "Hill, M. O. (1973). Diversity and evenness: a unifying notation and its consequences. "
+        "*Ecology*, 54(2), 427-432.\n\n"
+        "Jost, L. (2006). Entropy and diversity. *Oikos*, 113(2), 363-375.\n\n"
+        "Mann, H. B. and Whitney, D. R. (1947). On a test of whether one of two random variables "
+        "is stochastically larger than the other. *The Annals of Mathematical Statistics*, "
+        "18(1), 50-60.\n\n"
+        "Murmann, J. P. and Frenken, K. (2006). Toward a systematic framework for research on "
+        "dominant designs, technological innovations, and industrial change. *Research Policy*, "
+        "35(7), 925-952.\n\n"
+        "Pearson, K. (1900). On the criterion that a given system of deviations from the "
+        "probable in the case of a correlated system of variables is such that it can be "
+        "reasonably supposed to have arisen from random sampling. *Philosophical Magazine, "
+        "Series 5*, 50(302), 157-175.\n\n"
+        "Spearman, C. (1904). The proof and measurement of association between two things. "
+        "*American Journal of Psychology*, 15(1), 72-101.\n\n"
+        "Suárez, F. F. and Utterback, J. M. (1995). Dominant designs and the survival of firms. "
+        "*Strategic Management Journal*, 16(6), 415-430.\n\n"
+        "Wasserstein, R. L. and Lazar, N. A. (2016). The ASA statement on p-values: context, "
+        "process, and purpose. *The American Statistician*, 70(2), 129-133.\n\n"
+        "Wilson, E. B. (1927). Probable inference, the law of succession, and statistical "
+        "inference. *Journal of the American Statistical Association*, 22(158), 209-212.",
 }
 
 
@@ -936,32 +974,13 @@ TEXTS: Dict[str, str] = {
 # :func:`_method_numbers`, never typed, so the box cannot drift from the code that ran.
 #:
 #: The chapter the box opens. Printed by :func:`text` in place of that chapter's empty prose.
-METHODS_CHAPTER = "2"
+METHODS_CHAPTER = ""          # 2026-09-26: the box is split into the chapter modules
 
 METHODS_BOX = (
     '<div class="methods-box">\n\n'
-    "##### How to read the statistics\n\n"
-    "*Written once, for the whole document; every later p, band or effective number points "
-    "back here.*\n\n"
-    "**p, and what it does not say.** Every test below asks one question: *if there were really "
-    "no difference, how often would numbers like these turn up by chance alone?* That frequency "
-    "is p. **p 0.03** means three times in a hundred — rare enough to say the pattern is real. "
-    "**p 0.58** means fifty-eight times in a hundred — exactly what chance produces, so there is "
-    "nothing there. The line used throughout this document is 0.05. A small p never says *why* "
-    "something moved and never proves that one thing caused another; it says only that the "
-    "pattern is larger than the noise around it.\n\n"
-    "**The four tests, and the question each one answers.**\n\n"
-    "- **Mann-Whitney U** — do two groups have the same middle value? (Do the aircraft above "
-    "TRL 2 carry as many propulsors as the rest?)\n"
-    "- **Fisher exact** — do two groups have the same share of a yes/no answer, when the counts "
-    "are too small for anything coarser? (Is a ducted unit as common in one group as in the "
-    "other?)\n"
-    "- **Chi-square** — do two groups spread the same way over several categories at once? (Do "
-    "the aircraft above TRL 2 spread over the twelve classes the way the rest of the corpus "
-    "does?)\n"
-    "- **Spearman ρ (rho)** — does a value rise or fall as the year advances? It runs from "
-    "−1 (falls steadily) through 0 (no trend) to +1 (rises steadily), and it reads the ORDER of "
-    "the values rather than their size, so one extreme aircraft cannot manufacture a trend.\n\n"
+    "##### How to read the measures of this chapter\n\n"
+    "*p and the four tests are introduced at the head of chapter 1; this box adds the "
+    "measures only this chapter uses.*\n\n"
     "**¹D and ²D — the effective number of archetypes.** Counting archetypes treats a design "
     "held by one aircraft exactly like a design held by forty, so the count says nothing about "
     "how the corpus is actually divided. The effective number asks a better question: **if the "
@@ -973,14 +992,16 @@ METHODS_BOX = (
     "but its ¹D is {sm_a0_eff} — the twelve classes behave like about {sm_a0_eff} equally "
     "common ones, because most aircraft sit in a handful of them. Both numbers are *rarefied*: "
     "every window is cut to a random {sm_perm_n} aircraft before counting, the draw is repeated "
-    "and averaged, so a large window cannot score higher merely by being large. The exact "
-    "formula is `hill_numbers` in `la_tables.py`.\n\n"
+    "and averaged, so a large window cannot score higher merely by being large.\n\n"
     "**The permutation band.** A number on its own cannot say whether it is unusual, so the "
     "range that chance gives is built from the same data. Every aircraft keeps its labels and "
     "is given a **randomly reassigned priority year**; the statistic is recomputed on the "
-    "reshuffled windows; this is repeated {sm_perms} times (seed {sm_perm_seed}, so the band "
-    "is reproducible). The band drawn on the figures is the middle 95 % of those {sm_perms} "
-    "results. A real value **inside** the band is what any split of this corpus into windows of "
+    "reshuffled windows; this is repeated {sm_perms} times. The seed ({sm_perm_seed}) is only "
+    "the random generator's starting position, fixed so a rerun gives back the identical "
+    "numbers; the value itself is an arbitrary convention. The band is what is left after the "
+    "lowest and highest 2.5 % of the {sm_perms} shuffled results are cut, so it is the range "
+    "chance alone produces, and a real value outside it is one chance would almost never "
+    "produce. A real value **inside** the band is what any split of this corpus into windows of "
     "these sizes would show — not a near miss, a null. A real value **outside** it is structure "
     "that the years carry, and falling outside is the condition the test asks for.\n\n"
     "**The three dominant-design conditions, and where each comes from.**\n\n"
@@ -1103,20 +1124,15 @@ TABLE_CAPTIONS.update({
                              "field, how many of the unique aircraft answer it, how many "
                              "distinct answers there are, the share of the most common one and "
                              "the four most common answers. Fields with one answer for nearly "
-                             "every aircraft are left out as uninformative; the full table is "
-                             "Table B.4 of the full document",
+                             "every aircraft are left out as uninformative",
     # Q3's premise. The archetype-levels caption is rewritten only because this document prints
     # the table without its "used in this document" column: the full document's caption ends on
     # "and where this document reads the level", which would describe a column that is not here.
     "la_archetype_levels": "Every archetype level the codebook can form: the dimensions it "
                            "combines, its largest archetype, how many archetypes the level "
                            "yields, how many aircraft end up alone in one, the effective number "
-                           "of archetypes (Hill ¹D) and the share held by the largest. The "
-                           "counting columns reproduce table 3.3.6 of the Preliminary Analysis; "
-                           "which section reads which level is the last column of Table 1.1.3.1a "
-                           "of the full document",
-    "la_dd_result": "The dominant-design verdict, one line per condition (the observed result "
-                    "behind each line is Table 1.1.3.3a of the full document)",
+                           "of archetypes (Hill ¹D) and the share held by the largest",
+    "la_dd_result": "The dominant-design verdict, one line per condition",
     "la_ari_gap": "The aircraft of the 18 firms the AAM Reality Index has scored against the rest of "
                   "the corpus (both counts on the Unit line): the differences that survive correction for "
                   "multiple testing, ordered by p. `holds?` is `yes` only where the difference "
@@ -1137,15 +1153,14 @@ TABLE_CAPTIONS.update({
     "la_class_filer_weight": "How much of each class is one filer repeating itself: the share "
                              "held by the largest filer, and the number of equally sized filers "
                              "that would give the same concentration",
-    "la_ari_timeline": "The patent clock against the market clock, firm by firm. Both market "
-                       "dates are the index's own statements, and the years count from the "
-                       "firm's first patent IN THIS CORPUS, so every figure is a floor",
+    "la_ari_timeline": "The index firms that file in this corpus: first patent here, first "
+                       "flight and planned entry into service as the AAM Reality Index reports "
+                       "them, and the years between",
     # the drivers section: the full caption spells out the test; here the object is named and the
     # test is in the unit-base-transform line of the full document
     "la_driver_verdicts": "The verdict table: one row per trace of the drivers table — what moved "
                           "(first reportable window → 2020-23, per class where it differs, with "
-                          "Spearman ρ and p), and the verdict with the drivers that predict it. "
-                          "Generated from the same frame as Figure 1.4.1 of the full document",
+                          "Spearman ρ and p), and the verdict with the drivers that predict it",
     "la_driver_questions": "Three questions put to the traces, each answered in one sentence",
     # the new questions: the ducting bands, printed under the question they raise
     "la_duct_units": "A ducted unit against the number of propulsive units: the aircraft in "
@@ -1271,22 +1286,21 @@ COLUMNS: Dict[str, List[str]] = {
                               "repetition factor"],
     "la_ari_gap": ["variable", "test", "index firms", "rest of the corpus", "p", "q (BH)",
                    "p, US patents only", "holds?"],
-    "la_ari_timeline": ["company", "ARI score", "first patent", "last patent", "unique aircraft",
-                        "first flight (ARI)", "years to first flight",
-                        "years to entry into service", "region"],
+    "la_ari_timeline": ["company", "first patent", "first flight (ARI)",
+                        "entry into service (ARI)", "years to first flight",
+                        "years to entry into service"],
     "a2_d15_trl_by_class": ["class", "unique aircraft", "TRL 2", "TRL 3-5", "TRL 6-7", "TRL 8-9",
                             "above TRL 2", "share above TRL 2"],
     "la_filers_by_window": _la.COLUMNS.get("la_filers_by_window"),
     # the drivers that predict a trace are named inside the verdict itself, so the separate
     # column and the driver-kind and where-drawn columns are left to the full document
-    "la_driver_verdicts": ["trace", "importance", "what moved", "verdict",
-                           "in the full document"],
+    "la_driver_verdicts": ["trace", "importance", "what moved", "verdict"],
     "la_duct_units": ["group", "aircraft", "with a ducted unit", "share ducted"],
     # 2026-09-24
     "la_class_configs_own": ["class", "rule", "aircraft", "distinct configurations",
                              "most common configuration", "share in it"],
     "la_trl_representativeness": ["attribute", "n above TRL 2", "n rest", "largest gap", "test", "p", "verdict"],
-    "la_ari_representativeness": ["attribute", "n index firms", "n rest", "largest gap", "test", "p", "verdict"],
+    "la_ari_representativeness": ["attribute", "n index firms", "n rest", "largest gap", "test", "p", "verdict"],   # header renamed in print (G7)
     "la_public_pairwise": ["comparison", "agree", "of", "share", "the disagreements"],
     "la_era_frame": ["measure", "era of ferment", "dominant design emerging", "incremental change", "this corpus"],
     "la_top_archetypes": ["level", "window", "aircraft", "top 1", "top 2", "top 3", "top 3 together", "top 5 together"],
@@ -1295,6 +1309,61 @@ COLUMNS: Dict[str, List[str]] = {
                       "median ducted units (ducted aircraft)"],
 }
 COLUMNS = {k: v for k, v in COLUMNS.items() if v}
+
+# 2026-09-25, the print audit: the tables added by the review printed 12-13 columns and
+# 16-digit p values. The brief prints the columns a reader needs; tables/ keeps everything.
+COLUMNS.update({
+    "la_joints_per_unit": ["class", "measure", "≤2011", "12–15", "16–19", "20–23", "rho", "p",
+                           "movement"],
+    "la_family_dd": ["definition", "condition", "observed", "met"],
+    "la_lag_constancy": ["effect", "F (on ranks)", "p (permutation)", "p (parametric)",
+                         "p (Holm, across the two regions)", "partial η²"],
+    "la_tw_successions": ["class of origin", "successions", "stays in the class",
+                          "largest destination", "share to it", "second destination",
+                          "share to it, second"],
+})
+
+
+def _fmt_p_cell(x):
+    """A p value as a reader wants it: below a thousandth as an inequality, else 2-3 places."""
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return x
+    if v != v:                                            # NaN
+        return ""
+    if v < 0.001:
+        return "< 0.001"
+    return f"{v:.3f}" if v < 0.01 else f"{v:.2f}"
+
+
+def _is_p_col(c: str) -> bool:
+    c = str(c).strip()
+    return c in ("p", "q (BH)") or c.startswith(("p (", "p,", "q ("))
+
+
+def print_format(name: str, t):
+    """Print-only formatting for every table of the brief (read by ``report._table_md``).
+
+    Every p or q column is printed as a reader reads it; any other float with more than three
+    decimals is rounded to three. Only rows change for one table: the family defined after the
+    result that suggested it is printed for its ruling definition (c) in full, and for the two
+    sensitivity definitions by their verdict line alone — the three definitions give the same
+    answer, and fifteen rows of the same conditions would say it three times.
+    """
+    t = t.copy()
+    if name == "la_family_dd" and "definition" in t.columns and "condition" in t.columns:
+        keep = t["definition"].astype(str).str.startswith("(c)") | \
+            t["condition"].astype(str).str.strip().eq("verdict")
+        t = t[keep]
+    for c in t.columns:
+        if _is_p_col(c):
+            t[c] = t[c].map(_fmt_p_cell)
+            continue
+        if t[c].dtype.kind == "f":
+            t[c] = t[c].map(lambda x: "" if x != x else (f"{x:.3f}".rstrip("0").rstrip(".")
+                                                          if abs(x - round(x, 3)) > 1e-12 else x))
+    return t
 
 
 # --------------------------------------------------------------------------
@@ -1457,7 +1526,8 @@ NUMBERS: Dict[str, Dict] = {
                                 where=[("window", "2020-23"), ("class", "TW")],
                                 col="aircraft in the window", fmt="int"),
     # ---- 2026-09-24, the brief's review
-    "sm_pat_2018": dict(_la.TAKEAWAY_NUMBERS["tk_y2018"], col="patents acquired", fmt="int"),
+    # 2026-09-28 (author, Q1): the representative count for 2018, not every acquired patent
+    "sm_pat_2018": dict(_la.TAKEAWAY_NUMBERS["tk_y2018"], col="patents representative", fmt="int"),
     "sm_top2": dict(table="la_dominant_design", how="max", col="top-2 share", fmt="pct"),
     "sm_top2_level": dict(table="la_dominant_design", how="max", col="top-2 share", out="level"),
     "sm_top2_window": dict(table="la_dominant_design", how="max", col="top-2 share", out="window"),
@@ -1750,6 +1820,9 @@ _TRACE_POINTS = [
     ("duct_cvt", "a ducted unit", "CVT", "value", "pct"),
     ("types_tr", "propulsor types", "TR", "mean", "1f"),
     ("types_all", "propulsor types", "ALL5", "mean", "1f"),
+    # 2026-09-26: the rewritten statistics box (sm_text_methods.STATS_BOX)
+    ("units_mr", "propulsive units", "MR", "value", "1f"),
+    ("joints_cvt_med", "tilting joint groups", "CVT", "value", "1f"),
 ]
 
 
@@ -1907,7 +1980,8 @@ NUMBERS.update({
                          where=[("measure", "tilting joint groups per propulsive unit"),
                                 ("code", "CVT")]),
 
-    # ---- the post-hoc Lift + Cruise + CVT family (la_tables.la_family_share / la_family_dd).
+    # ---- the Lift + Cruise + CVT family, defined after the result that suggested it
+    # (la_tables.la_family_share / la_family_dd).
     # Definition (c) is the ruling one; (b) is the sensitivity that comes closest to the line.
     "sm_fam_c_n": dict(table="la_family_dd", where=("id", "c"), col="aircraft", fmt="int"),
     "sm_fam_c_peak": dict(table="la_family_share", where=("id", "c"), how="max",
@@ -1933,8 +2007,10 @@ NUMBERS.update({
 NOT_CORE.update({
     "la_name_coverage": "the base of the public-aircraft comparison: without it the 90 % cannot "
                         "be read (author's review, 2026-09-24)",
-    "sm_family": "the post-hoc family test — the closest this corpus comes to the 50 % line",
-    "la_family_dd": "the three conditions applied to the post-hoc family, and its verdict",
+    "sm_family": "the family test defined after the result that suggested it — the closest this "
+                "corpus comes to the 50 % line",
+    "la_family_dd": "the three conditions applied to the family defined after the result that "
+                    "suggested it, and its verdict",
     "discovery_curve": "closes the question of whether the space is still opening, which the "
                        "document previously printed as OPEN",
     "sm_duct_conditional": "answers whether ducting is a property of the aircraft or of the unit",
@@ -1945,11 +2021,16 @@ NOT_CORE.update({
     "la_lag_constancy": "the test that replaced 'read off the table, not tested'",
 })
 
+FIGURE_CAPTIONS.update({
+    # 2026-09-28 (K7): moved here from TABLE_CAPTIONS — the item is now a figure
+    # (la_figures.fig_name_coverage), not a table; see the Q8 node comment above.
+    "la_name_coverage": "Unique aircraft by name: the ones that carry a real product name and, "
+                        "of those, whether the aircraft was matched to a public product; the "
+                        "ones that carry a name generated for this study",
+})
+
 TABLE_CAPTIONS.update({
-    "la_name_coverage": "Unique aircraft by name: the ones that carry a real product name, the "
-                        "ones that carry a generated one, and what a name buys — every aircraft "
-                        "matched to a public product is a named one",
-    "la_family_dd": "The post-hoc Lift + Cruise and CVT family against the three dominant-design "
+    "la_family_dd": "The Lift + Cruise and CVT family against the three dominant-design "
                     "conditions, one row per condition and per definition of the family. The "
                     "grouping was defined after the result that suggested it and is not a "
                     "pre-registered test",
@@ -1962,6 +2043,10 @@ TABLE_CAPTIONS.update({
                         "interaction on the priority-year ranks, against a permutation null that "
                         "holds both main effects",
 })
+
+
+#: the release of the AAM Reality Index the market dates come from (ari_may2026.csv)
+ARI_RELEASE_YEAR = 2026
 
 
 def _ari_clock_numbers(tables: Optional[Dict]) -> Dict:
@@ -1981,8 +2066,17 @@ def _ari_clock_numbers(tables: Optional[Dict]) -> Dict:
         return {}
     if not len(ff):
         return {}
+    # 2026-09-26 (chapter-1 review): a first flight the index dates after its own release is a
+    # PLAN, not a flight — Ascendance's 2027 was being counted as "filed before they flew".
+    # Only flights on or before the release year count; the planned ones are named apart.
+    flown_year = pd.to_numeric(frame["first flight (ARI)"], errors="coerce")
+    planned = int((flown_year > ARI_RELEASE_YEAR).sum())
+    ff = pd.to_numeric(frame.loc[flown_year.le(ARI_RELEASE_YEAR), "years to first flight"],
+                       errors="coerce").dropna()
     pos = ff[ff > 0]
     return {"sm_ff_dated": f"{len(ff):d}",
+            "sm_ff_flown": f"{len(ff):d}",
+            "sm_ff_planned": f"{planned:d}",
             "sm_ff_before": f"{int((ff > 0).sum()):d}",
             "sm_ff_neg": f"{int((ff <= 0).sum()):d}",
             "sm_ff_lead": f"{pos.median():.0f}" if len(pos) else "",
@@ -2003,6 +2097,30 @@ NUMBERS.update({
                            where=("measure", "families still pending, 2022 cohort")),
     "sm_lapse_p2023": dict(table="la_lapse_check", col="value",
                            where=("measure", "families still pending, 2023 cohort")),
+    # 2026-09-28 (author, Q3): the 2020 cohort beside 2023, and the 2020-23 cohort pooled
+    "sm_lapse_p2020": dict(table="la_lapse_check", col="value",
+                           where=("measure", "families still pending, 2020 cohort")),
+    "sm_lapse_p2020_23": dict(table="la_lapse_check", col="value",
+                              where=("measure", "families still pending, 2020-23 cohort")),
+})
+
+NUMBERS.update({
+    # 2026-09-25, the takeaways of the items the review added
+    "sm_nc_named": dict(table="la_name_coverage", col="unique aircraft", fmt="int",
+                        where=("aircraft", "carry a real product name")),
+    "sm_nc_gen": dict(table="la_name_coverage", col="unique aircraft", fmt="int",
+                      where=("aircraft", "carry a generated identifier")),
+    "sm_nc_gen_matched": dict(table="la_name_coverage", col="compared with the public aircraft",
+                              fmt="int", where=("aircraft", "carry a generated identifier")),
+    "sm_tw_stay": dict(table="la_tw_successions", col="stays in the class", fmt="pct",
+                       where=("code", "TW")),
+    "sm_tw_to_tr": dict(table="la_tw_successions", col="share to it", fmt="pct",
+                        where=("code", "TW")),
+    "sm_tw_n": dict(table="la_tw_successions", col="successions", fmt="int", where=("code", "TW")),
+    "sm_slc_stay": dict(table="la_tw_successions", col="stays in the class", fmt="pct",
+                        where=("code", "SLC")),
+    "sm_tr_stay": dict(table="la_tw_successions", col="stays in the class", fmt="pct",
+                       where=("code", "TR")),
 })
 
 def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
@@ -2025,9 +2143,15 @@ def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
     out.update(_panel_numbers(tables))
     out.update(_duct_conditional_numbers(tables))
     out.update(_ari_clock_numbers(tables))
+    out.update(_ch1_numbers(tables, out))          # 2026-09-26: needs sm_ff_lead and lag_p90
     out.update(_method_numbers())
     out.update(_driver_numbers(tables))
     out.update(_importance_numbers(tables))
+    for _fn in NUMBER_FUNCS:                 # 2026-09-26: chapter modules' own numbers
+        try:
+            out.update(_fn(tables, out) or {})
+        except Exception:
+            pass
     # cross-references, never typed: ``{sm_ref_<name>}`` is the item's number in the FULL
     # document at this render (``set_full_reference`` has already run), ``{sm_here_<name>}``
     # its number in this one. The full document was renumbered twice on 2026-09-23; a typed
@@ -2036,6 +2160,9 @@ def resolve(values: Optional[Dict], tables: Optional[Dict]) -> Dict:
         out[f"sm_ref_{name}"] = ref
     for name, ref in HERE_REF.items():
         out[f"sm_here_{name}"] = ref
+    _nums = [int(r.split()[1]) for r in HERE_REF.values()
+             if r.startswith("Table ") and r.split()[1].isdigit()]
+    out["sm_next_table"] = f"Table {max(_nums) + 1}" if _nums else "Table"
     for key, tname in _la.N_FROM_TABLE.items():
         frame = (tables or {}).get(tname)
         if frame is not None:
@@ -2086,7 +2213,7 @@ def depth(node_id: str) -> int:
 
 def heading(node_id: str, values: Optional[Dict] = None) -> str:
     n = node(node_id)
-    if node_id in _la.QUESTIONS:                     # Q1 … Q8, M — the wording comes from there
+    if node_id in SM_QUESTIONS or node_id in _la.QUESTIONS:   # chapters 1-5 and M
         return f"## {node_id} — {_question_title(node_id)}"
     title = _pa._fill(n.get("title", node_id), values)
     if n.get("subq"):                                # a sub-question: its own heading level
@@ -2094,6 +2221,8 @@ def heading(node_id: str, values: Optional[Dict] = None) -> str:
     if "." not in node_id:
         return f"## {title}"
     if node_id.count(".") == 1 and node_id.split(".")[0] in SM_QUESTIONS:
+        if node_id.split(".")[0] in METHOD_RESULTS:   # 2026-09-26 (C14): no "Observation" heading
+            return "#### Results and discussion"   # 2026-09-26: the thesis merges the two
         return f"#### Observation — {title}"        # a section under a sub-question; its parts flow
     return f"#### {title}"
 
@@ -2137,6 +2266,385 @@ TEXTS = _rekey(TEXTS)
 AFTER = _rekey(AFTER)
 
 
+# ---------------------------------------------------------------------------
+# 2026-09-26 — the chapter-1 review (38 comments on "Labelling Analysis in brief — 2026-09-25
+# revised.docx"), written toward the thesis split into Methodology and Results. Every
+# sub-question of a chapter in METHOD_RESULTS opens on a **Method** block — what is measured,
+# in which figure or table, on which unit and why, from which sources, with which test — and
+# its evidence follows under a **Results** heading. The Source · Unit · How-to-read lines move
+# up into the Method block, so an item there keeps only its takeaway. Chapters not yet reviewed
+# keep the earlier layout until their own round.
+# ---------------------------------------------------------------------------
+METHOD_RESULTS = {"1"}
+
+#: the method every chapter shares, printed at the head of chapter 1 (C14, C29: the unit, the
+#: time axis and the four tests are introduced before the first item that uses them)
+CHAPTER_METHOD: Dict[str, str] = {
+    "1": (
+    "#### Method common to every chapter\n\n"
+    "**Unit of analysis.** {acquired_s} patents were acquired (PatSeer, snapshot {snapshot}); "
+    "{representative_s} describe an electric VTOL aircraft readable from its drawings; those "
+    "describe **{unique_s} unique aircraft**. A unique aircraft is not the patent, because a "
+    "firm that files the same design five times has one design, and the questions here are "
+    "about designs. It is not the {observations_s} aircraft observations either, because an "
+    "observation is one aircraft in one patent — drawn in one of its figures or in several — "
+    "and the same aircraft recurs across filings. The unique aircraft is the unit most figures "
+    "and tables count, but not all: a growth rate compared with worldwide baselines is counted "
+    "in patent families, because that is the baselines' own unit, and a market-clock comparison "
+    "is counted in firms, because a first flight is a firm's event, not a design's. Each Method "
+    "below names the unit of analysis it uses.\n\n"
+    "**Time analysis is based on the priority year:** the earliest filing date of the patent "
+    "family, which is when the design existed. A patent is published a median of "
+    "{lag_median_lo} to {lag_median_hi} years after its priority date, depending on the region, "
+    "and {lag_p90} years after at the 90th percentile. Priority years from {partial_start} on "
+    "are still filling at the snapshot, are hatched in every figure, and no trend is read past "
+    "2023. How much of a recent year the snapshot already sees is read from the corpus's own "
+    "publication lag: the years 2016-21, whose publications are complete, give the distribution "
+    "of that lag per region, and applying it to priority year 2023 says the snapshot already "
+    "sees from {sm_vis2023_lo} to {sm_vis2023_hi} of each region's 2023 aircraft, depending on "
+    "the region, so the last hatched years are a large majority of what they will become, not a "
+    "small fraction of it.\n\n"
+    + _methods_text.STATS_BOX.strip() + "\n"),     # the box carries its own div and heading
+}
+
+# 2026-09-27 (author's review, A2): how much of priority year 2023 the snapshot already sees,
+# per region, read off la_region_years ("visible at the snapshot"; sm_open.region_years) rather
+# than typed. The row is filtered on the int column "priority year" == 2023.
+NUMBERS.update({
+    "sm_vis2023_lo": dict(table="la_region_years", where=[("priority year", 2023)],
+                          how="min", col="visible at the snapshot", fmt="pct"),
+    "sm_vis2023_hi": dict(table="la_region_years", where=[("priority year", 2023)],
+                          how="max", col="visible at the snapshot", fmt="pct"),
+})
+
+TEXTS.update({
+    "1.q1": (
+    "#### Method\n\n"
+    "**Objective.** The question is how fast eVTOL patenting has grown, and how early the "
+    "labelled dataset shows a design that later flies. An answer places eVTOL's growth against patenting "
+    "at large and states, in years, how far ahead of its first flight a design becomes visible "
+    "in the patent record.\n\n"
+    "**Data and unit of analysis.** Two units are drawn side by side in "
+    "{sm_here_filings_per_year} (i), because they answer different questions and the gap "
+    "between them is itself informative: the gap is repeated filing. In 2018, {sm_pat_2018} "
+    "acquired patents describe only {tk_y2018} unique aircraft, so a count of patents alone "
+    "would overstate the number of designs filed that year. The unique aircraft, counted once "
+    "by the priority year of its first patent (later patents on the same aircraft are not "
+    "counted again), is the unit of the filings count; the acquired-patent count is drawn "
+    "beside it only to show the size of that gap. For the growth-rate comparison in "
+    "{sm_here_filings_per_year} (ii) the unit changes, because the three worldwide baselines "
+    "are counted in patent families: eVTOL's own series is counted the same way for that "
+    "comparison, as the {representative_s} patents that describe an electric VTOL aircraft, "
+    "each one family, so the comparison is like for like. eVTOL's doubling time counted as "
+    "unique aircraft, the unit used everywhere else in this document, is also fitted and "
+    "reported alongside it. For how long before first flight, in {sm_here_ari_clock} and "
+    "{sm_here_la_ari_timeline}, the unit changes again, to the firm, because a first flight is "
+    "a firm's event and not a design's: it is read for the {tk_ari_timeline_n} firms the AAM "
+    "Reality Index lists in May 2026 that file in this corpus. Sources: PatSeer (the corpus and "
+    "the worldwide baselines), WIPO patent families by origin (all patents), the AAM Reality "
+    "Index (May 2026) and human labelling.\n\n"
+    "**Procedure.** {sm_here_filings_per_year} (i) plots unique aircraft per priority year, "
+    "split by applicant region, with the acquired patents drawn as a line beside the bars and "
+    "the dated sector events marked under them. {sm_here_filings_per_year} (ii) then asks how "
+    "fast eVTOL grows against the patenting around it, against three worldwide baselines: "
+    "aeronautics (CPC B64), transport and operations (CPC section B) and every patent family of "
+    "any kind. {sm_here_ari_clock} reads, for each of the {tk_ari_timeline_n} index firms, the "
+    "span from its first to its last patent and its peak filing year, against the first flight "
+    "and planned entry into service the index reports; {sm_here_la_ari_timeline} lists these "
+    "dates firm by firm. The **AAM Reality Index** (AAM = Advanced Air Mobility, the field; ARI "
+    "= the index's score) is an analyst's quarterly judgement of how far each manufacturer has "
+    "got, not a measurement.\n\n"
+    "**Scientific grounds.** To compare how fast each series grows, the number of years each "
+    "takes to double is computed. Each series is first divided by its own 2005-09 average, so "
+    "all four start at the same point and can be read on the same log axis, where a steeper "
+    "line is faster growth and two parallel lines grow at the same rate. On that scale the "
+    "yearly count is fitted as log(count_t) = a + b·t by least squares over the priority years "
+    "2005-2023, and the doubling time is ln 2 / b, with its own 95 % interval from the fit. Two "
+    "series are compared as the ratio of their doubling times, read as times as fast. That "
+    "ratio's own interval comes from a paired bootstrap over the years: the complete years are "
+    "resampled with replacement, both series are refitted on the same drawn years, this is "
+    "repeated 2 000 times, and the interval is the middle 95 % of the resulting ratios (Efron, "
+    "1979). Resampling years, rather than refitting once, carries the year-to-year scatter that "
+    "a single fitted line hides. An interval that takes in 1 means the two rates cannot be told "
+    "apart. The fit is repeated ending at 2019, to check whether the answer rests on the most "
+    "recent years alone. The lead over first flight is the number of years from a firm's first "
+    "patent in this corpus to its first flight, counted only for the flights that have already "
+    "happened.\n\n"
+    "**Assumptions and limits.** The lead over first flight is a floor, because a firm may have "
+    "filed earlier outside this corpus, and the AAM Reality Index itself is a judgement, not a "
+    "measurement. The dated sector events marked on {sm_here_filings_per_year} (i) are context "
+    "for reading the curve, not evidence that any one of them caused a change in filing: "
+    "patenting responds to many things at once, and a coincidence in time is not a proven "
+    "cause.\n"),
+
+    "1.q2": (
+    "#### Method\n\n"
+    "**Objective.** The question is what share of the patented aircraft is still protected, and "
+    "whether that share differs between architecture classes. An answer would show whether some "
+    "classes have been let lapse more than others, or whether the labelled dataset's own age already "
+    "explains the difference.\n\n"
+    "**Data and unit of analysis.** The unit is the unique aircraft, counted **out of force** "
+    "when every patent that describes it reads INACTIVE in PatSeer's legal status at the "
+    "snapshot: lapsed for non-payment, withdrawn, refused or expired. One patent that is "
+    "pending or in force keeps the aircraft in force, because a design stays protected as long "
+    "as any of its patents does, so the aircraft's first patent alone cannot decide it. Only "
+    "aircraft with a priority year of 2019 or earlier are read, because an application takes up "
+    "to about seven years from its priority date to be granted or refused: in this corpus "
+    "{sm_lapse_7y} of the {sm_lapse_grants} dated grants arrive within seven years of priority, "
+    "a median of {sm_lapse_median} years, and the share of families still under examination, "
+    "neither granted nor refused, is {sm_lapse_p2019} for priority year 2019, {sm_lapse_p2022} "
+    "for 2022 and {sm_lapse_p2023} for 2023. A younger application that reads active is mostly "
+    "still under examination, and counting it would inflate the share in force. Sources: "
+    "PatSeer legal status (snapshot {snapshot}), human labelling for the class.\n\n"
+    "**Procedure.** {sm_here_sm_force_aircraft} reads the share out of force per architecture "
+    "class, for aircraft with a priority year of 2019 or earlier.\n\n"
+    "**Scientific grounds.** Whether the classes differ is asked with a chi-square test, "
+    "χ² = Σ (O − E)² / E, comparing the observed count of out-of-force aircraft in each class "
+    "against the count expected if every class lapsed at the same rate (statistics box). "
+    "Because one duplicate patent family can name more than one aircraft, the test is run "
+    "twice, once counting a duplicate for every aircraft it names and once counting it for the "
+    "first aircraft only, and both p values are reported.\n\n"
+    "**Assumptions and limits.** Legal status here is a single snapshot, not a lapse date, so "
+    "this Method states only whether an aircraft is out of force at the export date, not when "
+    "it became so.\n"),
+
+    "1.q3": (
+    "#### Method\n\n"
+    "**Objective.** The question is how faithfully the patented aircraft describe the aircraft "
+    "the industry actually builds, and whether the aircraft that can be checked stand for the "
+    "rest of the labelled dataset. An answer states how often the patent drawing's architecture class "
+    "matches the built aircraft's own class, and whether the aircraft public sources cover are "
+    "a fair sample of the corpus or a distinct slice of it.\n\n"
+    "**Data and unit of analysis.** The unit is the unique aircraft, but only the aircraft that "
+    "can be linked to a source outside the patents enter each comparison. An aircraft can be "
+    "compared with a public aircraft only when it carries a real product name, recognised by "
+    "the labeller and recorded in the name decisions, and that product has an evtol.news page; "
+    "every other aircraft carries a name generated for this study and cannot be checked this "
+    "way. {sm_here_la_name_coverage} splits the {unique_s} aircraft by kind of name and states "
+    "how many of each could be matched. TRL, NASA's Technology Readiness Level, is read for "
+    "every aircraft, matched or not: 1-2 is an idea on paper, 3-5 a component or a subscale rig "
+    "tested, 6-7 a full-size prototype flown, 8-9 certified or in service. It was assessed per "
+    "aircraft by the author from public evidence, evtol.news pages and company statements; an "
+    "aircraft no public source follows is TRL 2 by construction, so every share above TRL 2 "
+    "stated here is a floor. Sources: human labelling, whole-patent reading, evtol.news, the "
+    "NASA TRL scale, company statements, AAM Reality Index (May 2026).\n\n"
+    "**Procedure.** On the matched aircraft, {sm_here_la_public_pairwise} compares the "
+    "architecture class alone, not the other labels, taken from three sources: the drawing "
+    "label (the class assigned from the patent's figures), the whole-patent reading (the class "
+    "the patent text states) and the public aircraft (the class of its evtol.news page). The "
+    "three are compared two at a time, each agreement share with its 95 % interval (statistics "
+    "box). {sm_here_a2_d15_trl_by_class} reads TRL per architecture class. "
+    "{sm_here_la_trl_representativeness} and {sm_here_la_ari_representativeness} then ask "
+    "whether the aircraft public information covers, the aircraft above TRL 2 and the aircraft "
+    "of the {tk_ari_firms_n} firms the AAM Reality Index has ever scored, differ from the rest "
+    "of the corpus on six attributes: architecture class, applicant region, priority window and "
+    "filer type, and priority year and propulsive units.\n\n"
+    "**Scientific grounds.** The agreement share's 95 % interval is the Wilson interval, "
+    "finite-population corrected (statistics box); the matched aircraft are not a random draw, "
+    "they over-represent firms with a public product, so the interval is read as the precision "
+    "of the count and not as a statement about the whole labelled dataset. The six-attribute comparison "
+    "uses chi-square, χ² = Σ (O − E)² / E, for the four categorical attributes (architecture "
+    "class, applicant region, priority window, filer type) and Mann-Whitney U, "
+    "U = n₁n₂ + n₁(n₁ + 1)/2 − R₁, for the two numeric ones (priority year, propulsive units), "
+    "the same tests and the same 0.05 line set out in the statistics box. p below 0.05 on an "
+    "attribute means the group differs from the rest of the corpus on it and cannot stand for "
+    "the corpus on that attribute.\n\n"
+    "**Assumptions and limits.** A TRL above 2 is a floor, not a count of every aircraft that "
+    "has flown or been built, because an aircraft with no public trace could still exist "
+    "without one. The AAM Reality Index is an analyst's judgement, not a measurement, and it "
+    "covers only the firms it has chosen to rate.\n"),
+})
+
+# C37: the note on the index's name moved into the Method block of 1.3, where the index is
+# first used; nothing is printed under the section any more
+AFTER.pop("1.3", None)
+
+#: items printed without a takeaway (C25: "the table is enough")
+NO_TAKEAWAY = {"la_public_pairwise"}
+
+
+def _item_chapter() -> Dict[str, str]:
+    """The chapter each item is printed in — the first segment of the node that carries it."""
+    out: Dict[str, str] = {}
+    for n in NODES:
+        ch = n["id"].split(".")[0]
+        for name in list(n.get("figures") or []) + list(n.get("tables") or []):
+            out.setdefault(name, ch)
+    return out
+
+
+ITEM_CHAPTER = _item_chapter()
+
+
+# ---- 2026-09-26, chapter-1 review: tables as printed -------------------------------------
+# C36: the named-organisation column answered nothing the section asks
+COLUMNS["la_name_coverage"] = ["aircraft", "unique aircraft", "share of the analysis set",
+                               "linked to an evtol.news page", "compared with the public aircraft",
+                               "why"]
+COLUMNS["la_public_pairwise"] = ["comparison", "agree", "of", "share", "95 % interval",
+                                 "the disagreements"]
+
+#: C23: the comparison is of the architecture class only, and the row says so
+_PAIRWISE_LABEL = {
+    "drawing label against the public aircraft":
+        "architecture class: drawing label against the public aircraft",
+    "patent text against the public aircraft":
+        "architecture class: patent text against the public aircraft",
+    "drawing label against the patent text":
+        "architecture class: drawing label against the patent text",
+}
+#: C28, C30: a p above 0.05 is "no difference detected", never "matches"
+_VERDICT_LABEL = {"matches the rest": "no difference detected",
+                  "does NOT match the rest": "differs"}
+
+
+def _population_n() -> Optional[int]:
+    """N of the finite-population correction: the unique aircraft of the analysis set."""
+    raw = str(_VALUES.get("unique_s", "") or _VALUES.get("unique", ""))
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    return int(digits) if digits else None
+
+
+def wilson_fpc(x: float, n: float, N: Optional[int], z: float = 1.96):
+    """95 % Wilson score interval of x/n, with the finite-population correction applied as an
+    effective sample size n·(N − 1)/(N − n). Returns (low, high) or None."""
+    import math
+    if not n or n <= 0:
+        return None
+    ph = x / n
+    ne = n
+    if N and N > n:
+        ne = n * (N - 1) / (N - n)
+    elif N and N <= n:                     # a census: no sampling error at all
+        return (ph, ph)
+    den = 1 + z * z / ne
+    ctr = (ph + z * z / (2 * ne)) / den
+    half = z * math.sqrt(ph * (1 - ph) / ne + z * z / (4 * ne * ne)) / den
+    return (max(0.0, ctr - half), min(1.0, ctr + half))
+
+
+def _fmt_ci(ci) -> str:
+    return "" if ci is None else f"{ci[0]:.2f}–{ci[1]:.2f}"
+
+
+#: 2026-09-27 audit fix (AUDIT_ch1-2_comments.md): la_tables prints a file name into a cell of
+#: la_name_coverage's "why" column, which is shared with the full document and cannot be edited
+#: there. The brief alone rewrites that one cell so no file name reaches printed text.
+def _no_filename_in_why(t):
+    if "why" in t.columns:
+        t = t.copy()
+        t["why"] = t["why"].astype(str).str.replace(
+            "the labeller recognised the aircraft and NAME_DECISIONS.csv records the product name",
+            "the labeller recognised the aircraft, and the product name was confirmed in the name review",
+            regex=False)
+    return t
+
+
+#: 2026-09-27 (F12): la_ari_timeline's year and year-count columns are float in the CSV
+#: (NaN where a firm has no planned entry into service), so the generic float rule above prints
+#: whole years as "2018.0" — it only strips trailing zeros when rounding actually changes the
+#: value. Printed here as a bare integer, or blank where the index states none.
+_ARI_TIMELINE_INT_COLS = ("first flight (ARI)", "entry into service (ARI)",
+                          "years to first flight", "years to entry into service")
+
+
+def _ari_timeline_int_cell(x):
+    try:
+        xf = float(x)
+    except (TypeError, ValueError):
+        return x
+    return "" if xf != xf else f"{xf:.0f}"
+
+
+def _ari_timeline_ints(t):
+    t = t.copy()
+    for c in _ARI_TIMELINE_INT_COLS:
+        if c in t.columns:
+            t[c] = t[c].map(_ari_timeline_int_cell)
+    return t
+
+
+_print_format_base = print_format
+
+
+def print_format(name: str, t):          # noqa: F811 — wraps the formatter above
+    t = _print_format_base(name, t)
+    if name == "la_name_coverage":
+        t = _no_filename_in_why(t)
+    if name == "la_ari_timeline":
+        t = _ari_timeline_ints(t)
+    hook = PRINT_HOOKS.get(name)
+    if hook is not None:                   # 2026-09-26: a chapter module's print hook
+        t = hook(t)
+    if name == "la_public_pairwise" and {"agree", "of"} <= set(t.columns):
+        N = _population_n()
+        ci = [_fmt_ci(wilson_fpc(float(a), float(o), N)) for a, o in zip(t["agree"], t["of"])]
+        pos = list(t.columns).index("share") + 1 if "share" in t.columns else len(t.columns)
+        t.insert(pos, "95 % interval", ci)
+        t["comparison"] = t["comparison"].map(lambda v: _PAIRWISE_LABEL.get(str(v), v))
+    if name in ("la_trl_representativeness", "la_ari_representativeness") and "verdict" in t.columns:
+        t["verdict"] = t["verdict"].map(lambda v: _VERDICT_LABEL.get(str(v), v))
+    return t
+
+
+def _ch1_numbers(tables: Optional[Dict], values: Dict) -> Dict:
+    """Chapter-1 numbers the spec grammar cannot say: the class-agreement interval, and the
+    lead over first flight that is left once the publication lag is paid."""
+    out: Dict[str, str] = {}
+    pw = (tables or {}).get("la_public_pairwise")
+    if pw is not None:
+        try:
+            row = pw[pw["comparison"].astype(str).eq("drawing label against the public aircraft")].iloc[0]
+            N = _population_n()
+            if N is None:
+                digits = "".join(ch for ch in str(values.get("unique_s", "")) if ch.isdigit())
+                N = int(digits) if digits else None
+            out["sm_pw_ci"] = _fmt_ci(wilson_fpc(float(row["agree"]), float(row["of"]), N))
+        except Exception:
+            pass
+    try:
+        lead = float(values.get("sm_ff_lead", ""))
+        lag = float(values.get("lag_p90", ""))
+        out["sm_ff_visible"] = f"{lead - lag:.0f}"
+    except (TypeError, ValueError):
+        pass
+    # 2026-09-27 review (F1): the statistics box names the Multirotor worked example's own n
+    # and states its p as "about k in 100" rather than a bare decimal, straight off the same
+    # row of la_trace_trends that _driver_numbers already reads for sm_t_units_mr_first/_last/_p
+    try:
+        tt = (tables or {}).get("la_trace_trends")
+        if tt is not None and "trace" in tt.columns:
+            sel = tt[tt["trace"].astype(str).str.strip().eq("propulsive units")
+                     & tt["code"].astype(str).str.strip().eq("MR")]
+            if len(sel):
+                r = sel.iloc[0]
+                n = _la._tk_float(r.get("aircraft"))
+                if n is not None:
+                    out["sm_t_units_mr_n"] = f"{round(n):d}"
+                p = _la._tk_float(r.get("p"))
+                if p is not None:
+                    out["sm_t_units_mr_p100"] = f"{round(p * 100):d}"
+    except Exception:
+        pass
+    return out
+
+
+NUMBERS.update({
+    # 2026-09-26, chapter-1 review
+    "tk_ari_firms_n": dict(table="la_ari_firms", how="rows", fmt="int"),
+    "sm_trl_lc_n": dict(table="a2_d15_trl_by_class", where=("class", "Lift + Cruise"),
+                        col="above TRL 2", fmt="int"),
+    "sm_trl_tr_n": dict(table="a2_d15_trl_by_class", where=("class", "Tilt Rotor"),
+                        col="above TRL 2", fmt="int"),
+    "sm_trl_rest_n": dict(table="la_trl_representativeness", where=("test", "chi-square"),
+                          col="n rest", fmt="int"),
+})
+
+
+def _in_method_chapter(name: str) -> bool:
+    return ITEM_CHAPTER.get(name) in METHOD_RESULTS
+
+
 def level_line(node_id: str, values: Optional[Dict] = None) -> str:
     """The question in full, then the unit of analysis, printed where the full document
     prints the level of analysis. ``report`` calls this with the node id alone, so the unit
@@ -2160,8 +2668,6 @@ STICKERS: Dict[str, tuple] = {
     # 2026-09-25: the doubling time is fitted and the discovery curve is built, so those two
     # stickers are closed. The lag is now tested and the test does not settle it, which is a
     # different sticker and not a closed one.
-    "4.q2": ("PARTLY", "the regional lead is solid; whether the gap is the same size in every "
-                       "class is not settled"),
     "M":    ("OWED", "the relabel of 50 patents has not been run"),
 }
 
@@ -2176,20 +2682,30 @@ STICKERS: Dict[str, tuple] = {
 FOUR_LINES = (("source", "Source"), ("unit", "Unit"), ("read", "How to read"), ("why", "Takeaway"))
 
 
+# 2026-09-26: in a chapter of METHOD_RESULTS the first three lines are stated in the Method
+# block of the sub-question instead, so under the item they print nothing.
 def source(name, values=None, kind="figure", tables=None):
+    if _in_method_chapter(name):
+        return ""
     return _la.source(name, values, kind, tables)
 
 
 def unit(name, values=None, kind="figure", tables=None):
+    if _in_method_chapter(name):
+        return ""
     return _la.unit(name, values or _VALUES, kind, tables or _TABLES)
 
 
 def read(name, values=None, kind="figure", tables=None):
+    if _in_method_chapter(name):
+        return ""
     return _la.read(name, values or _VALUES, kind, tables or _TABLES)
 
 
 def why(name, values=None, kind="figure", tables=None):
     """Printed as ``Takeaway:`` — the slot the renderer calls ``why``."""
+    if name in NO_TAKEAWAY:
+        return ""
     return takeaway(name, values, kind, tables)
 
 
@@ -2202,6 +2718,9 @@ def why(name, values=None, kind="figure", tables=None):
 #: ``div.answer-box`` — the class the stylesheet holds to one page. Nothing is typed: every
 #: number is the same placeholder the prose Answer used, resolved through the same registers.
 SM_ANSWER: Dict[str, str] = {
+    # 2026-09-26: chapter 2 is new (the design space); its Answer is written in the chapter-2 round
+    "2":
+        "**[The design-space Answer is written in the chapter-2 round.]**",
     "1":
         "**Yes as a census of what is being designed — no as a ranking of what will fly.**\n\n"
         "- **It is early.** Of the {sm_ff_dated} index firms here with a dated first flight, "
@@ -2224,14 +2743,14 @@ SM_ANSWER: Dict[str, str] = {
         "- **It is not a leaderboard.** The firms the market rates hold aircraft that differ from "
         "everyone else's in citation rank and in survival, and not in architecture class.",
 
-    "2":
+    "3":
         "**Nothing is converging, and what moves is one event wearing four disguises.**\n\n"
         "- **No dominant design, on any of the three conditions.** The largest archetype anywhere "
         "reaches {tk_dd_top_share} against a 50 % line; evenness stays inside the permutation "
         "band; the spread of the space falls below its early level in {tk_q_below} of "
         "{tk_q_cells} cells and only under one of the two weightings.\n"
         "- **Not even read as one family.** Lift + Cruise together with the boom-layout CVT — "
-        "tested post hoc, because the record suggested it — peaks at {sm_fam_c_peak} of 2020-23 "
+        "a grouping defined after the labelled dataset suggested it — peaks at {sm_fam_c_peak} of 2020-23 "
         "and clears 50 % in no complete window.\n"
         "- **Not inside a class either.** No class settles on a single configuration: the most "
         "common one tops out at under a third of its class, and the configurations per aircraft do "
@@ -2239,10 +2758,11 @@ SM_ANSWER: Dict[str, str] = {
         "- **What moves is one move.** The twin tilt-rotor becomes a fore-and-aft pair of tilting "
         "sets; the unit count and the propulsor-type count follow it; CVT's ducting falls because "
         "the body that was the duct went away, not because a duct stopped being wanted.\n"
-        "- **Per propulsive unit, tilting joints fall** — so the cost drivers win, and the class "
-        "growing fastest, Lift + Cruise, has no tilting joint at all.",
+        "- **Per propulsive unit, tilting joints fall** — so cost tracks what moved more than the "
+        "physical requirement does, and the class growing fastest, Lift + Cruise, has no tilting "
+        "joint at all.",
 
-    "3":
+    "4":
         "**Open, and more open than the sector's account of itself.**\n\n"
         "- **A crowd, not a top tier.** {tk_firms_all} named firms file here and "
         "{tk_seg_one_firms} of them hold a single aircraft; named companies hold "
@@ -2256,10 +2776,10 @@ SM_ANSWER: Dict[str, str] = {
         "window holds, while a firm that files again usually files in the same class.\n"
         "- **Tilt Wing is the exception and the diagnostic.** Firms keep arriving with it after its "
         "share has peaked, and only about one succession in six stays: it is a step on the way.\n"
-        "- **What this record cannot say.** It holds no funding, capitalisation or headcount, so "
+        "- **What this labelled dataset cannot say.** It holds no funding, capitalisation or headcount, so "
         "nothing here supports or refutes a claim about better-capitalised newcomers.",
 
-    "4":
+    "5":
         "**Region changes how much is filed and when — not what is designed.**\n\n"
         "- **Three countries hold two thirds of the corpus**, and the regions do not run on one "
         "clock: North America passes the middle of its own filings in {tk_na_50}, Europe in "
@@ -2308,6 +2828,20 @@ def _fill_block(text_: str, values: Optional[Dict], tables: Optional[Dict]) -> s
     return out
 
 
+def _subq_lines(text_: str) -> str:
+    """2026-09-29 (decision document, S3): an Answer is organised by sub-question. A line that
+    reads ``[[1.2]]`` becomes the bold line "1.2 <its title>", the title read from :data:`SUBQ`
+    so a sub-question is worded in one place only; the bullets under it answer it. The line is
+    set off by blank lines, so a bullet list before it cannot swallow it."""
+    titles = {num: wording for _ch, _o, num, wording in SUBQ}
+
+    def _one(m):
+        num = m.group(1)
+        return f"\n**{num} {titles[num]}**\n"
+    out = _re.sub(r"^\[\[(\d\.\d)\]\]$", _one, text_, flags=_re.MULTILINE)
+    return _re.sub(r"\n{3,}", "\n\n", out)
+
+
 def answer(question, values=None, tables=None):
     """The block that closes a chapter.
 
@@ -2320,7 +2854,7 @@ def answer(question, values=None, tables=None):
     own = SM_ANSWER.get(question)
     if own is None:
         return _la.answer(question, values or _VALUES, tables or _TABLES)
-    body = _fill_block(own, values or _VALUES, tables or _TABLES)
+    body = _fill_block(_subq_lines(own), values or _VALUES, tables or _TABLES)
     return ('\n\n<div class="answer-box" markdown="1">\n\n'
             "#### Answer\n\n" + body + '\n\n</div>\n')
 
@@ -2346,7 +2880,12 @@ def text(node_id: str, values: Optional[Dict] = None) -> str:
         # one chapter opens on the methods box as well (2026-09-25): the chapter that uses p,
         # the permutation band, the Hill numbers and the three conditions is the only place the
         # explanation can be read where it is needed.
-        return _pa._fill(METHODS_BOX, values) if node_id == METHODS_CHAPTER else ""
+        parts = []
+        if node_id in CHAPTER_METHOD:              # 2026-09-26: the shared method opens chapter 1
+            parts.append(_pa._fill(CHAPTER_METHOD[node_id], values))
+        if node_id == METHODS_CHAPTER:
+            parts.append(_pa._fill(METHODS_BOX, values))
+        return "\n\n".join(parts)
     return _pa._fill(n.get("text") or TEXTS.get(node_id, ""), values)
 
 
@@ -2463,9 +3002,47 @@ def set_full_reference(figures, tables) -> Dict[str, str]:
 #: written), or its takeaway is a paragraph that would cost this document a third of a page.
 #: A takeaway here is resolved through the same registers as every other number.
 TAKEAWAY: Dict[str, str] = {
+    # ---- 2026-09-25, the nine items the review added (printed "not written yet" until the
+    # print audit caught it)
+    "la_name_coverage":
+        "{sm_nc_named} aircraft carry a real product name and {sm_nc_gen} a generated one; "
+        "{sm_nc_gen_matched} of the generated ones could be matched to a public aircraft. So every "
+        "public comparison in this document speaks for the named aircraft, which over-represent "
+        "publicly documented firms — not for the labelled dataset as a whole",
+    "sm_family":
+        "**Even read as one family, Lift + Cruise and the boom-layout CVT stay below the 50 % line "
+        "in every window** — {sm_fam_c_peak} at their peak, {sm_fam_b_peak} on the widest "
+        "definition. The closest this labelled dataset comes to a dominant design is still not one",
+    "la_family_dd":
+        "Condition 1 fails for the family in every window and condition 3 in {sm_fam_c3_cells} of "
+        "{sm_fam_c3_total}; the verdict is no on all three definitions",
+    "discovery_curve":
+        "**Closed at the coarse levels, still opening at the finest.** Classes stopped appearing "
+        "long ago; at the design-species level {sm_disc_a1t_new100} new archetypes appeared in the "
+        "last hundred aircraft against {sm_disc_a1t_exp100} expected by chance",
+    "sm_duct_conditional":
+        "**Once a designer ducts one unit, they usually duct them all**: {sm_ductc_all} of the "
+        "aircraft with any ducted unit duct every one. Ducting is mostly a choice for the whole "
+        "aircraft, not for a single unit",
+    "sm_joints_per_unit":
+        "**Counted per aircraft the tilting joints rise; counted per propulsive unit they fall** "
+        "(Tilt Rotor ρ {sm_jpu_tr_rho}, p {sm_jpu_tr_p}). Designers added rotors, and the joints "
+        "only followed them",
+    "la_joints_per_unit":
+        "Inside CVT the per-unit trace is flat (ρ {sm_jpu_cvt_rho}, p {sm_jpu_cvt_p}); inside Tilt "
+        "Rotor it falls. Neither supports the earlier reading that joints rose against the cost "
+        "drivers",
+    "la_tw_successions":
+        "**Tilt Wing is a first stop, not a destination**: only {sm_tw_stay} of its {sm_tw_n} "
+        "successions stay in it, and {sm_tw_to_tr} go on to Tilt Rotor — against {sm_slc_stay} "
+        "that stay in Lift + Cruise and {sm_tr_stay} in Tilt Rotor",
+    "la_lag_constancy":
+        "The regional lead is solid (p {sm_lag_p_region}); whether it is the same size in every "
+        "class is not settled (p {sm_lag_p_inter}). Read North America first, Europe second, "
+        "Asia-Pacific third, but not as a fixed number of years",
     # ---- 2026-09-25, the docx review
     "atlas_arch_time":
-        "Lift + Cruise overtakes Tilt Rotor and keeps the lead: TR falls from {tk_tr_w1} of the "
+        "Lift + Cruise becomes the largest class: TR falls from {tk_tr_w1} of the "
         "earliest window's aircraft to {tk_tr_w4} in 2020-23 while SLC rises from {tk_slc_w1} to "
         "{tk_slc_w4}; with CVT ({tk_cvt_w4}) the three hold about three quarters of the recent "
         "corpus. Two limits on that reading: the earliest window rests on {sm_w1_n} aircraft "
@@ -2484,7 +3061,7 @@ TAKEAWAY: Dict[str, str] = {
         "filer count, so **the crowding is a crowd and not one "
         "company**. Of the {sm_zones_n} archetypes drawn, {sm_zones_persist} are persistent, "
         "{sm_zones_new} are new since 2016 and {sm_zones_fading} have gone absent: nothing in this "
-        "record has been abandoned. Blank cells in the lower panel are windows with no aircraft of "
+        "labelled dataset has been abandoned. Blank cells in the lower panel are windows with no aircraft of "
         "that archetype, and an archetype under five aircraft is not drawn at all — neither is an "
         "'absent' category.",
     "firm_influence":
@@ -2514,8 +3091,9 @@ TAKEAWAY: Dict[str, str] = {
     "atlas_units":
         "No standard rotor count: the five bands hold {bin_r03}, {bin_r4}, {bin_r56}, {bin_r78} and "
         "{bin_r9} aircraft. (iii) Ducting is U-shaped in rotor count — {sm_duct_13} at 1-3 units, "
-        "{sm_duct_78} at 7-8, {sm_duct_9} at 9+ — because it is two designs: at the low end one "
-        "ducted cruise or tail fan, at the high end a whole ducted-fan array (next figure).",
+        "{sm_duct_78} at 7-8, {sm_duct_9} at 9+ — because ducting follows two distinct patterns: "
+        "at the low end one ducted cruise or tail fan, at the high end a whole ducted-fan array "
+        "(next figure).",
     "sm_driver_traces":
         "Joints, units and propulsor types rise together inside Tilt Rotor and CVT and nowhere else; "
         "ducting falls in CVT alone. Lift + Cruise, the class that grows, moves on none of the four.",
@@ -2552,11 +3130,11 @@ TAKEAWAY: Dict[str, str] = {
     "la_duct_count":
         "**Ducting is usually a property of the aircraft, not of one unit on it.** Across the "
         "corpus {sm_ductc_all} of the aircraft that duct anything duct **every** unit they carry; "
-        "it is not strictly all-or-nothing, but the middle is thin. The two ends of the band scale are two designs: at "
+        "it is not strictly all-or-nothing, but the middle is thin. The two ends of the band scale follow two distinct patterns: at "
         "nine units and more {sm_duct9_every} of the whole band duct everything and "
         "{sm_duct9_units} of the band's units run in a duct — an array; at 1-3 units a ducting "
         "aircraft carries a median of two ducted units — one fan. Why an aircraft commits either "
-        "way is not in the record: noise and certification are nowhere labelled.",
+        "way is not in the labelled dataset: noise and certification are nowhere labelled.",
     "la_trl_representativeness":
         "The {trl_above_s} aircraft above TRL 2 fail {sm_trl_repr_fail} of the six attributes: they "
         "match the corpus on class and region and not on filer type, priority year or propulsive "
@@ -2593,7 +3171,7 @@ TAKEAWAY: Dict[str, str] = {
         "describe another configuration, drawing and text agreeing that they do; only "
         "{sm_pub_draw} are a drawing that misreads its own patent.",
     "a2_d15_trl_by_class":
-        "The patent record is a record of concepts: {trl_above_s} of {trl_aircraft_s} aircraft "
+        "The labelled dataset is a record of concepts: {trl_above_s} of {trl_aircraft_s} aircraft "
         "({sm_trl_share}) are above TRL 2, and the classes that get patented most are not the "
         "classes that get built — {trl_best_class} leads the large classes, {trl_zero_classes} "
         "have none. TRL 2 is also what an aircraft gets when nothing public is known, so read "
@@ -2695,8 +3273,8 @@ TAKEAWAY: Dict[str, str] = {
         "{tk_dr_slc_retract_mov}; the tilting-joint COUNT rises inside TR "
         "({tk_dr_tr_joints_mov}) and CVT ({tk_dr_cvt_joints_mov}) while the pooled row is "
         "{tk_dr_all_joints_mov}. **Read per propulsive unit, though, the joints fall**: the "
-        "aircraft are gaining propulsors faster than they gain joints, so the cost drivers win at "
-        "both levels and the class that grows fastest has no tilting joint at all.",
+        "aircraft add propulsors faster than they add joints, so cost tracks the fall at both "
+        "levels and the class that grows fastest has no tilting joint at all.",
     # the full document's line names the two rows this document drops (symmetry, standard
     # wings); this one reads only what is printed
     "a2_d3_selected_fields":
@@ -2734,6 +3312,8 @@ def takeaway(name: str, values: Optional[Dict] = None, kind: str = "figure",
     :data:`TAKEAWAY` is written for this document; every other item delegates to
     :func:`la_index.takeaway`, so the two documents say the same thing in the same words.
     """
+    if name in NO_TAKEAWAY:            # 2026-09-26: with every line empty, report falls back here
+        return ""
     own = TAKEAWAY.get(name)
     if own is not None:
         vals = dict(values or {})                      # already carries every resolved number
@@ -2745,6 +3325,9 @@ def takeaway(name: str, values: Optional[Dict] = None, kind: str = "figure",
     # …" — was dropped on 2026-09-23: it is the document describing its own selection rule to a
     # reader who cannot act on it, and the register still enforces the rule in
     # ``render_summary.check_selection``. The pointer into the full document stays.
+    # 2026-09-26 (author): nothing in this document points out of it — no "Full document: …",
+    # no "Full table: tables/….csv". The brief now stands alone.
+    return line
     tail = []
     ref = FULL_REF.get(name)
     if ref:
@@ -2820,3 +3403,613 @@ def index_md() -> str:
                     f'<span class="toc-d"></span><span class="toc-p">{pg}</span></div>')
     return ('<!-- TOC -->\n<div class="toc">\n<div class="toc-h">Contents</div>\n'
             + "\n".join(rows) + "\n</div>\n<!-- /TOC -->")
+
+
+NUMBERS.update({
+    # 2026-09-26 (C15): out of force per unique aircraft, sm_open.force_aircraft
+    "sm_fa_n": dict(table="la_force_aircraft", where=("class", "all classes"),
+                    col="unique aircraft", fmt="int"),
+    "sm_fa_out": dict(table="la_force_aircraft", where=("class", "all classes"),
+                      col="out of force", fmt="int"),
+    "sm_fa_share": dict(table="la_force_aircraft", where=("class", "all classes"),
+                        col="out of force share", fmt="pct"),
+    "sm_fa_old": dict(table="la_force_aircraft", where=("class", "all classes"),
+                      col="out of force, primary patent only", fmt="pct"),
+    "sm_fa_tr": dict(table="la_force_aircraft", where=("class", "Tilt Rotor"),
+                     col="out of force share", fmt="pct"),
+    "sm_fa_slc": dict(table="la_force_aircraft", where=("class", "Lift + Cruise"),
+                      col="out of force share", fmt="pct"),
+    "sm_fa_cvt": dict(table="la_force_aircraft", where=("class", "Combined vectored thrust"),
+                      col="out of force share", fmt="pct"),
+    "sm_fa_mr": dict(table="la_force_aircraft", where=("class", "Multirotor"),
+                     col="out of force share", fmt="pct"),
+    "sm_fa_p": dict(table="la_force_aircraft_test",
+                    where=("reading", "every linked patent INACTIVE (this reading)"),
+                    col="p", fmt="3f"),
+    "sm_fa_classes": dict(table="la_force_aircraft_test",
+                          where=("reading", "every linked patent INACTIVE (this reading)"),
+                          col="classes tested", fmt="int"),
+    "sm_fa_p_sens": dict(table="la_force_aircraft_test",
+                         where=("reading", "every linked patent INACTIVE, multi-target "
+                                           "duplicates to first target only"),
+                         col="p", fmt="3f"),
+    # 2026-09-29: the two checks on the class difference (sm_open.la_force_office_check)
+    "sm_fo_p_nobell": dict(table="la_force_office_check", where=("reading", "without Bell / Textron"),
+                           col="class p", fmt="3f"),
+    "sm_fo_p_us": dict(table="la_force_office_check", where=("reading", "US office only"),
+                       col="class p", fmt="2f"),
+    "sm_fo_n_us": dict(table="la_force_office_check", where=("reading", "US office only"),
+                       col="aircraft", fmt="int"),
+    "sm_fo_us": dict(table="la_force_office_check", where=("reading", "filed at the US office"),
+                     col="out of force share", fmt="pct"),
+    "sm_fo_else": dict(table="la_force_office_check", where=("reading", "filed elsewhere"),
+                       col="out of force share", fmt="pct"),
+    "sm_fo_wo": dict(table="la_force_office_check", where=("reading", "filed as WO (international)"),
+                     col="out of force share", fmt="pct"),
+    "sm_fo_cn": dict(table="la_force_office_check", where=("reading", "filed at CN"),
+                     col="out of force share", fmt="pct"),
+    "sm_fo_why_wo_k": dict(table="la_force_office_check", where=("reading", "WO, expired"),
+                              col="out of force share", fmt="int"),
+    "sm_fo_why_wo_n": dict(table="la_force_office_check", where=("reading", "WO, expired"),
+                              col="aircraft", fmt="int"),
+    "sm_fo_why_cn_k": dict(table="la_force_office_check", where=("reading", "CN, withdrawn or refused"),
+                              col="out of force share", fmt="int"),
+    "sm_fo_why_cn_n": dict(table="la_force_office_check", where=("reading", "CN, withdrawn or refused"),
+                              col="aircraft", fmt="int"),
+    "sm_fo_why_us_k": dict(table="la_force_office_check", where=("reading", "US, granted and in force"),
+                              col="out of force share", fmt="int"),
+    "sm_fo_why_us_n": dict(table="la_force_office_check", where=("reading", "US, granted and in force"),
+                              col="aircraft", fmt="int"),
+    "sm_fa_mr_first": dict(table="la_force_office_check",
+                           where=("reading", "Multirotor, multi-target duplicates to first target only"),
+                           col="out of force share", fmt="pct"),
+    # C8/C10: the multiples of Figure 1 (ii), sm_open.la_baseline_multiples
+    "sm_mult_b64_2018": dict(table="la_baseline_multiples", where=("priority year", "2018"),
+                             col="vs aeronautics (B64)", fmt="1f"),
+    "sm_mult_secb_2018": dict(table="la_baseline_multiples", where=("priority year", "2018"),
+                              col="vs section B", fmt="1f"),
+    "sm_mult_all_2018": dict(table="la_baseline_multiples", where=("priority year", "2018"),
+                             col="vs all patents", fmt="1f"),
+})
+
+FIGURE_CAPTIONS.update({
+    "sm_force_aircraft": "unique aircraft with no patent left in force, per architecture class, "
+                         "priority year 2019 or earlier",
+})
+
+NOT_CORE.update({
+    "ari_clock": "the evidence behind the chapter's lead over first flight; the Answer quoted it "
+                 "without showing it (author's review, 2026-09-26)",
+    "la_ari_timeline": "the firm-by-firm dates the ari_clock takeaway rests on, printed at the "
+                       "author's request (2026-09-27, F12)",
+    "sm_force_aircraft": "the per-aircraft reading of out of force the author ruled on "
+                         "2026-09-26; it replaces the primary-patent figure",
+})
+
+TAKEAWAY.update({
+    # 2026-09-26, chapter-1 review — every one of these says what its item shows and nothing
+    # the Method block already said
+    "filings_per_year":
+        "(i) Filing takes off in 2016 and then holds (the fitted turning point of the representative "
+        "patents is {sm_turn_pat_year}, of the unique aircraft {sm_turn_ac_year}; 1.1): unique "
+        "aircraft per priority year rise from "
+        "{tk_y2015} in 2015 to {tk_y2018} in 2018 and stay near that level to 2022, against "
+        "{sm_pat_2018} representative patents in 2018. The labelled dataset holds only patents that "
+        "describe an aircraft's architecture (filings on cargo handling, control, avionics and "
+        "the like are screened out), so the patent count is lower than the firms' total "
+        "filings; the remaining gap between patents and unique aircraft is several architecture "
+        "patents describing the same aircraft. The fall at the right edge is the publication lag, not a decline. "
+        "The steep rise of 2017-18 follows the Uber Elevate white paper of late 2016, a "
+        "coincidence in time, not a proven cause. "
+        "(ii) eVTOL is the fastest-growing series: its architecture patents double every "
+        "{sm_g_fam_dbl} years, against {sm_g_b64_dbl} "
+        "for aeronautics, {sm_g_secb_dbl} for transport and {sm_g_all_dbl} for all patenting "
+        "(WIPO baselines). "
+        "Counted in families, the baselines' own unit, eVTOL grows {sm_gr_fam_b64} times as fast "
+        "as aeronautics ({sm_gr_fam_b64_ci}), {sm_gr_fam_secb} times as fast as transport and "
+        "{sm_gr_fam_all} times as fast as all patenting. The lead over aeronautics is small and "
+        "rests partly on the latest years: ending the fit at 2019, the cut year 1.2 uses for "
+        "legal status ({sm_lapse_7y} of grants arrive within seven years of priority), gives "
+        "{sm_gr_fam_b64_19} ({sm_gr_fam_b64_19_ci}), which cannot be told from equal pace. "
+        "Counted as unique aircraft, eVTOL doubles every {sm_g_ac_dbl} years, almost the same "
+        "rate as its architecture patents",
+    "ari_clock":
+        "{sm_ff_before} of the {sm_ff_flown} AAM Reality Index firms with a first flight on record filed their first "
+        "patent in this corpus before flying, a median of {sm_ff_lead} years earlier; for the other "
+        "{sm_ff_neg} the first flight comes first, which only means their earliest filing is not "
+        "in this corpus. {sm_ff_planned} firm's first flight is still a plan and is not counted. "
+        "Planned entry into service sits a median of {sm_ff_eis} years after the first patent. "
+        "The dates behind these figures, firm by firm, are in {sm_here_la_ari_timeline}",
+    "sm_force_aircraft":
+        "{sm_fa_share} of the {sm_fa_n} aircraft with a priority year of 2019 or earlier have no "
+        "patent left in force ({sm_fa_out} aircraft); reading each aircraft's first patent alone "
+        "gave {sm_fa_old}. CVT ({sm_fa_cvt}) and Lift + Cruise ({sm_fa_slc}) have lost more of "
+        "their aircraft than Tilt Rotor ({sm_fa_tr}) and Multirotor ({sm_fa_mr}); the classes "
+        "appear to differ (chi-square p {sm_fa_p} over the {sm_fa_classes} classes with ten or "
+        "more aircraft), but the difference does not hold. It follows the filing office: aircraft "
+        "filed at the US office are out of force {sm_fo_us} of the time against {sm_fo_else} "
+        "elsewhere ({sm_fo_wo} for international applications, {sm_fo_cn} for China), and within "
+        "the US office no class difference is detected (p {sm_fo_p_us}, {sm_fo_n_us} aircraft).  "
+        "The office matters because of what the patents are: an international application closes by design once it passes into national filings (all {sm_fo_why_wo_n} here are expired), most Chinese applications here were withdrawn or refused before grant ({sm_fo_why_cn_k} of {sm_fo_why_cn_n}), and most US patents here are granted and kept in force ({sm_fo_why_us_k} of {sm_fo_why_us_n}). "
+        "It also rests on one patent that describes four Multirotor aircraft: counted for its "
+        "first aircraft only, Multirotor rises to {sm_fa_mr_first} out of force and the "
+        "difference is no longer detected (p {sm_fa_p_sens}). Leaving out Bell / Textron changes "
+        "neither reading (p {sm_fo_p_nobell})",
+    "la_name_coverage":
+        "{sm_nc_named} aircraft carry a real product name and {sm_nc_gen} a name generated for "
+        "this study; {sm_nc_gen_matched} of the generated ones could be matched to a public "
+        "aircraft. Every comparison with the public aircraft that follows therefore speaks for "
+        "the named aircraft, which over-represent publicly documented firms, and not for the "
+        "labelled dataset as a whole",
+    "a2_d15_trl_by_class":
+        "{trl_above_s} of {trl_aircraft_s} aircraft ({sm_trl_share}) are above NASA TRL 2 "
+        "(assessed from evtol.news, evtolindex.org and company statements): the labelled dataset "
+        "is overwhelmingly aircraft that exist only on paper. The aircraft that did get built "
+        "come from the classes that are patented most: Lift + Cruise ({sm_trl_lc_n}) and Tilt "
+        "Rotor ({sm_trl_tr_n}) hold most of them. Among the classes with twenty or more aircraft, "
+        "{trl_best_class} has the largest share built ({trl_best_share}); no aircraft of "
+        "{trl_zero_classes} in this dataset is above TRL 2",
+    "la_trl_representativeness":
+        "The {trl_above_s} aircraft above TRL 2 differ from the other {sm_trl_rest_n} on "
+        "{sm_trl_repr_fail} of the six attributes (filer type, priority window, priority year "
+        "and propulsive units): they are company-backed, more recent and carry more propulsive "
+        "units. No difference is detected on architecture class or region, so they can say "
+        "which classes get built and cannot stand for the corpus on anything else",
+    "la_ari_representativeness":
+        "The {tk_ari_in} aircraft of the index firms differ from the other {tk_ari_rest} on "
+        "{sm_ari_repr_fail} of the six attributes (applicant region, priority window, filer type "
+        "and propulsive units): more North American, more company-backed, more often filed in "
+        "2016-19 and with more propulsive units. No difference is detected on architecture class "
+        "or priority year. The firms the market rates are a distinct group of the labelled dataset, not a "
+        "sample of it",
+})
+
+# 2026-09-29 (decision document, T7): the author's own chapter-1 Answer, organised by
+# sub-question (S3); "my labelled dataset" made impersonal, the "[to quantify]" sentence a hedged
+# expectation, the seven-year cut worded as the 1.1 row (T6), the sources named (T9)
+SM_ANSWER["1"] = (
+    "**eVTOL patenting grows faster than patenting at large and than aeronautics, and shows a "
+    "design before it flies. It can be checked against the aircraft the sector builds only for "
+    "its {sm_nc_named} named aircraft, and they represent the class distribution in the same "
+    "proportion as the labelled dataset of architecture-related eVTOL patents.**\n\n"
+    "[[1.1]]\n\n"
+    "- **eVTOL patenting grows faster than patenting at large, and a little faster than "
+    "aeronautics.** Its architecture patents double every {sm_g_fam_dbl} years, against "
+    "{sm_g_b64_dbl} for aeronautics, {sm_g_secb_dbl} for transport and {sm_g_all_dbl} for all "
+    "patents (WIPO baselines): {sm_gr_fam_b64} times as fast as aeronautics "
+    "({sm_gr_fam_b64_ci}) and {sm_gr_fam_all} times as fast as all patenting. The edge of "
+    "architecture-related eVTOL patents over aeronautics is small, and when the fit ends at "
+    "2019, the cut year 1.2 uses for legal status ({sm_lapse_7y} of grants arrive within seven "
+    "years of priority), it can no longer be told from equal pace ({sm_gr_fam_b64_19}, "
+    "{sm_gr_fam_b64_19_ci}). Counting every eVTOL patent, not only the architecture ones, the "
+    "edge is expected to be larger; this dataset holds architecture patents only.\n"
+    "- **The turning point is {sm_turn_pat_year}.** Representative patents go from "
+    "{sm_turn_pat_prev} in {sm_turn_pat_prev_year} to {sm_turn_pat_after} in {sm_turn_pat_year}, "
+    "a count {sm_turn_pat_x} times higher, and {sm_turn_pat_boot} of the resampled fits place the "
+    "turning point in that year. Unique aircraft turn a year later, in {sm_turn_ac_year} (a count "
+    "{sm_turn_ac_x} times higher; resampled fits between {sm_turn_ac_lo} and {sm_turn_ac_hi}): "
+    "the patents per aircraft rise first, the number of new aircraft after. As a share of all "
+    "aeronautics patenting (CPC B64) there is no single turning point (resampled fits from "
+    "{sm_turn_sh_lo} to {sm_turn_sh_hi}), so part of the rise follows aeronautics patenting as a "
+    "whole. {sm_turn_pat_year} is also the year of the EHang 184 unveiling, the first crewed "
+    "flight of the Volocopter VC200 and the Uber Elevate white paper (Figure 1), a coincidence "
+    "in time, not a tested cause.\n"
+    "- **A design becomes public about {sm_ff_visible} year before it flies.** A patent is "
+    "published up to {lag_p90} years after its priority date (90th percentile), so a priority "
+    "year can only be read {lag_p90} years later, which is why every trend here stops at 2023. "
+    "Firms file a median of {sm_ff_lead} years before their first flight ({sm_ff_before} of "
+    "{sm_ff_flown} AAM Reality Index firms with a flight on record). Once publication is paid, "
+    "about {sm_ff_visible} year of that lead is left.\n"
+    "- **External comparison.** Filings (unique aircraft per priority year) climb sharply from "
+    "2016, reach their high range by 2018 and stay there, with a dip in 2019, until 2021. "
+    "Disclosed eVTOL investment totalled only about {sm_ext_fund_1020} billion US dollars over "
+    "the whole of 2010-2020 (Vertical Flight Society) and multiplied only afterwards, to about "
+    "{sm_ext_fund_2021} billion in 2021 alone (McKinsey), before falling back to "
+    "{sm_ext_fund_2023} billion in 2023. So patenting rose years before the disclosed money "
+    "did. After 2021 both fall, though part of the filing drop is the publication lag described "
+    "above, not a real slowdown. This compares a handful of yearly values from two sources by "
+    "eye; it is not a statistical test. For scale only: {sm_ext_fc_n} published reports (IMARC "
+    "Group, Fortune Business Insights, Straits Research, The Insight Partners, Exactitude "
+    "Consultancy) put the eVTOL aircraft market between {sm_ext_fc_min} and {sm_ext_fc_max} "
+    "billion US dollars by 2034, at growth rates between {sm_ext_fc_cagr_min} % and "
+    "{sm_ext_fc_cagr_max} % a year. The spread is too wide to validate anything, and the "
+    "reports forecast revenue, not design.\n\n"
+    "[[1.2]]\n\n"
+    "- **{sm_fa_share} of the aircraft filed in 2019 or earlier have no patent left in force "
+    "(PatSeer legal status).** An aircraft counts as out of force only when every patent that "
+    "describes it is inactive (lapsed, expired, withdrawn or refused; a granted patent or an "
+    "application still under examination counts as in force).\n"
+    "- **The classes appear to differ, but the difference does not hold.** Tilt Propulsor "
+    "({sm_fa_tr}) and Multirotor ({sm_fa_mr}) look better protected than Lift + Cruise "
+    "({sm_fa_slc}) and CVT ({sm_fa_cvt}), p {sm_fa_p}. Two checks remove the difference. The "
+    "filing office explains it: aircraft filed at the US office lapse {sm_fo_us} of the time, "
+    "against {sm_fo_else} elsewhere ({sm_fo_wo} for international applications, {sm_fo_cn} for "
+    "China), and within the US office no class difference is detected (p {sm_fo_p_us}). One "
+    "patent tips the test: it describes four Multirotor aircraft, and counted for its first "
+    "aircraft only, Multirotor rises to {sm_fa_mr_first} out of force and the difference is no "
+    "longer detected (p {sm_fa_p_sens}). Leaving out Bell / Textron changes neither result.\n"
+    "- The office matters because of what the patents are: an international application closes by design once it passes into national filings (all {sm_fo_why_wo_n} here are expired), most Chinese applications here were withdrawn or refused before grant ({sm_fo_why_cn_k} of {sm_fo_why_cn_n}), and most US patents here are granted and kept in force ({sm_fo_why_us_k} of {sm_fo_why_us_n}).\n\n"
+    "[[1.3]]\n\n"
+    "- **Where an aircraft can be checked, the drawing gives the built aircraft's architecture "
+    "class {tk_pw_share} of the time** ({sm_pw_img_pub} of {sm_pw_n}, against the built "
+    "aircraft on evtol.news; 95 % interval {sm_pw_ci}, the Wilson interval of the statistics "
+    "box). Only an aircraft with a real product name can be checked: {sm_nc_named} of "
+    "{unique_s}, none of the {sm_nc_gen} with a generated name.\n"
+    "- **The aircraft that public sources cover do not represent the labelled dataset.** Only "
+    "{sm_trl_share} of the aircraft are above NASA TRL 2 (assessed from evtol.news, "
+    "evtolindex.org and company statements), and they come from the classes patented most, "
+    "which is a measurement of good representativeness of the labelled dataset. Both they and "
+    "the aircraft of the firms the AAM Reality Index rates differ in proportion from the "
+    "labelled dataset in filer type, priority window and propulsor units, and neither differs "
+    "detectably in architecture class, which is expected since they are a niche of aircraft "
+    "that have been invested in. A comparison with the built sector therefore speaks for "
+    "company-backed, recent aircraft with many propulsor units, not for the whole labelled "
+    "dataset."
+)
+
+NOT_CORE.update({
+    "proximity_region": "the evidence for the chapter-4 null on firm-level design proximity, "
+                        "brought in so the brief no longer points out of itself (2026-09-26)",
+})
+
+# 2026-09-27: the chapter-1 "External comparison" (author's request) -- disclosed investment
+# by period and the published market-size forecasts, both collected in
+# assets/external/investment/ and built into tables by sm_open.external_tables.
+NUMBERS.update({
+    "sm_ext_fund_1020": dict(table="la_ext_funding", where=("period", "2010-2020"),
+                             col="funding_usd_bn", fmt="1f"),
+    "sm_ext_fund_2021": dict(table="la_ext_funding", where=("period", "2021"),
+                             col="funding_usd_bn", fmt="1f"),
+    "sm_ext_fund_2023": dict(table="la_ext_funding", where=("period", "2023"),
+                             col="funding_usd_bn", fmt="1f"),
+    "sm_ext_fc_n": dict(table="la_ext_forecast_range", col="reports", fmt="int"),
+    "sm_ext_fc_min": dict(table="la_ext_forecast_range", col="min value 2034 (US$ bn)", fmt="1f"),
+    "sm_ext_fc_max": dict(table="la_ext_forecast_range", col="max value 2034 (US$ bn)", fmt="1f"),
+    "sm_ext_fc_cagr_min": dict(table="la_ext_forecast_range", col="min CAGR (%)", fmt="1f"),
+    "sm_ext_fc_cagr_max": dict(table="la_ext_forecast_range", col="max CAGR (%)", fmt="1f"),
+})
+
+#: read by ``report._table_md``: a truncated table says so without pointing to a file
+ROW_NOTE_POINTS_OUT = False
+
+#: the firm table fits whole (17 rows), so it is printed whole
+ROW_CAP["la_ip_strategy"] = 20
+
+NUMBERS.update({
+    # 2026-09-26: Figure 1 (ii) as growth rates (sm_open.growth_rates / growth_ratios)
+    "sm_g_fam_dbl": dict(table="la_growth_rates", where=[("key", "evtol_families"), ("window", "2005–2023")], col="doubling time (years)", fmt="1f"),
+    "sm_g_ac_dbl": dict(table="la_growth_rates", where=[("key", "evtol_aircraft"), ("window", "2005–2023")], col="doubling time (years)", fmt="1f"),
+    "sm_g_b64_dbl": dict(table="la_growth_rates", where=[("key", "b64"), ("window", "2005–2023")], col="doubling time (years)", fmt="1f"),
+    "sm_g_secb_dbl": dict(table="la_growth_rates", where=[("key", "secb"), ("window", "2005–2023")], col="doubling time (years)", fmt="1f"),
+    "sm_g_all_dbl": dict(table="la_growth_rates", where=[("key", "all"), ("window", "2005–2023")], col="doubling time (years)", fmt="1f"),
+    "sm_gr_fam_b64": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
+    "sm_gr_fam_b64_ci": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="95 % interval", fmt="raw"),
+    "sm_gr_fam_secb": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "transport and operations (CPC section B)"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
+    "sm_gr_fam_all": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "all patents"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
+    "sm_gr_fam_b64_19": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="times as fast", fmt="2f"),
+    "sm_gr_fam_b64_19_ci": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="95 % interval", fmt="raw"),
+    "sm_gr_ac_b64": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL unique aircraft"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
+    "sm_gr_ac_b64_ci": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL unique aircraft"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="95 % interval", fmt="raw"),
+})
+
+# 2026-09-29 (T9): the index is named where the figure is
+FIGURE_CAPTIONS["ari_clock"] = ("the patent clock against the market clock for the AAM Reality "
+                                "Index firms, one row per firm")
+
+FIGURE_CAPTIONS["filings_per_year"] = (
+    "(i) unique aircraft, counted once, by the priority year of their first patent (later "
+    "patents on the same aircraft are not counted again), per year and applicant region, with "
+    "the representative patents as a line and the dated sector events under the bars. "
+    "(ii) how fast each series grows: eVTOL architecture patents, eVTOL unique aircraft and "
+    "three worldwide baselines (WIPO), each relative to its own 2005-09 average on a log axis, with "
+    "its fitted line over 2005-2023")
+
+NOT_CORE.update({
+    "sm_evtolnews_check": "the external check of the class shares against the evtol.news "
+                          "directory the author built (2026-09-26, C44)",
+})
+
+
+# ---------------------------------------------------------------------------
+# 2026-09-26 — chapter modules. Each reviewed chapter keeps its prose in its own module,
+# ``sm_text_ch<N>.py``, so several helpers can write chapters at once without touching this
+# file (BRIEF_REVISION_RULES.md §5). A module may define any of these, all optional:
+#   CHAPTER    "2"                              the chapter it owns (added to METHOD_RESULTS)
+#   METHOD     {"2.q1": md, …}                  the Method block of each sub-question
+#   RESULTS    {"2.1": md, …}                   prose under "Results and discussion" ("" = none)
+#   ITEMS      {"2.1": dict(figures=[…], tables=[…]), …}   replaces the node's items, in order
+#   CHAPTER_TEXT  md                            printed under the chapter heading
+#   ANSWER     md                               the chapter's Answer box
+#   TAKEAWAY, NUMBERS, FIGURE_CAPTIONS, TABLE_CAPTIONS, COLUMNS, NOT_CORE   dict updates
+#   NO_TAKEAWAY  set
+#   AFTER      {node id: md}                    printed under a node's items
+# Node ids of the five-chapter layout: 2.1 (Q4) · 2.2 (arch) · 2.3 (space) · 3.1 (Q2) ·
+# 3.2 (Q3) · 3.3 (inclass) · 3.4 (drivers; children 3.4.obs, 3.4.answer).
+# ---------------------------------------------------------------------------
+EXCLUDE_NODES = {"M"}
+CHAPTER_MODULES = ("sm_text_ch2", "sm_text_ch3", "sm_text_ch3b",   # ch3: 3.1-3.2 | 3.3-3.4
+                   "sm_text_ch4", "sm_text_ch5")
+#   MERGE      {node id: into node id}          the node's items join the target's, the node goes
+#   TABLES_FIRST  {node id, …}                  nodes whose tables print before their figures
+TABLES_FIRST: set = set()
+#   PRINT      {table name: fn(frame) -> frame}  print-only formatting, applied after print_format
+#   NUMBER_FUNCS  [fn(tables, values) -> dict]    numbers the spec grammar cannot say
+PRINT_HOOKS: Dict = {}
+NUMBER_FUNCS: List = []
+
+
+def _apply_chapter_module(mod) -> None:
+    ch = getattr(mod, "CHAPTER", None)
+    if ch:
+        METHOD_RESULTS.add(ch)
+    TEXTS.update(getattr(mod, "METHOD", {}) or {})
+    for nid, md in (getattr(mod, "RESULTS", {}) or {}).items():
+        node(nid)["text"] = md
+    for src, dst in (getattr(mod, "MERGE", {}) or {}).items():   # 2026-09-26
+        s_node, d_node = node(src), node(dst)
+        for key in ("figures", "tables"):
+            d_node[key] = list(d_node.get(key) or []) + [x for x in (s_node.get(key) or [])
+                                                          if x not in (d_node.get(key) or [])]
+        NODES[:] = [n for n in NODES if n["id"] != src and not n["id"].startswith(src + ".")]
+    for nid, items in (getattr(mod, "ITEMS", {}) or {}).items():
+        n = node(nid)
+        for key in ("figures", "tables"):
+            if key in items:
+                n[key] = list(items[key])
+    if getattr(mod, "CHAPTER_TEXT", None) and ch:
+        CHAPTER_METHOD[ch] = mod.CHAPTER_TEXT
+    if getattr(mod, "ANSWER", None) and ch:
+        SM_ANSWER[ch] = mod.ANSWER
+    for reg, name in ((TAKEAWAY, "TAKEAWAY"), (NUMBERS, "NUMBERS"),
+                      (FIGURE_CAPTIONS, "FIGURE_CAPTIONS"), (TABLE_CAPTIONS, "TABLE_CAPTIONS"),
+                      (COLUMNS, "COLUMNS"), (NOT_CORE, "NOT_CORE"), (AFTER, "AFTER")):
+        reg.update(getattr(mod, name, {}) or {})
+    NO_TAKEAWAY.update(getattr(mod, "NO_TAKEAWAY", set()) or set())
+    PRINT_HOOKS.update(getattr(mod, "PRINT", {}) or {})
+    TABLES_FIRST.update(getattr(mod, "TABLES_FIRST", set()) or set())
+    NUMBER_FUNCS.extend(getattr(mod, "NUMBER_FUNCS", []) or [])
+
+
+def _load_chapter_modules() -> None:
+    import importlib
+    for name in CHAPTER_MODULES:
+        try:
+            mod = importlib.import_module(f"{__package__}.{name}")
+        except ModuleNotFoundError as e:
+            if e.name and e.name.endswith(name):
+                continue                     # that chapter has not been written yet
+            raise
+        _apply_chapter_module(mod)
+        # 2026-09-26: a module may hand the chapter Answer one more bullet (3.3-3.4 → chapter 3)
+        bullet = getattr(mod, "ANSWER_BULLET", None)
+        if bullet:
+            for ch, ans in list(SM_ANSWER.items()):
+                if "bullet: to be added]" in ans:
+                    lines = [ln for ln in ans.split("\n") if "bullet: to be added]" not in ln]
+                    # 2026-09-29: a bullet block that opens on a sub-question line is set
+                    # off by a blank line, so the list before it cannot swallow it
+                    sep = "\n" if bullet.strip().startswith("- ") else "\n\n"
+                    SM_ANSWER[ch] = "\n".join(lines).rstrip() + sep + bullet.strip()
+    # 2026-09-27, author: chapter M (the figure against the text) is left for later
+    NODES[:] = [n for n in NODES if n["id"] not in EXCLUDE_NODES
+                and n["id"].split(".")[0] not in EXCLUDE_NODES]
+    # items may have moved: renumber, and recompute which chapter each item sits in
+    _number_items()
+    _here_refs()
+    ITEM_CHAPTER.clear()
+    ITEM_CHAPTER.update(_item_chapter())
+
+
+_load_chapter_modules()
+
+#: read by ``report.write_markdown`` (2026-09-26): a sub-question whose Method is long binds only
+#: its heading and the first block of the Method to the page, so a one-page Method no longer
+#: pushes itself whole to the next page and leaves the one before it empty
+KEEP_HEAD_ONLY = {n["id"] for n in NODES
+                  if n.get("subq") and n["id"].split(".")[0] in METHOD_RESULTS}
+
+
+# ---------------------------------------------------------------------------
+# 2026-09-27, author: "you just added a lot of text, no one wants to read that". Chapter 1's
+# Methods keep the five labelled parts (BRIEF_REVISION_RULES §7) at one or two sentences each;
+# the statistics box is the short one. Everything the author asked for stays, said once.
+# ---------------------------------------------------------------------------
+CHAPTER_METHOD["1"] = (
+    "#### Method common to every chapter\n\n"
+    "**Unit of analysis.** {acquired_s} patents were acquired (PatSeer, snapshot {snapshot}); "
+    "{representative_s} describe an electric VTOL aircraft readable from its drawings, and "
+    "those describe **{unique_s} unique aircraft**. A unique aircraft is one design: a firm "
+    "that files it five times has one aircraft, and an aircraft shown in several patents "
+    "({observations_s} such observations) is counted once. Most analyses count unique "
+    "aircraft; each Method names its own unit.\n\n"
+    "**Time is usually the priority year**, the earliest filing date of the family, when the design "
+    "existed. Publication follows a median of {lag_median_lo} to {lag_median_hi} years later, "
+    "and {lag_p90} years at the 90th percentile, so priority years from {partial_start} on are "
+    "still filling, are hatched in every figure, and no trend is read past 2023. From the "
+    "corpus's own publication delays, the snapshot already sees {sm_vis2023_lo} to "
+    "{sm_vis2023_hi} of each region's 2023 aircraft.\n\n"
+    + _methods_text.STATS_BOX_SHORT.strip() + "\n")
+
+TEXTS["1.q1"] = (
+    "#### Method\n\n"
+    "**Objective.** How fast eVTOL patenting has grown against patenting at large, and how "
+    "many years before its first flight a design appears in the labelled dataset.\n\n"
+    "**Data and unit of analysis.** {sm_here_filings_per_year} (i) counts unique aircraft, "
+    "each once, by the priority year of its first patent. The representative patents (approved "
+    "as describing an eVTOL aircraft) are drawn beside them because the labelled dataset holds only "
+    "patents that describe an aircraft's architecture, screening out filings on cargo handling, "
+    "control, avionics and the like, so several architecture patents can describe one aircraft: "
+    "{sm_pat_2018} patents for {tk_y2018} "
+    "aircraft in 2018. {sm_here_filings_per_year} (ii) counts patent families "
+    "({representative_s}), the unit of the three worldwide baselines (WIPO). "
+    "{sm_here_sm_evtolnews_check} sets the labelled dataset's class mix beside the World eVTOL "
+    "Aircraft Directory (evtol.news, Vertical Flight Society); its Method is given in 3.1, "
+    "which reads it. {sm_here_ari_clock} and "
+    "{sm_here_la_ari_timeline} count firms: the {tk_ari_timeline_n} firms that the AAM Reality "
+    "Index (a published quarterly ranking of eVTOL manufacturers by an industry analyst, May "
+    "2026 edition) lists and that also file patents in this corpus. Sources: PatSeer, WIPO, "
+    "the AAM Reality Index, human labelling.\n\n"
+    "**Procedure.** Graph (i) is a plain count per year. Graph (ii): each growth series is "
+    "divided by its own 2005-09 average and drawn on a log axis, where a steeper line means "
+    "faster growth. The lead is the years from a firm's first patent here to its first "
+    "flight.\n\n"
+    "**Scientific grounds, graph (ii).** log(count_t) = a + b·t is fitted by least squares over "
+    "2005-2023, "
+    "and the doubling time is ln 2 / b. eVTOL's patenting rate is compared with each of the "
+    "three other rates by the ratio of their doubling times. Each doubling time is fitted on "
+    "about nineteen yearly counts (2005-2023), too few for the fit to be read as exact, so the "
+    "years are resampled with "
+    "replacement 2 000 times and both lines "
+    "refitted each time (bootstrap, Efron 1979); resampling shows how much the doubling time "
+    "would move had a few years come out differently, which is what the ± range reports, and "
+    "without it the doubling time would stand as a bare number with no sense of how firm it is. "
+    "The middle 95 % of the resulting ratios is the "
+    "interval, the range the ratio could take given how much the yearly counts scatter around "
+    "each line. An interval that takes in 1 means the two rates cannot be told apart.\n\n"
+    "**Scientific grounds, the turning point.** For every candidate year from 2009 to 2020, "
+    "log(count) is fitted with one line before that year and a second line, with its own "
+    "starting value and slope, from it; the candidate with the smallest squared error is the turning "
+    "point. The fit is repeated on {sm_turn_draws} resampled sets of residuals (fixed seed), "
+    "and the share of resamples that pick the same year says how firm the turning point is. "
+    "It is run from 2006, because the 2005 bar pools 1999-2005.\n\n"
+    "**Assumptions and limits.** The eVTOL architecture patents leave out the component patents "
+    "and cargo drones that aeronautics (CPC B64) includes, so the series undercounts eVTOL "
+    "patenting and the growth comparison is conservative; a later extension of this corpus will "
+    "capture every eVTOL patent, not only the architecture ones. The lead is a floor, since a "
+    "firm may have filed earlier elsewhere. The sector events marked on "
+    "{sm_here_filings_per_year} (i) are context, not causes.\n")
+
+TEXTS["1.q2"] = (
+    "#### Method\n\n"
+    "**Objective.** What share of the aircraft is still protected, and whether it differs "
+    "between architecture classes. It matters because a class whose patents lapse faster may "
+    "be a class firms are giving up, which bears on the dominant-design question of chapter "
+    "3.\n\n"
+    "**Data and unit of analysis.** Unique aircraft with a priority year of 2019 or earlier. "
+    "A patent is **in force** when its PatSeer legal status at the snapshot ({snapshot}) is "
+    "active: granted and kept alive, or an application still under examination. It is "
+    "**inactive** when the status reads lapsed for non-payment, expired, withdrawn or "
+    "surrendered, or refused. An aircraft is out of force when every one of its patents is "
+    "inactive; one patent in force keeps it in force. The cut is "
+    "2019 because {sm_lapse_7y} of the {sm_lapse_grants} dated grants arrive within seven "
+    "years of priority, while {sm_lapse_p2023} of 2023 families (three years after priority), "
+    "and {sm_lapse_p2020} of 2020 families, are still under examination (published, but neither "
+    "granted nor refused). Aircraft filed after 2019 are left out because most have not yet "
+    "been decided ({sm_lapse_p2020_23} of the 2020-23 families are still undecided), so they "
+    "would count as protected only because no decision exists yet.\n\n"
+    "**Procedure.** {sm_here_sm_force_aircraft} gives the share out of force per class.\n\n"
+    "**Scientific grounds.** The out-of-force share already differs between classes in the data; "
+    "a chi-square test of class against out of force (statistics box) says whether a difference "
+    "of that size can arise from small class counts alone, and only if it cannot is a class "
+    "difference claimed, counting a patent that names several aircraft for every aircraft it "
+    "names. A detected difference is then put to two checks: the same test on the aircraft "
+    "filed at the US office alone, because offices lapse at different rates (an international "
+    "application ends as inactive once it passes into national filings), and the same test "
+    "without the largest filer; and it is re-read with a patent that names several aircraft "
+    "counted for its first aircraft only.\n\n"
+    "**Assumptions and limits.** Legal status is a snapshot: it says whether an aircraft has "
+    "lapsed, not when. The dated legal events in the PatSeer export could turn this "
+    "alive-or-dead snapshot into a time to abandonment per class; they are left unread. Out of "
+    "force refers only to the patents in this dataset: a design could "
+    "still be protected by a patent outside it, although that is not expected, and for the "
+    "question asked here, whether the labelled dataset's own patents are let go, this is the "
+    "relevant reading.\n")
+
+TEXTS["1.q3"] = (
+    "#### Method\n\n"
+    "**Objective.** Whether the patent drawings describe the aircraft that get built, and "
+    "whether the aircraft public sources cover stand for the rest of the labelled dataset.\n\n"
+    "**Data and unit of analysis.** Unique aircraft that can be linked to an outside source. "
+    "Only an aircraft with a real product name can be matched to its evtol.news page "
+    "({sm_here_la_name_coverage}); the others carry a name generated for this study. TRL, "
+    "NASA's Technology Readiness Level (1-2 on paper, 3-5 components tested, 6-7 full-size "
+    "prototype flown, 8-9 certified), was assessed per aircraft from public evidence "
+    "(evtolindex.org, evtol.news, company statements); an aircraft no public source follows is "
+    "set at TRL 2, since its patent is itself an idea on paper.\n\n"
+    "**Procedure.** {sm_here_la_public_pairwise} compares the label's architecture class with "
+    "the public aircraft's class and with the class the patent text states, two at a time. "
+    "{sm_here_a2_d15_trl_by_class} reads TRL per class. {sm_here_la_trl_representativeness} "
+    "and {sm_here_la_ari_representativeness} compare the aircraft above TRL 2, and those of "
+    "the {tk_ari_firms_n} AAM Reality Index firms, with the rest on six attributes.\n\n"
+    "**Scientific grounds.** {sm_pw_img_pub} of {sm_pw_n} is a sample, not the whole labelled dataset, so "
+    "the agreement it shows is not exactly the agreement the unmatched aircraft would show; "
+    "each agreement share therefore comes with a 95 % interval, the range within which the true "
+    "agreement for the aircraft not matched plausibly lies (Wilson interval, statistics box), and "
+    "without it the share could not be generalised beyond the {sm_pw_n} aircraft it was read on. "
+    "The six attributes use "
+    "chi-square for the categories (class, region, window, filer type) and Mann-Whitney for "
+    "the numbers (priority year, propulsive units); see the statistics box.\n\n"
+    "**Assumptions and limits.** The matched aircraft are not a random sample: most come from "
+    "firms with a public product. Their interval therefore says how precise the count is, not "
+    "how well the whole labelled dataset matches the built aircraft. TRL above 2 is a floor. The TRL "
+    "values and the development years of the evtol.news aircraft were extracted by a language "
+    "model from public pages and have not yet been checked by hand; they will be checked if "
+    "the results that rest on them are kept.\n")
+
+
+# 2026-09-27 (author, G5, G7): Table 1 without its total row; Table 5 says where its firms come from
+def _no_total_row(t):
+    if "aircraft" in t.columns:
+        t = t[~t["aircraft"].astype(str).str.startswith("all unique aircraft")]
+    return t
+
+
+def _ari_repr_header(t):
+    return t.rename(columns={"n index firms": "n aircraft of AAM Reality Index firms"})
+
+
+PRINT_HOOKS["la_name_coverage"] = _no_total_row
+PRINT_HOOKS["la_ari_representativeness"] = _ari_repr_header
+
+
+# 2026-09-28, author: printed names (Tilt Rotor → Tilt Propulsor / TP, propulsor units,
+# archetype sets) applied to the finished markdown by report.write_markdown
+from . import display_names as _display_names
+POST_TEXT = _display_names.rename_text
+
+
+def _turning_numbers(tables, values):
+    """The turning point of eVTOL filing (2026-09-29, author's request): a two-segment log fit,
+    break year = least squared error over 2009-2020, run from 2006 (the 2005 row pools
+    1999-2005); robustness from 2 000 residual resamples, seed 42."""
+    import numpy as np
+    f = (tables or {}).get("la_filings_per_year")
+    if f is None:
+        return {}
+    d = f[(f["priority year"] >= 2006) & (f["priority year"] <= 2023)]
+    t = d["priority year"].to_numpy(float)
+    rng = np.random.default_rng(42)
+    draws = 2000
+    breaks = range(2009, 2021)
+
+    def fit(y, b):
+        X = np.c_[np.ones_like(t), t, (t >= b).astype(float), np.maximum(t - b, 0)]
+        c = np.linalg.lstsq(X, y, rcond=None)[0]
+        return float(((X @ c - y) ** 2).sum()), c
+
+    def run(col):
+        y = np.log(d[col].to_numpy(float))
+        b = min(breaks, key=lambda bb: fit(y, bb)[0])
+        _, c = fit(y, b)
+        X = np.c_[np.ones_like(t), t, (t >= b).astype(float), np.maximum(t - b, 0)]
+        pred = X @ c
+        r = y - pred
+        bs = np.array([min(breaks, key=lambda bb: fit(pred + rng.choice(r, len(r)), bb)[0])
+                       for _ in range(draws)])
+        lo, hi = np.percentile(bs, [2.5, 97.5])
+        return b, float(np.exp(c[2])), float((bs == b).mean()), int(lo), int(hi)
+
+    out = {"sm_turn_draws": f"{draws:,}".replace(",", " ")}
+    b, x, share, _, _ = run("patents representative")
+    yr = d.set_index("priority year")["patents representative"]
+    out.update(sm_turn_pat_year=str(b), sm_turn_pat_x=f"{x:.1f}", sm_turn_pat_boot=f"{share:.0%}".replace("%", " %"),
+               sm_turn_pat_prev=str(int(yr[b - 1])), sm_turn_pat_prev_year=str(b - 1),
+               sm_turn_pat_after=str(int(yr[b])))
+    b, x, _, lo, hi = run("unique aircraft")
+    out.update(sm_turn_ac_year=str(b), sm_turn_ac_x=f"{x:.1f}", sm_turn_ac_lo=str(lo), sm_turn_ac_hi=str(hi))
+    _, _, _, lo, hi = run("aircraft per 1 000 B64")
+    out.update(sm_turn_sh_lo=str(lo), sm_turn_sh_hi=str(hi))
+    return out
+
+
+NUMBER_FUNCS.append(_turning_numbers)

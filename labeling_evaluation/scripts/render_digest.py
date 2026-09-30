@@ -32,20 +32,22 @@ REPO = PILLAR.parent
 #: test that fires nowhere, and the one move behind the drift. A stem that is not in the brief
 #: is skipped with a warning rather than failing the build.
 FIGURES = {
+    # 2026-09-27: the figures the five-chapter brief actually prints (the old stems were retired)
     "1": [("filings_per_year",
-           "Unique aircraft per priority year, and how much faster this corpus grew than the "
-           "patenting around it.")],
-    "2": [("dominant_design",
-           "The dominant-design test: the largest archetype of each window against the 50 % "
-           "line, and evenness against the permutation band."),
-          ("sm_driver_corr",
-           "The one move behind the drift: a second tilting set arrives, and the units come "
-           "with it.")],
-    "3": [("coverage",
-           "How much of the record the largest firms hold, and whether market standing tracks "
-           "patenting.")],
-    "4": [("atlas_region",
-           "Where the aircraft come from, and the architecture mix of each region.")],
+           "Unique aircraft per priority year, and how fast eVTOL patenting grew against "
+           "aeronautics and patenting at large.")],
+    "2": [("zones",
+           "Where the designs concentrate: every archetype by its size and its recent growth.")],
+    "3": [("sm_family_yearly",
+           "The dominant-design family per priority year, on the aircraft in force and on all "
+           "aircraft, against the 50 % line."),
+          ("sm_driver_trajectory",
+           "How the tilting classes move: a second tilting set arrives, and the units come with "
+           "it.")],
+    "4": [("sm_one_firm",
+           "Whether one firm holds enough of an architecture class to decide its share.")],
+    "5": [("sm_region_converge",
+           "Whether the three regions converge on the dominant-design family.")],
     "M": [("atlas_arch_gt",
            "Where the label read from the drawings and the whole-patent reading agree, and what "
            "they confuse.")],
@@ -55,15 +57,15 @@ FIGURES = {
 #: chapter headings are long two-clause questions; at one chapter per page the question is the
 #: heading and the long form would wrap three times.
 CHAPTERS = [
-    ("1", "How far ahead of the sector does the patent record run?"),
-    ("2", "Is there a dominant eVTOL design, or is the field still experimenting?"),
-    ("3", "Who is patenting eVTOL aircraft?"),
-    ("4", "Does geography shape the design?"),
-    ("M", "Can the drawing alone carry the architecture?"),
+    ("1", "How has the patent record grown, and how well does it represent the sector?"),
+    ("2", "What does the eVTOL design space look like?"),
+    ("3", "Is there a dominant eVTOL design, or is the field still experimenting?"),
+    ("4", "Which kinds of firm, institute and inventor patent eVTOL aircraft?"),
+    ("5", "Do the regions design different aircraft, or the same at different times?"),
 ]
 
-TITLE = "Labelling Analysis — the findings"
-SUBTITLE = ("The four questions and their answers, one page each. Every answer below is the "
+TITLE = "Labelling Analysis: the findings"
+SUBTITLE = ("The five questions and their answers, one page each. Every answer below is the "
             "answer printed in *Labelling Analysis in brief*, word for word; the evidence, the "
             "method and the tables are there, not here.")
 

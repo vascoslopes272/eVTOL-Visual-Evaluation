@@ -1,0 +1,137 @@
+{
+ "figs": [
+  [
+   1,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_funnels.png",
+   "NEW"
+  ],
+  [
+   2,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_examples_patents.png",
+   "regenerated (TP label)"
+  ],
+  [
+   3,
+   "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS/3_embedding_evaluation/embedding_analysis_registers/figs/f02_examples.png",
+   "reused"
+  ],
+  [
+   4,
+   "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS/3_embedding_evaluation/analysis_document_figs/f_attention_base_vs_registers.png",
+   "regenerated (TP label, 4 of the 6 rows)"
+  ],
+  [
+   5,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_selection.png",
+   "NEW"
+  ],
+  [
+   6,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_thickening.png",
+   "regenerated (TP label, 3 of the 8 rows)"
+  ],
+  [
+   7,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pat_f04_prediction.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   8,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pat_confusion.png",
+   "regenerated (TP label)"
+  ],
+  [
+   9,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pat_f07_umap.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   10,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pat_f09_confound.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   11,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pho_f04_prediction.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   12,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pho_confusion.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   13,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/pho_f07_umap.png",
+   "NEW render (no baked text)"
+  ],
+  [
+   14,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_five_class.png",
+   "NEW"
+  ],
+  [
+   15,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/docs/embedding_evaluation/analysis_document/figs/f_matching.png",
+   "NEW"
+  ],
+  [
+   16,
+   "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS/3_embedding_evaluation/analysis_document_figs/f_attention_panel.png",
+   "NEW"
+  ]
+ ],
+ "ntab": 26,
+ "class_mix": {
+  "mean": 0.46336927801123307,
+  "lo": 0.3674767791331783,
+  "hi": 0.5567520102085685,
+  "n": 663,
+  "draws": 200,
+  "recall": {
+   "VT": 0.6928346456692911,
+   "LC": 0.48414507772020743,
+   "WM": 0.43320000000000014,
+   "ER": 0.41499999999999987,
+   "HB": 0.29166666666666674
+  },
+  "probe_mean": 0.5967974102330473,
+  "probe_lo": 0.5084668244189684,
+  "probe_hi": 0.6737506103835467,
+  "probe_draws": 200
+ },
+ "exp4": {
+  "n": 247,
+  "acc": {
+   "exp1 view-first": 0.29554655870445345,
+   "exp3 main figure": 0.3157894736842105,
+   "exp4 view average": 0.3157894736842105
+  },
+  "diff": 0.020242914979757085,
+  "lo": -0.048582995951417005,
+  "hi": 0.08906882591093117
+ },
+ "attention_panel": [
+  "VT: CN114802742A_ua1 (drawing)",
+  "VT: US2022371727A1_ua1 (drawing)",
+  "VT: jetcopter-vtol-technologies-sky-skimmer (photo)",
+  "VT: jetcopter-vtol-technologies-sky-view (photo)",
+  "LC: CN114620226A_ua1 (drawing)",
+  "LC: US2021245873A1_ua1 (drawing)",
+  "LC: aura-aerospace-ranger (photo)",
+  "LC: kaite-vtol-500 (photo)",
+  "WM: US2019389568A1_ua1 (drawing)",
+  "WM: US2020307767A1_ua1 (drawing)",
+  "WM: lift-aircraft-hexa-military (photo)",
+  "WM: trek-aerospace-duotrek-20 (photo)",
+  "ER: US2009140095A1_ua1 (drawing)",
+  "ER: US2018346108A1_ua1 (drawing)",
+  "ER: china-helicopter-research-and-development-institute-electric-helicopter (photo)",
+  "ER: fraundorfer-aeronautics-tensor-600x (photo)",
+  "HB: US2020140078A1_ua1 (drawing)",
+  "HB: US2021188427A1_ua1 (drawing)",
+  "HB: kalashnikov-hovercycle (photo)",
+  "HB: teledrone-mark-iii (photo)"
+ ],
+ "fig_att_no": 16
+}

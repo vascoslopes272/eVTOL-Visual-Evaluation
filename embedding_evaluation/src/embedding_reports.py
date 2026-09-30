@@ -13,6 +13,10 @@ Each report has the same layout:
 
 Every number is computed here from the files listed at the end of each report.
 Run with the Finetune env (umap-learn): scripts/build_embedding_reports.py.
+
+The model is chosen by the module constant ``TAG`` (default: the base DINOv2-large). A twin
+report on another checkpoint sets ``TAG`` before loading (scripts/build_registers_reports.py);
+the model names in the text and the captions are read from that tag's extraction manifest.
 """
 
 from __future__ import annotations
@@ -41,6 +45,7 @@ DATA = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & L
 PAT = DATA / "1639_LABELLED"
 EVN = DATA / "EVTOLNEWS_DS"
 TAG = "dinov2-large_518"
+BASE_TAG = TAG                # the reports' model; twin reports set TAG to another tag before loading
 STYLE_SOURCE = REPO / "docs" / "Supervisor_Report_Taxonomy_Structure_Analysis_summary.md"
 
 CLASSES5 = ["VT", "LC", "WM", "ER", "HB"]
@@ -121,6 +126,27 @@ class Figs:
         read = f'<span class="src"><strong>How to read:</strong> {it["read"]}.</span>' if it["read"] else ""
         return (f'<figure class="wide"><img src="{rel}/{key}.png" style="width:{width}%"><figcaption><strong>Figure {self.n}.</strong> '
                 f'{it["title"]}<span class="src">Source: {it["source"]}.</span>{read}</figcaption></figure>')
+
+
+# ── the model ────────────────────────────────────────────────────────────────
+def model_info(tag: str | None = None) -> Dict[str, Any]:
+    """The model block of the extraction manifest of ``tag`` (default: the current ``TAG``)."""
+    tag = tag or TAG
+    for root in (PAT, EVN):
+        f = root / "2_embedding_extraction/embeddings" / tag / "manifest.json"
+        if f.exists():
+            return json.loads(f.read_text(encoding="utf-8"))["model"]
+    raise FileNotFoundError(f"no extraction manifest for tag {tag!r}")
+
+
+def model_short(tag: str | None = None) -> str:
+    """How the text names the model: DINOv2-large, or DINOv2-large with registers."""
+    return "DINOv2-large" + (" with registers" if int(model_info(tag).get("num_register_tokens", 0)) else "")
+
+
+def extraction_note(tag: str | None = None) -> str:
+    """The base tag was extracted by notebook 22; a twin tag by the same code outside it."""
+    return ("notebook 22 extraction" if (tag or TAG) == BASE_TAG else "notebook 22 extraction code") + " at 518 px"
 
 
 # ── loading ──────────────────────────────────────────────────────────────────
@@ -323,7 +349,7 @@ def src_line(S: Source, key: P.Key | None = None, rule: str | None = None, extra
     m = f"layer {key[0]}, {'CLS token' if key[1] == 'cls' else 'mean of the patch tokens'}" if key else \
         "layers 18/22/24 x CLS token / patch-token mean"
     r = f"; image rule: {rule}" if rule else ""
-    return (f"{S.name}; DINOv2-large, frozen, notebook 22 extraction at 518 px; {m}{r}; "
+    return (f"{S.name}; {model_short()}, frozen, {extraction_note()}; {m}{r}; "
             f"{len(S.aircraft)} aircraft{('; ' + extra) if extra else ''}")
 
 
@@ -538,8 +564,9 @@ def fig_confound(F: Figs, S: Source, R: Dict[str, Any]) -> None:
            "standard deviations; a taller grey bar means this label moves the vectors more than the architecture")
 
 
-def fig_matching(F: Figs) -> pd.DataFrame:
-    m = pd.read_csv(EVN / "3_embedding_evaluation/matching.csv")
+def fig_matching(F: Figs, path: Path | None = None) -> pd.DataFrame:
+    """``path``: the matching table to read (default: the base run's matching.csv)."""
+    m = pd.read_csv(path or EVN / "3_embedding_evaluation/matching.csv")
     m = m[(m.embedding == TAG) & (m.images == "no line drawings") & (m.direction == "patent->photo")].copy()
     m["matrix"] = [P.mname((int(a), b)) for a, b in zip(m.layer, m.pooling)]
     fig, ax = plt.subplots(figsize=(7.2, 2.6))
@@ -554,7 +581,7 @@ def fig_matching(F: Figs) -> pd.DataFrame:
     ax.set_ylim(0, max(60, float(m["R@50"].max() * 100) + 15))
     F.save(fig, "f10_matching", "Can a patent aircraft be found among the photos? Rank of its own page.",
            f"patent main figures as queries against the {int(m.gallery.iloc[0])} photo aircraft without line "
-           f"drawings; {int(m.queries.iloc[0])} patent aircraft with a linked page; DINOv2-large, frozen, 518 px")
+           f"drawings; {int(m.queries.iloc[0])} patent aircraft with a linked page; {model_short()}, frozen, 518 px")
     return m
 
 

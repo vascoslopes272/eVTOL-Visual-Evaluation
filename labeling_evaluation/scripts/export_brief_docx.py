@@ -60,7 +60,9 @@ USABLE_H_IN = 7.70
 #: the tallest a single figure may print. The print stylesheet keeps figures well under the
 #: text height; pandoc's default let a tall panel fill a page on its own, which is most of why
 #: the Word file ran 67 % longer than the PDF of the same markdown (measured 2026-09-25).
-MAX_FIG_H_IN = 5.60
+# 2026-09-27: raised from 5.60 after the author found tall figures (Figures 1, 4, 6) printed at
+# about 80 % width with unreadable text; a tall figure now takes the full text width
+MAX_FIG_H_IN = 7.20
 
 BOX_KINDS = {
     "answer": "answer",       # the old <div class="answer">
@@ -466,10 +468,148 @@ def _compact_styles(doc) -> None:
                         if run.font.size is None or run.font.size > Pt(8):
                             run.font.size = Pt(7.5)
 
+
+def _norm(t: str) -> str:
+    """Text as the phrase registry writes it: plain spaces, straight quotes."""
+    return " ".join(t.replace("\u00a0", " ").replace("\u2019", "'").split())
+
+
+def apply_highlights(doc) -> dict:
+    """Colour the key takeaways of the review copy (``brief_highlights``, author 2026-09-25).
+
+    Walks every paragraph, table cells included — the Answers live inside one-cell panel
+    tables — and shades the runs of each paragraph that carries a registered phrase: all of
+    them for a short paragraph, only the bold ones for a long one. A legend paragraph goes in
+    under the title. Returns counts, and the phrases that matched nothing.
+    """
+    import importlib.util
+    from docx.oxml import OxmlElement
+    from docx.text.paragraph import Paragraph
+
+    spec = importlib.util.spec_from_file_location("brief_highlights",
+                                                  Path(__file__).with_name("brief_highlights.py"))
+    H = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(H)
+
+    def shade(run, fill):
+        rpr = run._r.get_or_add_rPr()
+        for old in rpr.findall(_qn("w:shd")):
+            rpr.remove(old)
+        shd = OxmlElement("w:shd")
+        shd.set(_qn("w:val"), "clear")
+        shd.set(_qn("w:color"), "auto")
+        shd.set(_qn("w:fill"), fill)
+        rpr.append(shd)
+
+    wanted = [(p, H.GREEN_FILL, "green") for p in H.GREEN] + [(p, H.RED_FILL, "red") for p in H.RED]
+    hit = {p: 0 for p, _, _ in wanted}
+    counts = {"green": 0, "red": 0}
+    body = doc.element.body
+    for el in body.iter(_qn("w:p")):
+        para = Paragraph(el, None)
+        text = _norm("".join(t.text or "" for t in el.iter(_qn("w:t"))))
+        if not text:
+            continue
+        for phrase, fill, kind in wanted:
+            if _norm(phrase) in text:
+                hit[phrase] += 1
+                runs = para.runs
+                if len(text) > H.WHOLE_PARAGRAPH_MAX:
+                    runs = [r for r in runs if r.bold] or runs
+                for r in runs:
+                    shade(r, fill)
+                counts[kind] += 1
+                break                               # one colour per paragraph; green listed first
+
+    # the legend, under the title, so the colours are never read without their key
+    first = next((p for p in doc.paragraphs if p.text.strip()), None)
+    if first is not None:
+        leg = OxmlElement("w:p")
+        first._p.addnext(leg)
+        lp = Paragraph(leg, first._parent)
+        from docx.shared import Pt
+        for chunk, fill in (("Review copy. ", None), ("Green", H.GREEN_FILL),
+                            (" marks the key findings; ", None), ("red", H.RED_FILL),
+                            (" marks a result that overturned what an earlier version of this "
+                             "document said. The PDF and the findings digest carry no colour.", None)):
+            r = lp.add_run(chunk)
+            r.font.size = Pt(8.5)
+            r.italic = True
+            if fill:
+                r.bold = True
+                shade(r, fill)
+    counts["unmatched"] = [p for p, n in hit.items() if n == 0]
+    return counts
+
+
+def _fit_table_widths(doc) -> int:
+    """Give every data table column at least the width of its longest word (2026-09-25).
+
+    Word's autofit on pandoc tables handed nearly all the width to the one long text column and
+    broke short columns mid-word ("-0.32" over three lines, "uniqu/e/aircraf/t"). Here each
+    column gets its longest single word as a floor, and the rest of the text width is shared in
+    proportion to how much text the column holds. A table whose floors alone overflow the page
+    is set a size smaller. The one-cell panels (Answer, methods) are left alone.
+    """
+    from docx.shared import Pt, Emu
+    from docx.oxml import OxmlElement
+    usable = int(USABLE_W_IN * 914400)
+    done = 0
+    for t in doc.tables:
+        rows = t.rows
+        if not rows or len(t.columns) < 2:
+            continue
+        ncol = len(t.columns)
+        texts = [[c.text for c in r.cells] for r in rows]
+        size = 7.5
+        def floors(sz):
+            cw = sz * 0.68 * 12700               # a bold header glyph at this size, in EMU
+            return [max(4, max((len(w) for row in texts if j < len(row)
+                                for w in row[j].split()), default=1)) * cw + 2 * 72000
+                    for j in range(ncol)]
+        fl = floors(size)
+        while sum(fl) > usable and size > 6.0:
+            size -= 0.5
+            fl = floors(size)
+        if sum(fl) > usable:
+            fl = [f * usable / sum(fl) for f in fl]
+        weight = [sum(min(len(row[j]), 120) for row in texts if j < len(row)) + 1 for j in range(ncol)]
+        spare = max(0, usable - sum(fl))
+        widths = [int(fl[j] + spare * weight[j] / sum(weight)) for j in range(ncol)]
+        tbl = t._tbl
+        tblPr = tbl.tblPr
+        lay = tblPr.find(_qn("w:tblLayout"))
+        if lay is None:
+            lay = OxmlElement("w:tblLayout")
+            tblPr.append(lay)
+        lay.set(_qn("w:type"), "fixed")
+        tw = tblPr.find(_qn("w:tblW"))
+        if tw is None:
+            tw = OxmlElement("w:tblW")
+            tblPr.append(tw)
+        tw.set(_qn("w:w"), str(sum(widths) // 635))
+        tw.set(_qn("w:type"), "dxa")
+        grid = tbl.tblGrid
+        for j, gc in enumerate(grid.findall(_qn("w:gridCol"))):
+            if j < ncol:
+                gc.set(_qn("w:w"), str(widths[j] // 635))
+        for r in rows:
+            for j, c in enumerate(r.cells):
+                if j < ncol:
+                    c.width = Emu(widths[j])
+                    if size < 7.5:
+                        for para in c.paragraphs:
+                            for run in para.runs:
+                                run.font.size = Pt(size)
+        done += 1
+    return done
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--in", dest="src", type=Path, default=DEFAULT_IN)
     ap.add_argument("--out", dest="dest", type=Path, default=DEFAULT_OUT)
+    ap.add_argument("--no-highlight", action="store_true",
+                    help="export the brief without the review-copy colours")
     ap.add_argument("--force", action="store_true",
                     help="overwrite a .docx this script did not write")
     a = ap.parse_args(argv)
@@ -500,6 +640,10 @@ def main(argv=None) -> int:
         _set_page_a4(doc)
         _compact_styles(doc)
         counts = wrap_boxes(doc)
+        _fit_table_widths(doc)
+        hl = None
+        if src.name == "LABELLING_ANALYSIS_BRIEF.md" and not a.no_highlight:
+            hl = apply_highlights(doc)
         doc.save(str(tmp))
         n_img, stray, notes = verify(tmp, n_ref)
         shutil.move(str(tmp), str(dest))
@@ -507,6 +651,10 @@ def main(argv=None) -> int:
         Path(tmp).unlink(missing_ok=True)
 
     print(f"boxes   {counts['answer']} answer, {counts['methods']} methods")
+    if hl is not None:
+        print(f"colour  {hl['green']} green, {hl['red']} red paragraphs")
+        for miss in hl["unmatched"]:
+            print(f"  WARNING: highlight phrase matched nothing: {miss!r}")
     print(f"images  {n_img} distinct embedded (expected {n_ref})")
     print(f"stray   {stray} occurrences of '[image:'")
     for n in notes:

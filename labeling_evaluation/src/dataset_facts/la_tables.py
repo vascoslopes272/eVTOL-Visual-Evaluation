@@ -520,6 +520,17 @@ def zones(v: pd.DataFrame, min_aircraft: int = 5) -> pd.DataFrame:
     return out
 
 
+def zone_core(z: pd.DataFrame, window: str = "2020-23") -> pd.Series:
+    """The crowded core of the zones figure (author's ruling 2026-09-28, N1): the largest
+    archetypes, in the table's order (aircraft, largest first, the column order of the figure's
+    lower panel), up to and including the one that takes ``window`` past half of its aircraft —
+    the columns left of that window's orange bar. Works on the built frame and on the CSV read
+    back as text. Returns a boolean mask aligned on ``z``."""
+    c = pd.to_numeric(z[window], errors="coerce").fillna(0).to_numpy(dtype=float)
+    k = int(np.searchsorted(np.cumsum(c) / c.sum(), 0.5)) + 1
+    return pd.Series([i < k for i in range(len(z))], index=z.index)
+
+
 def class_filer_weight(v: pd.DataFrame) -> pd.DataFrame:
     """How much of each class is one filer repeating itself (author's question, 2026-09-23).
 
@@ -2936,8 +2947,9 @@ def driver_questions(ds: Dataset, v: pd.DataFrame, trends: Optional[pd.DataFrame
     q3 = ("Inside the tilting classes the joint count rises — " + "; ".join(cell("tilting joint groups", c, "median") for c in j)
           + f" — so where a class moved it moved with regime transition and against the two cost drivers. Pooled over the five "
           f"classes it is {cell('tilting joint groups', 'ALL5', 'median')}: the sector as a whole adds no joints, because the "
-          f"class growing fastest (Lift + Cruise, 1.1.2) has none. The opposed pair therefore splits by level — transition wins inside a "
-          f"class, cost wins in the class mix — and the record cannot say which of the two the firms weighed.")
+          f"class growing fastest (Lift + Cruise, 1.1.2) has none. The opposed pair therefore splits by level — regime transition "
+          f"tracks the rise inside a class, cost tracks the fall in the class mix — and the record cannot say which of the two the "
+          f"firms weighed.")
     return pd.DataFrame([
         {"question": "Is the rise in propulsive units MR-specific or general?", "answer": q1},
         {"question": "Does retraction of lift units rise inside Lift + Cruise over time?", "answer": q2},
@@ -3259,10 +3271,16 @@ def filings_per_year(ds: Dataset, v: pd.DataFrame, snapshot: str = "2026-06-08")
     tab = pd.crosstab(w["year"], w["region3"]).reindex(columns=REGIONS + ["Other regions"], fill_value=0)
     acq = ds.patents.merge(ds.identity[["patent_id", "priority_year"]], on="patent_id", how="left", suffixes=("", "_id"))
     acq_y = pd.to_numeric(acq["priority_year"], errors="coerce").dropna().astype(int).value_counts()
+    # 2026-09-28 (author, Q1): Figure 1 (i) is read against the representative patents, the
+    # ones approved in the wizard as describing an eVTOL aircraft, not every acquired patent —
+    # only those describe a design and can be compared with the unique-aircraft bars.
+    rep_y = pd.to_numeric(acq.loc[acq["is_representative"].fillna(False), "priority_year"],
+                          errors="coerce").dropna().astype(int).value_counts()
     years = range(int(tab.index.min()), int(tab.index.max()) + 1)
     tab = tab.reindex(years, fill_value=0)
     tab["unique aircraft"] = tab[REGIONS + ["Other regions"]].sum(axis=1)
     tab["patents acquired"] = acq_y.reindex(years, fill_value=0).to_numpy()
+    tab["patents representative"] = rep_y.reindex(years, fill_value=0).to_numpy()
     elapsed = (snap - pd.to_datetime([f"{y}-12-31" for y in years])).days / 365.25
     tab["years since year end"] = np.round(elapsed, 1)
     tab["complete"] = elapsed >= p90
@@ -3786,7 +3804,8 @@ def trl_representativeness(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
 # 2026-09-25 — the review of the brief of 2026-09-24, comments C2, C17, C24, C29, C32, C36, C40,
 # C43, C47. Six new readings, each of them a number the review asked for and none of them a
 # restatement of one already printed. Every one carries the ruling that produced it in its own
-# docstring, and the two post-hoc ones say so in a column of the table itself.
+# docstring, and the two readings defined after the result they came from say so in a column of
+# the table itself.
 # ================================================================================================
 
 # ------------------------------------------------- C29 / C32: joints, normalised per unit -------
@@ -3943,15 +3962,16 @@ def duct_conditional(v: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-# ------------------------------- C36: the CVT + Lift + Cruise family, POST HOC -------------------
+# ------------------------------- C36: the CVT + Lift + Cruise family, defined after the result ---
 #: Said in every place this family is reported, and repeated in a column of both tables. The
 #: three dominant-design conditions were fixed before any curve of this corpus was drawn
 #: (Preliminary Analysis 5.7) and they were fixed on the twelve G1 classes. This family is not one
 #: of them: it was defined on 2026-09-25 after reading the ducting result of the brief, and it
 #: therefore cannot be reported as a pre-registered test of anything.
 FAMILY_POSTHOC = (
-    "POST HOC — this grouping was defined on 2026-09-25, after the 2026-09-24 result it came from; "
-    "it is not one of the pre-registered classes and no result here is a pre-registered test"
+    "Defined after the result — this grouping was set on 2026-09-25, after the 2026-09-24 result "
+    "it came from; it is not one of the pre-registered classes and no result here is a "
+    "pre-registered test"
 )
 
 #: The three readings of "the distributed-propulsion family", as
@@ -4023,7 +4043,8 @@ def family_share(ds: Dataset, v: pd.DataFrame) -> pd.DataFrame:
     holds alone. Definition (c) is the one settled with the user; (b) is reported beside it as a
     sensitivity, and (b ∩ c) is their intersection.
 
-    The grouping is post-hoc and every row says so: see :data:`FAMILY_POSTHOC`.
+    The grouping was defined after the result that suggested it, and every row says so: see
+    :data:`FAMILY_POSTHOC`.
     """
     flags = family_flags(ds, v)
     w = v.dropna(subset=["window"])
@@ -4079,7 +4100,8 @@ def family_dominant_design(ds: Dataset, v: pd.DataFrame, share: Optional[pd.Data
     Gower distance of Preliminary Analysis 5.3 against the family's own two earliest windows.
     Nothing in either routine is modified; only the frame handed to them is narrower.
 
-    The grouping is post-hoc (:data:`FAMILY_POSTHOC`) and every row of the table repeats it.
+    The grouping was defined after the result that suggested it (:data:`FAMILY_POSTHOC`) and
+    every row of the table repeats it.
     """
     share = family_share(ds, v) if share is None else share
     flags = family_flags(ds, v)
@@ -4396,7 +4418,8 @@ def build_all(ds: Dataset) -> Dict[str, pd.DataFrame]:
     tables["la_class_configs_own"] = class_configs_own(v)
     tables["la_duct_count"] = duct_count_by_units(v)
     # 2026-09-25, the review of the brief: the joint count normalised per propulsive unit (C29,
-    # C32), the conditional ducting test (C24, C36), the post-hoc CVT + Lift + Cruise family (C36),
+    # C32), the conditional ducting test (C24, C36), the CVT + Lift + Cruise family defined
+    # after the result that suggested it (C36),
     # the name coverage behind the public match (C2), where the Tilt Wing firms go (C47) and what
     # kind of filer enters (C40).
     tables["la_joints_per_unit"] = joints_per_unit(ds, v)

@@ -155,8 +155,9 @@ table.sep th, table.sep td {{ padding: 4px 10px; border-bottom: 1px solid #ecebe
 measures it: the share of aircraft whose 5 nearest neighbours (never from the same maker) vote for the right
 class, averaged over the classes (chance 0.20), in the full embedding and in the 3-D and 2-D maps.</p>
 {sep_html}
-<p class="src">UMAP maps are fitted without labels; a map can separate the classes less than the full embedding,
-never reveal separation the embedding does not hold.</p>
+<p class="src">UMAP maps are fitted without labels, but they can both blur real separation and
+exaggerate local clumping. Judge separation by the full-embedding row; the maps are for looking,
+the numbers for deciding.</p>
 {''.join(divs)}
 <script>{PLOTLY_JS.read_text(encoding="utf-8")}</script>
 <script>{''.join(scripts)}</script>

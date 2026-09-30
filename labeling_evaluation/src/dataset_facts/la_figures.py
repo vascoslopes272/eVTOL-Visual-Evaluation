@@ -459,6 +459,79 @@ def _mark_keeping_width(fig, path: Path, read: str = "") -> str:
     return read
 
 
+#: figures whose every panel carries its own source note (author, 2026-09-26: "on each graph,
+#: not on the figure"), so the figure-wide stamp would say it twice
+PANEL_SOURCED = {"filings_per_year", "zones"}
+
+
+def _wrap_note(host, text: str, fontsize: float = 7) -> str:
+    """Wrap a panel note to the width its panel will print at (2026-09-27): a note wider than
+    its panel made ``_fit_width`` shrink the whole drawing to fit it, which squeezed the plots
+    of Figure 1 to half the page. ~0.5 em per character at 7 pt gives the characters per inch."""
+    import textwrap
+    width_in = host.get_position().width * TEXT_W
+    per_line = max(40, int(width_in * 72 / (fontsize * 0.52)))
+    return "\n".join(textwrap.fill(line, per_line) for line in text.split("\n"))
+
+
+def _panel_note(host, under, text: str, fontsize: float = 7) -> None:
+    """A source / unit note hung at the foot of ONE panel (rule 4 of the brief revision rules,
+    2026-09-26), under the lowest tick or axis label of ``under``, measured at draw time so it
+    follows the width fit and never meets a tick. Starts at the axes' left edge. The same
+    mechanism as the per-panel notes of ``fig_filings_per_year``, lifted to module level so
+    every per-panel-sourced figure uses one function."""
+    from matplotlib.transforms import Bbox
+
+    def _foot(rend):
+        hb = host.get_window_extent(rend)
+        tb = under.xaxis.get_tightbbox(rend)
+        y0 = min(hb.y0, tb.y0) if tb is not None else hb.y0
+        return Bbox([[hb.x0, y0], [hb.x1, y0]])
+    text = _wrap_note(host, text, fontsize)
+    host.annotate(text, xy=(0, 0), xycoords=_foot, xytext=(0, -3), textcoords="offset points",
+                  ha="left", va="top", fontsize=fontsize, color=INK2, annotation_clip=False)
+
+
+def _hull(points: np.ndarray) -> np.ndarray:
+    """Convex hull of 2-D points (Andrew's monotone chain), counter-clockwise, no scipy."""
+    pts = sorted(map(tuple, points))
+    if len(pts) < 3:
+        return np.array(pts)
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lower, upper = [], []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return np.array(lower[:-1] + upper[:-1])
+
+
+def _ring_group(ax, xs, ys, radii_pt, pad_pt: float = 5.0, **style):
+    """Draw a smooth outline around a group of scatter points: the convex hull of a circle of
+    (bubble radius + ``pad_pt``) around every point, computed in display space so the ring is
+    round on paper, then mapped back to data coordinates. Returns the polygon."""
+    fig = ax.figure
+    k = fig.dpi / 72
+    ang = np.linspace(0, 2 * np.pi, 36, endpoint=False)
+    cloud = []
+    for x_, y_, r_ in zip(xs, ys, radii_pt):
+        cx, cy = ax.transData.transform((x_, y_))
+        rr = (r_ + pad_pt) * k
+        cloud += list(zip(cx + rr * np.cos(ang), cy + rr * np.sin(ang)))
+    hull = _hull(np.array(cloud))
+    data = ax.transData.inverted().transform(hull)
+    poly = matplotlib.patches.Polygon(data, closed=True, fill=False, joinstyle="round", zorder=2,
+                                      **{"lw": 1.3, "ls": (0, (4, 2)), "edgecolor": INK, **style})
+    ax.add_patch(poly)
+    return poly
+
+
 def _save(fig, path: Path, source: str, read: str = "") -> Path:
     # 2026-09-23, author's ruling: the stamp on the PNG says the SOURCE AS A TAG and one short
     # how-to-read sentence — the long provenance prose moved to the four grey lines under the
@@ -466,17 +539,21 @@ def _save(fig, path: Path, source: str, read: str = "") -> Path:
     # the lines can never disagree. A figure with no entry keeps the strings its builder passed.
     from . import la_lines as _ln
     name = Path(path).stem
+    stamp = name not in PANEL_SOURCED
     if name in _ln.SOURCE:
         source = " · ".join(_ln.SOURCE[name])
         read = ""      # the how-to-read is one of the four lines under the figure; stamping it on
         #                the PNG as well printed it twice on the same page
+    from . import display_names as _dn
+    _dn.rename_figure(fig)                     # 2026-09-28: printed names, before the width fit
     with plt.rc_context(STYLE):
         _bw(fig)
         _wrap_texts(fig)
         _fit_width(fig)
         read = _mark_keeping_width(fig, path, read)
         _declutter(fig)
-        _stamp(fig, source, read)
+        if stamp:
+            _stamp(fig, source, read)
         path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(path, dpi=DPI, bbox_inches="tight", facecolor=SURFACE)
     plt.close(fig)
@@ -637,6 +714,53 @@ def fig_two_counts(ds: Dataset, path: Path) -> Path:
     return _save(fig, path, SRC + "; aircraft spans (O1/O2 re-filings).",
                  "Solid: the aircraft sits in the window of its primary record. Dashed: it counts in every window from its "
                  "first to its last filing. The gap between the lines is what the dating rule can move.")
+
+
+def fig_name_coverage(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
+    """Named against generated-name aircraft, and within the named ones, matched to a public
+    product or not.
+
+    2026-09-28 (K7, author's review): the author asked twice for ``la_tables.name_coverage`` to
+    be read as a graph rather than a table. Drawn from the same function the table used, so a
+    figure and the {sm_nc_*} numbers it still feeds can never disagree; the table itself is cut
+    from the document body (``sm_index`` Q8 node), only the figure is printed.
+    """
+    t = la_tables.name_coverage(ds, v)
+    named = t[t["aircraft"] == "carry a real product name"].iloc[0]
+    gen = t[t["aircraft"] == "carry a generated identifier"].iloc[0]
+    named_matched = int(named["compared with the public aircraft"])
+    named_unmatched = int(named["unique aircraft"]) - named_matched
+    gen_matched = int(gen["compared with the public aircraft"])
+    gen_unmatched = int(gen["unique aircraft"]) - gen_matched
+
+    fig, ax = plt.subplots(figsize=(W, 2.7))
+    y = [1, 0]
+    labels = [f"Real product name ({named_matched + named_unmatched})",
+              f"Generated identifier ({gen_matched + gen_unmatched})"]
+    matched_vals = [named_matched, gen_matched]
+    unmatched_vals = [named_unmatched, gen_unmatched]
+    ax.barh(y, matched_vals, height=0.62, color=BLUE(0.78), edgecolor=SURFACE, linewidth=1.2,
+            label="matched to a public product", zorder=2)
+    ax.barh(y, unmatched_vals, left=matched_vals, height=0.62, color=BLUE(0.22), edgecolor=SURFACE,
+            linewidth=1.2, label="not matched", zorder=2)
+    for yi, m, u in zip(y, matched_vals, unmatched_vals):
+        if m:
+            ax.text(m / 2, yi, f"{m}", ha="center", va="center", fontsize=8.5, color="white")
+        if u:
+            ax.text(m + u / 2, yi, f"{u}", ha="center", va="center", fontsize=8.5, color=INK)
+    ax.set_yticks(y, labels, fontsize=9)
+    ax.set_xlabel("unique aircraft")
+    ax.set_xlim(0, max(sum(matched_vals[:1] + unmatched_vals[:1]),
+                       sum(matched_vals[1:] + unmatched_vals[1:])) * 1.12)
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    _hgrid(ax, "x")
+    ax.legend(loc="lower right", fontsize=8, ncol=1, frameon=False, handlelength=1.3)
+    fig.suptitle("Unique aircraft by name, and whether a name links to a public product",
+                 x=0.01, ha="left", fontsize=10, fontweight="bold")
+    return _save(fig, path, SRC + "; tables/la_name_coverage.csv.",
+                 "Each bar is one kind of name; the dark segment is the aircraft of that kind "
+                 "matched to a public product, the light segment is the rest. Only a named "
+                 "aircraft could be matched at all.")
 
 
 def fig_lead_lag(v: pd.DataFrame, path: Path) -> Path:
@@ -980,8 +1104,8 @@ def fig_filer_weight(v: pd.DataFrame, path: Path) -> Path:
 
 def fig_zones(v: pd.DataFrame, path: Path) -> Path:
     z = la_tables.zones(v)
-    fig = plt.figure(figsize=(W, 6.4))
-    gs = fig.add_gridspec(2, 1, height_ratios=[1.25, 1], hspace=0.62)
+    fig = plt.figure(figsize=(W, 7.4))
+    gs = fig.add_gridspec(2, 1, height_ratios=[1.6, 1], hspace=0.62)
     ax2 = fig.add_subplot(gs[0])
     zz = z[z["filers 2016-23"] > 0]
     for _, r in zz.iterrows():
@@ -993,13 +1117,58 @@ def fig_zones(v: pd.DataFrame, path: Path) -> Path:
     ax2.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     ax2.set_xlabel("share of the 2016–23 aircraft")
     ax2.set_ylabel("distinct filers per aircraft")
-    ax2.set_title("Crowded (right, low) against open (left, high); ▲ new since 2016, ▼ absent after 2019, ● persistent",
+    ax2.set_title("The crowded core (solid ring) and the empty rim (dashed); ▲ new since 2016, ▼ absent after 2019, ● persistent",
                   fontsize=9)
     _hgrid(ax2, "both")
+    # 2026-09-26 (author, C71): ring the two groups the takeaway names, never picked by eye.
+    # 2026-09-28 (author, N1): the crowded core is the largest archetypes that together take
+    # 2020-23 past half of its aircraft — the columns left of that window's orange bar in the
+    # lower panel (la_tables.zone_core); the empty rim = at or left of the median share. The y
+    # range is opened downwards to make room for the notes.
+    mx, my = zz["share 2016-23"].median(), zz["filers per aircraft"].median()
+    core = zz[la_tables.zone_core(z).reindex(zz.index).fillna(False).astype(bool)]
+    rim = zz[zz["share 2016-23"] <= mx]
+    ax2.set_ylim(min(0.36, zz["filers per aircraft"].min() - 0.16), 1.05)
+    rad = lambda d: (np.sqrt(18 + 3.2 * d["aircraft"].to_numpy(dtype=float)) / 2)   # marker radius, pt
+    _ring_group(ax2, core["share 2016-23"], core["filers per aircraft"], rad(core), pad_pt=2.5,
+                edgecolor=INK, lw=1.5, ls="-")
+    _ring_group(ax2, rim["share 2016-23"], rim["filers per aircraft"], rad(rim), pad_pt=3.0,
+                edgecolor=INK2, lw=1.3)
+    ax2.text(zz["share 2016-23"].max() * 1.13, ax2.get_ylim()[0] + 0.015,
+             f"crowded core ({len(core)} archetypes): the largest\narchetypes, which together hold "
+             f"half of the\n2020–23 aircraft (left of the orange bar below)", ha="right", va="bottom",
+             fontsize=7, color=INK, linespacing=1.15, zorder=6,
+             bbox=dict(fc="white", ec="none", pad=0.5, alpha=0.9))
+    ax2.text(0.0, float(rim["filers per aircraft"].min()) - 0.045,
+             f"empty rim ({len(rim)} archetypes):\nat or under the median share", ha="left",
+             va="top", fontsize=7, color=INK2, linespacing=1.15, zorder=6,
+             bbox=dict(fc="white", ec="none", pad=0.5, alpha=0.9))
+    # the archetype the text names: of those with 20+ aircraft (the cut of the brief's filer
+    # panel, sm_figures.ZONE_MIN), the one resting on the fewest filers per aircraft. Its filer
+    # split is read from the aircraft frame, so the callout says whether "few filers" means many
+    # small ones or one large one.
+    big = zz[zz["aircraft"] >= 20]
+    if len(big):
+        fr = big.loc[big["filers per aircraft"].idxmin()]
+        held = v[v["archetype"].eq(fr["archetype"])].groupby("filer_id").size().sort_values(ascending=False)
+        top_f, top_n, ones = held.index[0], int(held.iloc[0]), int((held == 1).sum())
+        top_name = top_f if not str(top_f).startswith("patent:") else "one patent's inventor"
+        ax2.annotate(f"{fr['archetype'].replace(' · ', ' ')}: {int(fr['filers'])} filers for "
+                     f"{int(fr['aircraft'])} aircraft,\nthe fewest per aircraft of the {len(big)}\n"
+                     f"archetypes with 20+ aircraft;\n{_short_firm(top_name)} holds {top_n} of them,\n"
+                     f"{ones} filers hold one each",
+                     xy=(fr["share 2016-23"], fr["filers per aircraft"]),
+                     xytext=(0.001, ax2.get_ylim()[0] + 0.02),
+                     textcoords="data", ha="left", va="bottom", fontsize=7, color=INK, zorder=7,
+                     linespacing=1.15, bbox=dict(fc="white", ec=INK2, lw=0.6, pad=2.0),
+                     arrowprops=dict(arrowstyle="-", lw=0.8, color=INK,
+                                     shrinkA=0, shrinkB=np.sqrt(18 + 3.2 * fr["aircraft"]) / 2 + 1))
     lab = zz[(zz["aircraft"] >= 12) | (zz["share 2016-23"] >= 0.03) | (zz["filers per aircraft"] < 0.75)]
     _repel(ax2, lab["share 2016-23"].tolist(), lab["filers per aircraft"].tolist(),
            [a.replace(" · ", " ").replace(" n/a (no M3 card)", "") for a in lab["archetype"]],
            avoid=list(zip(zz["share 2016-23"], zz["filers per aircraft"])), marker_pt=7)
+    _panel_note(ax2, ax2, f"Unit: C·U archetype (class + propulsive-unit band), the {len(zz)} with 5+ unique aircraft\n"
+                "Source: human labelling (class, units) · PatSeer (applicant → filer)")
     # archetypes as columns, windows as rows
     ax = fig.add_subplot(gs[1])
     mat = z.set_index("archetype")[WINDOW_NAMES].astype(float).T
@@ -1016,7 +1185,29 @@ def fig_zones(v: pd.DataFrame, path: Path) -> Path:
                   rotation=90, fontsize=7)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    ax.set_title("Aircraft per window for each archetype (darker = the archetype's busiest window)", fontsize=9)
+    # 2026-09-26 (author, C71): the shift from 2016-19 to 2020-23 made visible. Columns run from
+    # the largest archetype to the smallest; in each of the two windows a bar marks the column
+    # that takes the window past half of its aircraft, and the arrow runs from the earlier mark
+    # to the later one. Read from the same counts the cells print.
+    half = {}
+    for w in ("2016-19", "2020-23"):
+        c = mat.loc[w].to_numpy(dtype=float)
+        half[w] = int(np.searchsorted(np.cumsum(c) / c.sum(), 0.5))
+    mark = "#ff5a1f"          # not a palette colour, so the black-and-white pass leaves it solid
+    for w, j in half.items():
+        i = WINDOW_NAMES.index(w)
+        ax.plot([j + 0.5, j + 0.5], [i - 0.5, i + 0.5], color=mark, lw=3.2, solid_capstyle="butt", zorder=6)
+    i16, i20 = WINDOW_NAMES.index("2016-19"), WINDOW_NAMES.index("2020-23")
+    if half["2020-23"] != half["2016-19"]:
+        ax.annotate("", xy=(half["2020-23"] + 0.5, (i16 + i20) / 2), xytext=(half["2016-19"] + 0.5, (i16 + i20) / 2),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.6, color=mark, mutation_scale=11), zorder=7)
+    ax.set_title("Aircraft per window for each archetype, largest first (darker = its busiest window)",
+                 fontsize=9, pad=16)
+    ax.text(0.0, 1.015, "orange bar: half the window's aircraft sit left of it — the largest "
+            f"{half['2016-19'] + 1} archetypes in 2016–19, the largest {half['2020-23'] + 1} in 2020–23",
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=7.5, color=INK)
+    _panel_note(ax, ax, f"Unit: unique aircraft ({int(mat.to_numpy().sum())}) in the same {mat.shape[1]} archetypes, per priority window\n"
+                "Source: human labelling · PatSeer (priority date)")
     _legend_arch(fig, ARCH_ORDER + ["Other"])
     return _save(fig, path, SRC + "; A0c archetypes (class × propulsive-unit bin) with 5 or more aircraft; `tables/la_zones.csv`.",
                  "Top: an archetype far right holds a big share of recent aircraft; high up it is filed by many different "
@@ -2097,6 +2288,58 @@ def _event_strip(fig, ax, ev: pd.DataFrame, xmin: int, xmax: int, strip_in: floa
         ax.axvline(x, color=INK2, lw=0.6, ls=(0, (1, 2.2)), zorder=0.6)
 
 
+#: 2026-09-26, author's ruling: panel (ii) of Figure 1 draws GROWTH RATES — each series on a
+#: log axis relative to its own 2005-09 average, with its fitted line and doubling time — in place
+#: of eVTOL's share of each baseline, which read as a speed while being a level.
+GROWTH_PANEL = True
+#: series fitted in the table but not drawn (author, 2026-09-26: the aircraft line is not wanted
+#: on the panel; its doubling time is stated in the text)
+GROWTH_NOT_DRAWN = {"evtol_aircraft"}
+
+
+def _draw_growth_panel(ax2, ds: Dataset, v: pd.DataFrame) -> None:
+    from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
+    from . import sm_open
+    ser = sm_open.growth_series(ds, v)
+    lo, hi = sm_open.GROWTH_WINDOW
+    b0, b1 = la_baseline.BASE_YEARS
+    yrs = np.arange(lo, hi + 1)
+    style = {"evtol_families": (CAT[0], "-", "o", 2.4), "evtol_aircraft": (CAT[1], "--", "D", 2.0),
+             "b64": (INK, "-", "s", 1.6), "secb": (INK2, "-.", "^", 1.4), "all": (MUTED, ":", "v", 1.6)}
+    top = 1.0
+    for key, name in sm_open.GROWTH_SERIES:
+        if key in GROWTH_NOT_DRAWN:
+            continue
+        cnt = ser[key].reindex(yrs, fill_value=0).astype(float)
+        base = float(cnt.loc[b0:b1].mean())
+        fit = sm_open._loglin(yrs, cnt.to_numpy())
+        ok = cnt.to_numpy() > 0
+        b, a = np.polyfit(yrs[ok], np.log(cnt.to_numpy()[ok]), 1)
+        col, ls, mk, lw = style[key]
+        ax2.plot(yrs[ok], cnt.to_numpy()[ok] / base, ls="none", marker=mk, ms=3.0, color=col, alpha=0.55)
+        line = np.exp(a + b * yrs) / base
+        ax2.plot(yrs, line, ls=ls, lw=lw, color=col,
+                 label=f"{name}: doubles every {fit['doubling time (years)']:.1f} years")
+        top = max(top, float(np.nanmax(cnt.to_numpy()[ok] / base)), float(line.max()))
+    ax2.set_yscale("log")
+    ticks = [t for t in (0.25, 0.5, 1, 2, 4, 8, 16, 32) if t <= top * 1.6]
+    ax2.yaxis.set_major_locator(FixedLocator(ticks))
+    ax2.yaxis.set_minor_locator(NullLocator())
+    ax2.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"×{x:g}"))
+    ax2.set_ylim(min(ticks) * 0.8, top * 2.2)        # the legend sits upper left, where the lines are low
+    ax2.axhline(1, color=INK2, lw=0.8, ls=":")
+    ax2.set_xlim(lo - 0.6, hi + 0.6)
+    ax2.set_xticks(list(yrs), [str(y) for y in yrs], rotation=45, fontsize=7.5)
+    ax2.set_ylabel(f"count ÷ its {b0}-{b1} average\n(log scale)")
+    ax2.set_title(f"How fast each series grows: fitted over {lo}-{hi}; the steeper the line, "
+                  f"the faster", fontsize=9.5)
+    ax2.legend(loc="upper left", fontsize=7, frameon=True, ncol=1)
+    ax2.text(0.99, 0.04, "points: yearly counts · lines: fitted growth\nparallel lines = the same "
+             "growth rate", transform=ax2.transAxes, ha="right", va="bottom", fontsize=7,
+             color=INK2, bbox=dict(fc="white", ec="none", pad=1))
+    _hgrid(ax2, "y")
+
+
 def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     full = la_tables.filings_per_year(ds, v).set_index("priority year")
     # (i) is a chart of totals, so it pools 1999-2004 into its "≤2005" bar: before the author's
@@ -2121,7 +2364,9 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     # lines included, still fits a page with its caption. Margins stay matplotlib's 0.11 / 0.88.
     if normalised:
         a1, a2 = (2.05, 1.45) if strip_in else (2.40, 1.85)
-        gap = 1.06 + strip_in
+        if GROWTH_PANEL:                   # 2026-09-26: five fitted lines need the height
+            a2 = 2.35
+        gap = 1.06 + strip_in + 0.20       # + 0.20 in (2026-09-26): the source note at the foot of (i)
         fig, (ax, ax2) = plt.subplots(2, 1, figsize=(W, (a1 + a2 + gap) / 0.77),
                                       gridspec_kw={"hspace": gap / ((a1 + a2) / 2), "height_ratios": [a1, a2]})
     else:
@@ -2139,22 +2384,28 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     for xi, (_, r) in zip(t.index, t.iterrows()):
         if not r["complete"]:
             ax.bar(xi, r["unique aircraft"], color=(1, 1, 1, 0.45), edgecolor=INK, lw=1.0, ls="--", width=0.8)
-            top = max(r["unique aircraft"], r["patents acquired"])
+            top = max(r["unique aircraft"], r["patents representative"])
             ax.text(xi, top + 5, f"{int(r['unique aircraft'])}", ha="center", fontsize=7, color=INK2,
                     bbox=dict(fc="white", ec="none", pad=0.2))
-    ax.plot(t.index, t["patents acquired"], color=INK, lw=2, marker="o", ms=3.5, label="patents acquired (all 1 639)")
+    # 2026-09-28 (author, Q1): the line counts the representative patents (approved in the
+    # wizard as describing an eVTOL aircraft), not every acquired patent, so it is comparable
+    # with the unique-aircraft bars.
+    n_rep = int(t["patents representative"].sum())
+    n_rep_s = f"{n_rep:,}".replace(",", " ")
+    ax.plot(t.index, t["patents representative"], color=INK, lw=2, marker="o", ms=3.5,
+            label=f"representative patents ({n_rep_s})")
     first_incomplete = int(t.index[~t["complete"]].min())
     ax.axvline(first_incomplete - 0.5, color=INK, lw=0.8, ls="--")
     ax.text(first_incomplete - 0.4, ax.get_ylim()[1] * 0.97, f"incomplete: within {p90:.0f} years\n(90th-pct lag) of the snapshot",
             va="top", fontsize=7, color=INK2)
     if pooled:
         # the pooled bar is taller than its neighbours because it is seven years, not a big year
-        ax.annotate(f"{pooled[0]}-{FILINGS_FIRST_YEAR}\npooled", (FILINGS_FIRST_YEAR, t.loc[FILINGS_FIRST_YEAR, "patents acquired"]),
+        ax.annotate(f"{pooled[0]}-{FILINGS_FIRST_YEAR}\npooled", (FILINGS_FIRST_YEAR, t.loc[FILINGS_FIRST_YEAR, "patents representative"]),
                     textcoords="offset points", xytext=(6, 6), fontsize=7, color=INK2, va="bottom")
     ticks = list(t.index)
     tick_labels = [(f"≤{FILINGS_FIRST_YEAR}" if y == FILINGS_FIRST_YEAR and pooled else str(y)) for y in t.index]
     ax.set_xticks(ticks, tick_labels, rotation=45, fontsize=7.5)
-    ax.set_ylabel("unique aircraft (bars) · patents acquired (line)")
+    ax.set_ylabel("unique aircraft (bars) · representative patents (line)")
     ax.legend(loc="upper left", fontsize=7.5)
     ax.set_title("Filings per priority year, by applicant region; dashed, faded bars are years still filling")
     _hgrid(ax, "y")
@@ -2166,20 +2417,31 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
     if strip_in:
         src += " " + EVENTS_SRC[0].upper() + EVENTS_SRC[1:] + "."
     read = ("Bars: representative unique aircraft by the priority year of their primary record, stacked by applicant "
-            "region (region hatches survive black and white); line: every acquired patent. A year is drawn faded with a "
+            "region (region hatches survive black and white); line: the representative patents (approved as "
+            "describing an eVTOL aircraft). A year is drawn faded with a "
             "dashed outline while the snapshot is less than the 90th-percentile lag after its end: those bars will still grow.")
     if pooled:
         first_row = t.loc[FILINGS_FIRST_YEAR]
         read += (f" The first bar is the only pooled one: it holds {pooled[0]}-{FILINGS_FIRST_YEAR} together "
-                 f"({int(first_row['unique aircraft'])} aircraft, {int(first_row['patents acquired'])} patents), "
-                 f"hence its tick ≤{FILINGS_FIRST_YEAR}; Table 1.1a keeps those years as separate rows.")
+                 f"({int(first_row['unique aircraft'])} aircraft, {int(first_row['patents representative'])} "
+                 f"representative patents), hence its tick ≤{FILINGS_FIRST_YEAR}; Table 1.1a keeps those years "
+                 "as separate rows.")
     if strip_in:
         read += (" Strip under the bars: dated sector events from the CSV, the author's first pass. The axis is the "
                  "priority year of the filings, so an event stands on its calendar year even when most of that year's "
                  "priority filings precede it (an event of October, say); two events in one year stand side by side "
                  "in date order, and events after the snapshot are not drawn.")
 
-    if normalised:
+    if normalised and GROWTH_PANEL:
+        _draw_growth_panel(ax2, ds, v)
+        ratio_col = None
+        src += (" (ii): PatSeer worldwide simple families for CPC B64 and CPC section B, WIPO patent "
+                "families by origin (indicator 6a) for all patents; eVTOL families are the patents "
+                "that describe an electric VTOL aircraft.")
+        read += (" (ii) Each series divided by its own 2005-09 average and drawn on a log axis, so "
+                 "equal slopes are equal growth rates; the lines are least-squares fits of log count "
+                 "on priority year over the complete years, and the legend gives each doubling time.")
+    elif normalised:
         # ti, not t: a per-year index must be built on single years (see la_baseline.pool_to_first)
         r = la_baseline.readings(ti)
         lo, hi = la_baseline.BASE_YEARS
@@ -2221,14 +2483,15 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
                                "all patents"))
             peak_year = None
             idx_lines = {}
+            # 2026-09-26: the multiples come from la_baseline.multiples, the same function the
+            # table la_baseline_multiples reads, so the brief's numbers and the drawn points agree
+            _mult = la_baseline.multiples(ti)
             for key, denom, col, ls, mk, lab in series:
-                ratio = _e / denom
-                base_v = ratio.reindex(range(lo, hi + 1)).mean()
-                ix = ratio / base_v
+                ix = _mult[key]
                 idx_lines[key] = ix
                 ax2.plot(ix.index, ix, color=col, lw=2, ls=ls, marker=mk, ms=3.8, label=f"\u00f7 {lab}")
             ax2.axhline(1, color=INK2, lw=0.8, ls=":")
-            ax2.text(ti.index.max() + 0.4, 1.25, "dotted line:\nstarting level = 1", fontsize=6.5, color=INK2, ha="right")
+            ax2.text(ti.index.max() + 0.4, 1.25, "dotted line:\nstarting level = 1", fontsize=7, color=INK2, ha="right")
             peak_year = int(idx_lines["B64"].idxmax())
             for k, (key, _d, col, _ls, _mk, _lab) in enumerate(series):
                 val = float(idx_lines[key].loc[peak_year])
@@ -2238,7 +2501,7 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
             ax2.set_ylim(0, top * 2.15)              # an empty band above the lines for the legend and the recipe
             ax2.legend(loc="upper left", fontsize=7, frameon=True,
                        title="each line = eVTOL families \u00f7 one baseline's\nfamilies (worldwide, same year),\n"
-                             f"as a multiple of its {lo}-{hi} starting level", title_fontsize=6.5)
+                             f"as a multiple of its {lo}-{hi} starting level", title_fontsize=7)
             # a worked example, so the axis needs no prior reading
             _rs, _re = r.get("ratio_start"), float((_e / series[0][1]).loc[peak_year] * 1000)
             _m = idx_lines["B64"].loc[peak_year]
@@ -2249,8 +2512,8 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
                      f"How a line is built (aeronautics as example)\n"
                      f"1  {peak_year}: {_e.loc[peak_year]:.0f} eVTOL \u00f7 {_den:,.0f} aeronautics families = {_frac.loc[peak_year]:.1f} per 1 000\n"
                      f"2  same for {lo}-{hi}, averaged = {_base:.1f} per 1 000: the starting level\n"
-                     f"3  {_frac.loc[peak_year]:.1f} \u00f7 {_base:.1f} = \u00d7{_m:.1f} \u2014 the point drawn for {peak_year}",
-                     transform=ax2.transAxes, ha="right", va="top", fontsize=6.2, color=INK, linespacing=1.35,
+                     f"3  {_frac.loc[peak_year]:.1f} \u00f7 {_base:.1f} = \u00d7{_m:.1f}: the {peak_year} share is {_m:.1f} times the starting one",
+                     transform=ax2.transAxes, ha="right", va="top", fontsize=7, color=INK, linespacing=1.35,
                      bbox=dict(fc="white", ec=GRID, lw=0.6, pad=3))
         else:
             ax2.plot(ti.index, ti[ix_e], color=INK, lw=2, marker="o", ms=3.5,
@@ -2273,8 +2536,10 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
         # (i) pools into its first tick, (ii) does not, so only (i) carries the "≤"
         ax2.set_xticks(list(ti.index), [str(y) for y in ti.index], rotation=45, fontsize=7.5)
         if ratio_col in ti.columns:
-            ax2.set_ylabel(f"times the {lo}-{hi} starting level")
-            ax2.set_title("How much faster eVTOL grew than the patenting around it", fontsize=9.5)
+            # 2026-09-26: retitled — the value drawn is eVTOL's SHARE of each baseline relative to
+            # its 2005-09 share, not a ratio of growth rates (that is the doubling-time ratio)
+            ax2.set_ylabel(f"× its {lo}-{hi} share")
+            ax2.set_title(f"eVTOL share of each baseline, relative to {lo}-{hi} (= 1)", fontsize=9.5)
         else:
             ax2.set_ylabel(f"index, mean of {lo}-{hi} = 100")
             ax2.legend(loc="upper left", fontsize=7.5)
@@ -2324,6 +2589,35 @@ def fig_filings_per_year(ds: Dataset, v: pd.DataFrame, path: Path) -> Path:
                      f"offices the corpus draws on. (ii) does not pool: its first point is {FILINGS_FIRST_YEAR} alone, "
                      f"because an index of single years cannot take a seven-year bucket as a point and the two sides "
                      f"would not pool by the same factor.")
+
+    # 2026-09-26, author's request: each graph names its own source at its foot, under its year
+    # labels (the Source line under the whole figure stays). The note hangs from the lowest tick
+    # label of the panel, measured at draw time, so it follows the width fit and never meets a
+    # tick, and it starts at the axes' left edge, clear of the rotated y label.
+    def _panel_source(host, under, text):
+        from matplotlib.transforms import Bbox
+
+        def _foot(rend):
+            hb = host.get_window_extent(rend)
+            tb = under.xaxis.get_tightbbox(rend)
+            y0 = min(hb.y0, tb.y0) if tb is not None else hb.y0
+            return Bbox([[hb.x0, y0], [hb.x1, y0]])
+        text = _wrap_note(host, text)
+        host.annotate(text, xy=(0, 0), xycoords=_foot, xytext=(0, -3), textcoords="offset points",
+                      ha="left", va="top", fontsize=7, color=INK2, annotation_clip=False)
+
+    _snap = t.attrs["snapshot"]
+    _panel_source(ax, ax.child_axes[-1] if strip_in and ax.child_axes else ax,
+                  f"Source: PatSeer (snapshot {_snap}) · human labelling"
+                  + (" · sector events: the author's dated list (checked 2026-09-23)" if strip_in else ""))
+    if normalised and GROWTH_PANEL:
+        _panel_source(ax2, ax2,
+                      f"Source: PatSeer (eVTOL families, snapshot {_snap}; CPC B64 and CPC section B, worldwide simple families) ·\n"
+                      f"human labelling (which patents describe an eVTOL aircraft) · WIPO patent families by origin, indicator 6a (all patents); exported 2026-09-25")
+    elif normalised and ratio_col in ti.columns:
+        _panel_source(ax2, ax2,
+                      f"Source: this corpus's acquired families (PatSeer, snapshot {_snap}) over worldwide families: PatSeer for\n"
+                      f"CPC B64 and CPC section B, WIPO patent families by origin (indicator 6a) for all patents; exported 2026-09-25")
 
     return _save(fig, path, src, read)
 
@@ -3527,6 +3821,8 @@ def _atlas(fn: Callable, ds: Dataset, av: pd.DataFrame, n: Dict, path: Path, siz
 
 
 def _atlas_save(fig, path: Path) -> None:
+    from . import display_names as _dn
+    _dn.rename_figure(fig)                     # 2026-09-28: printed names
     with plt.rc_context(STYLE):
         _bw(fig)
         for ax in fig.axes:
@@ -3706,6 +4002,9 @@ def render_all(ds: Dataset, out_dir: Path, partial_window_start: int = 2024, **_
         # "firm_weighted": lambda p: fig_firm_weighted(v, p),
         # "two_counts": lambda p: fig_two_counts(ds, p),
         "spans_by_firm": lambda p: fig_spans_by_firm(ds, v, p),
+        # 2026-09-28 (K7): the name-coverage table read as a figure; named "la_name_coverage" so
+        # it reuses that item's existing Source/How-to-read registration in la_lines.py.
+        "la_name_coverage": lambda p: fig_name_coverage(ds, v, p),
         "lead_lag": lambda p: fig_lead_lag(v, p),
         "class_cycles": lambda p: fig_class_cycles(v, p),
         "hill": lambda p: fig_hill(v, p),

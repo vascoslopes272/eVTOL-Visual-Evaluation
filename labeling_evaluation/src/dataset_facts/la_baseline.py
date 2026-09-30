@@ -53,8 +53,8 @@ ALTERNATES: List[str] = [OFFICES_B64, "cpc_world", "ipc_offices", "ipc_world"]
 #: year, exported from PatSeer — the same unit and the same database as the corpus's 1 639
 #: families, and complete at the recent edge where the PATENTSCOPE fetch decays (2020: 15 520
 #: here against 10 684 in ``cpc_world``, an indexing lag, not a real fall). The doubling-time
-#: fit reads this; Figure 1 (ii) deliberately keeps the nine-office series, because holding the
-#: offices fixed is that figure's point. Provenance: the README beside the file.
+#: fit reads this, and so does Figure 1 (ii) since 2026-09-25 (it no longer reads the nine-office
+#: series; checked 2026-09-26). Provenance: the README beside the file.
 PATSEER_WORLD = "cpc_world_patseer_families"
 PATSEER_WORLD_FILE = BASE_DIR / "patseer_worldwide" / "patseer_B64_worldwide_by_priority_year.csv"
 PATSEER_SOURCE = ("aeronautics baseline (doubling time): PatSeer, query CPC:(B64*), no country "
@@ -187,6 +187,42 @@ def pool_to_first(tab: pd.DataFrame, first: int) -> pd.DataFrame:
             out[COLS["air_ratio"]] = (out["unique aircraft"] / b * 1000).round(2)
             out[COLS["pat_ratio"]] = (out["patents acquired"] / b * 1000).round(2)
     return out.drop(columns=[c for c in (COLS["evtol_ix"], COLS["avia_ix"]) if c in out.columns])
+
+
+#: the three denominators of Figure 1 (ii), in drawing order: key -> label of the table column
+MULTIPLE_LABELS: Dict[str, str] = {"B64": "vs aeronautics (B64)", "cpcB": "vs section B",
+                                   "all": "vs all patents"}
+
+
+def multiples(tab: pd.DataFrame, base_years: Tuple[int, int] = BASE_YEARS) -> pd.DataFrame:
+    """Figure 1 (ii): eVTOL's SHARE of each baseline, as a multiple of its own base-window level.
+
+    ``tab`` is :func:`la_tables.filings_per_year` indexed by priority year (unpooled) with the
+    baseline attached. For every complete year from ``base_years[0]``: the corpus's acquired
+    patents (all 1 639 PatSeer simple families, by priority year) divided by the baseline's
+    families of the same year, then divided by the mean of that fraction over ``base_years``
+    -- so each column is 1 in the base window. Columns ``B64`` (the attached PRIMARY baseline,
+    PatSeer CPC B64 worldwide), ``cpcB`` (PatSeer CPC section B worldwide) and ``all`` (WIPO
+    6a patent families by origin, all origins); a baseline with no data is left out.
+
+    This is a share relative to a starting level, NOT a ratio of growth rates: the doubling-time
+    ratio of ``sm_open.doubling_ratio`` is the other measure. The figure and the table
+    ``la_baseline_multiples`` both read this one function (2026-09-26).
+    """
+    lo, hi = base_years
+    t = tab[tab.index >= lo]
+    done = t[t["complete"].astype(bool)]
+    e = pd.to_numeric(done["patents acquired"], errors="coerce")
+    dens = {"B64": pd.to_numeric(done[COLS["base"]], errors="coerce"),
+            "cpcB": pd.to_numeric(series(PATSEER_WORLD_B).reindex(done.index), errors="coerce"),
+            "all": pd.to_numeric(series(WIPO_WORLD_ALL).reindex(done.index), errors="coerce")}
+    out = {}
+    for key, d in dens.items():
+        if not d.notna().any():
+            continue
+        ratio = e / d
+        out[key] = ratio / ratio.reindex(range(lo, hi + 1)).mean()
+    return pd.DataFrame(out, index=done.index)
 
 
 def readings(tab: pd.DataFrame) -> Dict[str, object]:

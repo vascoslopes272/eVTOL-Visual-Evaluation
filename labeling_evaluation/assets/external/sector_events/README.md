@@ -63,3 +63,10 @@ commercial service (2025).
   type certificate (https://www.jobyaviation.com/news/joby-s-first-faa-conforming-aircraft-takes-flight);
   no FAA type certificate and no Dubai passenger service before the 2026-06 snapshot.
 - Joby's and Archer's UAE and US commercial launches: planned for 2026, not before the snapshot.
+
+**Added 2026-09-29 (author's request, Asia-Pacific counterparts to the Uber paper):**
+
+| date | event | checked against |
+|---|---|---|
+| 2016-01-06 | EHang 184 unveiled (CES) | EHang's own press release (dateline 6 Jan 2016, Las Vegas) |
+| 2018-12-20 | Japan air-mobility roadmap | METI briefing PDF (FPCJ, Jan 2019): "20 December 2018 Public-Private Council" |

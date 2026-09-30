@@ -121,7 +121,8 @@ UA = "unique aircraft"
 
 QUESTIONS4: Dict[str, str] = {
     # wording settled 2026-09-25 with the author; kept identical to SM_QUESTIONS in sm_index.py
-    "1": "How far ahead of the sector does the patent record run?",
+    "1": "How has the eVTOL patent record grown, and how well does it represent the aircraft "
+         "the sector builds?",
     "2": "Is there a dominant eVTOL design or is the field still experimenting, and where has "
          "twenty years of filing moved the design space?",
     "3": "Who is patenting eVTOL aircraft, and which designs and filing strategies do firms of "
@@ -143,7 +144,7 @@ ORDER: Dict[str, List] = {
          ["abandonment", "examination", "la_examination_office"]),
         ("Does the patent clock lead the market clock",
          ["ari_clock", "la_ari_timeline"]),
-        ("Does the record describe what is built",
+        ("Does the labelled dataset describe what is built",
          ["atlas_flagship", "ari", "la_ari_firms", "la_ari_gap",
           "la_market_vs_patents", "linked_check", "la_class_fold", "la_mission_status"]),
     ],
@@ -277,6 +278,63 @@ TRL = "NASA TRL"
 CB = "Codebook"
 DOC = "This document"
 
+
+# ============================================================ 2026-09-25, the items the review added
+_item("la_name_coverage", [HL, EVN],
+      _u(UA, "{unique_s}", "none", "counts"),
+      # 2026-09-28 (K7, author's review, second request): the table read as a figure. Each bar "
+      # is one kind of name; the dark segment of the named bar is matched to a public product.
+      "One bar per kind of name: a real product name recognised by the labeller, or a generated "
+      "identifier. Within the named bar, the dark segment is matched to a public product and the "
+      "light segment is not.",
+      "Only a named aircraft can be matched to a public product, so every public comparison rests "
+      "on the named aircraft alone.")
+_item("sm_family", [HL],
+      _u(UA, "{unique_s}", "priority window", "% of the window"),
+      "The share of each window held by the Lift + Cruise and CVT family, under three definitions, "
+      "against the 50 % line of condition 1. The ruling definition (c) is Lift + Cruise plus the CVT "
+      "with units on booms. POST HOC: defined after the result that suggested it.",
+      "Three definitions, so the answer cannot be an artefact of where the line is drawn.")
+_item("la_family_dd", [HL],
+      _u(UA, "{unique_s}", "priority window", "against the pre-registered conditions"),
+      "The ruling definition (c) through each of the three conditions, then the verdict line of every "
+      "definition. 'met' is the condition's own verdict.",
+      "The same test as the classes, applied to a group chosen after the fact.")
+_item("discovery_curve", [HL],
+      _u(UA, "602", "priority order", "cumulative"),
+      "Aircraft in priority order along the bottom; distinct archetypes seen so far up the side, at "
+      "three levels of detail. The dashed line is what a random order would give. A curve that goes "
+      "flat means no new kinds are appearing; one still rising means the space is still opening.",
+      "Complete priority years only (up to 2023); aircraft filed in the same year are averaged over "
+      "400 random orders.")
+_item("sm_duct_conditional", [HL],
+      _u(UA, "236", "none", "% of the ducting aircraft"),
+      "Only aircraft with at least one ducted unit. Per propulsive-unit band, how the share of their "
+      "units in a duct is spread; the coloured block is the aircraft that duct every unit.",
+      "Answers whether ducting is chosen for the whole aircraft or unit by unit.")
+_item("sm_joints_per_unit", [HL],
+      _u(UA, "{unique_s}", "priority window", "median per aircraft"),
+      "(i) tilting joint groups per aircraft; (ii) the same divided by the aircraft's propulsive "
+      "units. A rise in (i) that flattens or falls in (ii) means the joints only followed the "
+      "rotors.",
+      "The normalisation the author asked for at review: a joint count grows with the rotor count.")
+_item("la_joints_per_unit", [HL],
+      _u(UA, "{unique_s}", "priority window", "median per aircraft"),
+      "Each class twice: the joint count, then the count per propulsive unit. rho is the rank "
+      "correlation with the priority year (see the methods box); 'movement' is its verdict.",
+      "Same test as every other trace, so the two rows of a class are directly comparable.")
+_item("la_tw_successions", [PS, HL],
+      _u("successions", "", "none", "% of the class's successions"),
+      "A succession is a firm filing its next aircraft. Per starting class: how often the next one "
+      "stays in the class, and where the others go.",
+      "Classes with ten or more successions only.")
+_item("la_lag_constancy", [HL],
+      _u(UA, "538", "priority year", "ranks"),
+      "Row 1 asks whether the regional lead changes size from class to class — that is the "
+      "question. Row 2 is the lead itself. p is read as in the methods box; partial eta squared "
+      "is the share of the spread the row explains.",
+      "Ranks and a permutation test, because a priority year is bounded and skewed.")
+
 # ============================================================ A — the record as an indicator
 _item("filings_per_year", [PS, HL, B64],
       _u(UA, "{unique_s}", "priority year", "against B64 patenting"),
@@ -291,7 +349,7 @@ _item("filings_per_year", [PS, HL, B64],
       "size share one axis. Complete years only. Sources: PatSeer worldwide families for B64 and "
       "section B, WIPO patent families by origin for all patents (exported 2026-09-25); CPC B64* "
       "includes B64U, the UAV class created in 2022.",
-      "Years are used, not windows, because the question is when the record starts; 1999-2005 is "
+      "Years are used, not windows, because the question is when the labelled dataset starts; 1999-2005 is "
       "pooled into one bar because no single year in it reaches five aircraft, and the last years "
       "are hatched because the snapshot is inside their publication lag.")
 
@@ -343,7 +401,7 @@ _item("atlas_flagship", [HL, EVN, PS],
       _u("named firms", "19", "none", "% of the group"),
       "For each firm with a publicly known flagship aircraft, whether the class in the corpus "
       "matches the class of that aircraft.",
-      "Firms are the unit, not aircraft: the check asks whether the record finds the aircraft the "
+      "Firms are the unit, not aircraft: the check asks whether the labelled dataset finds the aircraft the "
       "firm is known for, which is a statement about the firm.")
 
 _item("la_name_arch_check", [HL, WPR, EVN],
@@ -601,10 +659,11 @@ _item("zones", [HL, PS],
       "**Top panel, and the axes matter.** Left to right: the share of the 2016-23 aircraft the "
       "archetype holds — far right means many recent aircraft. Bottom to top: distinct filers per "
       "aircraft — high up means a different firm behind almost every aircraft, low down means a "
-      "few firms holding several each. So the **crowded core is the lower right** (a large "
-      "archetype held by relatively few filers) and the **empty rim is the left-hand edge**, where "
-      "most archetypes sit with a handful of aircraft. Bubble size is the aircraft count; the two "
-      "grey crosshairs are the medians of the two axes. A triangle is an archetype first seen in "
+      "few firms holding several each. The **crowded core** (solid ring) is the largest "
+      "archetypes that together hold half of the 2020-23 aircraft, the columns left of that "
+      "window's orange bar in the bottom panel; the **empty rim** (dashed ring) is the left-hand "
+      "edge, at or under the median share, where most archetypes sit with a handful of aircraft. "
+      "Bubble size is the aircraft count; the two grey crosshairs are the medians of the two axes. A triangle is an archetype first seen in "
       "2016 or later, an inverted triangle one not seen after 2019, a circle one present "
       "throughout. **Bottom panel:** the same archetypes over the five windows, the count printed "
       "in the cell and the darkest cell being the archetype's own busiest window. A blank cell "
@@ -929,7 +988,7 @@ _item("codebook_dimensions", [CB],
 # ``la_index.TAKEAWAY_NUMBERS`` exactly as the takeaway lines did, so nothing here is typed.
 
 ANSWER: Dict[str, str] = {
-    "1": "**Yes as a census, no as a leaderboard.** The record is early: a firm's first patent here "
+    "1": "**Yes as a census, no as a leaderboard.** The labelled dataset is early: a firm's first patent here "
          "comes years before its first flight, so a class is visible in the filings before the "
          "aircraft exists. It is not complete — a priority year cannot be read until its publication "
          "lag has run, which is why every trend in this document stops at 2023 — and it is not "
@@ -939,10 +998,10 @@ ANSWER: Dict[str, str] = {
          "differ sharply from each other — {tk_ex_us_gr} of the {tk_ex_us_n} US patents are granted "
          "and in force against {tk_ex_cn_gr} of {tk_ex_cn_n} at the Chinese office — while the "
          "classes do not differ from each other at all, which makes examination an administrative "
-         "fact and never a technology signal. Where the record can be checked against the world: "
+         "fact and never a technology signal. Where the labelled dataset can be checked against the world: "
          "the patent class and the class of the firm's publicly known aircraft agree for most "
          "flagship firms, and for {tk_pw_share} of the {tk_pw_n} aircraft that can be matched to a public product. "
-         "What the record cannot do is rank architectures commercially. The firms the market rates "
+         "What the labelled dataset cannot do is rank architectures commercially. The firms the market rates "
          "highest hold aircraft that differ from everyone else's in citation rank and in survival "
          "and NOT in architecture class — the index is reading patent quality, not configuration. "
          "Read this corpus as an early and honest census of what is being designed; do not read it "
@@ -994,7 +1053,7 @@ ANSWER: Dict[str, str] = {
          "worth stating as such: North America keeps a higher share of tilting architectures "
          "throughout, China's filings lean to lift-plus-cruise and to wingless designs, and a handful "
          "of archetype-region cells are over-represented enough to name. There are no regional design "
-         "blocs in this record, and a reader who expected Europe, China and the United States to be "
+         "blocs in this labelled dataset, and a reader who expected Europe, China and the United States to be "
          "building different aircraft should take that as the finding.",
 
     "M": "**The drawing alone carries the architecture for the large winged classes and fails for the "
