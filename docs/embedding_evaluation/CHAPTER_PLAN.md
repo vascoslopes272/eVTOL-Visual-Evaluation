@@ -104,6 +104,13 @@ thickening grey/contrast controls run; Table 5 dropped. Document reformatted to 
 Analysis brief format (question chapters, Method in five parts, Results and discussion, Answer
 boxes, methods box, in-panel sources, nothing pointing out).
 
+**Review fixes integrated 2026-09-30 evening:** all 37 flags applied to the brief-format document
+(26 pp in Word, cap 35): three-number drawing headline (0.235 / about 0.21 / 0.178 base), matched
+photo comparison as the chapter 5 answer, maker intervals for every paired contrast (none survives
+Holm over 25), preparation verdict from the grey/contrast controls, per-class zero of PTC shown to be
+class size. Base attention recomputed on the 665 main-set drawings (shares unchanged). Reproducible from
+`embedding_evaluation/notebooks/32_setup_selection_and_analysis.ipynb` (`src/setup_analysis.py`).
+
 **Analysis document built 2026-09-30** (27 pp, outline format, superseded by the brief-format rebuild): `Embedding Analysis brief/current/Embedding
 Analysis — Visual Learning (private).docx`; source `docs/embedding_evaluation/analysis_document/
 ANALYSIS.md`; generator `embedding_evaluation/scripts/build_analysis_document.py`. Open ruling:

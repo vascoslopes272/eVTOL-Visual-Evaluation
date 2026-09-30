@@ -897,9 +897,9 @@ TEXTS: Dict[str, str] = {
         "of six attributes. |\n"
         "| Where is the mechanical white space against already-claimed territory? | no | The labels "
         "describe what is **drawn**, never what is **claimed**. Claim scope is not a field. |\n"
-        "| Is hybrid-electric a bridge or a dead end? | no | Powertrain is one yes/no field. Battery, "
-        "hybrid and fuel cell are nowhere distinguished, and none of the three is reliably visible in "
-        "a drawing. |\n"
+        "| Is hybrid-electric a bridge or a dead end? | no | An aircraft that needs a combustion engine "
+        "to fly is outside the labelled dataset, and the other energy sources an electric patent offers "
+        "beside the battery are recorded but not analysed; none of them is visible in a drawing. |\n"
         "| Which architectures are the safer certification bet; does autonomy cluster by airframe? | "
         "no | No certification data of any kind is in the corpus, there is no autonomy label and no "
         "occupancy label. Examination outcome is an office effect, not a technology effect. |\n"
@@ -1559,9 +1559,9 @@ NUMBERS: Dict[str, Dict] = {
     "sm_dd_slc_boom_w4": dict(table="la_dimension_drift", where=[("code", "SLC"), ("window", "2020-23")],
                               col="share with booms", fmt="pct"),
     "sm_dd_slc_el_w4": dict(table="la_dimension_drift", where=[("code", "SLC"), ("window", "2020-23")],
-                            col="share electric only", fmt="pct"),
+                            col="share offering another source", fmt="pct"),
     "sm_dd_tr_el_w4": dict(table="la_dimension_drift", where=[("code", "TR"), ("window", "2020-23")],
-                           col="share electric only", fmt="pct"),
+                           col="share offering another source", fmt="pct"),
     "sm_top3_a1t_w1": dict(table="la_top_archetypes", where=[("level", "A1t"), ("window", "<= 2011")],
                            col="top 3 together", fmt="pct"),
     "sm_top3_a1t_w3": dict(table="la_top_archetypes", where=[("level", "A1t"), ("window", "2016-19")],
@@ -1590,6 +1590,10 @@ NUMBERS: Dict[str, Dict] = {
                                col="distinct configurations", fmt="int"),
     "sm_trl_repr_fail": dict(table="la_trl_representativeness", how="count",
                              where=("verdict", "does NOT match the rest"), fmt="int"),
+    "sm_trl_repr_list": dict(table="la_trl_representativeness", how="list", col="attribute",
+                             where=("verdict", "does NOT match the rest")),
+    "sm_ari_repr_list": dict(table="la_ari_representativeness", how="list", col="attribute",
+                             where=("verdict", "does NOT match the rest")),
     "sm_trl_repr_n": dict(table="la_trl_representativeness", how="count",
                           where=("test", "chi-square"), fmt="int"),
     # ---- 2026-09-25, the docx review
@@ -1681,7 +1685,7 @@ NOT_CORE: Dict[str, str] = {
     "sm_class_configs": "within-class convergence on each class's own labels, on his ruling of 2026-09-24",
     "la_class_configs_own": "the rules of the figure above, printed so they can be attacked",
     "la_duct_count": "the ducted-unit count behind its panel",
-    "la_trl_representativeness": "whether the 64 aircraft above TRL 2 stand for the corpus — asked for",
+    "la_trl_representativeness": "whether the 63 aircraft above TRL 2 stand for the corpus — asked for",
     "la_ari_representativeness": "whether the 150 index-firm aircraft stand for the corpus — asked for",
     "la_public_pairwise": "the three-source comparison the author asked for, replacing the match table",
     "la_era_frame": "the author's own era frame with this corpus read into it — asked for",
@@ -2802,7 +2806,7 @@ SM_ANSWER: Dict[str, str] = {
         "the small ones.**\n\n"
         "- Agreement with the whole-patent reading is {tk_gt_tr} for tilt rotor and {tk_gt_slc} "
         "for lift-plus-cruise.\n"
-        "- It falls to {tk_gt_ptc} for the powered-tail class and {tk_gt_hb} for hybrids, so every "
+        "- It falls to {tk_gt_ptc} for the powered-tail class and {tk_gt_hb} for hoverbikes, so every "
         "small-class number in this document is the least reliable on its page.\n"
         "- Where the sources disagree the cases are listed by name rather than counted, so every "
         "one of them can be checked.\n"
@@ -3086,8 +3090,8 @@ TAKEAWAY: Dict[str, str] = {
         "against Tilt Rotor {sm_dd_tr_tail_w4} in 2020-23 — the tail is a class property, not a "
         "trend. (iv) Booms: CVT goes from {tk_cvt_boom_w1} to {tk_cvt_boom_w4}; Lift + Cruise sits "
         "at {sm_dd_slc_boom_w4} — units move onto booms where the class has to carry both lift and "
-        "cruise sets. (v) Electric-only: Lift + Cruise {sm_dd_slc_el_w4}, Tilt Rotor {sm_dd_tr_el_w4} "
-        "of the aircraft that state a powertrain — the tilt-rotor is where hybrid survives.",
+        "cruise sets. (v) Another energy source offered beside the battery: Lift + Cruise {sm_dd_slc_el_w4}, "
+        "Tilt Rotor {sm_dd_tr_el_w4} of the aircraft that state a powertrain.",
     "atlas_units":
         "No standard rotor count: the five bands hold {bin_r03}, {bin_r4}, {bin_r56}, {bin_r78} and "
         "{bin_r9} aircraft. (iii) Ducting is U-shaped in rotor count — {sm_duct_13} at 1-3 units, "
@@ -3136,10 +3140,9 @@ TAKEAWAY: Dict[str, str] = {
         "aircraft carries a median of two ducted units — one fan. Why an aircraft commits either "
         "way is not in the labelled dataset: noise and certification are nowhere labelled.",
     "la_trl_representativeness":
-        "The {trl_above_s} aircraft above TRL 2 fail {sm_trl_repr_fail} of the six attributes: they "
-        "match the corpus on class and region and not on filer type, priority year or propulsive "
-        "units. They can answer 'which classes get built' and cannot stand for the corpus on "
-        "anything else.",
+        "The {trl_above_s} aircraft above TRL 2 fail {sm_trl_repr_fail} of the six attributes "
+        "({sm_trl_repr_list}) and match the corpus on the others, class and region among them. They "
+        "can answer 'which classes get built' and cannot stand for the corpus on anything else.",
     "la_ari_representativeness":
         "The {tk_ari_in} index-firm aircraft fail {sm_ari_repr_fail} of the six attributes, so a difference "
         "in Table 4 is a difference between two populations that already differ in who files and "
@@ -3510,7 +3513,7 @@ TAKEAWAY.update({
         "{sm_gr_fam_all} times as fast as all patenting. The lead over aeronautics is small and "
         "rests partly on the latest years: ending the fit at 2019, the cut year 1.2 uses for "
         "legal status ({sm_lapse_7y} of grants arrive within seven years of priority), gives "
-        "{sm_gr_fam_b64_19} ({sm_gr_fam_b64_19_ci}), which cannot be told from equal pace. "
+        "{sm_gr_fam_b64_19} ({sm_gr_fam_b64_19_ci}), {sm_gr_fam_b64_19_vt}. "
         "Counted as unique aircraft, eVTOL doubles every {sm_g_ac_dbl} years, almost the same "
         "rate as its architecture patents",
     "ari_clock":
@@ -3551,14 +3554,12 @@ TAKEAWAY.update({
         "{trl_zero_classes} in this dataset is above TRL 2",
     "la_trl_representativeness":
         "The {trl_above_s} aircraft above TRL 2 differ from the other {sm_trl_rest_n} on "
-        "{sm_trl_repr_fail} of the six attributes (filer type, priority window, priority year "
-        "and propulsive units): they are company-backed, more recent and carry more propulsive "
-        "units. No difference is detected on architecture class or region, so they can say "
-        "which classes get built and cannot stand for the corpus on anything else",
+        "{sm_trl_repr_fail} of the six attributes ({sm_trl_repr_list}). No difference is detected "
+        "on the others, architecture class and region among them, so they can say which classes "
+        "get built and cannot stand for the corpus on anything else",
     "la_ari_representativeness":
         "The {tk_ari_in} aircraft of the index firms differ from the other {tk_ari_rest} on "
-        "{sm_ari_repr_fail} of the six attributes (applicant region, priority window, filer type "
-        "and propulsive units): more North American, more company-backed, more often filed in "
+        "{sm_ari_repr_fail} of the six attributes ({sm_ari_repr_list}): more North American, more company-backed, more often filed in "
         "2016-19 and with more propulsive units. No difference is detected on architecture class "
         "or priority year. The firms the market rates are a distinct group of the labelled dataset, not a "
         "sample of it",
@@ -3580,7 +3581,7 @@ SM_ANSWER["1"] = (
     "({sm_gr_fam_b64_ci}) and {sm_gr_fam_all} times as fast as all patenting. The edge of "
     "architecture-related eVTOL patents over aeronautics is small, and when the fit ends at "
     "2019, the cut year 1.2 uses for legal status ({sm_lapse_7y} of grants arrive within seven "
-    "years of priority), it can no longer be told from equal pace ({sm_gr_fam_b64_19}, "
+    "years of priority), {sm_gr_fam_b64_19_va} ({sm_gr_fam_b64_19}, "
     "{sm_gr_fam_b64_19_ci}). Counting every eVTOL patent, not only the architecture ones, the "
     "edge is expected to be larger; this dataset holds architecture patents only.\n"
     "- **The turning point is {sm_turn_pat_year}.** Representative patents go from "
@@ -3640,11 +3641,11 @@ SM_ANSWER["1"] = (
     "evtolindex.org and company statements), and they come from the classes patented most, "
     "which is a measurement of good representativeness of the labelled dataset. Both they and "
     "the aircraft of the firms the AAM Reality Index rates differ in proportion from the "
-    "labelled dataset in filer type, priority window and propulsor units, and neither differs "
-    "detectably in architecture class, which is expected since they are a niche of aircraft "
-    "that have been invested in. A comparison with the built sector therefore speaks for "
-    "company-backed, recent aircraft with many propulsor units, not for the whole labelled "
-    "dataset."
+    "labelled dataset in filer type and propulsor units (the index firms' aircraft also in "
+    "region and priority window), and neither differs detectably in architecture class, which "
+    "is expected since they are a niche of aircraft that have been invested in. A comparison "
+    "with the built sector therefore speaks for company-backed aircraft with many propulsor "
+    "units, not for the whole labelled dataset."
 )
 
 NOT_CORE.update({
@@ -3688,6 +3689,10 @@ NUMBERS.update({
     "sm_gr_fam_all": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "all patents"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
     "sm_gr_fam_b64_19": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="times as fast", fmt="2f"),
     "sm_gr_fam_b64_19_ci": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="95 % interval", fmt="raw"),
+    "sm_gr_fam_b64_19_vt": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="95 % interval", how="ci_verdict",
+                                above="which still leaves eVTOL faster", inside="which cannot be told from equal pace", below="which is slower"),
+    "sm_gr_fam_b64_19_va": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL architecture patents"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2019")], col="95 % interval", how="ci_verdict",
+                                above="the edge still holds", inside="it can no longer be told from equal pace", below="eVTOL is slower"),
     "sm_gr_ac_b64": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL unique aircraft"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="times as fast", fmt="2f"),
     "sm_gr_ac_b64_ci": dict(table="la_growth_ratios", where=[("eVTOL counted as", "eVTOL unique aircraft"), ("against", "aeronautics (CPC B64)"), ("window", "2005–2023")], col="95 % interval", fmt="raw"),
 })

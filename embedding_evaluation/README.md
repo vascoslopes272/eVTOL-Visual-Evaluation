@@ -1,10 +1,13 @@
 # eVTOL Visual Evaluation — Embedding Evaluation
 
-> **Current pipeline (2026-09-16):** this pillar has one notebook,
-> [`30_embedding_evaluation.ipynb`](notebooks/30_embedding_evaluation.ipynb). It
-> evaluates the figure sets and embeddings from `eVTOL-Embedding-Extraction`
-> (notebooks 20–22) and writes
-> [`docs/embedding_evaluation/embedding_evaluation_report.md`](../docs/embedding_evaluation/embedding_evaluation_report.md).
+> **Current pipeline (2026-09-30):** this pillar has three notebooks, run in order, each a thin driver of `src/`:
+>
+> | notebook | what it reproduces |
+> |---|---|
+> | [`30_embedding_evaluation.ipynb`](notebooks/30_embedding_evaluation.ipynb) | the figure sets and embeddings of `eVTOL-Embedding-Extraction` (notebooks 20–22), label-free; writes [`docs/embedding_evaluation/embedding_evaluation_report.md`](../docs/embedding_evaluation/embedding_evaluation_report.md) |
+> | [`31_evtolnews_evaluation.ipynb`](notebooks/31_evtolnews_evaluation.ipynb) | the evtol.news photo set: class metrics, parent check, patent ↔ photo matching, the advisor report |
+> | [`32_setup_selection_and_analysis.ipynb`](notebooks/32_setup_selection_and_analysis.ipynb) | the DINOv2 analysis document: registers check, split-half setup selection, preprocessing variants and controls, view erasure, the review fixes of 2026-09-30, the registers twin reports (optional), the patent 3-D pages, the attention figure and the analysis brief (md, pdf, docx); every step is skipped when its outputs are newer than its inputs (`src/setup_analysis.py`) |
+>
 > The reasons behind the figure selection are in
 > [`SELECTION_DECISIONS.md`](../docs/embedding_evaluation/SELECTION_DECISIONS.md).
 > The report below is the **earlier** supervisor-report split (Batches 01 + 05,

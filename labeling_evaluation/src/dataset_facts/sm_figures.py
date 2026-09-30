@@ -1888,7 +1888,7 @@ def panel_who_files(tables: Dict[str, pd.DataFrame], path: Path, ds) -> Optional
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     ax.set_xlabel("named organisations (companies, universities, institutes) ranked by unique "
                   "aircraft, largest first", fontsize=7.5)
-    ax.set_ylabel("cumulative share of\nthe 665 aircraft", fontsize=8)
+    ax.set_ylabel(f"cumulative share of\nthe {total} aircraft", fontsize=8)
     ax.set_title("(i) How much of the labelled dataset the largest filers hold", fontsize=8.8)
     _hgrid(ax, "both")
     _ch4_note(ax, _CH4_SRC + " · AAM Reality Index (the firms it has rated) · unit: unique aircraft")

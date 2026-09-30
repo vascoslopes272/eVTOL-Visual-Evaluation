@@ -235,11 +235,11 @@ CUT: Dict[str, str] = {
     "la_ari_history": "a segment of a segment — nine firms disclose funding",
     "ari_history": "nine firms disclose funding; the score history adds nothing the score does not",
     # the mission block: one honest paragraph in the Answer of A, and the proof kept
-    "mission": "95 self-selected aircraft, half of them unspecified — Appendix C states it once",
-    "industry_by_class": "345 of 665 unspecified, and the field comes from an unverified text classifier",
-    "la_mission_capacity": "95 aircraft over five folded classes, cells of 0-12",
+    "mission": "94 self-selected aircraft, half of them unspecified — Appendix C states it once",
+    "industry_by_class": "331 of 625 unspecified, and the field comes from an unverified text classifier",
+    "la_mission_capacity": "94 aircraft over five folded classes, cells of 0-12",
     "la_mission_piloting": "mostly unstated; cannot be used as a variable",
-    "la_mission_power source": "confirms the electric gate on 95 aircraft; the gate is already stated",
+    "la_mission_power source": "confirms the electric gate on 94 aircraft; the gate is already stated",
     # replaced
     "la_trl_placeholder": "a promise, not a measurement — replaced by the TRL table now that the CSV exists",
     "atlas_powertrain": "the electric gate restated; Figure B.3b panel (v) carries the drift",
@@ -453,10 +453,10 @@ _item("a2_d15_trl_by_class", [TRL, HL, EVN],
       "Banded rather than per level because the evidence rarely supports a one-level distinction.")
 
 _item("la_trl_representativeness", [TRL, HL, PS],
-      _u(UA, "64 against 601", "none", "% of the group"),
-      "The 64 aircraft above TRL 2 against the other 601 (665 − 64), one attribute at a time and never "
-      "jointly: how the 64 spread over the attribute's levels (the classes, the regions, the windows…) "
-      "against how the 601 spread; chi-square for a category, Mann-Whitney on the median for a "
+      _u(UA, "63 against 564", "none", "% of the group"),
+      "The 63 aircraft above TRL 2 against the other 564 (627 − 63), one attribute at a time and never "
+      "jointly: how the 63 spread over the attribute's levels (the classes, the regions, the windows…) "
+      "against how the 564 spread; chi-square for a category, Mann-Whitney on the median for a "
       "number. p below 0.05 = the two spreads differ, and the 64 cannot stand for the corpus on that "
       "attribute. 'largest gap' names the level the two groups differ most on.",
       "Same test as the evtol.news and index-firm checks, so every subset is judged by one rule.")
@@ -559,8 +559,8 @@ _item("la_market_vs_patents", [ARI, PS, HL],
       "Medians, not means: one firm with 60 aircraft would otherwise carry the comparison.")
 
 _item("linked_check", [EVN, HL, PS],
-      _u(UA, "95", "none", "% of the group"),
-      "The 95 aircraft with a public page against the rest of the corpus, one attribute per panel.",
+      _u(UA, "94", "none", "% of the group"),
+      "The 94 aircraft with a public page against the rest of the corpus, one attribute per panel.",
       "It is printed before anything that uses the linked set, because that set is the only part of "
       "the corpus a public source can check and it is not representative on four of six attributes.")
 

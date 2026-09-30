@@ -1463,8 +1463,9 @@ def _read(out: Path, name: str) -> pd.DataFrame:
     return pd.read_csv(out / f"{name}.csv", keep_default_na=False, na_values=[""])
 
 
-def fig_forest(out: Path) -> Path:
-    """F-A: every paired contrast of the document, with both intervals and the per-half sign share."""
+def fig_forest(out: Path, width: float = 5.2) -> Path:
+    """F-A: every paired contrast of the document, with both intervals and the per-half sign share.
+    ``width``: the axes' width in inches (the analysis brief draws it narrower so its labels print larger)."""
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     s4 = _read(out, "S4_paired_contrasts")
@@ -1487,7 +1488,7 @@ def fig_forest(out: Path) -> Path:
                      ("difference: photos size + mix (matched) minus drawings", "size + mix (663, drawings' mix) - drawings")):
         items.append(("m3", (lab, m3.loc[key])))
     n = len(items)
-    fig, ax = plt.subplots(figsize=(5.2, 0.22 * n + 0.9))
+    fig, ax = plt.subplots(figsize=(width, 0.22 * n + 0.9))
     ylab, yt = [], []
     for k, (kind, it) in enumerate(items):
         y = n - k
@@ -1829,7 +1830,7 @@ FILES = {
     "M6_balanced_recall": ("M6", "size-balanced reading: 20 aircraft per type (all of smaller types), 200 draws, kNN recall "
                                  "mean and 2.5-97.5 %, shuffled-label chance, probe recall on the first 50 draws"),
     "M11_linked_99_vs_94": ("M11", "the 5 linked patent aircraft that are not matching queries, and why"),
-    "M11_counts": ("M11", "665 vs 663, the gallery 665, 1 545 vs 1 541 figures, base attention 677 vs registers 665 (each image)"),
+    "M11_counts": ("M11", "665 vs 663, the gallery 665, 1 545 vs 1 541 figures, the images of the base and registers attention runs"),
     "M11_ari_like_for_like": ("M11", "k-means ARI / NMI for 12v12 and 5v5 on the drawings and 5v5 on the photos, both models"),
     "M11_ari_ratios": ("M11", "the printed ratio (5v5 over 12v12) against the like-for-like one (5v5 over 5v5)"),
     "S2_probe_12": ("S2", "probe, drawings 12 classes: bootstrap intervals (aircraft, makers), fold-seed range, 50-shuffle "
@@ -1912,7 +1913,7 @@ def verdicts(out: Path) -> Dict[str, List[str]]:
                 "pool size does not explain it; the class mix is the remaining candidate"
                 + (", and its own effect at fixed size is detected." if not _has0(mx.ci_lo, mx.ci_hi) else
                    ", but its own effect at fixed size is not significant (interval includes 0), so it is not a demonstrated "
-                   "cause: the matched comparison is simply too wide to show a medium effect."))
+                   "cause: the matched comparison is too wide to settle it."))
                if not _has0(so.ci_lo, so.ci_hi) and _has0(mt.ci_lo, mt.ci_hi) else
                "Read the two differences together; the headline wording follows the matched row."),
             f"Headline wording: \"{'no difference detected' if _has0(mt.ci_lo, mt.ci_hi) else 'the photos carry more'}\" once the "
@@ -2093,9 +2094,11 @@ def verdicts(out: Path) -> Dict[str, List[str]]:
         mn = next((v for k, v in g_.items() if k.startswith("main figures only")), np.nan)
         L.append(f"Why 0.28 against 0.21: the per-aircraft d uses one main figure per aircraft ({mn:.2f} when the same main "
                  f"figures are scored as figures); the per-figure d adds the non-main figures, whose architecture d is only "
-                 f"{nm:.2f}, and pairs drawn in different views. Within one view the architecture d is back near or above the "
-                 "per-aircraft value for Perspective and Plan, and lowest for Side views: the two numbers measure different units, "
-                 "and the per-figure one is diluted by weaker figures and by the view.")
+                 f"{nm:.2f}, and pairs drawn in different views. Within one view the architecture d is "
+                 + ", ".join(f"{k.split(': ')[1]} {v:.2f}" for k, v in sorted(
+                     ((k, v) for k, v in g_.items() if k.startswith("figures of one view")), key=lambda kv: -kv[1]))
+                 + ": near or above the per-aircraft value for the informative views, far below it for the weakest. The two "
+                   "numbers measure different units, and the per-figure one is diluted by weaker figures and by the view.")
         vk = t.loc["view kNN-5 balanced accuracy (figures, maker held out)"]
         L.append(f"View kNN-5 on the figures {vk.estimate:.3f} [{vk.ci_lo:.3f}, {vk.ci_hi:.3f}] against a shuffled 95th "
                  f"percentile of {vk.chance:.3f}.")
@@ -2124,6 +2127,18 @@ def verdicts(out: Path) -> Dict[str, List[str]]:
             L += [f"ARI {r.ratio}: {r.value:.1f}" for r in ari.itertuples()]
         V["M11"] = L
     return V
+
+
+def _base_attention_note() -> str:
+    """What the S9 'common' rows cover: the base patent attention was recomputed on the current main set
+    (2026-09-30, 665 images), so both models now share every image; before that the base run held 677."""
+    nb = len(pd.read_csv(ATT / BASE / "patent_meta.csv"))
+    nr = len(pd.read_csv(ATT / REG / "patent_meta.csv"))
+    if nb == nr:
+        return (f"- Base attention: recomputed on the current main set, so both models are read on the same {nb} patent "
+                "images (S9, image_set all = common).")
+    return (f"- Base attention: the base run holds {nb} patent images, the registers run {nr}; both models are compared "
+            "on the images they share (S9, image_set common).")
 
 
 def write_index(out: Path = OUT) -> Path:
@@ -2155,8 +2170,7 @@ def write_index(out: Path = OUT) -> Path:
           "- The frozen-label kappa of the record (0.866, n 803) cannot be recomputed exactly: architecture_ground_truth.csv "
           "now holds 798 rows (6 GT rows of aircraft that became D1 duplicates were removed on 2026-09-17). S10_kappa gives "
           "the recomputed values on the current file and on the analysis set beside the recorded one.",
-          "- Base attention: the base run's 13 images outside the current main set cannot be scored by the registers model "
-          "without a GPU rerun; instead both models are reported on the 664 images they share (S9, image_set common).",
+          _base_attention_note(),
           "- Paired bootstraps hold the predictions fixed (as in the document); the per-half columns carry the pool variability.",
           ""]
     txt = "\n".join(L)
@@ -2164,3 +2178,59 @@ def write_index(out: Path = OUT) -> Path:
     p = out / "INDEX.md"
     p.write_text(txt, encoding="utf-8")
     return p
+
+
+# ── the item runner (moved from scripts/review_fixes.py on 2026-09-30; notebook 32 calls it) ─────────────
+QUICK_OUT = Path("/tmp/claude-1006/-home-vasco-Vasco-Workspace-Tese-Vasco-Lnx-WSpaces/"
+                 "2d3d33f7-3c1c-421a-a475-05015c55ac0b/scratchpad/review_fixes_quick")
+ITEMS = {
+    "m3": (m3_pool, {"n_draw": 200, "n_boot": 1000}, {"n_draw": 10, "n_boot": 50}),
+    "m4": (m4_erasure, {"n_ctrl": 200, "n_split": 200}, {"n_ctrl": 3, "n_split": 3}),
+    "m6": (m6_per_class, {"n_draw": 200, "per_class": 20, "n_probe_draws": 50},
+           {"n_draw": 5, "per_class": 20, "n_probe_draws": 1}),
+    "m11": (m11_counts, {}, {}),
+    "s2_12": (lambda **kw: s2_probe([LAB12], **kw), {}, {"n_shuffle": 1, "fold_seeds": (0,), "n_boot": 50}),
+    "s2_5": (lambda **kw: s2_probe([LAB5], **kw), {}, {"n_shuffle": 1, "fold_seeds": (0,), "n_boot": 50}),
+    "s2_ph": (lambda **kw: s2_probe([PHO5], **kw), {}, {"n_shuffle": 1, "fold_seeds": (0,), "n_boot": 50}),
+    "s3": (s3_k_and_rules, {}, {}),
+    "s4": (s4_paired, {}, {}),
+    "s6": (s6_matching, {}, {"n_boot": 50}),
+    "s78": (s78_selection, {}, {"seeds": (42,)}),
+    "s9": (s9_attention, {}, {}),
+    "s10": (s10_audit_kappa, {}, {}),
+    "s11": (s11_view, {"n_boot": 500, "n_boot_aircraft": 1000}, {"n_boot": 2, "n_boot_aircraft": 5}),
+    "s11_umap": (lambda **kw: s11_view(umap_only=True), {}, {}),
+}
+SUFFIX = {"s2_12": "_12", "s2_5": "_5", "s2_ph": "_photos"}
+
+
+
+def run_items(items: Sequence[str], quick: bool = False, out: Path | None = None) -> Path:
+    """Run review-fix items (keys of ITEMS, plus 'figures' and 'index'; 'all' = every number item) and write
+    their CSVs into ``out`` (default OUT; a quick run writes to a scratch folder, never into OUT)."""
+    import time
+    out = Path(out) if out else (QUICK_OUT if quick else OUT)
+    items = list(items)
+    if "all" in items:
+        items = [k for k in ITEMS if k != "s11_umap"] + [i for i in items if i in ("figures", "index")]
+    for it in items:
+        if it in ("figures", "index"):
+            continue
+        fn, full, small = ITEMS[it]
+        t = time.time()
+        print(f"[review_fixes] {it} ...", flush=True)
+        tables = fn(**(small if quick else full))
+        if it in SUFFIX:
+            tables = {k + SUFFIX[it]: v for k, v in tables.items()}
+        if it == "s11_umap":
+            tables = {k: v for k, v in tables.items() if k == "S11_umap_figures_by_view"}
+        out.mkdir(parents=True, exist_ok=True)
+        for name, df in tables.items():
+            df.to_csv(out / f"{name}.csv", index=False)
+        print(f"[review_fixes] {it} done in {time.time() - t:.0f} s: {', '.join(tables)}", flush=True)
+    if "figures" in items:
+        for p in make_figures(out):
+            print(f"[review_fixes] figure {p}", flush=True)
+    if "index" in items:
+        print(f"[review_fixes] index {write_index(out)}", flush=True)
+    return out

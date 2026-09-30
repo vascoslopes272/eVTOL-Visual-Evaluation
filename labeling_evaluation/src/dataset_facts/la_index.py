@@ -120,7 +120,7 @@ TABLE_CAPTIONS: Dict[str, str] = {
                         "(1-3 / 4 / 5-6 / 7-8 / 9+), ducted or open, booms or no booms, and tail type",
     "la_dimension_drift": "Dimension drift per class and window: median propulsive units, and the share of the class's "
                           "own unique aircraft in that window with a ducted unit, with no tail surface, with booms and "
-                          "electric-only. The denominator is the `aircraft` column, never a count of rotors — except for "
+                          "a patent that also offers another energy source. The denominator is the `aircraft` column, never a count of rotors — except for "
                           "the powertrain share, which divides by `powertrain stated`, the aircraft whose patent states "
                           "one. The tilting column is kept but not drawn: it is flat by definition of the classes, and "
                           "its two points off 100 % are an internal check on the labelling",
@@ -287,7 +287,7 @@ FIGURE_PANELS: Dict[str, List] = {
                       ("distinct configurations per aircraft", 1)],
     "dimension_drift": [("median propulsive units per aircraft", 1), ("% of aircraft with a ducted unit", 1),
                         ("% of aircraft with no tail surface", 1), ("% of aircraft with booms", 1),
-                        ("% electric-only, of the aircraft whose powertrain is stated", 1)],
+                        ("% offering another energy source, of the aircraft whose powertrain is stated", 1)],
     "hill": [("A0, the architecture class", 1), ("A0c, class × propulsive-unit count", 1)],
     "lead_lag": [("25 %, median and 75 % year of each region and each class", 1),
                  ("median year of each class inside each region", 1)],
@@ -430,7 +430,7 @@ COLUMNS: Dict[str, List[str]] = {
                          "distinct configurations"],
     "la_dimension_drift": ["class", "window", "aircraft", "median propulsive units", "share with a ducted unit",
                            "share with no tail surface", "share with booms", "powertrain stated",
-                           "share electric only", "share with a tilting unit"],
+                           "share offering another source", "share with a tilting unit"],
     "la_ip_strategy": ["firm", "unique aircraft", "patents", "patents per aircraft", "median family size", "median claims",
                        "main office", "mean forward citations", "median cohort citation rank",
                        "self-citation share (in corpus)", "region"],
@@ -1680,7 +1680,7 @@ PROVENANCE: Dict[str, Dict[str, str]] = {
                   "companies), which made it a measure of that list's coverage: the band then drawn "
                   "'assignee not in the list' held 138 aircraft, 118 of them companies and 16 "
                   "universities or institutes, and not one of them anonymous. Audited against a "
-                  "reading of all 393 assignee strings of these 665 aircraft: the old rule was "
+                  "reading of all 393 assignee strings of the 665 aircraft analysed at the time (2026-09-23): the old rule was "
                   "right 97 % on person against organisation and 77 % on the three-way split, this "
                   "one agrees with the reading on all 663 readable aircraft. The fourth band, 'no "
                   "assignee named', is empty — every aircraft here names an assignee"),
@@ -2236,7 +2236,7 @@ TAKEAWAY_NUMBERS: Dict[str, Dict] = {
     "tk_pw_slc_n": dict(table="la_powertrain_by_class", where=("class", "Lift + Cruise"),
                         col="aircraft", fmt="int"),
     "tk_pw_tw_hy": dict(table="la_powertrain_by_class", where=("class", "Tilt Wing"),
-                        col="hybrid", fmt="int"),
+                        col="another source also offered", fmt="int"),
     "tk_pw_tw_n": dict(table="la_powertrain_by_class", where=("class", "Tilt Wing"),
                        col="aircraft", fmt="int"),
     "tk_pw_tr_ns": dict(table="la_powertrain_by_class", where=("class", "Tilt Rotor"),
@@ -2903,13 +2903,15 @@ TAKEAWAY: Dict[str, str] = {
     # ================================================================ 5
     "atlas_powertrain": (
         "Powertrain is not a discriminator in this corpus: {tk_pw_el} of the aircraft are electric "
-        "and the class differences are small, with hybrid concentrated in the classes that carry a "
-        "wing (Tilt Wing {tk_pw_tw_hy} of {tk_pw_tw_n}). {tk_pw_ns} aircraft state nothing at all."),
+        "and the class differences are small; a patent that also offers another energy source sits "
+        "mostly in the classes that carry a wing (Tilt Wing {tk_pw_tw_hy} of {tk_pw_tw_n}). {tk_pw_ns} "
+        "aircraft state nothing at all."),
     "la_powertrain_by_class": (
         "The not-stated column is the finding: {tk_pw_ns} aircraft ({tk_pw_tr_ns} of them Tilt "
-        "Rotor) never say what drives them. Hybrid is a wing-class choice — Tilt Wing declares it "
-        "for {tk_pw_tw_hy} of {tk_pw_tw_n} aircraft, Lift + Cruise for a far smaller share of "
-        "{tk_pw_slc_n}."),
+        "Rotor) never say what drives them. Offering another energy source beside the battery is a "
+        "wing-class habit — Tilt Wing patents do it for {tk_pw_tw_hy} of {tk_pw_tw_n} aircraft, Lift + "
+        "Cruise for a far smaller share of {tk_pw_slc_n}. An aircraft that needs a combustion engine to fly "
+        "is outside the labelled dataset (ruling 2026-09-30), so there is no hybrid column."),
     "atlas_units": (
         "There is no standard number of propulsors: the median is {units_median} and the five bins "
         "hold {bin_r03}, {bin_r4}, {bin_r56}, {bin_r78} and {bin_r9} aircraft — the flattest "
@@ -3148,6 +3150,20 @@ def _tk_number(spec: Dict, tables: Optional[Dict]) -> Optional[str]:
                 return None
             row = (max if how == "max" else min)(pairs, key=lambda p: p[0])[1]
             return _tk_fmt(row.get(spec.get("out", col)), fmt)
+        if how == "ci_verdict":
+            # 2026-09-30: a sentence that follows a 95 % interval ("a to b") instead of stating a
+            # verdict by hand — ``above`` when the whole interval is above ``ref`` (default 1),
+            # ``below`` when it is below, ``inside`` when it takes ``ref`` in
+            nums = [float(x) for x in _re.findall(r"-?\d+(?:\.\d+)?", str(sel[0].get(col)))]
+            if len(nums) < 2:
+                return None
+            ref = float(spec.get("ref", 1.0))
+            return spec["above"] if nums[0] > ref else spec["below"] if nums[1] < ref else spec["inside"]
+        if how == "list":
+            # 2026-09-30: the matching rows' ``col`` as prose ("a, b and c"), so a sentence names
+            # exactly the rows a count counts (the representativeness takeaways listed them by hand)
+            vals = [str(r.get(col)).strip() for r in sel if str(r.get(col, "")).strip()]
+            return (", ".join(vals[:-1]) + " and " + vals[-1]) if len(vals) > 1 else vals[0]
         return _tk_fmt(sel[0].get(col), fmt)                     # how == "value"
     except Exception:
         return None
@@ -3372,7 +3388,7 @@ QUESTION: Dict[str, str] = {
     "la_open_questions": "Q1-Q8 every sector question — caveat (what the record cannot answer, and why)",
 
     # ================================================================ 1 data sets
-    "fig_02_refinement_funnel": "Q1 indicator value — premise (what the 665 are)",
+    "fig_02_refinement_funnel": "Q1 indicator value — premise (what the 627 are)",
     "atlas_removal": "Q1 indicator value — caveat (the domain boundary is a reading)",
     "a2_d1_similars": "Q1 indicator value — caveat (where a reviewer can push)",
     "a2_d9_publication_lag_region": "Q1 indicator value — caveat (fixes the 2023 cut-off)",
@@ -3487,15 +3503,15 @@ QUESTION: Dict[str, str] = {
     "atlas_design_heatmaps": "Q4 what is designed — only class x tail type; the rest repeats the class",
     "atlas_state_by_arch": "M figure vs text — caveat (the figures draw end states)",
     "a2_d2_figure_slot_answers": "M figure vs text — describes the image set",
-    "mission": "none — 95 self-selected aircraft; the mission field is not the corpus",
+    "mission": "none — 94 self-selected aircraft; the mission field is not the corpus",
     "linked_check": "Q8 patents vs what is built — caveat (the linked set is NOT the corpus)",
     "la_class_fold": "Q8 patents vs what is built — premise (the fold is lossy)",
-    "la_mission_capacity": "none — 95 aircraft over 5 folded classes, cells of 0-12",
+    "la_mission_capacity": "none — 94 aircraft over 5 folded classes, cells of 0-12",
     "la_mission_piloting": "none — mostly unstated; cannot be used as a variable",
     "la_mission_power source": "Q8 patents vs what is built — confirms the electric gate only",
     "la_mission_status": "Q8 patents vs what is built — direct (a patent describes a concept)",
     "la_mission_agreement": "M figure vs text — direct (the folded label matches the directory)",
-    "industry_by_class": "none — 345 of 665 unspecified; the classes do not separate",
+    "industry_by_class": "none — 331 of 625 unspecified; the classes do not separate",
     "la_industry_by_class": "none — restates a text classifier the author cannot verify",
     "examination": "Q1 indicator value — direct on the office panel; the class panel is null",
     "la_examination_office": "Q1 indicator value — direct (offices differ, designs do not)",
@@ -3707,19 +3723,19 @@ GRADE: Dict[str, str] = {
     "la_country_class": "weak, low representativeness (4 of 8 countries hold under 25 aircraft)",
 
     # ================================================================ low-level
-    "atlas_powertrain": "weak, low insight (485 of 665 electric restates the inclusion gate)",
+    "atlas_powertrain": "weak, low insight (534 of 627 electric restates the inclusion gate)",
     "la_powertrain_by_class": "weak, low insight (restates a figure that is itself the inclusion gate)",
     "atlas_units": "core",
     "atlas_design_heatmaps": "weak, low insight (5 of 6 panels are empty by construction or repeat the class)",
     "atlas_state_by_arch": "weak, low insight (a property of the drawings, not of the sector)",
     "a2_d2_figure_slot_answers": "weak, low insight (a property of the drawings; it bounds RQ4 only)",
-    "mission": "weak, low representativeness (95 of 665, fails 4 of 6 tests)",
+    "mission": "weak, low representativeness (94 of 627, fails 4 of 6 tests)",
     "linked_check": "supporting",
     "la_class_fold": "supporting",
-    "la_mission_capacity": "weak, low representativeness (95 of 665, a base that fails 4 of 6 tests)",
-    "la_mission_piloting": "weak, low representativeness (95 of 665, and mostly unstated even there)",
-    "la_mission_power source": "weak, low representativeness (95 of 665, a self-selected base)",
-    "la_mission_status": "weak, low representativeness (95 of 665; one line carries it, not a table)",
+    "la_mission_capacity": "weak, low representativeness (94 of 627, a base that fails 4 of 6 tests)",
+    "la_mission_piloting": "weak, low representativeness (94 of 627, and mostly unstated even there)",
+    "la_mission_power source": "weak, low representativeness (94 of 627, a self-selected base)",
+    "la_mission_status": "weak, low representativeness (94 of 627; one line carries it, not a table)",
     "la_mission_agreement": "core",
     "industry_by_class": "weak, low insight (the source is a text classifier the author cannot verify)",
     "la_industry_by_class": "weak, low insight (restates a figure that is itself null)",
@@ -3830,7 +3846,7 @@ OPEN_QUESTIONS: Dict[str, Dict] = {
                "pairings have nothing to pair; the one that carries information, class against tail "
                "type, is read in [[atlas_design_heatmaps]] as it stands.",
         would="A source that states the secondary choices instead of drawing them — specification "
-              "sheets or certification data — for more than the 95 aircraft with a directory page; a "
+              "sheets or certification data — for more than the 94 aircraft with a directory page; a "
               "patent drawing omits what the claim does not need."),
     "powertrain_as_dimension": dict(
         q="Q4",
@@ -3838,12 +3854,12 @@ OPEN_QUESTIONS: Dict[str, Dict] = {
               "from another?",
         items=["atlas_powertrain", "la_powertrain_by_class", "dimension_drift", "la_mission_power source"],
         cannot="Electric propulsion is the inclusion gate of the corpus, so inside it the field cannot "
-               "vary: the patent states a powertrain for 579 of the 663 classed aircraft, 485 electric "
-               "and 94 hybrid, and the hybrid share per class and window is already drawn in "
-               "[[dimension_drift]] (v). The energy store behind the powertrain is not a labelled "
-               "dimension — the label set records electric, hybrid or not stated and nothing finer — "
-               "and it is stated only on the directory page of the 95 linked aircraft: 57 battery, 18 "
-               "hybrid, 3 hydrogen.",
+               "vary: the patent states a powertrain for 533 of the 625 classed aircraft, all electric "
+               "(an aircraft that needs a combustion engine to fly is outside the labelled dataset, ruling "
+               "2026-09-30); 53 of them also offer another energy source beside the battery, and that "
+               "share per class and window is drawn in [[dimension_drift]] (v). The energy store is not "
+               "a labelled dimension beyond that, and it is stated only on the directory page of the 94 "
+               "linked aircraft: 56 battery, 18 hybrid (the directory's own term), 3 hydrogen.",
         would="An energy store stated per aircraft, which specification sheets carry for the flown "
               "aircraft and the label set does not record."),
     "design_space_rim": dict(
@@ -3975,9 +3991,9 @@ OPEN_QUESTIONS: Dict[str, Dict] = {
                "measurable — 15, 19, 61, 85 and 28 new firms by window, in [[la_filers_by_window]] — "
                "and exit is not, so a lifecycle placed on 20 firms would be the weakest claim in the "
                "document.",
-        would="A programme-status record for every filer: the public directory tracks 112 of the 665 "
-              "aircraft (36 active, 13 paused, 13 superseded, 33 ended, 17 unknown) and has nothing on "
-              "the other 553."),
+        would="A programme-status record for every filer: the public directory tracks 110 of the 627 "
+              "aircraft (35 active, 12 paused, 13 superseded, 33 ended, 17 unknown) and has nothing on "
+              "the other 517."),
     "citations_by_class": dict(
         q="Q5",
         asked="Does one architecture draw more citations than another — is any class more "
@@ -4021,13 +4037,13 @@ OPEN_QUESTIONS: Dict[str, Dict] = {
         items=["mission", "la_mission_capacity", "la_mission_piloting", "la_mission_power source",
                "la_mission_status", "industry_by_class", "la_industry_by_class", "linked_check"],
         cannot="A patent claims a machine, not a mission. The mission fields exist only on the "
-               "directory page of the 95 linked aircraft (14 % of 665), a set that differs from the rest "
+               "directory page of the 94 linked aircraft (15 % of 627), a set that differs from the rest "
                "on filer type, priority window, priority year and propulsive units ([[linked_check]]), "
-               "and even there capacity is unstated for 29 of the 95, piloting for 34 and status for "
-               "27. The industry named in the text is a classifier's reading, unspecified for 345 of "
-               "665 and not verifiable by the author.",
-        would="A mission stated per aircraft: the directory gives one for 95, the patent text one for "
-              "about half and only through a classifier; a hand reading of the 574 primary "
+               "and even there capacity is unstated for 29 of the 94, piloting for 33 and status for "
+               "26. The industry named in the text is a classifier's reading, unspecified for 331 of "
+               "625 and not verifiable by the author.",
+        would="A mission stated per aircraft: the directory gives one for 94, the patent text one for "
+              "about half and only through a classifier; a hand reading of the 543 primary "
               "descriptions is the only route inside the record."),
     "index_score_vs_patents": dict(
         q="Q8",
@@ -4049,9 +4065,9 @@ OPEN_QUESTIONS: Dict[str, Dict] = {
         items=["la_trl_placeholder"],
         tried="the TRL per aircraft is computed (`tables/a2_d15_trl_by_class.csv`) and the per-class "
               "comparison was probed 2026-09-23",
-        cannot="64 of the 665 aircraft are above TRL 2 (10 %); over the five largest classes the "
-               "difference in that share is χ² 4.09, p 0.39, and four classes — Hoverbike, Personal "
-               "Flying Vehicle, Stopped/Slowed Rotor Wing, Rotorcraft — have none at all. With 64 events "
+        cannot="63 of the 627 aircraft are above TRL 2 (10 %); over the five largest classes the "
+               "difference in that share is χ² 4.44, p 0.35, and four classes — Hoverbike, Personal "
+               "Flying Vehicle, Stopped/Slowed Rotor Wing, Rotorcraft — have none at all. With 63 events "
                "over twelve classes there is no power for a per-class claim, and there will be none from "
                "this corpus.",
         would="More flown aircraft, which is time; the base rate — one aircraft in ten leaves the "
@@ -4154,7 +4170,7 @@ UNLABELLED_DRIVERS: Dict[str, Dict] = {
               "[[la_mission_capacity]] for the linked aircraft",
         cannot="Occupancy was ruled not determinable from a drawing (2026-09-09) and no length, width or "
                "seat count is labelled; the fuselage fields record shape, kinematics and ground contact "
-               "only. Capacity is stated on the directory page of the 95 linked aircraft and nowhere for "
+               "only. Capacity is stated on the directory page of the 94 linked aircraft and nowhere for "
                "the rest.",
         would="A stated capacity and cabin dimension per aircraft, which specification sheets carry for "
               "the flown aircraft and the patent figure does not."),

@@ -19,6 +19,12 @@ for multi-panel charts, one note under an image grid. They go to
 to the private ``EVTOLNEWS_DS/3_embedding_evaluation/analysis_brief_figs/`` and are reached through the
 symlink ``figs_brief/private`` (the markdown and Word exporters need paths without spaces).
 
+Review round of 2026-09-30 (docs/embedding_evaluation/analysis_document/review/CONSOLIDATED_FLAGS.md): the
+numbers of the review fixes are read from 1639_LABELLED/3_embedding_evaluation/review_fixes/ (``load_review``),
+the setup addendum (grey and contrast controls) and the registers crop test; the review figures are redrawn for
+the brief by ``rf_figure`` (source note without file names, no how-to-read line: that lives in the Method).
+Paired contrasts quote the maker-resampled interval. BRIEF_APPENDIX=0 drops Appendix A (page cap).
+
 Output: docs/embedding_evaluation/analysis_document/ANALYSIS_BRIEF.md.
 Run: embedding_evaluation/scripts/build_analysis_brief.py (Finetune env for md; pdf and docx under the
 base python).
@@ -262,10 +268,124 @@ def md_df(rows, cols) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=cols)
 
 
+# ── the review round of 2026-09-30: its saved numbers and figures ────────────
+RF_DIR = AD.PE / "review_fixes"
+RF_TABLES = ["M3_pool_size_and_mix", "M3_per_class_pool_share", "M4a_heldout_view_probe", "M4b_control_200_draws",
+             "M4c_erased_scores", "M6_balanced_recall", "M9_recall_12_wilson", "M9_recall_5class_wilson",
+             "M9_wrong_predictions", "M11_ari_like_for_like", "M11_linked_99_vs_94", "S2_probe_12", "S2_probe_5",
+             "S2_probe_photos", "S3_k_sensitivity", "S3_image_rules_paired", "S3_image_rules_split_half",
+             "S4_paired_contrasts", "S6_matching_intervals", "S7_best_heldout_criterion", "S7_heldout_differences",
+             "S7_own_pick_per_source", "S8_halves_missing_classes", "S8_joint_grid_labels", "S8_seeds",
+             "S8_table12_corrected", "S9_attention_extras", "S10_audit_wilson", "S10_kappa", "S10_kappa_by_type",
+             "S11_d_units", "S11_view_ratio"]
+SEL_EXTRA = ["s1b_v2_candidates", "s1b_v2_decision", "s1b_v2_labels", "s2_controls_knn", "s2_controls_halves",
+             "fairness_grey_grey"]
+GT_FILE = AD.PAT / "0_labelling/inputs/text_architecture/architecture_ground_truth.csv"
+
+
+def load_review() -> Dict[str, pd.DataFrame]:
+    """Every table of the review round the brief reads (review_fixes/, the setup addendum, the registers crop)."""
+    X = {n: pd.read_csv(RF_DIR / f"{n}.csv", keep_default_na=False, na_values=[""]) for n in RF_TABLES}
+    X.update({n: pd.read_csv(AD.SEL / f"{n}.csv") for n in SEL_EXTRA})
+    X["crop_reg_knn"] = pd.read_csv(AD.CROP / "knn_original_vs_cropped_registers.csv")
+    X["gt_rows"] = pd.DataFrame({"n": [len(pd.read_csv(GT_FILE, keep_default_na=False))]})
+    return X
+
+
+def _clean_source(s: str) -> str:
+    """The review figures name their CSVs; the brief points nowhere outside itself."""
+    s = re.sub(r";?\s*review_fixes\s+[A-Za-z0-9_]+\.csv(?:,\s*[A-Za-z0-9_]+\.csv)*\.?", ".", s)
+    return re.sub(r"\.\s*\.", ".", re.sub(r"\s{2,}", " ", s)).strip()
+
+
+def _rf_stamp(fig, path, source: str, read: str) -> Path:
+    """review_fixes._stamp_save for the brief: the source note only (how to read lives in the Method), no file
+    names, saved into figs_brief/."""
+    from matplotlib.text import Text
+    fig.canvas.draw()
+    bb = fig.get_tightbbox(fig.canvas.get_renderer())
+    x0, y0 = bb.x0 / fig.get_figwidth(), bb.y0 / fig.get_figheight()
+    chars = max(int(min(bb.width, 7.0) * 15.5), 60)
+    fig.text(x0, y0 - 0.012, "\n".join(textwrap.wrap("Source: " + _clean_source(source), chars)), fontsize=7,
+             color=MUTED, ha="left", va="top")
+    fig.canvas.draw()
+    for t in fig.findobj(Text):
+        s = t.get_text()
+        if re.search(r"\bTR\b", s) or "—" in s or re.search(r"\.csv\b", s):
+            raise ValueError(f"figure text breaks the print rules: {s!r}")
+    out = FIGB / Path(path).name
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=200, bbox_inches="tight", pad_inches=0.06)
+    plt.close(fig)
+    return out
+
+
+def rf_figure(name: str) -> Path:
+    """One review figure, redrawn for the brief. The forest leaves out the single-seed variance-matched control
+    rows: the brief shows the 200-draw control in the erasure figure instead."""
+    import tempfile
+    from . import review_fixes as RF
+    saved = RF._stamp_save
+    RF._stamp_save = _rf_stamp
+    try:
+        if name != "fig_forest":
+            return getattr(RF, name)(RF_DIR)
+        with tempfile.TemporaryDirectory() as td:
+            s4 = pd.read_csv(RF_DIR / "S4_paired_contrasts.csv", keep_default_na=False, na_values=[""])
+            s4[s4.group != "erasure control"].to_csv(Path(td) / "S4_paired_contrasts.csv", index=False)
+            shutil.copyfile(RF_DIR / "M3_pool_size_and_mix.csv", Path(td) / "M3_pool_size_and_mix.csv")
+            return RF.fig_forest(Path(td), width=3.3)
+    finally:
+        RF._stamp_save = saved
+
+
+def _join(items: Sequence[str]) -> str:
+    items = list(items)
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _short_contrast(r) -> str:
+    """A paired contrast of the review table in a few words: 'thick2 on the 12 types'."""
+    name = r.contrast.split(",")[0].replace(" minus plain", "").replace(" minus original", "").replace(
+        "contrast only", "contrast").replace("view erased", "the view erasure")
+    lab = {"patents G1 12-class": "the 12 types", "patents parent 5-class": "the 5 classes",
+           "photos 5-class": "the photos"}[r.label_set]
+    return f"{name}{' (Perspective only)' if 'Perspective' in r.contrast else ''} on {lab}"
+
+
+PREPS = ["plain", "grey", "contrast", "thick1", "thick2"]
+
+
+def fig_preparations(rows=("TR", "SLC", "HB")) -> Path:
+    """The five drawing preparations as the model receives them: the plain input with its detail window, then
+    the same 128 px detail under each preparation (the montage aircraft of the setup record, seed 42)."""
+    pick = AD.thick_picks()
+    pick = pick[pick.g1.isin(rows)].set_index("g1").loc[list(rows)].reset_index()
+    root = AD.PAT / "2_embedding_extraction"
+    m0 = pd.read_csv(root / "processed/518/manifest.csv")
+    paths = {"plain": dict(zip(m0.figure_uid, m0.path))}
+    for v in PREPS[1:]:
+        m = pd.read_csv(root / "preprocess_variants" / v / "processed/518/manifest.csv")
+        paths[v] = dict(zip(m.figure_uid, m.path))
+    fig, axes = plt.subplots(len(pick), 1 + len(PREPS), figsize=(9.0, 1.55 * len(pick)))
+    for i, r in enumerate(pick.itertuples()):
+        ims = {c: Image.open(paths[c][r.fig_id]).convert("RGB") for c in PREPS}
+        x0, y0 = AD._ink_window(ims["plain"])
+        AD._thumb(axes[i, 0], ims["plain"], "plain, whole input" if i == 0 else "")
+        axes[i, 0].add_patch(plt.Rectangle((x0, y0), 128, 128, fill=False, edgecolor="#c92f26", lw=0.8))
+        for j, c in enumerate(PREPS):
+            AD._thumb(axes[i, 1 + j], ims[c].crop((x0, y0, x0 + 128, y0 + 128)).resize((256, 256), Image.Resampling.NEAREST),
+                      f"{c}, detail" if i == 0 else "")
+        axes[i, 0].set_ylabel(f"{disp(r.g1)}\n{r.aircraft_id}", fontsize=7.5, rotation=0, ha="right", va="center")
+    fig.tight_layout(w_pad=0.3)
+    return _stamped_save(fig, FIGB / "f_preparations.png")
+
+
 # ── the text ─────────────────────────────────────────────────────────────────
 def build(C: Dict) -> Tuple[str, Dict]:
     D = BDoc()
     info: Dict = {}
+    X = C["rf"] if "rf" in C else load_review()
     S_pat, S_evn = C["S_pat"], C["S_evn"]
     Rp, Rh, Bp, Bh = C["R_pat"], C["R_evn"], C["B_pat"], C["B_evn"]
     mp, mh, m5 = AD.main_row(Rp), AD.main_row(Rh), AD.main_row(Rp, "ev5")
@@ -283,7 +403,6 @@ def build(C: Dict) -> Tuple[str, Dict]:
     kap = cohen_kappa_score(a.label[gt], a.arch_gt[gt])
     agree, gt_n = int((a.label == a.arch_gt).sum()), int(gt.sum())
     n_excl = len(pd.read_csv(AD.PAT / "2_embedding_extraction/view_state_experiments/excluded_aircraft.csv"))
-    pv = C["reg_paired"].set_index(["source", "label"])
     rk = C["reg_knn"]
 
     def rkv(tag, src, lab):
@@ -294,29 +413,14 @@ def build(C: Dict) -> Tuple[str, Dict]:
     l22f = reg_only[reg_only.candidate == "registers L22 CLS"].set_index("label").selection_freq
     s1a_all = _c[_c.pool == "all 12"]
     reg_share = s1a_all[s1a_all.candidate.str.startswith("registers")].groupby("label").selection_freq.sum()
-    s1b = C["s1b_decision"].set_index("candidate")
-    s1bc = C["s1b_candidates"].set_index(["label", "candidate"])
-    pair = C["s2s3_paired"].set_index(["label", "comparison"])
-    s2k = C["s2s3_knn"].set_index(["label", "condition"])
-    fair = C["fairness"].set_index("photos")
     lab_reg = C["s1a_labels"][C["s1a_labels"].pool == "registers only"].set_index("label")
     lab_all = C["s1a_labels"][C["s1a_labels"].pool == "all 12"].set_index("label")
-    lab_b = C["s1b_labels"].set_index("label")
     half = C["s1a_half_scores"]
-    hs = half[half.candidate.isin(["registers L24 CLS", "base L24 CLS"])].pivot_table(
-        index=["split", "half", "label"], columns="candidate", values="score").reset_index()
-    hs["d"] = hs["registers L24 CLS"] - hs["base L24 CLS"]
-    hsd = hs.groupby("label").agg(mean=("d", "mean"))
     hn = half.groupby("label").n_aircraft.agg(["min", "max"])
     sh = C["share"].set_index(["model", "source", "layer"])
     mt = C["match"]
     mt = mt[(mt.images == "no line drawings") & (mt.layer == 24) & (mt.pooling == "cls")].set_index("direction")
-    mtb = C["match_base"]
-    mtb = mtb[(mtb.embedding == AD.BASE_TAG) & (mtb.images == "no line drawings") & (mtb.layer == 24) &
-              (mtb.pooling == "cls")].set_index("direction")
     mpp, mph = mt.loc["patent->photo"], mt.loc["photo->patent"]
-    cm = C["crop_man"]
-    n_fb = int((cm.status != "ok").sum())
     ex4 = S_pat.extra["picks"]["exp4 view average"]
     nslots = ex4.groupby("aircraft_id").size()
     single = {k: v.set_index("aircraft_id").fig_id for k, v in S_pat.extra["picks"].items() if k != "exp4 view average"}
@@ -331,8 +435,6 @@ def build(C: Dict) -> Tuple[str, Dict]:
     conf_h = Rh["confound"].set_index("matrix")
     lay_p = Rp["layer"].set_index("matrix")
     cb, ch = conf_p.loc["L24 CLS"], conf_h.loc["L24 CLS"]
-    fc = AD.five_class(C)
-    fci = fc.set_index("class")
     cache_f = OUT_DIR / "_brief_cache.pkl"
     cache = None
     if os.environ.get("BRIEF_REUSE") == "1" and cache_f.exists():
@@ -340,21 +442,13 @@ def build(C: Dict) -> Tuple[str, Dict]:
         cache = pickle.loads(cache_f.read_bytes())       # written by the last full run of this module
     cmx = cache["class_mix"] if cache else AD.class_mix_matched(C)
     info["class_mix"] = cmx
-    dA, pA = fair.loc["colour"].drawings_bal_acc, fair.loc["colour"].photos_bal_acc
-    cmx_inside = cmx["lo"] <= dA <= cmx["hi"]
-    pin = cmx["probe_lo"] <= m5.probe_bal_acc <= cmx["probe_hi"]
     e4 = cache["exp4"] if cache else AD.exp4_subset(C)
     info["exp4"] = e4
     im, au = C["img_dec"], C["audit"]
     kept = im[im.keep.astype(str) == "True"]
-
-    def audit(stratum):
-        s = au[au.stratum == stratum]
-        return int((s.verdict == "whole_aircraft").sum()), len(s)
-    (k_m, n_m), (k_s, n_s), (k_r, n_r) = audit("main"), audit("siglip_drop"), audit("review_band")
     n_rev = int((im.auto == "review").sum())
-    n_hard = int((im.hard_rule == "").sum())
     pch = C["parent_check"]
+    n_link, n_agree = len(pch), int(pch.agrees.sum())
     fun = C["funnel"]
     n_file = int(fun.remaining.iloc[0])
     n_notappr = int(fun[fun.step == "figure not approved"].removed.iloc[0])
@@ -363,27 +457,15 @@ def build(C: Dict) -> Tuple[str, Dict]:
     n_part = int(fun[fun.step == "not a whole-aircraft figure"].removed.iloc[0])
     conv = AD.CONVERTIBLE
     var = wv[wv.g1_code.isin(conv)]
-    ctab = pd.crosstab(var.g1_code, var.state4).reindex(conv).fillna(0).astype(int)
-    ctab = ctab[[c for c in ["Cruise", "Hover", "Both", "Other"] if c in ctab.columns]]
     pc_ = var[(var.view4 == "Perspective") & (var.state4 == "Cruise")].aircraft_id.nunique()
     ph_ = var[(var.view4 == "Perspective") & (var.state4 == "Hover")].aircraft_id.nunique()
     n_var = var.aircraft_id.nunique()
+    n_both = int((var.state4 == "Both").sum())
     sm1 = pd.read_csv(AD.PAT / "2_embedding_extraction/preprocess_variants/thick1/sources_manifest.csv",
                       keep_default_na=False)
     sm2 = pd.read_csv(AD.PAT / "2_embedding_extraction/preprocess_variants/thick2/sources_manifest.csv",
                       keep_default_na=False)
     n_col = int((pd.to_numeric(sm1.src_max_chroma) > 8).sum())
-    rec = Rp["ev"]["recall"]
-    rec = rec[rec.matrix == "L24 CLS"].iloc[0]
-    cl = ER.G1_ORDER
-    best = rec[cl].astype(float).sort_values(ascending=False)
-    zero = [disp(c) for c in cl if float(rec[c]) == 0]
-    big = [c for c in best.index if cnt12[c] >= 20]
-    smallr = [c for c in best.index if cnt12[c] < 20 and float(rec[c]) >= 0.3]
-    pred = Rp["ev"]["pred"][AD.KEY]
-    wrong = pred != S_pat.y
-    top2 = list(cnt12.sort_values(ascending=False).index[:2])
-    into = float(np.isin(pred[wrong], top2).mean())
     rh = Rh["ev"]["recall"]
     rh = rh[rh.matrix == "L24 CLS"].iloc[0]
     rbest = max(ER.CLASSES5, key=lambda c: float(rh[c]))
@@ -393,31 +475,143 @@ def build(C: Dict) -> Tuple[str, Dict]:
     ve = lambda tag, sec, var_, meas: AD.ve_get(C, tag, sec, var_, meas)  # noqa: E731
     vp_o = ve(T, "view probe (aircraft main figures)", "original", "probe_bal_acc").value
     vp_e = ve(T, "view probe (aircraft main figures)", "view erasure", "probe_bal_acc").value
-    vk_o = ve(T, "view kNN-5 (figures, maker held out)", "original", "bal_acc")
     vk_e = ve(T, "view kNN-5 (figures, maker held out)", "view erasure", "bal_acc")
-    d12 = ve(T, ga, "view erasure - original", "paired_diff")
-    d5 = ve(T, pa_, "view erasure - original", "paired_diff")
-    b12 = ve(BT, ga, "view erasure - original", "paired_diff")
-    b5 = ve(BT, pa_, "view erasure - original", "paired_diff")
     e12, e5 = ve(BT, ga, "view erasure", "bal_acc").value, ve(BT, pa_, "view erasure", "bal_acc").value
     r12, r5 = ve(T, ga, "view erasure", "bal_acc").value, ve(T, pa_, "view erasure", "bal_acc").value
-    ck = C["crop_knn"].set_index(["matrix", "condition"])
-    cd = C["crop_diff"].set_index("matrix")
-    att_max = max(sh.loc[("registers", s, L)].max_patch_share_median for s in ("patent", "photo") for L in (18, 24))
-    reg_lo = min(sh.loc[("registers", s, L)].prefix_share_median for s in ("patent", "photo") for L in (18, 24))
-    reg_hi = max(sh.loc[("registers", s, L)].prefix_share_median for s in ("patent", "photo") for L in (18, 24))
     n_status = int(S_evn.aircraft.status.isin(["built", "concept"]).sum())
+    L12, L5, P5 = "patents G1 12-class", "patents parent 5-class", "photos 5-class"
+    WORD = {L12: "drawings, 12 types", L5: "drawings, 5 classes", P5: "photos, 5 classes"}
 
     def nd(lo, hi) -> str:                         # the reading of an interval of a difference
         return "no difference detected" if lo <= 0 <= hi else ("above zero" if lo > 0 else "below zero")
 
-    def s12(x) -> str:
-        return f"{f2(x, 3)}"
+    # review round: paired contrasts with the maker-resampled interval as the primary one
+    s4 = X["S4_paired_contrasts"]
+
+    def cst(prefix: str, lab: str | None = None) -> pd.Series:
+        m = s4[s4.contrast.str.startswith(prefix)]
+        if lab is not None:
+            m = m[m.label_set == lab]
+        if len(m) != 1:
+            raise KeyError((prefix, lab, len(m)))
+        return m.iloc[0]
+
+    def mci(r) -> str:
+        return f"{sg(r['diff'])} {ci(r.ci_lo_maker, r.ci_hi_maker, 3, True)}"
+
+    def mnd(r) -> str:
+        return nd(r.ci_lo_maker, r.ci_hi_maker)
+    n_con, n_holm = len(s4), int((s4.p_maker_holm < 0.05).sum())
+    flips = s4[((s4.ci_hi_aircraft < 0) | (s4.ci_lo_aircraft > 0)) & (s4.ci_lo_maker <= 0) & (s4.ci_hi_maker >= 0)]
+    reg = {lab: cst("registers minus base", lab) for lab in (L12, L5, P5)}
+    base_sc = {L12: rkv(BT, "patents", "G1 12-class").bal_acc, L5: rkv(BT, "patents", "parent 5-class").bal_acc,
+               P5: rkv(BT, "photos", "5-class").bal_acc}
+    # attention extras (both models on the same images)
+    s9 = X["S9_attention_extras"]
+    s9a = s9[s9.image_set == "all"].set_index(["model", "source", "layer"])
+    pad = {(m_, s_): float(s9a.loc[(m_, s_, 24)].argmax_in_pad_share) for m_ in ("base", "registers")
+           for s_ in ("patent", "photo")}
+    n_att_p = int(sh.loc[("registers", "patent", 24)].n_images)
+    n_att_pb = int(sh.loc[("base", "patent", 24)].n_images)
+    reg_max = max(sh.loc[("registers", s, L)].max_patch_share_median for s in ("patent", "photo") for L in (18, 22, 24))
+    reg_lo = min(sh.loc[("registers", s, L)].prefix_share_median for s in ("patent", "photo") for L in (18, 24))
+    reg_hi = max(sh.loc[("registers", s, L)].prefix_share_median for s in ("patent", "photo") for L in (18, 24))
+    # selection
+    t12 = X["S8_table12_corrected"]
+    t12 = t12[t12.pool == "registers only"].set_index("label_set")
+    jg = X["S8_joint_grid_labels"].set_index("label_set")
+    own = X["S7_own_pick_per_source"]
+
+    def own_pick(choice, source, rank):
+        r = own[(own.choice == choice) & (own.source == source) & (own["rank"] == rank)].iloc[0]
+        return r.candidate.replace("registers ", ""), float(r.mean_selection_freq)
+    hd = X["S7_heldout_differences"].set_index(["label_set", "contrast"])
+    l24_l22_ph = hd.loc[(P5, "registers L24 CLS minus L22 CLS (held out, same halves)")]
+    seeds = X["S8_seeds"]
+    seed_list = sorted(int(s) for s in seeds.seed.unique() if int(s) != P.SEED)
+    seed_same = all(seeds[(seeds.seed == s_) & (seeds.rule.str.startswith("S1(a)"))].decision_winner_registers_pool.eq(
+        "registers L24 CLS").all() for s_ in seeds.seed.unique())
+    miss = X["S8_halves_missing_classes"]
+    miss12 = miss[(miss.label_set == L12) & miss.halves_missing_any_class.notna()].iloc[0]
+    best_same = bool((X["S7_best_heldout_criterion"].by_selection_frequency ==
+                      X["S7_best_heldout_criterion"].by_best_mean_heldout_score).all())
+    head12 = mp.knn_bal_acc - jg.loc[L12, "joint_optimism_gap"]
+    # preparation
+    kc = X["s2_controls_knn"].set_index(["label", "condition"])
+    hv = X["s2_controls_halves"].set_index(["label", "comparison"])
+    v2c = X["s1b_v2_candidates"].set_index(["label", "candidate"])
+    v2d = X["s1b_v2_decision"].set_index("candidate")
+    plain_grey = float(v2d.loc["plain"].selection_freq + v2d.loc["grey"].selection_freq)
+    same_pred = {lab: float(pd.read_csv(AD.SEL / "s2_controls_paired.csv").set_index(["label", "comparison"]).loc[
+        (lab, "grey - plain")].agree) for lab in (L12, L5)}
+    g_ph = cst("grey minus colour", P5)
+    s1b = C["s1b_decision"].set_index("candidate")
+    # the drawings
+    rec12 = X["M9_recall_12_wilson"].set_index("g1")
+    bal12 = X["M6_balanced_recall"].set_index("g1")
+    wrong = X["M9_wrong_predictions"].set_index("measure")
+    w_share = float(wrong.loc["share of wrong predictions that name SLC or TP"].value)
+    w_pool = float(wrong.loc["share of the aircraft pool that is SLC or TP"].value)
+    w_n = int(wrong.loc["wrong predictions (kNN-5, L24 CLS, 12 classes)"].value)
+    w_k = int(wrong.loc["wrong predictions that name SLC or TP"].value)
+    zero = [c for c in ER.G1_ORDER if int(rec12.loc[c, "knn_correct"]) == 0]
+    above = [c for c in zero if bal12.loc[c, "knn_recall_mean"] > bal12.loc[c, "shuffled_recall_p95"]]
+    notabove = [c for c in zero if c not in above]
+    pr = {lab: X[f"S2_probe_{s}"].iloc[0] for lab, s in ((L12, "12"), (L5, "5"), (P5, "photos"))}
+    ks = X["S3_k_sensitivity"].set_index(["label_set", "k"])
+    kby = X["S10_kappa_by_type"].set_index("g1_wizard")
+    ptc_dis = int(kby.loc["PTC", "disagreements"]) if "PTC" in kby.index else 0
+    vr = X["S11_view_ratio"].set_index("measure")
+    du = X["S11_d_units"].set_index("unit")
+    d_air = du[du.index.str.startswith("aircraft")].d.iloc[0]
+    d_fig = du[du.index.str.startswith("all whole-aircraft")].d.iloc[0]
+    d_nonmain = du[du.index.str.startswith("non-main")].d.iloc[0]
+    d_views = {v: du[du.index.str.contains(f"one view only: {v}")].d.iloc[0] for v in ("Perspective", "Plan", "Side", "Front/Rear")}
+    vk = vr.loc["view kNN-5 balanced accuracy (figures, maker held out)"]
+    vprobe = X["M4a_heldout_view_probe"].set_index(["model", "fit", "check"])
+    ho = {m_: vprobe.loc[(m_, "held out")].iloc[0] for m_ in ("registers", "base")}
+    ctl = X["M4b_control_200_draws"]
+    ctl = ctl[(ctl.control == "variance-matched random directions")].set_index(["model", "subset", "label_set"])
+    c12, c5 = ctl.loc[("registers", "all", L12)], ctl.loc[("registers", "all", L5)]
+    esc = X["M4c_erased_scores"].set_index(["model", "label_set", "vectors"])
+    er12, er5 = esc.loc[("registers", "G1 12-class", "view erasure")], esc.loc[("registers", "parent 5-class", "view erasure")]
+    rules_p = X["S3_image_rules_paired"]
+    rsh = X["S3_image_rules_split_half"].set_index(["label", "candidate"])
+    ari = X["M11_ari_like_for_like"]
+    ari_d5 = float(ari[(ari.model == "registers") & ari.comparison.str.startswith("drawings, k-means 5")].ari.iloc[0])
+    ari_p5 = float(ari[(ari.model == "registers") & ari.comparison.str.startswith("photos")].ari.iloc[0])
+    m3 = X["M3_pool_size_and_mix"].set_index("row")
+    m3_full = m3.loc["difference: photos full set minus drawings"]
+    m3_size = m3.loc["difference: photos size only minus drawings"]
+    m3_mix = m3.loc["difference: photos size + mix (matched) minus drawings"]
+    m3_dmix = m3.loc["decomposition: class mix at fixed size (size only minus size + mix)"]
+    m3_dsize = m3.loc["decomposition: pool size (full set minus size only)"]
+    s_size = m3.loc["photos, size only: subsets of 663 at the photos' own class mix"]
+    s_mix = m3.loc["photos, size + mix: subsets of 663 at the drawings' class counts"]
+    gg = X["fairness_grey_grey"].set_index(["drawings", "photos"]).loc[("grey", "grey")]
+    crop = cst("cropped minus original, photos (registers)", P5)
+    crop_b = cst("cropped minus original, photos (base)", P5)
+    ck = X["crop_reg_knn"]
+    ck = ck[ck.matrix == "L24 CLS"].set_index("condition")
+    mi = X["S6_matching_intervals"].set_index(["model", "direction", "page_status"])
+    mr_ = mi.loc[("registers", "patent to photo", "all")]
+    mb_ = mi.loc[("base", "patent to photo", "all")]
+    lk = X["M11_linked_99_vs_94"]
+    n_gate_l = int(lk.explanation.str.startswith("not in the patent analysis set").sum())
+    n_line_l = int(lk.explanation.str.contains("line drawings").sum())
+    auw = X["S10_audit_wilson"].set_index("sample")
+    kt = X["S10_kappa"]
+    k_rec = kt[kt.origin != "computed"].iloc[0]
+    k_fz_all = kt[kt.labels.str.contains("figure_label_frozen")].iloc[0]
+    k_fz_set = kt[kt.labels.str.startswith("frozen image labels (2")].iloc[0]
+    n_gt_rows = int(X["gt_rows"].n.iloc[0])
+
+    def wil(sample) -> str:
+        r = auw.loc[sample]
+        return f"{int(r['count'])} of {int(r.n)} [{r.wilson_lo:.2f}, {r.wilson_hi:.2f}]"
 
     # ═══ title, index ═══
     import datetime as dt
-    # the one printed line under the title: Word's exporter takes the first paragraph as its subtitle, so
-    # without it the index block would print there as text
     D.add(f"# {TITLE}", "", f"<!-- Date: {dt.date.today().isoformat()} -->", "",
           "The analysis for research question RQ4. Private: contains evtol.news "
           "photographs, © their owners.", "", "@@TOC@@", "", "---", "")
@@ -444,24 +638,33 @@ def build(C: Dict) -> Tuple[str, Dict]:
     D.add('<div class="methods-box" markdown="1">', "", "##### How to read the scores", "",
           "*Every score, interval and chance level in the document is read as set out here.*", "")
     D.p("**The primary score: kNN-5 balanced accuracy.** Each aircraft's class is predicted by the vote of its "
-        "five nearest aircraft, never from its own maker, nearness being the cosine distance "
+        "five nearest aircraft, never from its own maker (**maker held out**), nearness being the cosine distance "
         "d(u, v) = 1 − u·v / (‖u‖ ‖v‖) (nearest-neighbour rule, Cover and Hart, 1967); a tie goes to the class "
-        "of the nearer neighbour. The score is the **balanced accuracy**, BA = (1/K) Σ_c recall_c, with "
-        "recall_c = (aircraft of class c predicted as c) / (aircraft of class c), over the K classes (Brodersen "
-        "et al., 2010). Every class weighs the same, so a large class cannot carry the score, and guessing "
-        "scores 1/K: 0.083 on 12 classes, 0.20 on 5.",
-        f"**The 95 % interval.** The aircraft are resampled with replacement {n_(P.N_BOOT)} times and the score "
-        "recomputed on the same predictions; the interval is the middle 95 % of those scores (bootstrap, Efron, "
-        "1979). A difference between two setups on the same aircraft resamples the same aircraft for both "
-        "(paired); between the two sources, whose aircraft differ, each set is resampled on its own. **A "
-        "difference whose interval takes in zero is read as no difference detected.**",
+        "of the nearer neighbour; k = 5 and the cosine distance were fixed in advance. The score is the "
+        "**balanced accuracy**, BA = (1/K) Σ_c recall_c, with recall_c = (aircraft of class c predicted as c) / "
+        "(aircraft of class c), over the K classes (Brodersen et al., 2010). Every class weighs the same, so a "
+        "large class cannot carry the score, and guessing scores 1/K: 0.083 on 12 classes, 0.20 on 5.",
+        f"**The 95 % intervals.** A score's interval resamples the aircraft with replacement {n_(P.N_BOOT)} "
+        "times on the same predictions and keeps the middle 95 % (bootstrap, Efron, 1979). A **paired contrast** "
+        "(two setups on the same aircraft) resamples whole makers, with all their aircraft, for both setups: "
+        "this maker interval is the primary one, slightly wider than the aircraft one because a maker's aircraft "
+        "resemble each other. Beside it stands the share of the 400 held-out halves (below) in which the "
+        "difference has the same sign. Between the two sources, whose aircraft differ, each set is resampled on "
+        "its own. A share of a small count (a recall, an audit) gets the Wilson score interval (Wilson, 1927). "
+        "**A difference whose interval takes in zero is read as no difference detected.**",
+        f"**Many contrasts, read together.** The document makes {n_con} paired contrasts; after a Holm "
+        f"correction over the {n_con} (Holm, 1979) {'none survives' if n_holm == 0 else f'{n_holm} survive'} at "
+        "0.05, so they are read as convergent evidence: by their direction, their intervals and their per-half "
+        "consistency, not one by one.",
         f"**Chance, as the same neighbours reach it.** The labels are shuffled {P.N_SHUFFLE} times and the vote "
         "rerun; the 95th percentile of the shuffled scores is the **shuffled level**. A score above it is one "
         "that chance almost never produces with these neighbours.",
-        "**The linear probe.** A logistic regression reads every dimension of the vector, trained on four fifths "
+        f"**The linear probe.** A logistic regression reads every dimension of the vector, trained on four fifths "
         "of the makers and tested on the fifth (five folds grouped by maker), scored by the same balanced "
-        "accuracy. The neighbours use the overall distance only, so a probe above the kNN score means the "
-        "architecture is in the vector without deciding which aircraft are nearest.",
+        "accuracy; L2 penalty of the default strength (C = 1), lbfgs solver, balanced class weights, C not "
+        "tuned. Its chance is the same probe on 50 "
+        "shuffled label sets. The neighbours use the overall distance only, so a probe above the kNN score means "
+        "the architecture is in the vector without deciding which aircraft are nearest.",
         "**The split-half selection rule** (the author's own definition). A choice made on the labels must not "
         "be scored on the aircraft that made it. The makers are split at random into two halves, 200 times "
         "(fixed seed 42, a rerun gives the same numbers), and every aircraft follows its maker. Each candidate "
@@ -475,15 +678,14 @@ def build(C: Dict) -> Tuple[str, Dict]:
         f"different makers: ratio = mean between / mean within, and d = (mean between − mean within) / pooled "
         f"standard deviation; p is the share of {P.N_PERM} label shuffles with a ratio as large. The same d for "
         "a label that is not the architecture (the view of a drawing, the maturity of a photographed aircraft), "
-        "divided by the architecture's d, says which label moves the vectors more. Clusters: k-means with as "
-        "many clusters as classes, compared with the labels by the adjusted Rand index, ARI = (RI − E[RI]) / "
-        "(max RI − E[RI]), where RI is the share of aircraft pairs on which the two partitions agree; 0 is a "
-        "chance partition, 1 the labels themselves (Hubert and Arabie, 1985).",
-        "**The maps.** UMAP (McInnes, Healy and Melville, 2018) draws each aircraft's 1 024 numbers in two "
+        "divided by the architecture's d, is the **d ratio**: which label moves the vectors more. Clusters: "
+        "k-means with as many clusters as classes, compared with the labels by the adjusted Rand index, "
+        "ARI = (RI − E[RI]) / (max RI − E[RI]), where RI is the share of aircraft pairs on which the two "
+        "partitions agree; 0 is a chance partition, 1 the labels themselves (Hubert and Arabie, 1985).",
+        "**The maps.** UMAP (McInnes, Healy and Melville, 2018) draws each 1 024-number vector in two "
         "dimensions so that similar vectors sit close. The axes have no unit, and a map is a picture, never a "
         "test.")
-    D.add("**The seven tests of the protocol**, run with the same code and parameters on both sources, so a "
-          "number in one source means what the same number means in the other:", "",
+    D.add("**The seven tests of the protocol**, run with the same code and parameters on both sources:", "",
           "| test | what it asks | measure |", "|:---|:---|:---|",
           "| T1 integrity | is every vector valid? | no NaN, infinite, all-zero or duplicate rows |",
           "| T2 structure | do the vectors have structure at all? | variance on the first principal component "
@@ -492,7 +694,7 @@ def build(C: Dict) -> Tuple[str, Dict]:
           "| T4 prediction | how often is the class recovered? | kNN-5 balanced accuracy (primary), interval, "
           "shuffled level; probe |",
           "| T5 clusters | do the classes form clusters? | k-means against the labels, ARI |",
-          "| T6 what else | does another label move the vectors more? | its d ÷ the architecture's d |",
+          "| T6 what else | does another label move the vectors more? | the d ratio |",
           "| T7 image choice | does the image rule matter? | T4 under every image rule |", "",
           "</div>", "", "")
 
@@ -502,28 +704,30 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "Which images of each source reach the model, which label each aircraft carries, and how far that "
         "label can be trusted.",
         "Drawings: the figures of the labelled dataset of eVTOL patents, counted as figures until each aircraft "
-        f"is reduced to one (1.2). Photographs: the images of the directory pages (crawl of 2026-09-17), counted "
-        "as images until each page is reduced to one. A drawing aircraft carries its human **G1 type**, one of "
-        "the codebook's 12 architecture types (Table 1), and the type's parent among 5 classes: **VT** Vectored "
-        "Thrust, **LC** Lift + Cruise, **WM** Wingless (Multicopter), **ER** Electric Rotorcraft, **HB** Hover "
-        "Bikes / PFD (personal flying devices). A photo aircraft carries the directory's own class, one of the same 5 "
-        f"(VT {cnt5h['VT']}, LC {cnt5h['LC']}, WM {cnt5h['WM']}, ER {cnt5h['ER']}, HB {cnt5h['HB']}).",
+        "is reduced to one (1.2). A drawing aircraft carries its **G1 type**, one of the codebook's 12 "
+        "architecture types, and the type's parent among 5 classes: **VT** Vectored Thrust, **LC** Lift + "
+        "Cruise, **WM** Wingless (Multicopter), **ER** Electric Rotorcraft, **HB** Hover Bikes / PFD (the "
+        "directory's own name, personal flying devices). **One labeller, the author, assigned every G1 type.** "
+        "Photographs: the images of the directory pages (crawl of 2026-09-17); a photo aircraft carries the "
+        "directory's own class, one of the same 5.",
         f"Figure {D.fignum()} follows each source from the files on disk to the analysis set, each image counted "
         "under the first rule that removed it. A drawing enters when the labeller approved it, its aircraft "
         "passes the domain gate (aircraft flagged as similar to a UAV, or not electric, leave) and its patent "
-        "is not a duplicate of another; part and detail figures leave, and so do the "
+        "is not a duplicate of another; part figures leave, and so do the "
         f"{n_excl} aircraft marked unclassifiable. A photo passes fixed rules against small files and files "
         "shared with another page, then a zero-shot SigLIP score p(whole aircraft) that keeps an image at "
-        f"p ≥ 0.80, drops it below 0.35 and holds back the review band between. The page's first kept image, "
-        f"its **hero image**, stands for the aircraft. Figures {D.fignum(2)} and {D.fignum(3)} show one image "
-        "per class.",
-        "The drawing label is checked against the independent whole-patent reading of the architecture by "
-        "Cohen's κ = (p_o − p_e) / (1 − p_e), the observed agreement p_o corrected for the agreement p_e two "
-        "independent readings would reach by chance (Cohen, 1960). The photo filter is checked on a random "
-        "sample of hero, dropped and review-band images.",
-        "The audit judge was the AI assistant used for the pipeline, working from contact sheets that showed "
-        "the filter score, so the audit is neither blind nor yet re-checked by the author. The photo label is "
-        "the directory's class, not the codebook's.")
+        f"p ≥ 0.80, drops it below 0.35 and holds back the review band between; the page's first kept image, "
+        f"its **hero image**, stands for the aircraft. Figure {D.fignum(2)} counts the classes, Table "
+        f"{D.tabnum()} the label checks, Figures {D.fignum(3)} and {D.fignum(4)} show one image per class.",
+        "The G1 label is compared with the author's whole-patent reading of the architecture by Cohen's "
+        "κ = (p_o − p_e) / (1 − p_e), the observed agreement p_o corrected for the agreement p_e two readings "
+        "would reach by chance (Cohen, 1960). The photo filter is checked on a random sample of hero, dropped and "
+        "review-band images, each share with its Wilson interval.",
+        "κ is not an independent agreement: the same person made both readings, the whole-patent one after the "
+        "wizard labels were corrected. The audit judge was the AI assistant of the pipeline, working from sheets "
+        "that showed the filter score: neither blind nor yet re-checked by the author. The photo label is the "
+        f"directory's class, not the codebook's: it agrees with the G1 parent for {n_agree} of the {n_link} "
+        f"aircraft present in both ({pc(n_agree / n_link)}).")
     note("f_funnels.png", [(0, "Source: patent drawings of the labelled dataset; labeller's approval, domain "
                                "gate and duplicate rulings"),
                            (1, "Source: evtol.news directory pages (crawl 2026-09-17); fixed rules and a "
@@ -536,19 +740,42 @@ def build(C: Dict) -> Tuple[str, Dict]:
              f"{n_(nH)} hero images, one per directory aircraft, enter the analysis.** (i) The labeller's approval "
              f"removes most drawings ({n_(n_notappr)} of {n_(n_file)} figures on file); the domain gate removes "
              f"{n_gate} more, the duplicate rule {n_dup} and the part figures {n_part}. (ii) The filter keeps "
-             f"{n_(len(kept))} of {n_(len(im))} images, holding back the {n_rev} of the review band; one per page "
-             "is read.")
+             f"{n_(len(kept))} of {n_(len(im))} images, holding back the {n_rev} of the review band.")
     shares = cnt12.sort_values(ascending=False)
-    n_tiny = int((cnt12 <= 10).sum())
-    D.table(md_df([(disp(c), AD.G1_NAME[c], ER.PARENT[c], int(cnt12.get(c, 0))) for c in ER.G1_ORDER],
-                  ["G1 code", "architecture type", "parent class", "aircraft"]),
-            f"The 12 architecture types (G1) of the codebook, their parent class and the drawing aircraft per "
-            f"type ({n_(nP)} aircraft). TP, Tilt Propulsor, is the display name of the type the labelling tool "
-            "records as TR.",
-            f"**Two types hold {pc((shares.iloc[0] + shares.iloc[1]) / nP)} of the drawing aircraft, "
-            f"{AD.G1_NAME[shares.index[0]]} ({shares.iloc[0]}) and {AD.G1_NAME[shares.index[1]]} "
-            f"({shares.iloc[1]}), while {n_tiny} types have ten aircraft or fewer.** The label agrees with the "
-            f"whole-patent reading for {agree} of {gt_n} aircraft (κ {kap:.2f}).")
+    n_tiny = int((cnt12 < 20).sum())
+    fcc = rf_figure("fig_class_counts")
+    D.figure(fcc, "aircraft per G1 type, coloured by the parent class (left), and per shared class in the two "
+                  "sources (right).",
+             f"**Two types hold {pc((shares.iloc[0] + shares.iloc[1]) / nP)} of the drawing aircraft, "
+             f"{AD.G1_NAME[shares.index[0]]} ({shares.iloc[0]}) and {AD.G1_NAME[shares.index[1]]} "
+             f"({shares.iloc[1]}), while {n_tiny} types have fewer than 20.** The two sources have different class "
+             f"mixes: Vectored Thrust is {pc(cnt12[[c for c in ER.G1_ORDER if ER.PARENT[c] == 'VT']].sum() / nP)} of "
+             f"the drawings and {pc(cnt5h['VT'] / nH)} of the photos, Wingless {pc(cnt12.get('MR', 0) / nP)} "
+             f"against {pc(cnt5h['WM'] / nH)}.")
+    dis = kby[kby.disagreements > 0].sort_values("disagreements", ascending=False)
+    D.table(md_df(
+        [("G1 label against the whole-patent reading (current labels)", n_(gt_n), f"{agree} ({pc(agree / gt_n)})",
+          f"κ {kap:.3f}")] +
+        [(f"frozen labels of 2026-09-15 against the same reading (analysis set)", n_(int(k_fz_set.n)),
+          f"{int(k_fz_set.agree)} ({pc(k_fz_set.agree_share)})", f"κ {k_fz_set.kappa:.3f}"),
+         (f"frozen labels, whole ground-truth file ({n_(n_gt_rows)} rows)", n_(int(k_fz_all.n)),
+          f"{int(k_fz_all.agree)} ({pc(k_fz_all.agree_share)})", f"κ {k_fz_all.kappa:.3f}"),
+         ("frozen labels, project record of 2026-09-17", n_(int(k_rec.n)), f"({pc(float(k_rec.agree_share))})",
+          f"κ {float(k_rec.kappa):.3f}")] +
+        [("hero images that show the whole aircraft", n_(int(auw.loc['main'].n)), wil("main"), "Wilson 95 %"),
+         ("images the filter dropped that were a whole vehicle", n_(int(auw.loc['siglip_drop'].n)), wil("siglip_drop"),
+          "Wilson 95 %"),
+         ("review-band images that would have been usable", n_(int(auw.loc['review_band'].n)), wil("review_band"),
+          "Wilson 95 %")],
+        ["check", "n", "agree / count", "measure"]),
+        "How far the labels and the photo filter can be trusted.",
+        f"**The current G1 labels agree with the author's whole-patent reading for {agree} of {gt_n} aircraft "
+        f"(κ {kap:.2f}), and the labels frozen before the last corrections for κ {float(k_rec.kappa):.3f}.** The "
+        f"disagreements concentrate in "
+        + ", ".join(f"{disp(c)} ({int(r.disagreements)} of {int(r.n_aircraft)}: the reading says "
+                    f"{r.whole_patent_reading_says.replace('TR', 'TP')})" for c, r in dis.head(2).iterrows())
+        + f". {int(auw.loc['main']['count'])} of {int(auw.loc['main'].n)} audited hero images show the whole "
+        "aircraft.", right=["n"])
     note("f_examples_patents.png", "Source: patent drawings, labeller's main figure as the model receives it; "
                                    "the first aircraft of each type whose main figure is a Perspective view; label: "
                                    "human G1 type (parent class); code under each drawing: the aircraft")
@@ -562,11 +789,9 @@ def build(C: Dict) -> Tuple[str, Dict]:
     f3 = PRIVB / "f02_examples.png"
     shutil.copyfile(AD.EE / "embedding_analysis_registers/figs/f02_examples.png", f3)
     D.figure(f3, f"one hero image per directory class (built aircraft, highest filter score). {CREDIT}.",
-             f"**A hero image shows the whole aircraft, a photograph or a rendering, often in a scene: {k_m} of "
-             f"{n_m} audited hero images show the whole aircraft.** Of the images the filter dropped, {k_s} of "
-             f"{n_s} audited were a whole vehicle, and {k_r} of {n_r} review-band images would have been usable. "
-             f"On the {len(pch)} patent aircraft that have a directory page, the directory class agrees with the "
-             f"parent of the human G1 type for {int(pch.agrees.sum())}.", width=100)
+             "**A hero image shows the whole aircraft, a photograph or a rendering, often in a scene.** Hover "
+             "Bikes / PFD is the directory's name for its fifth class, which holds the G1 types HB and PFV.",
+             width=100)
 
     # 1.2
     sens_rows, inside_all, rng_ = [], True, {}
@@ -585,8 +810,8 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "1.2", "How does each aircraft become one image and one vector, and does the choice of images decide "
                "the result?",
         "An aircraft has a median of two whole-aircraft drawings, so a rule must pick the image that becomes its "
-        "vector. The question is which rules exist, how often they agree, and whether this or any other "
-        "selection step moves the primary score.",
+        "vector. The question is which rules exist, how often they agree, and whether any selection step moves "
+        "the primary score.",
         f"The {n_(nP)} drawing aircraft and their {n_(nW)} figures; for the flight state, the figures of the "
         f"{len(conv)} convertible types (TP; CVT, Combined Vectored Thrust; TW, Tilt Wing; DS, Deflected "
         "Slipstream; SRW, Stopped/Slowed Rotor Wing), whose shape changes between hover and cruise; the "
@@ -596,14 +821,13 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "on the flight state (Cruise > Both > Hover > Other), then on the view; **exp3 main figure** takes the "
         "figure the labeller marked as main, the primary rule; **exp4 view average** averages the vectors of "
         "the best figure in each of Perspective, Plan and Side. The flight state is recorded per figure as "
-        f"Cruise, Hover, or Both when the moving part is drawn in both positions (Table {D.tabnum(2)}). The chosen "
-        "image is rotated by its labelled angle, padded to a white square and resized to 518 px, 37 × 37 "
-        "patches of 14 px, for drawings and photos alike. Each selection step is then made stricter, or its "
-        f"measured errors removed, and the primary score recomputed (Table {D.tabnum(3)}).",
+        "Cruise, Hover, or Both when the moving part is drawn in both positions. The chosen image is rotated "
+        "by its labelled angle, padded to a white square and resized to 518 px, 37 × 37 patches of 14 px, for "
+        "drawings and photos alike. Each selection step is then made stricter, or its measured errors removed, "
+        f"and the primary score recomputed (Table {D.tabnum(2)}).",
         f"Cruise is the canonical state because more convertible aircraft have a Perspective figure in Cruise "
-        f"({pc_}) than in Hover ({ph_}) among the {n_var}. The white pad matches the paper of a drawing, so the "
-        "square format adds no content to it. A selection step decides the result only if a variant leaves the "
-        "interval of the set as built (methods box).",
+        f"({pc_} aircraft) than in Hover ({ph_}) among the {n_var}; Both is rare ({n_both} figures). A selection "
+        "step decides the result only if a variant leaves the interval of the set as built.",
         "The variants are subsets of the set as built, so their intervals are not independent of it.")
     D.table(md_df([
         ("exp1 view-first", "best view, then best flight state", pc(same("exp1 view-first", "exp3 main figure"), 1)),
@@ -611,21 +835,12 @@ def build(C: Dict) -> Tuple[str, Dict]:
         ("exp3 main figure", "the figure the labeller marked as main (primary rule)", "100.0 %"),
         ("exp4 view average", "mean of the best figure of each of Perspective, Plan and Side", "n/a"),
     ], ["rule", "which figure", "same figure as exp3"]),
-        f"The four image rules. exp1 and exp2 pick the same figure for "
-        f"{pc(same('exp1 view-first', 'exp2 state-first'), 1)} of the aircraft; exp4 averages 2 figures for "
-        f"{int((nslots == 2).sum())} aircraft and 3 for {int((nslots == 3).sum())}, and is one figure for the "
-        f"other {int((nslots == 1).sum())}.",
+        f"The four image rules. exp4 averages 2 figures for {int((nslots == 2).sum())} aircraft and 3 for "
+        f"{int((nslots == 3).sum())}, and is one figure for the other {int((nslots == 1).sum())}.",
         f"**The flight state barely moves the choice: exp1 and exp2 differ on "
         f"{int(round((1 - same('exp1 view-first', 'exp2 state-first')) * nP))} aircraft only.** The labeller's "
         f"main figure differs from the view-first pick on "
         f"{int(round((1 - same('exp1 view-first', 'exp3 main figure')) * nP))}.", right=["same figure as exp3"])
-    big3 = [c for c in ctab.index if ctab.loc[c].sum() >= 50]
-    ct = ctab.copy()
-    ct.insert(0, "type", [disp(c) for c in ct.index])
-    D.table(ct.reset_index(drop=True), "Flight state of the whole-aircraft drawings of the convertible types.",
-            f"**In the three large convertible types ({', '.join(disp(c) for c in big3)}) Cruise and Hover are "
-            f"drawn about equally often, and Both is rare everywhere (at most {int(ctab['Both'].max())} figures "
-            f"per type)**, so the preference for Cruise decides little.")
     D.table(md_df(sens_rows, ["source", "variant", "aircraft", "kNN-5", "95 % interval"]),
             "Sensitivity of the primary score to the selection (registers, layer 24 CLS, maker held out).",
             (f"**Every variant stays inside the interval of the set as built: no selection step decides the "
@@ -633,87 +848,95 @@ def build(C: Dict) -> Tuple[str, Dict]:
              f"photo variants {rng_['photos'][0]:.3f} to {rng_['photos'][1]:.3f}." if inside_all else
              "**At least one variant leaves the interval of the set as built.**"))
     D.answer(
-        f"{n_(nP)} drawing aircraft and {n_(nH)} photo aircraft enter, each as one image and one vector, with "
-        f"labels that agree with an independent reading, and no selection step moves the primary score outside "
-        "its interval.",
+        f"{n_(nP)} drawing aircraft and {n_(nH)} photo aircraft enter, each as one image and one vector; the "
+        "labels agree closely with the author's own whole-patent reading, and no selection step moves the "
+        "primary score outside its interval.",
         [f"**Two sources, one unit.** {n_(nW)} whole-aircraft drawings from {n_(n_pat_patents)} patents, and "
-         f"one hero image per directory page, each reduced to one vector per aircraft.",
-         f"**The labels hold up.** The drawing type agrees with the whole-patent reading for {agree} of {gt_n} "
-         f"aircraft (κ {kap:.2f}); the directory class agrees with the parent type for {int(pch.agrees.sum())} "
-         f"of {len(pch)} aircraft present in both.",
-         f"**The image rule is fixed before any score.** The labeller's main figure is the primary rule; the "
-         f"flight state changes the pick for {int(round((1 - same('exp1 view-first', 'exp2 state-first')) * nP))} "
-         "aircraft only.",
+         "one hero image per directory page, each reduced to one vector per aircraft.",
+         f"**One labeller.** κ {kap:.2f} against the author's whole-patent reading, {float(k_rec.kappa):.3f} for "
+         "the frozen labels; no second labeller has read the drawings.",
+         f"**Two label schemes.** The directory class agrees with the G1 parent for {n_agree} of {n_link} "
+         "aircraft present in both.",
          "**The selection does not decide the result.** Stricter filters, label-checked aircraft and "
-         "Perspective-only aircraft all score inside the interval of the set as built.",
-         f"**The photo filter audit is not blind.** {k_m} of {n_m} audited hero images show the whole aircraft, "
-         "judged by the pipeline's AI assistant from sheets that showed the filter score."])
+         "Perspective-only aircraft all score inside the interval of the set as built."])
 
     # ═══ 2 ═══
     D.chapter("2", "The setup: which DINOv2 checkpoint, layer, token and image preparation read the images, "
                    "and how are they chosen?",
-              "A frozen model leaves few choices, but each can move the score. They fall into two kinds:",
-              "- **Image-type choices** follow from what patent drawings are, thin black lines on a large white "
-              "field, so they transfer to any patent-drawing study: the checkpoint and the input size.\n"
-              "- **Label-selected choices** are made on the labels and are therefore chosen by the split-half "
-              "rule (methods box): the layer, the token and each source's image preparation.",
-              f"A half holds {hn.loc['patents G1 12-class', 'min']} to {hn.loc['patents G1 12-class', 'max']} "
-              f"drawing aircraft and {hn.loc['photos 5-class', 'min']} to {hn.loc['photos 5-class', 'max']} photo "
-              "aircraft, so its neighbour pool is about half the full one: held-out scores sit below the "
-              "full-sample scores of chapters 3 to 5, and only held-out scores compare with each other.")
+              "A frozen model leaves few choices, but each can move the score. They fall into three kinds: "
+              "**fixed** choices stated in advance (resolution, pad, rotation, one image per aircraft, k); "
+              "**label-selected** choices, made on the labels and therefore chosen by the split-half rule (layer, "
+              "token, each source's preparation); and the **model**, a property of the checkpoint that a "
+              "label-free diagnostic can decide (Table " + f"{D.tabnum()}).")
+    D.add("#### How the model was reached", "")
+    D.add(f"1. **Planned:** the base DINOv2-large, the model of the extraction pipeline ({base_sc[L12]:.3f} on "
+          "the drawings' 12 types).",
+          f"2. **Checked, then switched:** the registers check was run for the attention artifact of the base "
+          f"model (2.1) and also returned higher scores ({sg(reg[L12]['diff'])} and {sg(reg[L5]['diff'])} on the "
+          "drawings); the switch was decided after those scores had been seen, so it is post hoc on the scores.",
+          f"3. **Confirmed:** the split-half rule, run over all 12 candidates of both models, picks a registers "
+          f"candidate in {pc(reg_share.min(), 1)} to {pc(reg_share.max(), 1)} of the held-out choices.", "")
     D.table(md_df([
-        ("model", "DINOv2-large; DINOv2-large with registers", "image type", "the attention artifact (2.1); the held-out rule confirms"),
-        ("resolution", "518 px", "image type", "the model's largest training size; not selected"),
-        ("layer", "18, 22, 24", "label-selected", "split-half rule (2.2)"),
-        ("token", "CLS; mean of the patch tokens", "label-selected", "split-half rule (2.2)"),
-        ("drawing preparation", "plain; thick1; thick2", "label-selected", "split-half rule (2.3)"),
-        ("photo preparation", "colour; greyscale", "label-selected", "split-half rule (2.3)"),
-    ], ["choice", "candidates, fixed in advance", "kind", "how chosen"]), "The candidate grid.",
-        "**Two choices follow from the images alone; four are chosen on the labels, and are therefore tested on "
-        "makers that did not choose them.**", right=[])
+        ("model", "DINOv2-large; DINOv2-large with registers", "model property; label-free diagnostic, label-confirmed",
+         "attention check (2.1); split-half rule over all 12 candidates", "with registers"),
+        ("resolution", "518 px", "fixed (author ruling)", "the model's largest training size; that it keeps thin "
+         "lines is a rationale, not a measurement", "518 px"),
+        ("pad and rotation", "white square pad; rotation by the labelled angle", "fixed, not selected",
+         "the pad matches the paper of a drawing", "as stated"),
+        ("image per aircraft", "drawings: the labeller's main figure; photos: the hero image",
+         "fixed before the setup round", "one representative image per aircraft on both sides, chosen by the "
+         "source; the primary rule since 2026-09-22 (3.3, 4.3)", "main figure; hero image"),
+        ("neighbours", "k = 5, cosine distance", "fixed in advance", "k = 3 and 10 as sensitivity (3.1)", "k = 5"),
+        ("layer and token", "layer 18, 22, 24; CLS or patch mean", "label-selected", "split-half rule (2.2)",
+         "layer 24 CLS"),
+        ("readout for both sources", "one layer and token, or one per source", "author ruling",
+         "one readout keeps the comparison fair; each source's own pick is reported (2.2)", "one"),
+        ("drawing preparation", "plain; thick1; thick2; grey and contrast as controls (added post hoc)",
+         "label-selected", "split-half rule (2.3)", "plain"),
+        ("photo preparation", "colour; greyscale", "label-selected", "split-half rule (2.3): a tie, the default "
+         "is kept", "colour"),
+    ], ["choice", "candidates", "kind", "how decided", "carried forward"]),
+        "The setup: every choice, how it was decided, and what chapters 3 to 5 use.",
+        "**One model and one readout for both sources, the images left as they come; only the layer, token and "
+        "preparation are chosen on the labels, and they are tested on makers that did not choose them.**", right=[])
 
     # 2.1
-    rows = []
-    reg_rows = []
-    words = {"drawings, 12 types": "the drawings' 12 types", "drawings, 5 classes": "the drawings' 5 classes",
-             "photos, 5 classes": "the photos' 5 classes"}
-    for lab_s, src, lab_k, lab_sel in [("drawings, 12 types", "patents", "G1 12-class", "patents G1 12-class"),
-                                       ("drawings, 5 classes", "patents", "parent 5-class", "patents parent 5-class"),
-                                       ("photos, 5 classes", "photos", "5-class", "photos 5-class")]:
-        pr = pv.loc[(src, lab_k)]
-        reg_rows.append((words[lab_s], pr))
-        rows.append((lab_s, f"{rkv(BT, src, lab_k).bal_acc:.3f}", f"{rkv(T, src, lab_k).bal_acc:.3f}",
-                     f"{sg(pr['diff'])} {ci(pr.ci_lo, pr.ci_hi, 3, True)}", pc(reg_share[lab_sel], 1)))
     D.method(
-        "2.1", "Does the registers checkpoint read the images better than the base model?",
-        "Whether DINOv2 with registers should replace the base DINOv2: whether it removes an attention artifact "
-        "on blank background, and whether it scores higher on the same aircraft.",
-        f"Attention: every drawing ({int(sh.loc[('registers', 'patent', 24)].n_images)}) and photo "
-        f"({n_(int(sh.loc[('registers', 'photo', 24)].n_images))}) under both models, per image, the unit at "
-        f"which attention exists. Scores: the {n_(nP)} drawing and {n_(nH)} photo aircraft, the same processed "
-        "images and the same code for both models.",
-        f"Table {D.tabnum()} gives the collapse measure per layer: the median share of the CLS token's attention "
-        f"that falls on the single largest patch. Figure {D.fignum()} shows the maps on four images. Table "
-        f"{D.tabnum(2)} compares the two models' scores at layer 24 CLS on the same aircraft, and gives the share "
-        "of the 400 held-out choices that pick a registers candidate when all 12 candidates (2 models × 6 "
-        "matrices) compete.",
+        "2.1", "Does the registers checkpoint remove the attention artifact, and does it read the images better?",
+        "Whether the base DINOv2 collapses its late attention onto blank background, whether the registers "
+        "checkpoint removes the collapse, and whether it scores higher on the same aircraft.",
+        f"Attention, per image, the unit at which attention exists: the {n_att_p} drawings of the patent main "
+        f"set (the {n_(nP)} aircraft plus the {n_excl} marked unclassifiable, which are never scored) and the "
+        f"{n_(nH)} hero images, both models on the same images. Scores: the {n_(nP)} drawing and {n_(nH)} photo "
+        "aircraft, same processed images and code for both models.",
+        f"Table {D.tabnum()} gives the collapse measure, the median share of the CLS token's attention on the "
+        "single largest patch, per layer, and at layer 24 its 90th percentile, the share renormalised over the "
+        "patches, the share the prefix tokens (CLS and registers) take, and the share of images whose largest "
+        f"patch lies in the white pad. Figure {D.fignum()} maps four images. The scores of the two models are the "
+        f"first rows of the contrast figure of 2.4 (Figure {D.fignum(5)}).",
         "DINOv2 without registers parks high-norm artifact tokens in low-information background patches, and "
-        "the registers checkpoint adds four register tokens that absorb this mass (Darcet et al., 2024); a "
-        "patent drawing is mostly white background. The attention map is the CLS query against every patch key, "
-        "averaged over the heads. Paired differences and the held-out share follow the methods box.",
-        "The registers checkpoint entered the candidate set after the base model's collapse had been seen, so "
-        "testing it is a post-hoc step; the held-out rule then confirms it. Part of its advantage does not "
-        "survive the removal of the view (3.2).")
-    D.table(md_df([(f"L{L}", f"{sh.loc[('base', 'patent', L)].max_patch_share_median:.3f}",
-                    f"{sh.loc[('registers', 'patent', L)].max_patch_share_median:.3f}",
-                    f"{sh.loc[('base', 'photo', L)].max_patch_share_median:.3f}",
-                    f"{sh.loc[('registers', 'photo', L)].max_patch_share_median:.3f}") for L in (18, 22, 24)],
-                  ["layer", "drawings, base", "drawings, registers", "photos, base", "photos, registers"]),
-            "Median share of the CLS attention that falls on the single largest patch (the collapse measure).",
-            f"**In the base model the late-layer attention collapses onto one patch, "
-            f"{sh.loc[('base', 'patent', 24)].max_patch_share_median:.3f} of it at layer 24 on drawings and "
-            f"{sh.loc[('base', 'photo', 24)].max_patch_share_median:.3f} on photos; with registers it stays at or "
-            f"below {max(sh.loc[('registers', s, L)].max_patch_share_median for s in ('patent', 'photo') for L in (18, 22, 24)):.3f}.**")
+        "the registers checkpoint adds four register tokens that absorb them (Darcet et al., 2024). The map is "
+        "a = softmax(q_CLS · Kᵀ / √d_h), averaged over the heads; share = max_p a_p.",
+        "The switch was decided after the scores were seen (post hoc). Part of the advantage does not survive "
+        "the removal of the view (3.2).")
+
+    def srow(m_, s_, lab):
+        r24 = s9a.loc[(m_, s_, 24)]
+        return (lab, *[f"{sh.loc[(m_, s_, L)].max_patch_share_median:.3f}" for L in (18, 22, 24)],
+                f"{r24.max_patch_share_p90:.3f}", f"{r24.renorm_max_share_median:.3f}",
+                f"{r24.prefix_share_median:.3f}", pc(r24.argmax_in_pad_share, 1))
+    D.table(md_df([srow("base", "patent", "base, drawings"), srow("registers", "patent", "registers, drawings"),
+                   srow("base", "photo", "base, photos"), srow("registers", "photo", "registers, photos")],
+                  ["model, source", "L18", "L22", "L24", "L24 p90", "L24 renormalised", "L24 prefix tokens",
+                   "largest patch in the pad"]),
+            f"The attention collapse: median share of the CLS attention on the single largest patch ({n_att_p} "
+            f"drawings, {n_(nH)} photos, both models on the same images).",
+            f"**The base model's late attention collapses onto one patch, {sh.loc[('base', 'patent', 24)].max_patch_share_median:.3f} "
+            f"of it at layer 24 on drawings and {sh.loc[('base', 'photo', 24)].max_patch_share_median:.3f} on photos, "
+            f"and that patch lies in the white pad for {pc(pad[('base', 'patent')], 1)} of the drawings and "
+            f"{pc(pad[('base', 'photo')], 1)} of the photos; with registers the share stays at or below "
+            f"{reg_max:.3f} and never lands in the pad.** The collapse is a property of the model, not of patent "
+            "drawings: it hits both sources, on the pad added to both.")
     note("f_attention_base_vs_registers.png",
          "Source: DINOv2-L and DINOv2-L with registers, frozen, 518 px; CLS attention, mean over heads, each map "
          f"scaled to its own 99th percentile; 2 drawings and 2 photos, first aircraft of each class in both runs. "
@@ -721,45 +944,47 @@ def build(C: Dict) -> Tuple[str, Dict]:
     with _into_brief():
         f4 = AD.fig_attention_models(C)
     D.figure(f4, "where the CLS token looks: base (columns 2 to 4) against registers (columns 5 to 7), layers 18, "
-                 "22 and 24, on the same images; bright = attention.",
-             "**In base layers 22 and 24 the attention gathers on the padding patch in the top-left corner and on "
-             "dots of the white field; with registers the late layers stay on the aircraft.**", width=92)
-    exc = [lab for lab, pr in reg_rows if pr.ci_lo > 0]
-    nod = [lab for lab, pr in reg_rows if pr.ci_lo <= 0 <= pr.ci_hi]
-    D.table(md_df(rows, ["label set", "base", "registers", "paired difference [95 % CI]",
-                         "registers chosen (held out)"]),
-            "Registers against base on the same aircraft: kNN-5 balanced accuracy, layer 24 CLS, maker held out; "
-            "the last column is the share of the 400 held-out choices that pick a registers candidate when all "
-            "12 compete.",
-            f"**Registers score higher on all three label sets; the gain is detected on "
-            f"{' and on '.join(exc) if exc else 'no label set'}"
-            + (f", while on {' and on '.join(nod)} no difference is detected" if nod else "") + ".** "
-            f"Held out, a registers candidate wins {pc(reg_share.min(), 1)} to {pc(reg_share.max(), 1)} of the "
-            f"choices; on the same halves registers minus base averages "
-            f"{sg(hsd.loc['patents G1 12-class', 'mean'])} (drawings, 12 types) to "
-            f"{sg(hsd.loc['patents parent 5-class', 'mean'])} (drawings, 5 classes). Patent-to-photo matching "
-            f"improves too: own page in the top 50 for {pc(mtb.loc['patent->photo', 'R@50'])} of the queries "
-            f"with base, {pc(mpp['R@50'])} with registers (5.2).")
+                 "22 and 24, on the same images; bright = attention, each map scaled on its own.",
+             f"**In base layers 22 and 24 one patch of the pad, the pale square in the top-left corner, holds about "
+             f"{sh.loc[('base', 'patent', 24)].max_patch_share_median:.1f} of the attention, and dots of the white "
+             "field light up; with registers neither appears.** Each map is scaled to its own 99th percentile, so "
+             "the corner patch is clipped to the brightest colour and the rest of a base map looks brighter than "
+             "it is.", width=92)
+    D.bullets([
+        f"**Scores.** Registers minus base, makers resampled: {mci(reg[L12])} on the drawings' 12 types, "
+        f"{mci(reg[L5])} on their 5 classes, {mci(reg[P5])} on the photos ({mnd(reg[P5])}); registers score higher "
+        f"in {pc(min(r.share_of_halves_same_sign for r in reg.values()))} to "
+        f"{pc(max(r.share_of_halves_same_sign for r in reg.values()))} of the halves, by "
+        f"{sg(min(r.halves_mean_diff for r in reg.values()))} to {sg(max(r.halves_mean_diff for r in reg.values()))} "
+        "on average.",
+        f"**A reusable label-free test.** If a late layer puts more than about 0.1 of the CLS attention on one "
+        "patch, or its largest patch in the pad, use a registers checkpoint; the test needs no label, and the "
+        "labels then confirm it here."])
 
     # 2.2
     lwin = {lab: reg_only[reg_only.label == lab].sort_values("selection_freq").candidate.iloc[-1].replace("registers ", "")
             for lab in reg_only.label.unique()}
     all_l24 = all(v == "L24 CLS" for v in lwin.values())
+    op_d1, op_d1f = own_pick("layer and token", "patents", 1)
+    op_p1, op_p1f = own_pick("layer and token", "photos", 1)
+    op_p2, op_p2f = own_pick("layer and token", "photos", 2)
     D.method(
         "2.2", "Which layer and which token carry the architecture?",
         "Which of the six matrices (layers 18, 22 and 24, read through the CLS token or the patch mean) is "
         "carried forward.",
-        "The six matrices of the registers model; the aircraft of each half; three label sets: drawings on the "
-        "12 types, drawings on the 5 classes, photos on the 5 classes.",
+        f"The six matrices of the registers model; three label sets: drawings on the 12 types, drawings on the 5 "
+        f"classes, photos on the 5 classes. A half holds {hn.loc[L12, 'min']} to {hn.loc[L12, 'max']} drawing "
+        f"aircraft and {hn.loc[P5, 'min']} to {hn.loc[P5, 'max']} photo aircraft.",
         f"The split-half rule picks the best matrix on one half and scores it on the other, 400 times per label "
-        f"set; Figure {D.fignum()} gives how often each matrix is chosen and Table {D.tabnum()} the decision, "
-        "frequencies averaged over the three label sets. As a check, the protocol's in-sample layer rule (the "
-        "highest score averaged over the image rules) is rerun on 200 random subsets of 80 % of the drawing "
-        "aircraft.",
+        f"set; Figure {D.fignum()} gives how often each matrix is chosen, Table {D.tabnum()} the decision. "
+        f"Checks: the rule rerun with seeds {' and '.join(map(str, seed_list))}; each source's own pick; the "
+        "best mean held-out score as the criterion instead of the selection frequency.",
         "The selection frequency says how stable a choice is across makers; the held-out score, what it reaches "
         "on makers that did not choose it. The last layer's CLS token is the one DINOv2 is trained to make a "
-        "global summary of the image (Oquab et al., 2023), so the choice has an expected answer to be tested "
-        "against.")
+        "global summary of the image (Oquab et al., 2023).",
+        f"Halves are unbalanced, and {int(miss12.halves_missing_any_class)} of the 400 drawing halves miss a rare "
+        f"type ({miss12.halves_missing_each_class}). A held-out score sits below the full-sample one because its "
+        "neighbour pool is about half the size; only held-out scores compare with each other.")
     note("f_selection.png", [(0, "Source: registers model; 400 held-out choices; drawings, main figure, 12 types"),
                              (1, "Source: registers model; 400 held-out choices; drawings, main figure, 5 classes"),
                              (2, "Source: registers model; 400 held-out choices; photos, hero image, 5 classes")])
@@ -769,130 +994,141 @@ def build(C: Dict) -> Tuple[str, Dict]:
                  "model); blue: the matrix carried forward.",
              ("**Layer 24 CLS is chosen most often on every label set" if all_l24 else
               "**Layer 24 CLS is not the first choice on every label set") +
-             f"; its runner-up, layer 22 CLS, is chosen most on the photos ({pc(l22f['photos 5-class'])}, "
-             f"against {pc(min(l22f['patents G1 12-class'], l22f['patents parent 5-class']))} to "
-             f"{pc(max(l22f['patents G1 12-class'], l22f['patents parent 5-class']))} on the drawings).**")
+             f"; its runner-up, layer 22 CLS, is chosen most on the photos ({pc(l22f[P5])}, against "
+             f"{pc(min(l22f[L12], l22f[L5]))} to {pc(max(l22f[L12], l22f[L5]))} on the drawings).**")
     D.table(md_df([(c.replace("registers ", ""), pc(r.selection_freq, 1), f"{r.fixed_heldout_mean:.3f}")
                    for c, r in dec.iterrows()], ["matrix", "mean selection frequency", "mean held-out score"]),
-            "The decision over the six registers matrices, frequencies and held-out scores averaged over the "
-            "three label sets.",
+            "The decision over the six registers matrices, averaged over the three label sets.",
             f"**Layer 24 CLS is chosen in {pc(dec.loc['registers L24 CLS'].selection_freq)} of the choices and "
             f"layer 22 CLS in {pc(dec.loc['registers L22 CLS'].selection_freq)}; the patch-token mean is almost "
-            f"never chosen.** The in-sample layer rule agrees: it picks layer 24 CLS on "
-            f"{pc(lay_p.loc['L24 CLS'].wins_on_subsets)} of the 80 % subsets.")
+            "never chosen.**")
+    D.bullets([
+        f"**Each source's own pick.** Drawings alone pick {op_d1} in {pc(op_d1f)} of the choices; photos alone "
+        f"pick {op_p1} in {pc(op_p1f)} and {op_p2} in {pc(op_p2f)}, a tie: on the same halves L24 CLS minus "
+        f"L22 CLS averages {sg(l24_l22_ph.mean_diff)}, positive in {pc(l24_l22_ph.share_of_halves_positive)}. "
+        "One readout for both sources is the author's ruling; the photos lose nothing measurable by it.",
+        f"**Stable.** Seeds {' and '.join(map(str, seed_list))} "
+        + ("keep the same winner" if seed_same else "change the winner")
+        + ("; the best-score criterion picks the same setup at every step" if best_same else
+           "; the best-score criterion disagrees at one step")
+        + f"; the protocol's in-sample layer rule picks layer 24 CLS on {pc(lay_p.loc['L24 CLS'].wins_on_subsets)} "
+        "of 200 subsets of 80 % of the drawing aircraft."])
 
     # 2.3
     D.method(
         "2.3", "Should the drawings or the photographs be transformed before the model reads them?",
-        "Whether thickening the thin lines of a drawing, or removing the colour of a photograph, helps the model "
-        "read the architecture.",
+        "Whether changing how the strokes of a drawing reach the model, or removing the colour of a photograph, "
+        "helps the model read the architecture, and which part of a change does the work.",
         f"The {n_(nP)} drawing aircraft (main figure) and the {n_(nH)} photo aircraft (hero image), registers "
-        "model, layer 24 CLS.",
-        "After the resize to 518 px a fine stroke can shrink to a grey pixel, so line thickening is a candidate: "
-        "a minimum filter on the original drawing whose radius makes **thick1** grow each side of a stroke by "
-        "about 1 px at the model input (about 2 px of width) and **thick2** by about 2 px per side (radius in "
-        f"original pixels: median {int(sm1.radius.median())} and {int(sm2.radius.median())}). Figure "
-        f"{D.fignum()} shows the three inputs. Table {D.tabnum()} compares each variant, and greyscale photos, "
-        "with the untransformed image on the same aircraft, and gives how often the split-half rule chooses the "
-        "variant.",
-        "Paired bootstrap differences and the held-out share, as in the methods box. Greyscale also tests "
-        "whether any photo advantage over drawings is colour (5.1).",
-        "A gentler thickening, below 1 px per side, was not in the candidate set fixed in advance. "
-        f"{n_col} of the {n_(len(sm1))} source drawings carry colour, which the thick variants also remove.")
-    note("f_thickening.png", "Source: patent drawings, labeller's main figure, 3 aircraft of the setup montage "
-                             "(seed 42); 518 px model inputs; red square: the detail window shown on the right")
-    with _into_brief():
-        f6, _tinfo = AD.fig_thickening(C)
-    D.figure(f6, "plain, thick1 and thick2 as the model receives them (left), and the same 128 px detail of each "
-                 "(right).",
-             "**Thickening merges thin propeller blades and reference numerals, and turns hatching and shading "
-             "into solid black: it fills the fine detail that separates the types.**", width=88)
-    rows = []
-    thick_nd = []
-    for lab_s, lab in (("drawings, 12 types", "patents G1 12-class"), ("drawings, 5 classes", "patents parent 5-class")):
-        for v in ("thick1", "thick2"):
-            r = pair.loc[(lab, f"{v} - plain")]
-            rows.append((lab_s, v, f"{s2k.loc[(lab, 'plain')].bal_acc:.3f}", f"{s2k.loc[(lab, v)].bal_acc:.3f}",
-                         f"{sg(r['diff'])} {ci(r.ci_lo, r.ci_hi, 3, True)}", pc(s1bc.loc[(lab, v)].selection_freq)))
-            thick_nd.append((v, r.ci_hi < 0))
-    g = pair.loc[("photos 5-class", "grey - colour")]
-    rows.append(("photos, 5 classes", "greyscale", f"{s2k.loc[('photos 5-class', 'colour')].bal_acc:.3f}",
-                 f"{s2k.loc[('photos 5-class', 'grey')].bal_acc:.3f}", f"{sg(g['diff'])} {ci(g.ci_lo, g.ci_hi, 3, True)}",
-                 pc(s1bc.loc[("photos 5-class", "grey")].selection_freq)))
-    t2below = all(b for v, b in thick_nd if v == "thick2")
-    D.table(md_df(rows, ["label set", "variant", "untransformed", "variant score", "difference [95 % CI]",
-                         "variant chosen (held out)"]),
-            "Each image preparation against the untransformed image, paired on the same aircraft (registers, "
-            "layer 24 CLS).",
-            "**Thickening lowers the score in every row" + (", and thick2's interval lies below zero on both label "
-                                                              "sets" if t2below else "")
-            + f"; greyscale photos score as colour ones ({sg(g['diff'])}, {nd(g.ci_lo, g.ci_hi)}).** The "
-            f"untransformed image is kept on both sources: plain drawings in {pc(s1b.loc['plain'].selection_freq)} "
-            f"of the choices, colour photos in {pc(s1b.loc['colour'].selection_freq)}, colour as the untransformed "
-            "image, not as a better one.")
+        f"model, layer 24 CLS. {n_col} of the {n_(len(sm1))} whole-aircraft drawings carry colour (the "
+        f"{n_(len(sm1))} are the {n_(nW)} figures of the {n_(nP)} aircraft and the {len(sm1) - nW} of the "
+        f"{n_excl} unclassifiable aircraft).",
+        "**thick1** and **thick2** widen every stroke with a minimum filter on the original drawing, by about 1 "
+        "and 2 input pixels per side (radius in original pixels: median "
+        f"{int(sm1.radius.median())} and {int(sm2.radius.median())}); they also make the drawing grey and darken "
+        "faint strokes. Two controls separate these three changes: **grey** removes the colour only; "
+        "**contrast** turns the darker half of each image's ink solid black at the model input, so the strokes "
+        f"darken without widening. Figure {D.fignum()} shows the five inputs; Table {D.tabnum()} their scores "
+        "and the split-half choice over the five; the paired differences are rows of the contrast figure of 2.4.",
+        "Paired differences with makers resampled and the per-half sign, as in the methods box. The ink mass "
+        "(mean darkness of the input) measures how much black each preparation adds.",
+        "The grey and contrast controls were added after the review of the first results (post hoc). contrast is "
+        "a hard threshold, so it also removes the anti-aliasing of the darker strokes: it tests strokes "
+        "rendered differently at the same footprint, not darkness alone. A gentler change was not tested.")
+    note("f_preparations.png", "Source: patent drawings, labeller's main figure, 3 aircraft of the setup montage "
+                               "(seed 42); 518 px model inputs; red square: the 128 px detail shown under each "
+                               "preparation")
+    f6 = fig_preparations()
+    D.figure(f6, "the plain input with its detail window (left), and the same detail under the five preparations.",
+             "**grey is indistinguishable from plain; contrast keeps the footprint but turns half of each stroke "
+             "solid and jagged; thick1 and thick2 merge thin propeller blades and numerals and fill hatching.**",
+             width=100)
+    D.table(md_df([(c, {"plain": "nothing", "grey": "colour removed", "contrast": "strokes darkened in place",
+                        "thick1": "strokes widened about 1 px per side", "thick2": "strokes widened about 2 px per side"}[c],
+                    f"{kc.loc[(L12, c)].bal_acc:.3f}", f"{kc.loc[(L5, c)].bal_acc:.3f}",
+                    pc(v2d.loc[c].selection_freq, 1), f"{v2d.loc[c].fixed_heldout_mean:.3f}") for c in PREPS],
+                  ["preparation", "what changes", "kNN-5, 12 types", "kNN-5, 5 classes", "chosen (held out)",
+                   "mean held-out score"]),
+            "The five drawing preparations (registers, layer 24 CLS, maker held out); the split-half rule chooses "
+            "among the five, frequencies and held-out scores averaged over the two drawing label sets.",
+            f"**Greyscale alone equals plain: the predictions are identical for {pc(min(same_pred.values()))} to "
+            f"{pc(max(same_pred.values()))} of the aircraft. Darkening the strokes in place lowers the score about "
+            "as much as thick2, so the loss comes from changing how the strokes are rendered, not from dilation or "
+            "from colour.** Plain is chosen in "
+            f"{pc(v2d.loc['plain'].selection_freq, 1)} of the choices and plain or grey, which predict alike, in "
+            f"{pc(plain_grey, 1)}.")
+    t2 = [cst("thick2 minus plain", lab) for lab in (L12, L5)]
+    co = [cst("contrast only minus plain", lab) for lab in (L12, L5)]
+    incl = [f"{n} on the {'12 types' if lab == L12 else '5 classes'}" for n, rr in (("thick2", t2), ("contrast", co))
+            for lab, r in zip((L12, L5), rr) if r.ci_lo_maker <= 0 <= r.ci_hi_maker]
+    D.bullets([
+        f"**How firm.** With makers resampled, thick2 minus plain is {mci(t2[0])} and {mci(t2[1])}, contrast "
+        f"minus plain {mci(co[0])} and {mci(co[1])}"
+        + (f"; the intervals of {_join(incl)} include 0, so the per-half shares carry the evidence: thick2 "
+           f"is lower than plain in {pc(hv.loc[(L5, 'thick2 - plain')].share_lower)} to "
+           f"{pc(hv.loc[(L12, 'thick2 - plain')].share_lower)} of the halves, contrast in "
+           f"{pc(hv.loc[(L12, 'contrast - plain')].share_lower)}." if incl else "."),
+        f"**Recipe.** Keep the lines as drawn: no rendering change tested improves the score; a gentler change is "
+        "untested.",
+        f"**Photos.** Greyscale minus colour is {mci(g_ph)} ({mnd(g_ph)}), same sign in "
+        f"{pc(g_ph.share_of_halves_same_sign)} of the halves; the rule picks colour in "
+        f"{pc(s1b.loc['colour'].selection_freq)} of the choices and grey in {pc(s1b.loc['grey'].selection_freq)}: "
+        "a tie, so colour is kept as the default, not as a better choice."])
 
     # 2.4
-    rows = []
-    for lab, lab_s in (("patents G1 12-class", "drawings, 12 types"), ("patents parent 5-class", "drawings, 5 classes"),
-                       ("photos 5-class", "photos, 5 classes")):
-        r, b = lab_reg.loc[lab], lab_b.loc[lab]
-        rows.append((lab_s, f"{r.most_chosen.replace('registers ', '')}: {r.chosen_heldout_mean:.3f}",
-                     f"{r.winner_in_sample_mean:.3f}", f"{r.optimism_gap:.3f}",
-                     f"{lab_all.loc[lab].optimism_gap:.3f}", f"{b.most_chosen}: {b.optimism_gap:.3f}"))
     D.method(
-        "2.4", "How much do the label-selected choices flatter the scores, and which setup is carried forward?",
-        "How much of each score is owed to having chosen the setup on the same labels, and which setup every "
-        "later chapter uses.",
-        "The 400 held-out choices of each label set, among the registers candidates and, as a check, among all "
-        "12 candidates of both models.",
-        f"Table {D.tabnum()} sets the held-out score of the chosen candidate beside the in-sample score of the "
-        f"winner, per label set; Table {D.tabnum(2)} lists the setup carried forward, with the reason for each "
-        "choice.",
-        "gap = in-sample score of the winner − its held-out score (methods box): the amount by which choosing on "
-        "the labels inflates a score.")
-    D.table(md_df(rows, ["label set", "held-out score of the chosen", "in-sample score of the winner",
-                         "gap, layer and token", "gap, both models", "gap, preparation"]),
-            "The optimism of each label-selected choice.",
-            f"**Choosing on the labels inflates a score by a few hundredths at most: {f2(lab_reg.optimism_gap.min(), 3)} "
-            f"to {f2(lab_reg.optimism_gap.max(), 3)} for the layer and token, {f2(lab_all.optimism_gap.min(), 3)} "
-            f"to {f2(lab_all.optimism_gap.max(), 3)} when both models compete.** That is small against the "
-            f"intervals of chapters 3 to 5, which are {mp.knn_ci_hi - mp.knn_ci_lo:.2f} wide on the drawings' "
-            f"12 types and {mh.knn_ci_hi - mh.knn_ci_lo:.2f} on the photos.")
-    D.table(md_df([
-        ("model", "DINOv2 with registers", f"no attention collapse on blank background; chosen in "
-         f"{pc(reg_share.min(), 1)} to {pc(reg_share.max(), 1)} of held-out choices", "image type"),
-        ("resolution", "518 px", "the largest size the model was trained on; keeps thin lines", "image type"),
-        ("layer and token", "layer 24, CLS", f"chosen in {pc(dec.loc['registers L24 CLS'].selection_freq)} of "
-         f"held-out choices (next: layer 22 CLS, {pc(dec.loc['registers L22 CLS'].selection_freq)})", "label-selected"),
-        ("drawings", "plain", "thickening fills fine detail and lowers the score", "label-selected"),
-        ("photos", "colour", f"greyscale scores the same ({sg(g['diff'])}, {nd(g.ci_lo, g.ci_hi)})", "label-selected"),
-    ], ["choice", "value", "reason", "kind"]), "The setup carried forward to chapters 3 to 5.",
-        "**One model and one readout for both sources, with each source's image left as it comes.**", right=[])
+        "2.4", "How much do the label-selected choices flatter the scores, and how firm is every paired contrast?",
+        "How much of each score is owed to having chosen the setup on the same labels, and how firm each paired "
+        "contrast of the document is once whole makers are resampled.",
+        "The 400 held-out choices of each label set, for three pools of candidates: the six registers matrices; "
+        "all 12 matrices of both models; and the joint grid of the six matrices with each source's preparations "
+        f"(18 candidates on the drawings, 12 on the photos). The {n_con} paired contrasts of chapters 2 to 5.",
+        f"Figure {D.fignum()} sets, per label set and pool, the in-sample score of the winner of a half, its "
+        "score on the other half, the held-out score of layer 24 CLS kept fixed, and the full-sample score. "
+        f"Figure {D.fignum(2)} draws every paired contrast: its difference, its interval with aircraft resampled "
+        "(thin line) and with makers resampled (pale bar), and the share of halves with the same sign; three "
+        "rows compare the two sources, whose aircraft differ (chapter 5).",
+        "gap = in-sample score of the winner − its held-out score: the amount by which choosing on the labels "
+        "inflates a score. Maker bootstrap and Holm correction as in the methods box.",
+        "A held-out score uses about half the neighbour pool, so it sits below the full-sample score for a reason "
+        "that has nothing to do with optimism.")
+    frc = rf_figure("fig_optimism")
+    D.figure(frc, "the optimism of the label-selected choices, per label set and pool of candidates.",
+             f"**The drawing headline is {mp.knn_bal_acc:.3f} on the full sample, about {head12:.2f} after the "
+             f"selection optimism, and {base_sc[L12]:.3f} for the base model, the model planned before any score was "
+             f"read.** The joint-grid optimism is {jg.loc[L12, 'joint_optimism_gap']:.3f}, "
+             f"{jg.loc[L5, 'joint_optimism_gap']:.3f} and {jg.loc[P5, 'joint_optimism_gap']:.3f} on the three label "
+             f"sets ({f2(lab_all.optimism_gap.min(), 3)} to {f2(lab_all.optimism_gap.max(), 3)} when both models "
+             f"compete), and layer 24 CLS kept fixed scores {t12.loc[L12, 'fixed_L24_CLS_heldout']:.3f}, "
+             f"{t12.loc[L5, 'fixed_L24_CLS_heldout']:.3f} and {t12.loc[P5, 'fixed_L24_CLS_heldout']:.3f} held out.")
+    fo = rf_figure("fig_forest")
+    flip_txt = _join([_short_contrast(r) for _, r in flips.iterrows()])
+    D.figure(fo, "every paired contrast of the document, with the aircraft and the maker intervals and the share "
+                 "of halves with the same sign.",
+             f"**Resampling whole makers widens the intervals a little and moves {len(flips)} readings to no "
+             f"difference detected ({flip_txt}); none of the {n_con} survives a Holm correction, so the contrasts "
+             "are read together, by their direction and their consistency across halves.**", width=100)
     D.answer(
-        "DINOv2 with registers, at 518 px, read at layer 24 through the CLS token, on untransformed images: the "
-        "checkpoint because it does not collapse onto blank background, the rest by a held-out rule whose "
+        "DINOv2 with registers, at 518 px, read at layer 24 through the CLS token, on the images as they come: "
+        "the checkpoint because its base twin collapses onto the blank pad, the rest by a held-out rule whose "
         "optimism is a few hundredths.",
-        [f"**Registers.** The base model's late attention collapses onto one padding patch "
-         f"({sh.loc[('base', 'patent', 24)].max_patch_share_median:.3f} of it at layer 24 on drawings); registers "
-         f"remove the collapse and score higher on all three label sets ({sg(reg_rows[0][1]['diff'])} on the "
-         f"drawings' 12 types).",
+        [f"**Registers.** A label-free diagnostic (the largest patch in the pad for "
+         f"{pc(pad[('base', 'patent')], 1)} of the base model's drawings, {pc(pad[('registers', 'patent')], 1)} "
+         f"with registers), adopted after the scores were seen, confirmed held out ({pc(reg_share.min(), 1)} to "
+         f"{pc(reg_share.max(), 1)} of the choices).",
          f"**Layer 24 CLS.** Chosen in {pc(dec.loc['registers L24 CLS'].selection_freq)} of the held-out "
-         f"choices; layer 22 CLS is the runner-up, mostly on the photos.",
-         f"**Untransformed images.** Thickening lowers the drawing score; greyscale changes nothing on the "
-         f"photos ({nd(g.ci_lo, g.ci_hi)}).",
-         f"**Small optimism.** Choosing on the labels adds {f2(lab_reg.optimism_gap.min(), 3)} to "
-         f"{f2(lab_all.optimism_gap.max(), 3)} to a score."])
+         "choices; on the photos alone layer 22 CLS ties with it.",
+         "**Plain drawings, colour photos.** Every rendering change tested lowers the drawing score or leaves it "
+         "unchanged; greyscale changes nothing on either source.",
+         f"**Three numbers for the drawings.** {mp.knn_bal_acc:.3f} measured, about {head12:.2f} after the "
+         f"optimism, {base_sc[L12]:.3f} for the model planned first."])
 
     # ═══ 3 ═══
     D.chapter("3", "The drawings: do patent drawings carry the architecture, and what else does the model read "
                    "in them?",
               f"Chapters 1 and 2 fixed the images and the setup. This chapter reads the {n_(nP)} drawing aircraft "
-              "with them, in four steps:",
-              "- **3.1: how well the drawings predict the type** (T1 to T5 of the protocol).\n"
-              "- **3.2: what organises the drawing embedding**: clusters, the view of the drawing, and the "
-              "architecture once the view is removed (T5, T6).\n"
-              "- **3.3: whether the choice of drawing matters** (T7).\n"
-              "- **3.4: where the model looks on a drawing.**")
+              "with them: how well they predict the type (3.1), what organises the embedding (3.2), whether the "
+              "choice of drawing matters (3.3) and where the model looks (3.4).")
     m = Rp["ev"]["main"]
     D.method(
         "3.1", "How well do the drawings predict the architecture type?",
@@ -900,14 +1136,16 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "aircraft of different types, and how often a type is recovered from the nearest aircraft.",
         f"The {n_(nP)} drawing aircraft, one main figure each, labelled with the 12 types and, folded, with the "
         "5 parent classes; all six matrices, layer 24 CLS being the one carried forward.",
-        f"Soundness (T1, T2) and separation (T3) are read first. Figure {D.fignum()} gives, per matrix, the "
-        "kNN-5 balanced accuracy (bars, with the interval), the shuffled level (dashed) and the probe "
-        f"(diamonds); Table {D.tabnum()} the recall per type; Figure {D.fignum(2)} which types are confused "
-        "with which (rows: the true type, columns: the predicted one).",
-        "Balanced accuracy, bootstrap interval, shuffled level and maker-grouped probe as in the methods box; "
-        "guessing scores 1/12 on the types and 1/5 on the classes.",
+        f"Soundness (T1, T2) and separation (T3) first. Figure {D.fignum()} gives, per matrix, the kNN-5 "
+        f"balanced accuracy, the shuffled level and the probe; Figure {D.fignum(2)} the recall per type with its "
+        "Wilson interval, and the same recall when every type weighs the same in the pool: 20 aircraft per type "
+        "(all of a smaller type), 200 draws, neighbours inside the draw, against the same draws with shuffled "
+        f"labels; Figure {D.fignum(3)} which types are confused with which. k = 3 and k = 10 are rerun as a "
+        "sensitivity check.",
+        "As in the methods box; Wilson (1927) for a recall on n aircraft; guessing scores 1/12 on the types.",
         f"{', '.join(f'{disp(c)} {int(cnt12[c])}' for c in sorted(small, key=lambda c: cnt12[c]))} aircraft: "
-        "the recalls of these types rest on a handful of aircraft.")
+        f"these recalls rest on a handful of aircraft, and their types are greyed. PTC is also the type whose "
+        f"label most often disagrees with the whole-patent reading ({ptc_dis} of {int(cnt12['PTC'])}).")
     D.bullets([
         f"**Soundness.** No matrix has an invalid row. On its first principal component every matrix carries "
         f"{m.t2_pc1_vs_random.min():.0f} to {m.t2_pc1_vs_random.max():.0f} times the variance of a random matrix, "
@@ -915,43 +1153,46 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "vectors clump, as a continuum rather than as separate islands.",
         f"**Separation.** Same-type aircraft sit closer than different-type ones in all 6 matrices "
         f"(p ≤ {max(0.001, m.t3_p.max()):.3f}), but by little: at layer 24 CLS the ratio is {mp.t3_ratio:.3f} "
-        f"and d {mp.t3_d:.2f}. On average the types overlap heavily."])
+        f"and d {d_air:.2f} {ci(vr.loc['architecture d (aircraft, main figure)'].ci_lo, vr.loc['architecture d (aircraft, main figure)'].ci_hi)}."])
     note("pat_f04_prediction.png", f"Source: {MODEL}; {n_(nP)} drawing aircraft, labeller's main figure; human "
                                    "G1 type, 12 classes; maker held out")
     with _into_brief():
         F = AD.DocFigs(FIGB, "pat")
         ER.fig_prediction(F, S_pat, Rp)
+    p12 = pr[L12]
     D.figure(F.items["f04_prediction"]["path"], "the architecture read from the drawings, per layer and token "
                                                 "(12 types); blue: the matrix carried forward.",
              f"**At layer 24 CLS the drawings recover the 12 types at {f2(mp.knn_bal_acc)} "
              f"{ci(mp.knn_ci_lo, mp.knn_ci_hi)} against a shuffled level of {f2(mp.knn_chance_p95)}, and the 5 "
              f"classes at {f2(m5.knn_bal_acc)} {ci(m5.knn_ci_lo, m5.knn_ci_hi)} against {f2(m5.knn_chance_p95)}: "
-             f"the architecture is present, and weak.** A type is recovered for {f2(mp.knn_bal_acc)} of its "
-             f"aircraft on average, fewer than one in four. The probe reaches {f2(mp.probe_bal_acc)}, well above "
-             "the neighbours: the architecture is in the vector, but it does not decide which aircraft are "
-             "nearest.", width=80)
-    hlf = (len(cl) + 1) // 2
-    rows = []
-    for i in range(hlf):
-        c1 = cl[i]
-        c2 = cl[i + hlf] if i + hlf < len(cl) else None
-        rows.append((disp(c1), int(cnt12[c1]), f"{rec[c1]:.2f}",
-                     disp(c2) if c2 else "", int(cnt12[c2]) if c2 else "", f"{rec[c2]:.2f}" if c2 else ""))
-    D.table(md_df(rows, ["type", "aircraft", "recall", "type ", "aircraft ", "recall "]),
-            "Recall per type (layer 24 CLS, kNN-5, maker held out).",
-            f"**Among the types with 20 or more aircraft, {disp(big[0])} ({float(rec[big[0]]):.2f}) and "
-            f"{AD.G1_NAME[big[1]]} ({float(rec[big[1]]):.2f}) are read best; {', '.join(zero)} are never "
-            "recovered.**"
-            + (f" {', '.join(f'{disp(c)} scores {float(rec[c]):.2f}, but on {int(cnt12[c])} aircraft' for c in smallr)}."
-               if smallr else ""))
+             f"the architecture is present, and weak.** The probe reads {f2(p12.probe_bal_acc)} "
+             f"{ci(p12.ci_lo_maker, p12.ci_hi_maker)} (makers resampled; shuffled {f2(p12.shuffle_p95)}), "
+             f"{sg(p12.probe_minus_knn, 2)} {ci(p12.diff_ci_lo_maker, p12.diff_ci_hi_maker, 2, True)} above the "
+             "neighbours: the architecture is in the vector, but it does not decide which aircraft are nearest. "
+             f"k = 3 and k = 10 give {ks.loc[(L12, '3')].bal_acc:.3f} and {ks.loc[(L12, '10')].bal_acc:.3f} "
+             f"({nd(ks.loc[(L12, '3 minus 5')].ci_lo, ks.loc[(L12, '3 minus 5')].ci_hi)} against k = 5).", width=80)
+    fe = rf_figure("fig_recall12")
+    zero_txt = ", ".join(f"{disp(c)} 0 of {int(rec12.loc[c, 'n_aircraft'])}" for c in zero)
+    D.figure(fe, "recall per type: full sample with its Wilson interval (bars, under 20 aircraft greyed), and with "
+                 "every type weighing the same in the pool (diamonds).",
+             f"**Three types are never recovered in the full sample ({zero_txt}), but with class size equalised "
+             + (", ".join(f"{disp(c)} rises to {bal12.loc[c, 'knn_recall_mean']:.2f} "
+                          f"{ci(bal12.loc[c, 'knn_recall_lo'], bal12.loc[c, 'knn_recall_hi'])}, above its shuffled "
+                          f"level of {bal12.loc[c, 'shuffled_recall_p95']:.2f}" for c in above) or "none rises above chance")
+             + ": its zero was an effect of class size.** "
+             + (f"{' and '.join(disp(c) for c in notabove)} stay at or below chance, on "
+                f"{' and '.join(str(int(cnt12[c])) for c in notabove)} aircraft. " if notabove else "")
+             + f"Among the types with 20 aircraft or more, TP ({rec12.loc['TR', 'knn_recall']:.2f}) and Lift + "
+             f"Cruise ({rec12.loc['SLC', 'knn_recall']:.2f}) are read best.", width=88)
     note("pat_confusion.png", f"Source: {MODEL}; layer 24 CLS; {n_(nP)} drawing aircraft, main figure; "
                               "12 types; maker held out")
     with _into_brief():
         fcf = AD.fig_confusion(S_pat, Rp, FIGB / "pat_confusion.png", (5.4, 4.3))
     D.figure(fcf, "which types are confused with which: rows are the true type (aircraft in brackets), columns "
                   "the type kNN-5 predicts; the framed diagonal is correct.",
-             f"**{pc(into)} of the wrong predictions fall into {AD.G1_NAME[top2[0]]} or {disp(top2[1])}, the two "
-             "largest types, which is what a neighbour vote does when a type is thin in the pool.**", width=64)
+             f"**{pc(w_share, 1)} of the {w_n} wrong predictions ({w_k}) name Lift + Cruise or TP, which hold "
+             f"{pc(w_pool, 1)} of the pool: the two largest types draw the errors, somewhat more than their share.**",
+             width=60)
 
     # 3.2
     D.method(
@@ -960,139 +1201,153 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "than the architecture, and whether the architecture survives when the view is removed.",
         f"The {n_(nP)} aircraft for clusters and scores; all {n_(nW)} whole-aircraft figures for the view, the "
         "unit at which a view exists; the view group of each figure (Perspective, Plan, Side, Front/Rear).",
-        f"k-means with 12 clusters against the types (T5), with the map of Figure {D.fignum()}; T3's d for the "
-        f"view and for the architecture on the figures (T6, Figure {D.fignum(2)}); then a linear erasure: the "
-        "three directions that separate the four view means are fitted on the figures and projected out, and the "
-        f"aircraft vectors rebuilt (Table {D.tabnum()}). A **variance-matched control** removes three random "
-        "directions of the same variance, and the Perspective-only rows hold the view constant by design.",
-        "The erasure is the orthogonal projection x ↦ (I − Q Qᵀ) x, then renormalised, with Q an orthonormal "
-        "basis of the differences between the view means (the author's own implementation). A loss that the "
-        "random removal also produces is not specific to the view. ARI and d as in the methods box.",
-        "The erasure is linear only, and exact only on the figures it was fitted on; a non-linear view signal "
-        "survives it.")
-    note("pat_f07_umap.png", f"Source: {MODEL}; layer 24 CLS; {n_(nP)} drawing aircraft, main figure; UMAP "
-                             "(15 neighbours, min. distance 0.1, cosine, seed 42); colour: parent class")
-    with _into_brief():
-        ER.fig_umap(F, S_pat, Rp)
-    D.figure(F.items["f07_umap"]["path"], "the drawing embeddings in two dimensions, one point per aircraft, "
-                                          "coloured by the parent class.",
-             f"**The types form no clusters of their own: k-means with 12 clusters matches them with an ARI of "
-             f"{mp.t5_ari:.3f} at layer 24 CLS, and no matrix exceeds {m.t5_ari.max():.3f}.** The classes overlap "
-             "across most of the map.", width=66)
+        f"k-means with 12 clusters against the types (T5); the figures mapped and coloured by view "
+        f"(Figure {D.fignum()}); T3's d for the view and for the architecture on the figures (T6, Figure "
+        f"{D.fignum(2)}), the d ratio with a maker bootstrap; then a linear erasure: the three directions that "
+        "separate the four view means are fitted on the figures and projected out. It is checked in sample, "
+        "and fitted on half of the makers and tested on the other half (200 splits). A **variance-matched "
+        "control** removes three random directions of the same variance, over 200 draws "
+        f"(Figure {D.fignum(3)}).",
+        "The erasure is x ↦ (I − Q Qᵀ) x, then renormalised, with Q an orthonormal basis of the differences "
+        "between the view means (the author's own implementation). A loss inside the control's range is not "
+        "specific to the view.",
+        "The erasure is linear only; a non-linear view signal survives it.")
+    D.bullets([f"**No clusters of their own.** k-means with 12 clusters matches the types with an ARI of "
+               f"{mp.t5_ari:.3f} at layer 24 CLS, and no matrix exceeds {m.t5_ari.max():.3f}."])
+    fg = rf_figure("fig_umap_view")
+    D.figure(fg, f"the {n_(nW)} figure embeddings in two dimensions, coloured by the view of the drawing.",
+             f"**The figures group by view: a view is recovered from the five nearest figures of other makers at "
+             f"{vk.estimate:.2f} {ci(vk.ci_lo, vk.ci_hi)} against a shuffled level of {vk.chance:.2f}.**", width=62)
     note("pat_f09_confound.png", f"Source: {MODEL}; all {n_(nW)} whole-aircraft figures of the {n_(nP)} "
                                  "aircraft; view group from the labelling; same-maker pairs left out")
     with _into_brief():
         ER.fig_confound(F, S_pat, Rp)
+    vrr = vr.loc["view d / architecture d (figures)"]
     D.figure(F.items["f09_confound"]["path"], "how far the view and the architecture move the vectors, per "
                                               "matrix: d, in standard deviations.",
              f"**The view moves the vectors more than the architecture in "
              f"{'all 6' if (conf_p.conf_over_arch > 1).all() else int((conf_p.conf_over_arch > 1).sum())} "
-             f"matrices: at layer 24 CLS the view's d is {cb.conf_d:.2f} against {cb.arch_d:.2f}, a ratio of "
-             f"{cb.conf_over_arch:.2f}, and at the earlier layers the ratio reaches "
-             f"{conf_p.conf_over_arch.max():.1f}.** The model encodes first how the aircraft is drawn.", width=84)
-
-    def vrow(lbl, sec):
-        o = ve(T, sec, "original", "bal_acc")
-        e = ve(T, sec, "view erasure", "bal_acc")
-        d = ve(T, sec, "view erasure - original", "paired_diff")
-        v = ve(T, sec, "variance-matched random - original", "paired_diff")
-        return (lbl, int(o.n), f"{o.value:.3f}", f"{e.value:.3f}", f"{sg(d.value)} {ci(d.ci_lo, d.ci_hi, 3, True)}",
-                f"{sg(v.value)} {ci(v.ci_lo, v.ci_hi, 3, True)}")
-    D.table(md_df([vrow("12 types", ga), vrow("5 classes", pa_),
-                   vrow("12 types, Perspective main figures only", ga + ", Perspective main figures only"),
-                   vrow("5 classes, Perspective only", pa_ + ", Perspective main figures only")],
-                  ["label set", "aircraft", "original", "view erased", "paired Δ [95 % CI]", "variance-matched Δ"]),
-            "The architecture before and after the view erasure (registers, layer 24 CLS, kNN-5, maker held out).",
-            f"**Removing the view costs {abs(d12.value):.3f} on the 12 types and {abs(d5.value):.3f} on the 5 "
-            "classes, but a random removal of the same variance costs about as much, and so does the erasure "
-            "when every aircraft is drawn in Perspective: the loss is not specific to the view, and every erased "
-            "score stays far above chance.**")
+             f"matrices: at layer 24 CLS the d ratio is {vrr.estimate:.2f} {ci(vrr.ci_lo, vrr.ci_hi)}.** The "
+             f"architecture d is {d_fig:.2f} here, per figure, against {d_air:.2f} per aircraft: the figures "
+             f"add the non-main ones (d {d_nonmain:.2f}) and pairs in different views; within one view it is "
+             f"{d_views['Perspective']:.2f} (Perspective), {d_views['Plan']:.2f} (Plan), {d_views['Side']:.2f} "
+             f"(Side) and {d_views['Front/Rear']:.2f} (Front/Rear).", width=80)
+    fff = rf_figure("fig_erasure")
+    D.figure(fff, "the architecture score before and after the view erasure, both models, with the "
+                  "variance-matched control over 200 draws.",
+             f"**Removing the view costs {abs(c12.erasure_diff):.3f} on the 12 types and {abs(c5.erasure_diff):.3f} "
+             f"on the 5 classes, and a random removal of the same variance costs {sg(c12.control_mean)} "
+             f"{ci(c12.control_lo, c12.control_hi, 3, True)} and {sg(c5.control_mean)} "
+             f"{ci(c5.control_lo, c5.control_hi, 3, True)}: the loss is not specific to the view.** The erased "
+             f"scores, {er12.bal_acc:.3f} {ci(er12.ci_lo, er12.ci_hi)} and {er5.bal_acc:.3f} "
+             f"{ci(er5.ci_lo, er5.ci_hi)}, stay above chance ({er12.chance_p95:.2f} and {er5.chance_p95:.2f}).",
+             width=86)
     D.bullets([
-        f"**The linear view signal is gone, a non-linear one is not.** The linear view probe on the main figures "
-        f"falls from {vp_o:.2f} to {vp_e:.2f} (chance 0.25); the view kNN falls only from {vk_o.value:.2f} to "
-        f"{vk_e.value:.2f}, against its shuffled level of {vk_e.chance_p95:.2f}.",
-        f"**The base model is unchanged by the same erasure** ({sg(b12.value)} {ci(b12.ci_lo, b12.ci_hi, 3, True)} "
-        f"and {sg(b5.value)} {ci(b5.ci_lo, b5.ci_hi, 3, True)}, no difference detected), and after it the two "
-        f"models score alike (12 types: registers {r12:.3f}, base {e12:.3f}; 5 classes: {r5:.3f} against "
-        f"{e5:.3f}). Part of the registers advantage of 2.1 sits in the dominant directions the view also uses."])
+        f"**In sample and held out.** Fitted and tested on the same figures, the erasure takes the linear view "
+        f"probe on the main figures from {vp_o:.2f} to {vp_e:.2f} (chance 0.25). Fitted on half of the makers, it "
+        f"takes the probe on the other half from {ho['registers'].before:.2f} to {ho['registers'].after:.2f}: "
+        f"{pc(ho['registers'].share_of_above_chance_removed)} of the above-chance view signal removed (base "
+        f"model {pc(ho['base'].share_of_above_chance_removed)}). The view kNN still reaches {vk_e.value:.2f}.",
+        "**Why the view dominates yet its removal costs no more than chance.** Removing any three high-variance "
+        "directions costs about as much as removing the view's three, so the view directions carry no more "
+        "architecture than random ones: the reading consistent with this is an architecture spread through the "
+        "dominant directions that the view also uses.",
+        f"**Base model.** The same erasure leaves it unchanged, and after it the two models score alike "
+        f"(12 types: registers {r12:.3f}, base {e12:.3f}; 5 classes: {r5:.3f} against {e5:.3f}): part of the "
+        "registers advantage sits in the directions the view also uses."])
 
     # 3.3
+    rp12 = rules_p[rules_p.label_set == L12].set_index("contrast")
     D.method(
         "3.3", "Does the choice of drawing change the result?",
         "Whether the image rule of 1.2 changes the architecture score, and whether averaging several views adds "
         "architecture.",
         f"The {n_(nP)} aircraft under each of the four rules; for the averaging, the {e4['n']} aircraft whose "
-        "exp4 vector averages two or three views, the only aircraft on which exp4 differs from one figure.",
-        f"Table {D.tabnum()} gives the score under each rule (T7). On the {e4['n']} aircraft, the predictions of "
-        "exp1, exp3 and exp4 are read from the full neighbour pool and compared.",
-        f"Intervals as in the methods box; the exp4 comparison is a paired bootstrap of exp4 minus exp1 "
-        f"({n_(P.N_BOOT)} resamples) on the same aircraft.",
-        "The subset comparison was run after the rule scores had been seen (post hoc).")
-    D.table(md_df([(r, f"{br.loc[r].knn_bal_acc:.3f}", ci(br.loc[r].ci_lo, br.loc[r].ci_hi)) for r in S_pat.rules],
-                  ["image rule", "kNN-5", "95 % interval"]),
-            "The architecture score under each image rule (registers, layer 24 CLS, 12 types, maker held out).",
-            f"**The rules span {f2(br.knn_bal_acc.min())} to {f2(br.knn_bal_acc.max())} and the labeller's main "
-            "figure scores highest; the rule does not change the conclusion.** On the "
-            f"{e4['n']} aircraft with two or three views, exp4 is right for {pc(e4['acc']['exp4 view average'])} "
-            f"against {pc(e4['acc']['exp1 view-first'])} for the view-first figure and "
-            f"{pc(e4['acc']['exp3 main figure'])} for the main figure; exp4 minus view-first is "
-            f"{sg(e4['diff'])} {ci(e4['lo'], e4['hi'], 3, True)}, {nd(e4['lo'], e4['hi'])}: averaging views "
-            "adds no measurable architecture.")
+        "exp4 vector averages two or three views.",
+        f"Table {D.tabnum()} gives the score under each rule (T7), each rule minus the main figure with makers "
+        "resampled and its per-half sign, and how often the split-half rule would choose each rule.",
+        "Intervals and split-half rule as in the methods box.",
+        f"The main figure was fixed as the rule before the setup round; the exp4 subset comparison was run after "
+        "the rule scores had been seen (post hoc).")
+    rows = []
+    for r in S_pat.rules:
+        if r == "exp3 main figure":
+            dcell, scell = "reference", "n/a"
+        else:
+            q = rp12.loc[f"{r} minus exp3 main figure"]
+            dcell = f"{sg(q['diff'])} {ci(q.ci_lo_maker, q.ci_hi_maker, 3, True)}"
+            scell = pc(q.share_of_halves_same_sign)
+        rows.append((r, f"{br.loc[r].knn_bal_acc:.3f} {ci(br.loc[r].ci_lo, br.loc[r].ci_hi)}", dcell, scell,
+                     pc(rsh.loc[(L12, r)].selection_freq), pc(rsh.loc[(L5, r)].selection_freq)))
+    D.table(md_df(rows, ["image rule", "kNN-5, 12 types", "minus exp3 [makers]", "same sign in halves",
+                         "chosen, 12 types", "chosen, 5 classes"]),
+            "The architecture score under each image rule (registers, layer 24 CLS, maker held out).",
+            f"**The main figure scores highest and the other rules are lower with intervals that exclude zero, "
+            f"but the split-half rule would pick it in only {pc(rsh.loc[(L12, 'exp3 main figure')].selection_freq)} "
+            f"and {pc(rsh.loc[(L5, 'exp3 main figure')].selection_freq)} of the choices: its lead is not stable "
+            "across makers.** The rules span "
+            f"{f2(br.knn_bal_acc.min())} to {f2(br.knn_bal_acc.max())}. On the {e4['n']} aircraft with two or "
+            f"three views, exp4 minus view-first is {sg(e4['diff'])} {ci(e4['lo'], e4['hi'], 3, True)}, "
+            f"{nd(e4['lo'], e4['hi'])}: averaging views adds no measurable architecture.")
 
     # 3.4
+    l18 = dec.loc["registers L18 CLS"]
     D.method(
         "3.4", "Where does the model look on a drawing?",
         "Which parts of a drawing the CLS token of the chosen model reads: a qualitative check on what the "
         "scores measure.",
         f"Two drawing aircraft per parent class drawn at random (seed 42) from the main figures of the "
-        f"{n_(nP)} aircraft; for the summary shares, the attention of every drawing and photo.",
-        f"Figure {D.fignum()} overlays the CLS attention at layers 18 and 24 on each drawing, read by eye. The "
-        "median share of the attention on the single largest patch, and the share the register tokens take, "
-        "say whether any background patch dominates.",
-        "The map is the CLS query against every patch key, averaged over the heads, each map scaled to its own "
-        "99th percentile.",
+        f"{n_(nP)} aircraft.",
+        f"Figure {D.fignum()} overlays the CLS attention at layers 18 and 24 on each drawing, read by eye. Layer "
+        f"24 is the readout scored; layer 18, the layer the plan first named, scores "
+        f"{AD.main_row(Rp, matrix='L18 CLS').knn_bal_acc:.3f} on the 12 types against "
+        f"{mp.knn_bal_acc:.3f} and is chosen in {pc(l18.selection_freq)} of the held-out choices against "
+        f"{pc(dec.loc['registers L24 CLS'].selection_freq)}, so its maps show what the model sees, not what it "
+        "scores.",
+        "Each map is scaled to its own 99th percentile, so brightness compares places within a map, never "
+        "across maps.",
         "Ten aircraft read by eye are an illustration, not a measurement.")
     note("f_attention_drawings.png", "Source: DINOv2-L with registers, CLS attention at layers 18 and 24, mean "
-                                     "over heads; patent drawings, main figure, 2 aircraft per class drawn at random "
-                                     "(seed 42); label under each pair: the G1 type")
+                                     "over heads, each map scaled to its own 99th percentile; patent drawings, main "
+                                     "figure, 2 aircraft per class drawn at random (seed 42); label under each pair: "
+                                     "the G1 type")
     fa_d = fig_attention_source(C, "drawing")
     D.figure(fa_d, "CLS attention of the registers model on drawings, layers 18 and 24, two aircraft per parent "
-                   "class; bright = attention.",
-             "**Layer 18 traces the line-work almost everywhere, outline, propulsors and sometimes the figure "
-             "label alike; layer 24 gathers in spots on the aircraft, often on propulsors, hubs and the fuselage, "
-             "with weak spots on the white pad. No map settles on one part that names the architecture.** Across "
-             f"all images the median share on the single largest patch stays at or below {att_max:.3f} at layers "
-             f"18 and 24, and the register tokens take {reg_lo:.2f} to {reg_hi:.2f} of the attention, so no "
-             "background patch dominates.", width=68)
+                   "class; bright = attention within each map.",
+             "**Layer 18 traces the line-work almost everywhere; layer 24 gathers in spots on the aircraft, often "
+             "on propulsors, hubs and the fuselage, parts every type has, so no map singles out the part that "
+             f"decides the type.** The register tokens take {reg_lo:.2f} to {reg_hi:.2f} of the attention, and the "
+             f"median share on the single largest patch stays at or below {reg_max:.3f}.", width=66)
     D.answer(
         f"Patent drawings carry the architecture, weakly: a frozen model recovers the 12 types at "
         f"{f2(mp.knn_bal_acc)} against a shuffled level of {f2(mp.knn_chance_p95)}, but the embedding is "
         "organised first by how an aircraft is drawn, not by what it is.",
         [f"**Present and weak.** 12 types at {f2(mp.knn_bal_acc)} {ci(mp.knn_ci_lo, mp.knn_ci_hi)}, 5 classes "
-         f"at {f2(m5.knn_bal_acc)}; the probe reads {f2(mp.probe_bal_acc)}, so the architecture is in the vector "
-         "without deciding which aircraft are nearest.",
-         f"**The large types are read, the rare ones not.** {disp(big[0])} and {AD.G1_NAME[big[1]]} lead; "
-         f"{', '.join(zero)} are never recovered, and most errors fall into the two largest types.",
-         f"**The view comes first.** The view moves the vectors {f2(cb.conf_over_arch)} times more than the "
-         f"architecture at layer 24 CLS, and the types form no clusters (ARI {mp.t5_ari:.3f}).",
-         "**The architecture survives the view's removal.** The erasure costs a few hundredths, no more than a "
-         "random removal of the same variance, and every erased score stays far above chance.",
-         "**Neither the image rule nor the attention points to one decisive part.** The rules span "
-         f"{f2(br.knn_bal_acc.min())} to {f2(br.knn_bal_acc.max())}; the late CLS token summarises the whole "
-         "shape and the way it is drawn, not the arrangement of lift and thrust."])
+         f"at {f2(m5.knn_bal_acc)}; the probe reads {f2(p12.probe_bal_acc)}.",
+         f"**The large types are read best; a zero can be class size.** {zero_txt} in the full sample, but "
+         + (", ".join(f"{disp(c)} is recovered above chance once class size is equalised" for c in above) or
+            "none recovers with class size equalised") + ".",
+         f"**The view comes first.** The d ratio is {vrr.estimate:.2f} {ci(vrr.ci_lo, vrr.ci_hi)}, the view is "
+         f"recovered at {vk.estimate:.2f}, and the types form no clusters (ARI {mp.t5_ari:.3f}).",
+         "**The architecture survives the view's removal.** The erasure costs no more than a random removal of "
+         "the same variance, and every erased score stays above chance.",
+         "**No single decisive part.** The image rules span "
+         f"{f2(br.knn_bal_acc.min())} to {f2(br.knn_bal_acc.max())}, and the late CLS token spreads over parts "
+         "every type has."])
 
     # ═══ 4 ═══
-    D.chapter("4", "The photographs: do photographs of the aircraft carry the architecture, and does the scene "
-                   "around the aircraft matter?",
-              f"The same setup and protocol, on the {n_(nH)} directory aircraft and their 5 classes:",
-              "- **4.1: how well the photographs predict the class.**\n"
-              "- **4.2: what organises the photo embedding**: clusters, and the maturity of the aircraft.\n"
-              "- **4.3: whether the background and the choice of image matter.**\n"
-              "- **4.4: where the model looks on a photograph.**")
+    D.chapter("4", "The photographs: do photographs of the aircraft carry the architecture, and does the choice "
+                   "of image matter?",
+              f"The same setup and protocol, on the {n_(nH)} directory aircraft and their 5 classes: prediction "
+              "(4.1), what organises the embedding (4.2), the choice of image (4.3) and where the model looks "
+              "(4.4). Whether the scene around the aircraft matters is a fairness question, answered with the "
+              "other controls in chapter 5.")
     mm = Rh["ev"]["main"]
     s1r = C["s1a_candidates"]
-    lab_l22 = float(s1r[(s1r.pool == "registers only") & (s1r.label == "photos 5-class") &
+    lab_l22 = float(s1r[(s1r.pool == "registers only") & (s1r.label == P5) &
                         (s1r.candidate == "registers L22 CLS")].selection_freq.iloc[0])
+    r5h = X["M9_recall_5class_wilson"]
+    r5h = r5h[r5h.label_set == P5].set_index("class")
     D.method(
         "4.1", "How well do photographs predict the directory class?",
         "Whether the photo vectors carry the architecture, read the same way as the drawings in 3.1.",
@@ -1100,34 +1355,36 @@ def build(C: Dict) -> Tuple[str, Dict]:
         f"Soundness and separation first; Figure {D.fignum()} gives, per matrix, the kNN-5 balanced accuracy, "
         f"the shuffled level and the probe; Figure {D.fignum(2)} which classes are confused with which.",
         "As in the methods box; guessing scores 1/5.",
-        f"The photo label is the directory's class, which agrees with the codebook parent for "
-        f"{int(pch.agrees.sum())} of {len(pch)} linked aircraft. The classes range from {int(cnt5h.min())} "
-        f"({cnt5h.idxmin()}) to {int(cnt5h.max())} ({cnt5h.idxmax()}) aircraft.")
+        f"The classes range from {int(cnt5h.min())} ({cnt5h.idxmin()}) to {int(cnt5h.max())} ({cnt5h.idxmax()}) "
+        "aircraft.")
     D.bullets([
         f"**Soundness and separation.** No invalid row, and the first principal component carries "
         f"{mm.t2_pc1_vs_random.min():.0f} to {mm.t2_pc1_vs_random.max():.0f} times the random variance. Same-class "
         f"photos sit closer in all 6 matrices, with a larger effect than on the drawings: ratio "
-        f"{mh.t3_ratio:.3f} and d {mh.t3_d:.2f} at layer 24 CLS (drawings: d {mp.t3_d:.2f})."])
+        f"{mh.t3_ratio:.3f} and d {mh.t3_d:.2f} at layer 24 CLS (drawings: d {d_air:.2f})."])
     note("pho_f04_prediction.png", f"Source: {MODEL}; {n_(nH)} evtol.news aircraft, hero image; directory class, "
                                    "5 classes; maker held out")
     with _into_brief():
         Fh = AD.DocFigs(FIGB, "pho")
         ER.fig_prediction(Fh, S_evn, Rh)
+    pp = pr[P5]
     D.figure(Fh.items["f04_prediction"]["path"], "the architecture read from the photographs, per layer and token "
                                                  "(5 classes); blue: the matrix carried forward.",
              f"**At layer 24 CLS the photos recover the 5 classes at {f2(mh.knn_bal_acc)} "
              f"{ci(mh.knn_ci_lo, mh.knn_ci_hi)} against a shuffled level of {f2(mh.knn_chance_p95)}, and the probe "
-             f"at {f2(mh.probe_bal_acc)}.** Layer 22 CLS scores within that interval "
-             f"({f2(AD.main_row(Rh, matrix='L22 CLS').knn_bal_acc)}), which is why the split-half rule chose it in "
-             f"{pc(lab_l22)} of the photo choices.", width=80)
+             f"at {f2(pp.probe_bal_acc)} {ci(pp.ci_lo_maker, pp.ci_hi_maker)} (shuffled {f2(pp.shuffle_p95)}).** "
+             f"Layer 22 CLS scores within that interval ({f2(AD.main_row(Rh, matrix='L22 CLS').knn_bal_acc)}), "
+             f"which is why the split-half rule chose it in {pc(lab_l22)} of the photo choices.", width=80)
     note("pho_confusion.png", f"Source: {MODEL}; layer 24 CLS; {n_(nH)} evtol.news aircraft, hero image; "
                               "maker held out")
     with _into_brief():
         fpc = AD.fig_confusion(S_evn, Rh, FIGB / "pho_confusion.png", (3.9, 3.0))
     D.figure(fpc, "which directory classes are confused with which: rows are the true class (aircraft in "
                   "brackets), columns the predicted one.",
-             f"**{ER.CLASS5_NAME[rbest]} is read best (recall {float(rh[rbest]):.2f}) and {ER.CLASS5_NAME[rworst]} "
-             f"worst ({float(rh[rworst]):.2f}).**", width=50)
+             f"**{ER.CLASS5_NAME[rbest]} is read best, {r5h.loc[rbest, 'knn_recall']:.2f} "
+             f"{ci(r5h.loc[rbest, 'wilson_lo'], r5h.loc[rbest, 'wilson_hi'])}, and {ER.CLASS5_NAME[rworst]} worst, "
+             f"{r5h.loc[rworst, 'knn_recall']:.2f} {ci(r5h.loc[rworst, 'wilson_lo'], r5h.loc[rworst, 'wilson_hi'])}.**",
+             width=50)
 
     # 4.2
     D.method(
@@ -1146,39 +1403,40 @@ def build(C: Dict) -> Tuple[str, Dict]:
         ER.fig_umap(Fh, S_evn, Rh)
     D.figure(Fh.items["f07_umap"]["path"], "the photo embeddings in two dimensions, one point per aircraft, "
                                            "coloured by the directory class.",
-             f"**The classes form weak clusters: k-means matches them with an ARI of {mh.t5_ari:.3f} at layer 24 "
-             f"CLS, {mh.t5_ari / mp.t5_ari:.0f} times the drawings' {mp.t5_ari:.3f}.**", width=66)
+             f"**The classes form weak clusters: k-means matches them with an ARI of {ari_p5:.3f} at layer 24 CLS, "
+             f"{ari_p5 / ari_d5:.1f} times the drawings' {ari_d5:.3f} on the same 5 classes.**", width=60)
     D.p(f"At layer 24 CLS the maturity moves the vectors less than the class (d {ch.conf_d:.2f} against "
         f"{ch.arch_d:.2f}, a ratio of {ch.conf_over_arch:.2f}), but in {int((conf_h.conf_over_arch > 1).sum())} "
         "of the 6 matrices the maturity dominates: the order depends on the layer, and the matrix carried "
         "forward is one where the class leads.")
 
     # 4.3
+    rph = rules_p[rules_p.label_set == P5].set_index("contrast")
     D.method(
-        "4.3", "Do the background and the choice of image change the photo result?",
-        "Whether the photo score measures the aircraft or the scenery around it (sky, city, hangar), and whether "
-        "another image rule would change it.",
-        f"The {n_(len(cm))} hero images; for the crop test the base model (DINOv2-large), because the test ran "
-        "before the registers model was adopted: it is the one result of this document on base.",
-        f"Each hero image is cropped to the aircraft with a zero-shot OWLv2 detector ({n_fb} of {n_(len(cm))}, "
-        f"{pc(n_fb / len(cm), 1)}, kept whole because the box was weak or tiny), re-processed and re-embedded, "
-        f"and compared with the uncropped image (Table {D.tabnum()}). The image rule is varied among the hero "
-        "image, one random other image of the page and the mean of all kept images.",
-        "Paired bootstrap difference on the same aircraft, as in the methods box.")
-    D.table(md_df([(mx, f"{ck.loc[(mx, 'original')].knn_bal_acc:.3f}", f"{ck.loc[(mx, 'cropped')].knn_bal_acc:.3f}",
-                    f"{sg(cd.loc[mx].diff_cropped_minus_original)} {ci(cd.loc[mx].ci_lo, cd.loc[mx].ci_hi, 3, True)}")
-                   for mx in ("L24 CLS", "L24 patch mean")],
-                  ["matrix", "original", "cropped", "paired difference [95 % CI]"]),
-            f"Cropping the photos to the aircraft (base model, {n_(len(cm))} aircraft, kNN-5, maker held out).",
-            f"**Cropping moves the layer 24 CLS score by {sg(cd.loc['L24 CLS'].diff_cropped_minus_original)}, "
-            f"{nd(cd.loc['L24 CLS'].ci_lo, cd.loc['L24 CLS'].ci_hi)}: the photo result measures the aircraft, not "
-            "the scenery.** Only the patch mean, which averages over background patches, gains "
-            f"({sg(cd.loc['L24 patch mean'].diff_cropped_minus_original)}, interval "
-            f"{nd(cd.loc['L24 patch mean'].ci_lo, cd.loc['L24 patch mean'].ci_hi)}).")
-    D.p(f"The image rule matters as little as on the drawings: hero image {f2(brh.loc['hero image'].knn_bal_acc, 3)}, "
-        f"one random other image {f2(brh.loc['random other image'].knn_bal_acc, 3)}, the mean of all kept images "
-        f"{f2(brh.loc['mean of all images'].knn_bal_acc, 3)}, against an interval about "
-        f"{mh.knn_ci_hi - mh.knn_ci_lo:.2f} wide for one rule.")
+        "4.3", "Does the choice of photograph change the result?",
+        "Whether another image of the page would change the photo score.",
+        f"The {n_(nH)} photo aircraft under three rules: the hero image (the fixed rule), one random other "
+        "kept image of the page, and the mean of the vectors of all kept images.",
+        f"Table {D.tabnum()} gives the score under each rule, each rule minus the hero image with makers "
+        "resampled and its per-half sign, and how often the split-half rule would choose each.",
+        "As in the methods box.")
+    rows = []
+    for r in ("hero image", "random other image", "mean of all images"):
+        if r == "hero image":
+            dcell, scell = "reference", "n/a"
+        else:
+            q = rph.loc[f"{r} minus hero image"]
+            dcell, scell = f"{sg(q['diff'])} {ci(q.ci_lo_maker, q.ci_hi_maker, 3, True)}", pc(q.share_of_halves_same_sign)
+        rows.append((r, f"{brh.loc[r].knn_bal_acc:.3f} {ci(brh.loc[r].ci_lo, brh.loc[r].ci_hi)}", dcell, scell,
+                     pc(rsh.loc[(P5, r)].selection_freq)))
+    mq = rph.loc["mean of all images minus hero image"]
+    D.table(md_df(rows, ["image rule", "kNN-5, 5 classes", "minus hero [makers]", "same sign in halves",
+                         "chosen (held out)"]),
+            "The photo score under each image rule (registers, layer 24 CLS, maker held out).",
+            f"**The mean of all images would be chosen in {pc(rsh.loc[(P5, 'mean of all images')].selection_freq)} "
+            f"of the held-out choices against {pc(rsh.loc[(P5, 'hero image')].selection_freq)} for the hero image, "
+            f"but its gain, {mci(mq)}, is {mnd(mq)}; a random other image scores lower.** The hero image is kept: "
+            "one representative image per aircraft on both sides.")
 
     # 4.4
     D.method(
@@ -1186,113 +1444,135 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "The same qualitative check as 3.4, on photographs, where the aircraft sits in a scene.",
         f"Two photo aircraft per class drawn at random (seed 42) from the {n_(nH)} hero images.",
         f"Figure {D.fignum()} overlays the CLS attention at layers 18 and 24 on each photograph, read by eye.",
-        "As in 3.4.",
+        "As in 3.4: each map scaled on its own.",
         "Ten aircraft read by eye are an illustration, not a measurement.")
     note("f_attention_photos.png", "Source: DINOv2-L with registers, CLS attention at layers 18 and 24, mean over "
-                                   "heads; evtol.news hero images, 2 aircraft per class drawn at random (seed 42). "
-                                   f"{CREDIT}")
+                                   "heads, each map scaled to its own 99th percentile; evtol.news hero images, 2 "
+                                   f"aircraft per class drawn at random (seed 42). {CREDIT}")
     fa_p = fig_attention_source(C, "photo")
     D.figure(fa_p, f"CLS attention of the registers model on photographs, layers 18 and 24, two aircraft per "
-                   f"class; bright = attention. {CREDIT}.",
+                   f"class; bright = attention within each map. {CREDIT}.",
              "**Layer 18 covers the airframe; layer 24 gathers in spots on the aircraft, with weak spots in the "
              "sky. In one wingless photo the people in front of the aircraft draw as much attention as the "
-             "aircraft itself: a kept hero image can still be a scene.**", width=68)
+             "aircraft itself: a kept hero image can still be a scene.**", width=66)
     D.answer(
         f"Photographs carry the architecture moderately: the 5 classes at {f2(mh.knn_bal_acc)} against a "
-        f"shuffled level of {f2(mh.knn_chance_p95)}, a result that depends neither on the background, nor on the "
-        "colour, nor on the image rule.",
-        [f"**Moderate.** kNN-5 {f2(mh.knn_bal_acc)} {ci(mh.knn_ci_lo, mh.knn_ci_hi)}, probe {f2(mh.probe_bal_acc)}; "
+        f"shuffled level of {f2(mh.knn_chance_p95)}, a result the choice of image does not change.",
+        [f"**Moderate.** kNN-5 {f2(mh.knn_bal_acc)} {ci(mh.knn_ci_lo, mh.knn_ci_hi)}, probe {f2(pp.probe_bal_acc)}; "
          f"{ER.CLASS5_NAME[rbest]} is read best, {ER.CLASS5_NAME[rworst]} worst.",
-         f"**Weak clusters, stronger than on drawings.** ARI {mh.t5_ari:.3f} against {mp.t5_ari:.3f}; separation "
-         f"d {mh.t3_d:.2f} against {mp.t3_d:.2f}.",
-         "**The class leads the maturity only in the matrix carried forward**; in "
-         f"{int((conf_h.conf_over_arch > 1).sum())} of 6 matrices whether the aircraft was built moves the "
-         "vectors more.",
-         f"**The aircraft, not the scene.** Cropping to the aircraft changes nothing detectable "
-         f"({sg(cd.loc['L24 CLS'].diff_cropped_minus_original)}), and the image rule moves the score by a few "
-         "hundredths."])
+         f"**Weak clusters, stronger than on drawings.** ARI {ari_p5:.3f} against {ari_d5:.3f} on the same 5 "
+         f"classes; separation d {mh.t3_d:.2f} against {d_air:.2f}.",
+         "**The class leads the maturity only in some matrices**, the one carried forward among them; in "
+         f"{int((conf_h.conf_over_arch > 1).sum())} of 6 whether the aircraft was built moves the vectors more.",
+         f"**The image rule does not decide it.** The mean of all images scores {mci(mq)} against the hero image, "
+         f"{mnd(mq)}."])
 
     # ═══ 5 ═══
-    D.chapter("5", "Drawings against photographs: which source carries more of the architecture, and can one "
-                   "aircraft be found in both?",
-              "The two sources are compared with the same model, readout and protocol, on the 5 classes they "
-              "share (each drawing type folds into its parent class): 5.1 compares the scores, 5.2 asks whether "
-              "the model links a drawing to a photograph of the same aircraft.")
+    D.chapter("5", "Drawings against photographs: is the comparison fair, which source carries more of the "
+                   "architecture, and can one aircraft be found in both?",
+              "The two sources are read with the same model, readout and protocol on the 5 classes they share, "
+              "each drawing type folded into its parent. Before the scores are compared, the comparison itself "
+              "must be fair. Three things differ besides the medium:",
+              f"- **The labels.** The photo class is the directory's, the drawing class the codebook parent: they "
+              f"agree for {n_agree} of the {n_link} aircraft present in both ({pc(n_agree / n_link)}), the floor "
+              "below which no source comparison can be read.\n"
+              f"- **The pool.** {n_(nH)} photo aircraft against {n_(nP)} drawings, with different class mixes "
+              "(chapter 1).\n"
+              "- **The image.** Colour and scenery on the photos, line-work on white for the drawings; the photos "
+              "also carry the aircraft's maturity, which moves the photo vectors more than the class in "
+              f"{int((conf_h.conf_over_arch > 1).sum())} of 6 matrices (4.2), a signal a patent drawing does not "
+              "have.")
     D.method(
-        "5.1", "Do photographs carry more architecture than drawings on the classes they share?",
-        "Whether the medium, drawing or photograph, carries more of the architecture on the shared 5 classes.",
+        "5.1", "Once pool, class mix, colour and background are controlled, do photographs carry more architecture "
+               "than drawings?",
+        "Whether the medium, drawing or photograph, carries more of the architecture on the shared 5 classes, "
+        "once each difference other than the medium has been controlled.",
         f"The {n_(nP)} drawing aircraft with their type folded to its parent, and the {n_(nH)} photo aircraft; "
         "the two sets hold different aircraft.",
-        f"Table {D.tabnum()} compares the sources with the photos in colour and in greyscale, and against "
-        f"{cmx['draws']} random photo subsets drawn with exactly the drawings' class counts ({cmx['n']} aircraft "
-        f"each; the probe on the first {cmx['probe_draws']}), so that pool size and class mix match. Figure "
-        f"{D.fignum()} gives the balanced accuracy and the recall per class of the three.",
-        "The interval of a difference comes from independent bootstrap resamples of each set (methods box); the "
-        "range of the matched photos is the 2.5th to 97.5th percentile of the draws. A neighbour vote depends on "
-        "its pool: a class that is thin in the pool is hard to recover whatever the medium, and balanced "
-        "accuracy weights every class equally but cannot make a thin class easy; the matched subsets remove "
-        "that difference.",
-        "The matching was designed after the full-set comparison had been seen (post hoc).")
-    fr = [("photos in colour, all", f"{fair.loc['colour'].drawings_bal_acc:.3f}", f"{fair.loc['colour'].photos_bal_acc:.3f}",
-           f"difference {sg(fair.loc['colour'].diff_photos_minus_drawings)} "
-           f"{ci(fair.loc['colour'].ci_lo, fair.loc['colour'].ci_hi, 3, True)}"),
-          ("photos in greyscale, all", f"{fair.loc['grey'].drawings_bal_acc:.3f}", f"{fair.loc['grey'].photos_bal_acc:.3f}",
-           f"difference {sg(fair.loc['grey'].diff_photos_minus_drawings)} "
-           f"{ci(fair.loc['grey'].ci_lo, fair.loc['grey'].ci_hi, 3, True)}"),
-          ("photos with the drawings' class mix", f"{dA:.3f}", f"{cmx['mean']:.3f}",
-           f"draws {cmx['lo']:.3f} to {cmx['hi']:.3f}"),
-          ("probe, photos all", f"{m5.probe_bal_acc:.3f}", f"{mh.probe_bal_acc:.3f}", "n/a"),
-          ("probe, photos with the drawings' class mix", f"{m5.probe_bal_acc:.3f}", f"{cmx['probe_mean']:.3f}",
-           f"draws {cmx['probe_lo']:.3f} to {cmx['probe_hi']:.3f}")]
-    D.table(md_df(fr, ["comparison", "drawings", "photos", "interval"]),
-            f"Photographs against drawings on the shared 5 classes (registers, layer 24 CLS, kNN-5 unless "
-            f"marked probe; {n_(nP)} drawing aircraft, {n_(nH)} photo aircraft).",
-            (f"**On all photos the photos lead by {sg(pA - dA, 2)}, in greyscale too; with the drawings' size and "
-             f"class mix they score {cmx['mean']:.3f}, and the drawings' {dA:.3f} lies inside the range of the "
-             "draws: no difference detected, and most of the photo lead comes from the larger, more balanced "
-             "pool.**" if cmx_inside else
-             f"**The photos lead by {sg(pA - dA, 2)}, and still lead with the drawings' class mix "
-             f"({cmx['mean']:.3f}, the drawings' {dA:.3f} outside the range of the draws).**")
-            + (f" The probe tells the same story ({cmx['probe_mean']:.3f} matched against {m5.probe_bal_acc:.3f})."
-               if pin == cmx_inside else " The probe disagrees."), right=["drawings", "photos"])
-    vt_up = cmx["recall"]["VT"] > fci.loc["VT", "rec_photo"]
-    wm_down = cmx["recall"]["WM"] < fci.loc["WM", "rec_photo"]
-    note("f_five_class.png", f"Source: {MODEL}; layer 24 CLS; kNN-5, maker held out; drawings: {n_(nP)} aircraft, "
-                             f"type folded to its parent; photos: {n_(nH)} hero images; matched: {cmx['draws']} "
-                             "photo subsets with the drawings' class counts")
-    with _into_brief():
-        f16 = AD.fig_five_class(C, fc, cmx)
-    D.figure(f16, "the shared 5 classes, drawings against photographs: balanced accuracy and recall per class; "
-                  "under each class, the aircraft in drawings | photos; dashed line: guessing, 1/5.",
-             f"**" + ("A class is read well largely when it dominates the pool. " if vt_up and wm_down else "")
-             + f"Wingless multicopters, {fci.loc['WM', 'n_draw']} drawings but {fci.loc['WM', 'n_photo']} photos, "
-             f"are read at {fci.loc['WM', 'rec_draw']:.2f} from drawings and {fci.loc['WM', 'rec_photo']:.2f} from "
-             f"photos, and at {cmx['recall']['WM']:.2f} once the photos have the drawings' mix; Vectored Thrust, "
-             f"{fci.loc['VT', 'n_draw']} of {n_(nP)} drawings, goes the other way ({fci.loc['VT', 'rec_draw']:.2f} "
-             f"drawings, {fci.loc['VT', 'rec_photo']:.2f} photos, {cmx['recall']['VT']:.2f} matched).**", width=88)
+        f"Table {D.tabnum()} compares the sources on the full sets, then controls one difference at a time: "
+        f"**size**, 200 random photo subsets of {n_(nP)} at the photos' own class mix; **size and mix**, 200 "
+        f"subsets with exactly the drawings' class counts; **colour**, both sources in greyscale; "
+        "**background**, each hero image cropped to the aircraft by a zero-shot OWLv2 detector and re-embedded, "
+        f"against the uncropped image. Figure {D.fignum()} sets each class's recall against its share of the "
+        "neighbour pool.",
+        "The difference of two independent sets resamples each on its own (1 000 draws); a subset score "
+        "combines the 200 draws with a bootstrap of each draw's aircraft. A neighbour vote depends on its pool: "
+        "a class that is thin in the pool is hard to recover whatever the medium.",
+        "The size and mix controls were designed after the full-set comparison had been seen, the greyscale and "
+        "registers crop checks after the review (post hoc).")
+    fr = [("full sets (photos in colour, drawings plain)", f"{m5.knn_bal_acc:.3f}", f"{mh.knn_bal_acc:.3f}",
+           f"{sg(m3_full.estimate)} {ci(m3_full.ci_lo, m3_full.ci_hi, 3, True)}", nd(m3_full.ci_lo, m3_full.ci_hi)),
+          (f"same size ({n_(nP)} photos), photos' own class mix", f"{m5.knn_bal_acc:.3f}", f"{s_size.estimate:.3f}",
+           f"{sg(m3_size.estimate)} {ci(m3_size.ci_lo, m3_size.ci_hi, 3, True)}", nd(m3_size.ci_lo, m3_size.ci_hi)),
+          (f"same size and the drawings' class mix", f"{m5.knn_bal_acc:.3f}", f"{s_mix.estimate:.3f}",
+           f"{sg(m3_mix.estimate)} {ci(m3_mix.ci_lo, m3_mix.ci_hi, 3, True)}", nd(m3_mix.ci_lo, m3_mix.ci_hi)),
+          ("the class mix alone, at fixed size (photos only)", "n/a", "n/a",
+           f"{sg(m3_dmix.estimate)} {ci(m3_dmix.ci_lo, m3_dmix.ci_hi, 3, True)}", nd(m3_dmix.ci_lo, m3_dmix.ci_hi)),
+          ("both sources in greyscale", f"{gg.drawings_bal_acc:.3f}", f"{gg.photos_bal_acc:.3f}",
+           f"{sg(gg.diff_photos_minus_drawings)} {ci(gg.ci_lo, gg.ci_hi, 3, True)}", nd(gg.ci_lo, gg.ci_hi)),
+          ("photos cropped to the aircraft, minus uncropped (paired, makers)", "n/a",
+           f"{ck.loc['cropped'].knn_bal_acc:.3f}", mci(crop), mnd(crop))]
+    D.table(md_df(fr, ["comparison", "drawings", "photos", "difference [95 % CI]", "reading"]),
+            f"Photographs against drawings on the shared 5 classes, one control at a time (registers, layer 24 CLS, "
+            "kNN-5, maker held out). The difference is photos minus drawings unless the row says otherwise.",
+            f"**Photographs score higher at equal pool size ({sg(m3_size.estimate)}); once the photo pool also has "
+            f"the drawings' class mix, no difference is detected ({sg(m3_mix.estimate)}), though the comparison is "
+            "too imprecise to rule out a medium effect of the size found at full scale.** The class mix alone "
+            f"moves the photo score by {sg(m3_dmix.estimate)}, {nd(m3_dmix.ci_lo, m3_dmix.ci_hi)}, so it is the "
+            "remaining candidate, not a demonstrated cause. Colour is not the cause (the lead survives with both "
+            f"sources in grey), and neither is the background (cropping moves the photo score by "
+            f"{sg(crop['diff'])}; on the base model {sg(crop_b['diff'])}).", right=["drawings", "photos"])
+    ffb = rf_figure("fig_recall_vs_pool")
+    pcs = X["M3_per_class_pool_share"].set_index("class")
+    D.figure(ffb, "recall per class against the class's share of the neighbour pool: the shared 5 classes in "
+                  "both sources (left), the 12 G1 types of the drawings (right).",
+             f"**A class is read well largely when it fills the pool.** Wingless multicopters, "
+             f"{pc(pcs.loc['WM', 'pool_share_drawings'])} of the drawing pool and "
+             f"{pc(pcs.loc['WM', 'pool_share_photos'])} of the photo pool, are read at "
+             f"{pcs.loc['WM', 'recall_drawings']:.2f} from drawings and {pcs.loc['WM', 'recall_photos']:.2f} from "
+             f"photos, and at {pcs.loc['WM', 'recall_matched']:.2f} once the photos have the drawings' mix; Vectored "
+             f"Thrust goes the other way ({pcs.loc['VT', 'recall_drawings']:.2f} drawings, "
+             f"{pcs.loc['VT', 'recall_photos']:.2f} photos, {pcs.loc['VT', 'recall_matched']:.2f} matched).",
+             width=92)
 
     # 5.2
+    s6 = {st: mi.loc[("registers", "patent to photo", st)] for st in ("built", "concept")}
     D.method(
         "5.2", "Can the same aircraft be found in both sources?",
-        "Whether the model links a patent drawing to a photograph of the same aircraft, and the reverse.",
+        "Whether the model links a patent drawing to a photograph of the same aircraft, and the reverse: the "
+        "strictest form of the fairness question, one aircraft in two media.",
         f"The {int(mpp.queries)} patent aircraft that have a directory page, as queries against the "
         f"{n_(int(mpp.gallery))} photo aircraft whose hero image is not a line drawing, and those photo aircraft "
-        f"against the {n_(int(mph.gallery))} patent aircraft.",
+        f"against the {n_(int(mph.gallery))} aircraft of the patent main set. Of the {n_link} linked aircraft of "
+        f"1.1, {n_gate_l} leave through the domain gate (similar to a UAV) and {n_line_l} whose page shows only a "
+        "line drawing.",
         f"Each query ranks the gallery by cosine distance. Table {D.tabnum()} gives the share of queries whose "
-        f"own page is ranked first, in the top 10 and in the top 50, and the median rank; Figure {D.fignum()} "
-        "the share within the top k for every k, beside a random ranking. Line drawings are removed from the "
-        "gallery because some directory pages reproduce the patent figure itself.",
-        "Random ranking: P(own page in the top k) = 1 − Π_{i<k} (G − n₊ − i) / (G − i), averaged over the "
-        "queries, with G the gallery size and n₊ the query's own pages (the author's own baseline).",
-        f"{int(mpp.queries)} queries, all aircraft with a public product.")
-    D.table(md_df([("patent → photo", int(mpp.queries), n_(int(mpp.gallery)), pc(mpp['R@1'], 1), pc(mpp['R@10'], 1),
-                    pc(mpp['R@50'], 1), f"{pc(mpp['random_R@10'], 1)} / {pc(mpp['random_R@50'], 1)}", f"{mpp.median_rank:g}"),
-                   ("photo → patent", int(mph.queries), n_(int(mph.gallery)), pc(mph['R@1'], 1), pc(mph['R@10'], 1),
-                    pc(mph['R@50'], 1), f"{pc(mph['random_R@10'], 1)} / {pc(mph['random_R@50'], 1)}", f"{mph.median_rank:g}")],
-                  ["direction", "queries", "gallery", "top 1", "top 10", "top 50", "random top 10 / 50", "median rank"]),
-            "Same-aircraft matching (registers, layer 24 CLS, no line drawings in the gallery).",
-            f"**The right page is in the top 10 for {pc(mpp['R@10'])} of the patent queries and in the top 50 for "
-            f"{pc(mpp['R@50'])}, against {pc(mpp['random_R@10'], 1)} and {pc(mpp['random_R@50'], 1)} at random.**")
+        "own page is in the top 10 and the top 50, with bootstrap intervals over the queries, by page status and "
+        f"for the base model, and the median rank; Figure {D.fignum()} the share within the top k for every k. "
+        "Line drawings leave the gallery because some pages reproduce the patent figure itself.",
+        "Against a random ranking: P(own page in the top k) = 1 − Π_{i<k} (G − n₊ − i) / (G − i), averaged "
+        "over the queries, with G the gallery size and n₊ the query's own pages (the author's own baseline).",
+        f"The {int(mpp.queries)} linked aircraft are well-known programmes with a public product, which a "
+        "directory page exists for: a biased subset of the patent aircraft.")
+
+    def mrow(lab, r):
+        return (lab, int(r.queries), f"{pc(r.top10, 1)} {ci(100 * r.top10_boot_lo, 100 * r.top10_boot_hi, 1)}",
+                f"{pc(r.top50, 1)} {ci(100 * r.top50_boot_lo, 100 * r.top50_boot_hi, 1)}", f"{r.median_rank:g}")
+    D.table(md_df([mrow("patent → photo, registers", mr_),
+                   mrow("patent → photo, built aircraft", s6["built"]),
+                   mrow("patent → photo, concept aircraft", s6["concept"]),
+                   mrow("photo → patent, registers", mi.loc[("registers", "photo to patent", "all")]),
+                   mrow("patent → photo, base model", mb_)],
+                  ["direction", "queries", "top 10, % [95 % CI]", "top 50, % [95 % CI]", "median rank"]),
+            f"Same-aircraft matching (layer 24 CLS, no line drawings in the gallery); at random the top 10 and top "
+            f"50 hold the own page for {pc(mr_.random_top10, 1)} and {pc(mr_.random_top50, 1)} of the patent "
+            "queries.",
+            f"**The own page is in the top 50 for {pc(mr_.top50, 1)} of the patent queries "
+            f"{ci(100 * mr_.top50_boot_lo, 100 * mr_.top50_boot_hi, 1)}, against {pc(mr_.random_top50, 1)} at "
+            f"random and {pc(mb_.top50, 1)} with the base model.** Concept aircraft find their page in "
+            f"{pc(s6['concept'].top50, 1)} of the queries and built ones in {pc(s6['built'].top50, 1)}; "
+            + ("the two intervals overlap, so no difference is claimed." if s6['built'].top50_boot_hi >= s6['concept'].top50_boot_lo
+               else "the two intervals do not overlap."))
     note("f_matching.png", f"Source: {MODEL}; layer 24 CLS; {int(mpp.queries)} patent main figures as queries "
                            f"against {n_(int(mpp.gallery))} evtol.news aircraft without line drawings")
     with _into_brief():
@@ -1300,96 +1580,86 @@ def build(C: Dict) -> Tuple[str, Dict]:
     D.figure(f17, "how often a patent aircraft finds its own directory page within the top k photographs, against "
                   "a random ranking.",
              f"**The link is well above chance at every shortlist size but far from a retrieval tool: the median "
-             f"rank is {mpp.median_rank:g}, and the medium separates the sources more than the aircraft joins "
-             "them.**", width=78)
+             f"rank is {mpp.median_rank:g}.**", width=70)
     D.answer(
-        ("The photographs score higher only because their pool is larger and more balanced: with the drawings' "
-         "size and class mix they score as the drawings do, and one aircraft is linked across the sources above "
-         "chance but not reliably." if cmx_inside else
-         "The photographs carry more architecture than the drawings, also with the drawings' class mix; one "
-         "aircraft is linked across the sources above chance but not reliably."),
-        [f"**The raw lead.** Photos {pA:.3f} against drawings {dA:.3f} ({sg(pA - dA, 2)}), the same in greyscale: "
-         "whatever the lead is, it is not colour.",
-         f"**Matched.** With the drawings' class counts the photos score {cmx['mean']:.3f} "
-         f"({cmx['lo']:.3f} to {cmx['hi']:.3f} over the draws); the probe agrees "
-         f"({cmx['probe_mean']:.3f} against {m5.probe_bal_acc:.3f}). The comparison was designed post hoc.",
-         f"**A class is read well when it dominates the pool**, whatever the medium: Vectored Thrust in the "
-         f"drawings, Wingless multicopters in the photos.",
-         f"**Matching.** {pc(mpp['R@50'])} of patent aircraft find their own page in the top 50 (random "
-         f"{pc(mpp['random_R@50'], 1)}); median rank {mpp.median_rank:g}."])
+        "Photographs score higher at equal pool size; once the photo pool also has the drawings' class mix, no "
+        "difference is detected, though the comparison is too imprecise to rule out a medium effect of the size "
+        "found at full scale.",
+        [f"**Full sets.** Photos {mh.knn_bal_acc:.3f} against drawings {m5.knn_bal_acc:.3f}, "
+         f"{sg(m3_full.estimate)} {ci(m3_full.ci_lo, m3_full.ci_hi, 3, True)}.",
+         f"**Not the pool size, not the colour, not the background.** Equal size {sg(m3_size.estimate)}, both "
+         f"grey {sg(gg.diff_photos_minus_drawings)}, cropping {sg(crop['diff'])} ({mnd(crop)}).",
+         f"**The class mix is the remaining candidate.** With the drawings' mix {sg(m3_mix.estimate)} "
+         f"{ci(m3_mix.ci_lo, m3_mix.ci_hi, 3, True)}, {nd(m3_mix.ci_lo, m3_mix.ci_hi)}; the mix alone "
+         f"{sg(m3_dmix.estimate)}, {nd(m3_dmix.ci_lo, m3_dmix.ci_hi)}.",
+         f"**One aircraft in two media.** {pc(mr_.top50)} of the linked patent aircraft find their own page in the "
+         f"top 50 (random {pc(mr_.random_top50, 1)}), on a subset of well-known programmes."])
 
     # ═══ closing ═══
     D.closing("The answer to RQ4, what it rests on, and what is still open")
-    mix_clause = (", an advantage that shrinks to nothing detectable once the photo pool has the drawings' size and "
-                  "class mix") if cmx_inside else ""
     D.answer(
-        f"The figure alone carries the architecture: weakly in patent drawings, and moderately in photographs as "
-        f"they come{mix_clause}.",
+        "The figure alone carries the architecture: weakly in patent drawings, moderately in photographs as they "
+        "come, and no difference between the two media is detected once the photo pool has the drawings' size "
+        "and class mix.",
         [f"**Drawings.** A frozen general-purpose model, never trained on aircraft or on the codebook, recovers "
-         f"the 12 types from one drawing per aircraft at {f2(mp.knn_bal_acc)} against a shuffled level of "
-         f"{f2(mp.knn_chance_p95)}, and the 5 classes at {f2(m5.knn_bal_acc)}; photographs reach "
-         f"{f2(mh.knn_bal_acc)} on the 5 classes.",
+         f"the 12 types from one drawing per aircraft at {mp.knn_bal_acc:.3f} (shuffled level "
+         f"{f2(mp.knn_chance_p95)}), about {head12:.2f} after the selection optimism and {base_sc[L12]:.3f} with "
+         f"the base model planned first; the 5 classes at {f2(m5.knn_bal_acc)}.",
+         f"**Photographs.** {f2(mh.knn_bal_acc)} on the 5 classes; the lead over the drawings survives equal pool "
+         "size and greyscale, cropping to the aircraft changes nothing detectable, and the lead is no longer "
+         "detected with the drawings' class mix.",
          "**It holds** with the maker held out, under every image rule, without the photo backgrounds, in "
-         "greyscale, and after the view of the drawing is linearly removed.",
-         f"**The drawing embedding is organised first by how the aircraft is drawn**, only second by what it is: "
-         f"the view separates the vectors {f2(cb.conf_over_arch)} times more than the architecture, and the "
-         "types form no clusters of their own.",
+         "greyscale, and after the view of the drawing is linearly removed; these contrasts are read together, "
+         "none of them surviving a correction for their number.",
+         f"**The drawing embedding is organised first by how the aircraft is drawn**, second by what it is: the "
+         f"d ratio is {vrr.estimate:.2f}, and the types form no clusters of their own.",
          "**The human reading stays the reference.** The architecture is in the vector (the probe reads more "
-         "than the neighbours) but does not decide which aircraft are nearest; the embedding offers a second, "
-         "independent and label-free view of the same aircraft."], head="Answer to RQ4")
+         "than the neighbours) but does not decide which aircraft are nearest."], head="Answer to RQ4")
     D.p("**What DINOv2 contributes to the thesis.**")
     D.bullets([
-        f"**A test of the taxonomy by an observer that has never seen it.** The types it recovers best are the "
-        f"large ones; the types it never recovers ({', '.join(zero)}) are defined by how the propulsion moves or "
-        "acts, which a single silhouette need not show.",
+        "**A test of the taxonomy by an observer that has never seen it.** The types it recovers best are the "
+        "large ones; " + (f"{', '.join(disp(c) for c in above)}, never recovered in the full sample, is recovered "
+                          "above chance once class size is equalised, " if above else "")
+        + (f"while {' and '.join(disp(c) for c in notabove)} rest on too few aircraft to say." if notabove else ""),
         "**A link from the patent record to the directory** of built and proposed aircraft, above chance.",
         "**A labelled benchmark of whole-aircraft drawings with a fixed protocol**, on which a fine-tuned or "
         "aircraft-specific model can be measured."])
     D.p("**A reusable recipe for patent-drawing studies.**")
-    D.add("1. Use a registers checkpoint: drawings are mostly blank background, and a model without registers "
-          "parks its artifact tokens there.",
-          "2. Feed the largest native input size (518 px) on a white pad, and leave the lines as drawn.",
+    D.add(f"1. Test the checkpoint before reading any score: if a late layer puts more than about 0.1 of the CLS "
+          f"attention on one patch, or its largest patch in the pad, use a registers checkpoint (base model: in "
+          f"the pad for {pc(pad[('base', 'patent')], 1)} of the drawings; registers: "
+          f"{pc(pad[('registers', 'patent')], 1)}).",
+          "2. Feed the largest native input size (518 px) on a white pad, and keep the lines as drawn: no "
+          "rendering change tested improves the score; a gentler change is untested.",
           "3. Choose the layer and token with the split-half rule over makers, and report the optimism gap beside "
           "the score.",
-          "4. Hold the maker out of every neighbour, and test the view as a confound before reading any class "
-          "result.", "")
+          "4. Hold the maker out of every neighbour, resample makers for every interval, and test the view as a "
+          "confound before reading any class result.", "")
     D.p("**What the results rest on.**")
     D.bullets([
-        f"**A linear view erasure only.** The view kNN stays at {vk_e.value:.2f} after it, so a non-linear view "
-        "component survives; the Perspective-only rows hold the view constant, but for one view only.",
+        f"**One labeller.** The G1 labels and the whole-patent reading are the author's (κ {kap:.2f}; "
+        f"{float(k_rec.kappa):.3f} for the frozen labels); no second labeller is recorded.",
         f"**Small and unbalanced classes.** "
-        f"{', '.join(f'{disp(c)} {int(cnt12[c])}' for c in sorted(small, key=lambda c: cnt12[c]))} aircraft: these "
-        f"recalls rest on a handful of aircraft. The photo classes range from {int(cnt5h.min())} "
-        f"({cnt5h.idxmin()}) to {int(cnt5h.max())} ({cnt5h.idxmax()}), and the two sources differ in class mix.",
-        f"**A photo filter audit that is not blind.** The sheets showed the filter score, the judge was the "
-        f"pipeline's AI assistant, and the author has not yet re-checked the {len(au)} verdicts; the {n_rev} "
+        f"{', '.join(f'{disp(c)} {int(cnt12[c])}' for c in sorted(small, key=lambda c: cnt12[c]))} aircraft; the "
+        "two sources differ in class mix, and the matched comparison is wide.",
+        f"**A linear view erasure only.** Held out it removes {pc(ho['registers'].share_of_above_chance_removed)} "
+        f"of the view signal, and the view kNN stays at {vk_e.value:.2f} after it.",
+        f"**Post-hoc steps.** The registers switch after its scores were seen; the size and mix controls after "
+        "the photo lead was seen; the grey and contrast drawing controls, the grey-with-grey comparison and the "
+        "registers crop after the review; the exp4 subset after the rule scores.",
+        f"**Many contrasts.** {n_con} paired contrasts, none surviving a Holm correction: the evidence is their "
+        "agreement, not any one of them.",
+        f"**A photo filter audit that is not blind**, judged by the pipeline's AI assistant; the {n_rev} "
         "review-band images were never decided by hand.",
-        "**An untested gentler thickening.** The smallest candidate grew each side of a stroke by about 1 px; a "
-        "sub-pixel variant was not in the candidate set fixed in advance.",
-        f"**The labels.** The photo label is the directory's own class ({int(pch.agrees.sum())} of {len(pch)} "
-        f"agree with the codebook parent). The drawing labels are human labels, checked against the whole-patent "
-        f"reading (κ {kap:.2f}); no second-labeller agreement is recorded.",
-        "**Post-hoc steps.** The registers checkpoint was brought in after the base model's attention collapse "
-        "was seen, the class-mix matching after the photo lead was seen, the exp4 subset after the rule scores; "
-        "the crop test ran on the base model.",
-        "**One frozen model.** The analysis measures what a general-purpose model sees without training; a "
-        "fine-tuned model, or one trained on technical drawings, is outside its scope."])
-    D.p("**Questions still open.** Each is a choice for the chapter, and each can be settled with the results "
-        "already held.")
+        f"**A biased matching subset.** The {int(mpp.queries)} linked aircraft are well-known programmes.",
+        "**One frozen model.** A fine-tuned model, or one trained on technical drawings, is outside the scope."])
+    D.p("**Questions still open.** Each is a choice for the chapter and can be settled with the results already "
+        "held.")
     D.bullets([
-        f"**Does same-aircraft matching earn its own section?** It is above chance ({pc(mpp['R@50'])} in the top "
-        "50) but far from reliable; it could shrink to one paragraph.",
-        f"**Which drawing score leads?** {f2(mp.knn_bal_acc, 3)} as measured, with the erasure as a "
-        f"qualification, or {f2(r12, 3)} after the view erasure, where the two models tie "
-        f"({f2(mp.knn_bal_acc - r12, 3)} of the score does not survive it).",
+        f"**Does same-aircraft matching earn its own section?** It is above chance ({pc(mr_.top50)} in the top 50) "
+        "but far from reliable; it could shrink to one paragraph.",
         "**Does the exp4 question stay?** Averaging views is a null; it may leave the chapter.",
-        "**One attention layer or two?** The plan named layer 18; with registers layer 24 is readable too, and "
-        "Figures of 3.4 and 4.4 show both.",
-        (f"**Which photo comparison is the headline?** The full set ({sg(pA - dA, 2)}) with the matching as its "
-         f"qualification, or the matched comparison ({cmx['mean']:.3f} against {dA:.3f})?" if cmx_inside else
-         "**Is the photo lead the headline?** It survives the class-mix matching."),
-        "**One labeller or several?** Whether the drawing labels come from one labeller, and whether a "
-        "second-labeller check is planned."])
+        "**A second labeller?** A blind second reading of a sample of drawings would give an independent κ."])
     D.p("**References**")
     D.p("Brodersen, K. H., Ong, C. S., Stephan, K. E. and Buhmann, J. M. (2010). The balanced accuracy and its "
         "posterior distribution. In *Proceedings of the 20th International Conference on Pattern Recognition*, "
@@ -1402,34 +1672,38 @@ def build(C: Dict) -> Tuple[str, Dict]:
         "*International Conference on Learning Representations (ICLR 2024)*.",
         "Efron, B. (1979). Bootstrap methods: another look at the jackknife. *The Annals of Statistics*, 7(1), "
         "1-26.",
+        "Holm, S. (1979). A simple sequentially rejective multiple test procedure. *Scandinavian Journal of "
+        "Statistics*, 6(2), 65-70.",
         "Hubert, L. and Arabie, P. (1985). Comparing partitions. *Journal of Classification*, 2(1), 193-218.",
         "McInnes, L., Healy, J. and Melville, J. (2018). UMAP: Uniform manifold approximation and projection for "
         "dimension reduction. arXiv:1802.03426.",
         "Oquab, M., Darcet, T., Moutakanni, T. et al. (2023). DINOv2: Learning robust visual features without "
-        "supervision. arXiv:2304.07193.")
+        "supervision. arXiv:2304.07193.",
+        "Wilson, E. B. (1927). Probable inference, the law of succession, and statistical inference. *Journal of "
+        "the American Statistical Association*, 22(158), 209-212.")
 
     # ═══ appendix ═══
-    D.add('<div class="keep chapter-start" markdown="1">', "", "## Appendix A — Every layer and token under "
-          "both models", "", "</div>", "")
-    D.p("Every matrix under both models, maker held out: kNN-5 balanced accuracy with the registers model's "
-        "interval and shuffled level, and the linear probe. Base appears here only as the comparison; every "
-        "chapter uses the registers model. Rotatable 3-D maps of both embeddings accompany the document as "
-        "separate files.")
+    if os.environ.get("BRIEF_APPENDIX", "1") == "1":
+        D.add('<div class="keep chapter-start" markdown="1">', "", "## Appendix A — Every layer and token under "
+              "both models", "", "</div>", "")
+        D.p("Every matrix under both models, maker held out: kNN-5 balanced accuracy with the registers model's "
+            "interval and shuffled level, and the linear probe. Base appears here only as the comparison; every "
+            "chapter uses the registers model.")
 
-    def grid(Rb, Rr, key, caption):
-        mb, mr = Rb[key]["main"].set_index("matrix"), Rr[key]["main"].set_index("matrix")
-        rows = [(mx, f"{mb.loc[mx].knn_bal_acc:.3f}", f"{mr.loc[mx].knn_bal_acc:.3f}",
-                 ci(mr.loc[mx].knn_ci_lo, mr.loc[mx].knn_ci_hi), f"{mr.loc[mx].knn_chance_p95:.3f}",
-                 f"{mb.loc[mx].probe_bal_acc:.3f}", f"{mr.loc[mx].probe_bal_acc:.3f}") for mx in mr.index]
-        up = int((mr.knn_bal_acc > mb.knn_bal_acc.reindex(mr.index)).sum())
-        top = mr.knn_bal_acc.idxmax()
-        D.table(md_df(rows, ["matrix", "kNN-5 base", "kNN-5 registers", "95 % interval", "shuffled level",
-                             "probe base", "probe registers"]), caption,
-                f"**Registers score higher than base in {up} of the 6 matrices, and {top} is the best matrix under "
-                "registers.**")
-    grid(Bp, Rp, "ev", f"Patent drawings, 12 types ({n_(nP)} aircraft, main figure).")
-    grid(Bp, Rp, "ev5", f"Patent drawings, 5 parent classes ({n_(nP)} aircraft, main figure).")
-    grid(Bh, Rh, "ev", f"Photographs, 5 directory classes ({n_(nH)} aircraft, hero image).")
+        def grid(Rb, Rr, key, caption):
+            mb, mr = Rb[key]["main"].set_index("matrix"), Rr[key]["main"].set_index("matrix")
+            rows = [(mx, f"{mb.loc[mx].knn_bal_acc:.3f}", f"{mr.loc[mx].knn_bal_acc:.3f}",
+                     ci(mr.loc[mx].knn_ci_lo, mr.loc[mx].knn_ci_hi), f"{mr.loc[mx].knn_chance_p95:.3f}",
+                     f"{mb.loc[mx].probe_bal_acc:.3f}", f"{mr.loc[mx].probe_bal_acc:.3f}") for mx in mr.index]
+            up = int((mr.knn_bal_acc > mb.knn_bal_acc.reindex(mr.index)).sum())
+            top = mr.knn_bal_acc.idxmax()
+            D.table(md_df(rows, ["matrix", "kNN-5 base", "kNN-5 registers", "95 % interval", "shuffled level",
+                                 "probe base", "probe registers"]), caption,
+                    f"**Registers score higher than base in {up} of the 6 matrices, and {top} is the best matrix "
+                    "under registers.**")
+        grid(Bp, Rp, "ev", f"Patent drawings, 12 types ({n_(nP)} aircraft, main figure).")
+        grid(Bp, Rp, "ev5", f"Patent drawings, 5 parent classes ({n_(nP)} aircraft, main figure).")
+        grid(Bh, Rh, "ev", f"Photographs, 5 directory classes ({n_(nH)} aircraft, hero image).")
 
     text = D.text()
     text = text.replace("@@TOC@@", toc_md(toc_entries(text)))

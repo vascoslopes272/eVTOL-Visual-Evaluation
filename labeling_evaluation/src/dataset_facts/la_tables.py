@@ -2321,8 +2321,8 @@ def dimension_drift(v: pd.DataFrame, classes: Optional[List[str]] = None) -> pd.
 
     Every ``share`` is a share of *aircraft*, never of rotors. For propulsive units, ducted,
     tail and booms the denominator is the ``aircraft`` column of the same row: in the classes
-    drawn here every one of those fields is answered for every aircraft. ``share electric
-    only`` is the one exception -- a patent that never states a powertrain is excluded, so it
+    drawn here every one of those fields is answered for every aircraft. ``share offering
+    another source`` (was ``share electric only`` before the 2026-09-30 powertrain ruling) is the one exception -- a patent that never states a powertrain is excluded, so it
     divides by ``powertrain stated``, which is smaller, and the cell is left blank when fewer
     than :data:`MIN_CELL` aircraft state one (user ruling, five panels, 2026-09-22).
 
@@ -2348,7 +2348,7 @@ def dimension_drift(v: pd.DataFrame, classes: Optional[List[str]] = None) -> pd.
                 rows.append({"class": metrics.ARCH_NAMES.get(c, c), "code": c, "window": name,
                              "aircraft": int(len(sub)), "median propulsive units": np.nan,
                              "share with a ducted unit": np.nan, "share with no tail surface": np.nan,
-                             "share with booms": np.nan, "share electric only": np.nan,
+                             "share with booms": np.nan, "share offering another source": np.nan,
                              "share with a tilting unit": np.nan, "median wings": np.nan,
                              "propulsive units answered": 0, "ducted answered": 0, "tail answered": 0,
                              "booms answered": 0, "powertrain stated": 0, "tilting answered": 0})
@@ -2362,8 +2362,11 @@ def dimension_drift(v: pd.DataFrame, classes: Optional[List[str]] = None) -> pd.
                          "share with booms": round(float((pd.to_numeric(sub["nBooms"], errors="coerce")
                                                           .dropna() > 0).mean()), 2),
                          # the one narrower base: "not stated" is excluded, and a cell resting on
-                         # fewer than MIN_CELL stated powertrains is blank rather than reported
-                         "share electric only": (round(float(power[stated].eq("Yes").mean()), 2)
+                         # fewer than MIN_CELL stated powertrains is blank rather than reported.
+                         # 2026-09-30 (no Hybrid label any more): the share of the stated aircraft whose
+                         # patent also offers another energy source (powertrain_review = multi_source)
+                         "share offering another source": (round(float(sub.get("powertrain_review", pd.Series(index=sub.index, dtype=object))
+                                                         [stated].astype(str).eq("multi_source").mean()), 2)
                                                  if int(stated.sum()) >= MIN_CELL else np.nan),
                          "share with a tilting unit": round(float(sub["any_tilting"].map({True: 1, False: 0}).mean()), 2),
                          "median wings": float(pd.to_numeric(sub["wCount"], errors="coerce").median()),
@@ -3241,12 +3244,18 @@ def examination(v: pd.DataFrame, by: str = "pub_office", top: int = 6) -> pd.Dat
 
 
 def powertrain_by_class(v: pd.DataFrame) -> pd.DataFrame:
+    """Ruling 2026-09-30: there is no Hybrid label. An aircraft whose patent also offers another energy source is
+    electric; it is counted in ``electric`` AND in ``another source also offered`` (powertrain_review = multi_source)."""
     w = v.dropna(subset=["topType"])
-    tab = pd.crosstab(w["topType"], w["is_electric_final"].fillna("Unknown")).reindex(
-        columns=[c for c in ["Yes", "Hybrid", "Unknown", "No"] if c in w["is_electric_final"].fillna("Unknown").values], fill_value=0)
+    el = w["is_electric_final"].fillna("Unknown")
+    tab = pd.crosstab(w["topType"], el).reindex(
+        columns=[c for c in ["Yes", "Unknown", "No"] if c in el.values], fill_value=0)
     tab = tab.loc[tab.sum(axis=1).sort_values(ascending=False).index]
-    tab.columns = [{"Yes": "electric", "Hybrid": "hybrid", "Unknown": "not stated", "No": "non-electric"}[c] for c in tab.columns]
     tab.insert(0, "aircraft", tab.sum(axis=1))
+    multi = w.get("powertrain_review", pd.Series(index=w.index, dtype=object)).astype(str).eq("multi_source") & el.eq("Yes")
+    tab.insert(tab.columns.get_loc("Yes") + 1 if "Yes" in tab.columns else 1, "another source also offered",
+               multi.groupby(w["topType"]).sum().reindex(tab.index).fillna(0).astype(int))
+    tab.columns = [{"Yes": "electric", "Unknown": "not stated", "No": "non-electric"}.get(c, c) for c in tab.columns]
     tab.index = [metrics.ARCH_NAMES.get(c, c) for c in tab.index]
     tab.index.name = "class"
     return tab.reset_index()

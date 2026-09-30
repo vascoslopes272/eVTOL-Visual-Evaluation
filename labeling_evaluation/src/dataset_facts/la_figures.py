@@ -2810,7 +2810,7 @@ def fig_dimension_drift(v: pd.DataFrame, path: Path) -> Path:
                 ("share with a ducted unit", "% with\nducted units", 1, "aircraft"),
                 ("share with no tail surface", "% with no\ntail surface", 1, "aircraft"),
                 ("share with booms", "% with booms", 1, "aircraft"),
-                ("share electric only", "% electric-only,\nof those stated", 1, "powertrain stated")]
+                ("share offering another source", "% another source\noffered, of stated", 1, "powertrain stated")]
     # five panels do not hold across a 7 in page: the titles crowd and (v) runs off the edge.
     # Two rows of three, with the class key in the free sixth cell.
     fig, axgrid = plt.subplots(2, 3, figsize=(W * 0.92, 4.6), gridspec_kw={"wspace": 0.34, "hspace": 0.75})

@@ -561,7 +561,7 @@ TAKEAWAY = {
     "sm_family_yearly":
         "**On the aircraft still in force the family holds more than half of 2020 and of 2021, "
         "{sm_fy_fi_2020} and {sm_fy_fi_2021}, and so meets condition 1; on all aircraft it does "
-        "not, because 2020 stops at exactly half ({sm_fy_fa_2020}).** The margin is small: "
+        "not, because 2020 does not pass half ({sm_fy_fa_2020}).** The margin is small: "
         "{sm_fy_fik_2020} of {sm_fy_ni_2020} and {sm_fy_fik_2021} of {sm_fy_ni_2021} aircraft. "
         "In 2022 and 2023 the family falls to {sm_fy_fi_2022} and {sm_fy_fi_2023} of the "
         "in-force aircraft, in the two years whose base is least complete. A caveat, not a "

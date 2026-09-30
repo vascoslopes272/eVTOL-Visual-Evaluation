@@ -243,9 +243,11 @@ def d1_similars(ds: Dataset) -> pd.DataFrame:
          "tag UAVSimilar: drawn unoccupied, the text does not declare a UAV (a declared UAV "
          f"is disapproved at labelling as Pure UAV: {n_pure_uav})"),
         ("Not electric but similar", "ElectricSimilar", "Similar: not electric",
-         "powertrain read from the text names a turbine or piston engine and no electric motor "
-         "(is_electric_final = No), or the review tag ElectricSimilar; hybrid stays, and "
-         f"{n_unknown} patents give no evidence either way and stay"),
+         "the aircraft needs a combustion engine to fly: the text names a turbine or piston engine and "
+         "no electric motor, or the engine makes the electricity or turns a propulsor with no "
+         "battery-only option (is_electric_final = No, review 2026-09-30), or the review tag "
+         "ElectricSimilar; an aircraft whose patent also offers another energy source beside the "
+         f"battery stays as electric, and {n_unknown} patents give no evidence either way and stay"),
         ("STOL but similar", "STOLSimilar", "Similar: STOL only",
          "take-off mode read from the text, confirmed at review: STOL only (a patent that "
          f"claims no vertical take-off is disapproved at labelling as Not VTOL: {n_not_vtol}). "
