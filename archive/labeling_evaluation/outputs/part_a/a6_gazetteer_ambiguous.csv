@@ -1,0 +1,28 @@
+company_canonical,patents_read,readings,distinct_readings
+Bell / Textron,18,NotStated 5 · Alternatives 5 · HybridElectric 4 · BatteryElectric 2 · Turbine 1 · Piston 1,6
+Kitty Hawk,10,BatteryElectric 8 · NotStated 2,2
+Boeing,9,BatteryElectric 3 · NotStated 3 · Alternatives 2 · Turbine 1,4
+Honda,8,BatteryElectric 6 · HybridElectric 2,2
+Joby Aviation,8,BatteryElectric 8,1
+Aurora Flight Sciences,8,NotStated 3 · Alternatives 2 · HybridElectric 2 · BatteryElectric 1,4
+Lilium,6,BatteryElectric 6,1
+Wisk Aero,5,BatteryElectric 5,1
+Hyundai,5,HybridElectric 2 · BatteryElectric 2 · NotStated 1,3
+Embraer / Eve,4,NotStated 2 · BatteryElectric 2,2
+Supernal,4,NotStated 2 · BatteryElectric 2,2
+Karem Aircraft,4,NotStated 2 · Turbine 1 · Alternatives 1,3
+Zuri,3,HybridElectric 2 · Alternatives 1,2
+Airbus,3,NotStated 2 · BatteryElectric 1,2
+Archer Aviation,3,BatteryElectric 3,1
+Doroni Aerospace,2,BatteryElectric 1 · NotStated 1,2
+Wofei / Geely Aviation,2,BatteryElectric 1 · NotStated 1,2
+Vertical Aerospace,2,BatteryElectric 1 · NotStated 1,2
+Tetra Aviation,2,BatteryElectric 2,1
+CycloTech,1,NotStated 1,1
+Beta Technologies,1,BatteryElectric 1,1
+Ascendance Flight Technologies,1,NotStated 1,1
+AMSL Innovations,1,BatteryElectric 1,1
+Horizon Aircraft,1,NotStated 1,1
+Hoversurf,1,BatteryElectric 1,1
+Unknown / Independent,1,Alternatives 1,1
+Overair,1,Alternatives 1,1

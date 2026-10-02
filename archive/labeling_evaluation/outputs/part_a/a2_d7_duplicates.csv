@@ -1,0 +1,4 @@
+duplicate type,what it is,rows,inside the analysis set
+"D1 - same aircraft, new figures","labels inherited, not primary",38,0
+"D2 - same aircraft, same figures","nothing relabelled, not primary",425,0
+"D3 - same invention, modified","fully relabelled, primary",27,27

@@ -1,0 +1,8 @@
+derived variable,value
+"Total propulsor units, median",4
+"Total propulsor units, quartiles",3-8
+Aircraft with more than 8 propulsor units,133
+Aircraft with any tilting unit,296
+Aircraft mixing fixed and tilting units,111
+Aircraft with any ducted unit,250
+Aircraft whose units are all ducted,148

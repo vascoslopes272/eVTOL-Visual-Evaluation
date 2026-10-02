@@ -1,0 +1,13 @@
+image_label,name,aircraft,recovered
+TR,Tilt Rotor,162,0.87
+RC,Rotorcraft,7,0.86
+TB,Tilt Body,34,0.82
+SLC,Lift + Cruise,156,0.74
+SRW,Stopped/Slowed Rotor Wing,7,0.71
+TW,Tilt Wing,57,0.7
+CVT,Combined vectored thrust,95,0.57
+MR,Multirotor,41,0.49
+DS,Deflected Slipstream,10,0.4
+HB,Hoverbike,17,0.18
+PTC,Pitch-to-Cruise,18,0.11
+PFV,Personal Flying Vehicle,7,0.0

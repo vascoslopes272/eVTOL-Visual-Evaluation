@@ -594,11 +594,61 @@ def _ch3b_numbers(tables: Optional[Dict], values: Dict) -> Dict:
             out[f"sm3b_t_{key}_move"] = str(r["movement"])
             out[f"sm3b_t_{key}_fw"] = _lt.WIN_SHORT.get(str(r["first window"]), str(r["first window"]))
 
+    # 2026-09-30 (powertrain ruling, 665 -> 627 aircraft): the boom / duct / driver sentences follow the
+    # trend table instead of naming classes by hand -- two of those trends now sit just above p 0.05
+    if tt is not None:
+        def _row(trace, code):
+            r = tt[tt["trace"].astype(str).str.strip().eq(trace) & tt["code"].astype(str).eq(code)]
+            return r.iloc[0] if len(r) else None
+        name = {"CVT": "CVT", "TW": "Tilt Wing", "MR": "Multirotor", "SLC": "Lift + Cruise", "TR": "Tilt Rotor"}
+
+        def _and(xs):
+            return (", ".join(xs[:-1]) + " and " + xs[-1]) if len(xs) > 1 else (xs[0] if xs else "")
+        rise, flat = [], []
+        for code in ("CVT", "TW", "MR", "SLC", "TR"):
+            r = _row("units carried on booms", code)
+            if r is None:
+                continue
+            fw = _lt.WIN_SHORT.get(str(r["first window"]), str(r["first window"]))
+            span = (f"{_pct(r['first value'])}" + ("" if str(r["first window"]) == "<= 2011" else f" in {fw}")
+                    + f" to {_pct(r['2020-23 value'])}, p {_p(r['p'])}")
+            if code == "CVT" and out.get("sm3b_dw_cvt_11_n"):
+                span += (f": {out.get('sm3b_dw_cvt_11_nb')} of its {out.get('sm3b_dw_cvt_11_n')} aircraft up to 2011, "
+                         f"{out.get('sm3b_dw_cvt_23_nb')} of {out.get('sm3b_dw_cvt_23_n')} in 2020-23")
+            (rise if str(r["movement"]) == "rises" else flat).append((name[code], f"{name[code]} ({span})"))
+        out["sm3b_onb_classes"] = _and([n for n, _ in rise]) or "no class"
+        out["sm3b_onb_sentence"] = ((f"Units on booms rise in {_and([x for _, x in rise])}" if rise else
+                                     "Units on booms rise in no class")
+                                    + (f"; in {_and([x for _, x in flat])} no trend is detected" if flat else ""))
+        d = _row("a ducted unit", "CVT")
+        if d is not None:
+            fell = str(d["movement"]) == "falls"
+            span = f"{_pct(d['first value'])} to {_pct(d['2020-23 value'])}"
+            out["sm3b_duct_head"] = "ducting fell in CVT alone" if fell else "ducting fell only in CVT's boom layout"
+            out["sm3b_duct_ii"] = (f"Ducting falls in CVT ({span}); in every other class no trend is detected" if fell else
+                                   f"The CVT share with a ducted unit goes from {span}, but as a year trend the fall is not "
+                                   f"detected (ρ {_rho(d['rho'])}, p {_p(d['p'])}), nor in any other class; it sits in CVT's "
+                                   "boom layout (trajectory figure, iv)")
+            slc = _row("a ducted unit", "SLC")
+            below = f", to below Lift + Cruise's {_pct(slc['2020-23 value'])}" if slc is not None else ""
+            out["sm3b_duct_answer"] = (f"CVT also sheds its ducts ({span}){below}." if fell else
+                                       f"CVT's share with a ducted unit also drops ({span}){below}, though as a year trend "
+                                       f"this is not detected (p {_p(d['p'])}).")
+
     vd = t.get("la_driver_verdicts")
     if vd is not None and "what moved" in vd.columns:
-        moving = vd[vd["what moved"].astype(str).str.contains(r"\brises\b|\bfalls\b", regex=True)]
-        out["sm3b_v_moving"] = str(len(moving))
+        # a trace "moves inside a class" when a class moved; a pooled-only rise does not count
+        inside = vd["what moved"].astype(str).map(lambda s: bool(re.search(r"\brises\b|\bfalls\b", s.split("pooled over")[0])))
+        out["sm3b_v_moving"] = str(int(inside.sum()))
         out["sm3b_v_all"] = str(len(vd))
+        against = set(vd.loc[vd["verdict class"].astype(str).str.startswith("moved against"), "trace"].astype(str))
+        parts = [(n, why) for tr, n, why in (("a ducted unit", "ducting", "community noise predicts more ducting"),
+                                             ("propulsor types (median)", "the propulsor-type count",
+                                              "development, certification and production cost predict fewer types"))
+                 if tr in against]
+        out["sm3b_v_against"] = ((" and ".join(n for n, _ in parts) + " moved against the only direction a driver gives ("
+                                  + "; ".join(w for _, w in parts) + ")") if parts else
+                                 "no trace moved against the only direction a driver gives")
     return out
 
 
@@ -680,18 +730,11 @@ TAKEAWAY = {
         "the labelled dataset cannot say which of the three a firm weighed",
 
     "sm_driver_traces":
-        "**Units moved onto booms in CVT, Tilt Wing and Multirotor; ducting fell in CVT alone.** "
-        "(i) Units on booms rise in CVT ({sm3b_t_onb_cvt_first} to {sm3b_t_onb_cvt_last}, "
-        "p {sm3b_t_onb_cvt_p}: {sm3b_dw_cvt_11_nb} of its {sm3b_dw_cvt_11_n} aircraft up to "
-        "2011, {sm3b_dw_cvt_23_nb} of {sm3b_dw_cvt_23_n} in 2020-23), Tilt Wing ({sm3b_t_onb_tw_first} in {sm3b_t_onb_tw_fw} to "
-        "{sm3b_t_onb_tw_last}, p {sm3b_t_onb_tw_p}) and Multirotor ({sm3b_t_onb_mr_first} to "
-        "{sm3b_t_onb_mr_last}, p {sm3b_t_onb_mr_p}); in Lift + Cruise ({sm3b_t_onb_slc_first} to "
-        "{sm3b_t_onb_slc_last}, p {sm3b_t_onb_slc_p}) and Tilt Rotor ({sm3b_t_onb_tr_first} to "
-        "{sm3b_t_onb_tr_last}, p {sm3b_t_onb_tr_p}) no trend is detected. The boom is the one "
+        "**Units moved onto booms in {sm3b_onb_classes}; {sm3b_duct_head}.** "
+        "(i) {sm3b_onb_sentence}. The boom is the one "
         "airframe feature that spreads across classes, as distributed propulsion (A1) predicts; "
         "the wing does not move (two or more wing panels: no trend detected in any class). "
-        "(ii) Ducting falls in CVT ({sm_t_duct_cvt_first} to {sm_t_duct_cvt_last}); in every "
-        "other class no trend is detected",
+        "(ii) {sm3b_duct_ii}",
 
     "la_driver_verdicts":
         "**Of the {sm3b_v_moving} traces that move inside a class, only the boom and place "
@@ -699,9 +742,7 @@ TAKEAWAY = {
         "reads do not single one out.** The unit count is overdetermined: distributed "
         "propulsion, failure tolerance and community noise all predict the rise; tilting sets "
         "went with regime transition and against the cost drivers on the raw count, a reading "
-        "reversed per unit ({sm_here_sm_driver_trajectory}, v); ducting and the propulsor-type "
-        "count moved against the only direction a driver gives (community noise predicts more "
-        "ducting; development, certification and production cost predict fewer types)",
+        "reversed per unit ({sm_here_sm_driver_trajectory}, v); {sm3b_v_against}",
 }
 
 NO_TAKEAWAY: set = set()
@@ -742,8 +783,7 @@ ANSWER_BULLET = (
     "{sm3b_dw_cvt_11_n} CVT aircraft up to 2011, {sm3b_dw_cvt_11_nb} carried propulsor units on "
     "booms; of the {sm3b_dw_cvt_23_n} in 2020-23, {sm3b_dw_cvt_23_nb} do. In morphology it "
     "becomes more like the Lift + Cruise aircraft, and this likeness is what motivated defining "
-    "the family F (chapter 2 and 3.2). CVT also sheds its ducts ({sm_t_duct_cvt_first} to "
-    "{sm_t_duct_cvt_last}), to below Lift + Cruise's {sm3b_t_duct_slc_last}. Lift + Cruise "
+    "the family F (chapter 2 and 3.2). {sm3b_duct_answer} Lift + Cruise "
     "itself moves on neither booms nor ducts. Per propulsor unit the tilting sets fall (in Tilt "
     "Propulsor, from {sm3b_spu_tr_unit_11} up to 2011, about {sm3b_spu_tr_unit_11_frac_long}, "
     "to {sm3b_spu_tr_unit_23} in 2020-23, about {sm3b_spu_tr_unit_23_frac}: the propulsor units "

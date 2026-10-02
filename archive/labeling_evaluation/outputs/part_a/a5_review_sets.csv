@@ -1,0 +1,4 @@
+set,rows,decision
+SBERT text hits,36,keep / clear; recommendation: clear all of them
+"Company-attributed, per company",29,"accept the attribution rule for the company, review its 351 patents one by one, or clear"
+03a name queue,93,(no name) 74 · sbert 17 · gazetteer 2

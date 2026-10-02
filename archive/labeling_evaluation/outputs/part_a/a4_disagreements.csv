@@ -1,0 +1,19 @@
+image reads,text reads,image_label,text_label,patents
+Combined vectored thrust,Tilt Rotor,CVT,TR,22
+Lift + Cruise,Combined vectored thrust,SLC,CVT,15
+Tilt Rotor,Combined vectored thrust,TR,CVT,11
+Combined vectored thrust,Lift + Cruise,CVT,SLC,9
+Pitch-to-Cruise,Lift + Cruise,PTC,SLC,9
+Tilt Wing,Tilt Rotor,TW,TR,9
+Hoverbike,Multirotor,HB,MR,8
+Lift + Cruise,Stopped/Slowed Rotor Wing,SLC,SRW,7
+Lift + Cruise,Multirotor,SLC,MR,7
+Lift + Cruise,Rotorcraft,SLC,RC,7
+Pitch-to-Cruise,Multirotor,PTC,MR,4
+Personal Flying Vehicle,Multirotor,PFV,MR,4
+Multirotor,Tilt Rotor,MR,TR,4
+Multirotor,Lift + Cruise,MR,SLC,4
+Multirotor,Rotorcraft,MR,RC,4
+Deflected Slipstream,Tilt Rotor,DS,TR,4
+Combined vectored thrust,Tilt Wing,CVT,TW,4
+Tilt Wing,Tilt Body,TW,TB,4

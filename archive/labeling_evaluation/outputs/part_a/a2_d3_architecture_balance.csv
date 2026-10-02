@@ -1,0 +1,13 @@
+name,value,count,share
+Lift + Cruise,SLC,222,0.28
+Tilt Rotor,TR,206,0.26
+Combined vectored thrust,CVT,117,0.15
+Tilt Wing,TW,67,0.08
+Multirotor,MR,65,0.08
+Tilt Body,TB,38,0.05
+Pitch-to-Cruise,PTC,28,0.03
+Hoverbike,HB,21,0.03
+Deflected Slipstream,DS,11,0.01
+Personal Flying Vehicle,PFV,11,0.01
+Stopped/Slowed Rotor Wing,SRW,8,0.01
+Rotorcraft,RC,8,0.01

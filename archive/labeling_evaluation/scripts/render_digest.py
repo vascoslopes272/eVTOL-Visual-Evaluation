@@ -193,7 +193,7 @@ def main(argv) -> int:
         sys.path.insert(0, str(PILLAR))
         from src.config_loader import load_config
         cfg = load_config()
-        out = Path(cfg["dataset_facts"]["output_dir"]).parent / "labelling_analysis"
+        out = Path(cfg["dataset_facts"]["output_dir"]).parent / "labelling_analysis_preliminary"
 
     brief = out / "LABELLING_ANALYSIS_BRIEF.md"
     md = build(brief, out)

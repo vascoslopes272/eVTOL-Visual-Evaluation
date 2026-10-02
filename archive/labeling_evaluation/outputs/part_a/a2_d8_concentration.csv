@@ -1,0 +1,6 @@
+concentration measure,on the raw assignee string,on the canonical company
+Distinct filers,449,94 values: 92 named companies plus the two catch-all buckets
+Filers with exactly one patent,364,36 of the 92 named companies
+Top-10 share of all 695 patents,0.18,0.22 (named companies only)
+HHI,0.007,0.012 (named companies only)
+Largest filer,"BELL HELICOPTER TEXTRON INC, 34","Bell / Textron, 66"

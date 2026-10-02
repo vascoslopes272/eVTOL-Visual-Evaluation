@@ -1,0 +1,57 @@
+{
+ "figs": [
+  [
+   1,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_pipeline.png"
+  ],
+  [
+   2,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_knn_example.png"
+  ],
+  [
+   3,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_brief/f_examples_patents.png"
+  ],
+  [
+   4,
+   "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS/3_embedding_evaluation/analysis_brief_figs/f02_examples.png"
+  ],
+  [
+   5,
+   "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS/3_embedding_evaluation/analysis_brief_figs/f_attention_base_vs_registers.png"
+  ],
+  [
+   6,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_recall12.png"
+  ],
+  [
+   7,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_view_removal.png"
+  ],
+  [
+   8,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_class_compare.png"
+  ],
+  [
+   9,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_brief/f_umap_by_window_drawings.png"
+  ],
+  [
+   10,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_brief/f_umap_by_window_photos.png"
+  ],
+  [
+   11,
+   "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/eVTOL-Visual-Evaluation/archive/docs/embedding_evaluation/analysis_document/figs_simple/s_qr_3d.png"
+  ]
+ ],
+ "ntab": 7,
+ "example": {
+  "query": "CN114180048A_ua1",
+  "class": "TW",
+  "company": "Tianjin Air Technology",
+  "path": "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/2_embedding_extraction/processed/518/CN114180048A_ua1/HDA0003442926650000021_crop_0_Fu.png",
+  "vote": "TW",
+  "n_same": 3
+ }
+}

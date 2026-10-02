@@ -1,0 +1,6 @@
+what they are,rows,what happens
+"three independent sources agree: the figure label, the text reading (or its silence) and the published architecture of a documented aircraft of that assignee",27,"cleared automatically, provenance known_aircraft"
+"text and image agree, citation shown",399,the annotator reads the citation and confirms the type
+"agree, but the text reading was low-confidence",8,"same, read more carefully"
+text != image,201,the annotator adjudicates
+text does not state an architecture; no citation exists,60,no decision; the image label stands with provenance not_stated

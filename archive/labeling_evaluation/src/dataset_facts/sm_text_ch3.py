@@ -663,7 +663,7 @@ ANSWER = (
     "- **What the result rests on.** The family and the in-force base were chosen after the "
     "first readings of the data. On the aircraft still in force the family holds "
     "{sm_fy_fi_2020} of 2020 and {sm_fy_fi_2021} of 2021. Counted on all aircraft instead, it "
-    "holds exactly {sm_fy_fa_2020} of 2020 ({sm_fy_fak_2020} of {sm_fy_na_2020}): condition 1 "
+    "holds {sm_fy_fa_2020} of 2020 ({sm_fy_fak_2020} of {sm_fy_na_2020}): condition 1 "
     "needs more than half, so there it is not met, and one more family aircraft in 2020 would "
     "have crossed the line. With equal field weights, condition 3 is not met. The main in-force "
     "base includes applications still under examination (1.2). Counted only on aircraft with a "

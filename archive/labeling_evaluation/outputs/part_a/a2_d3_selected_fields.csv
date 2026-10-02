@@ -1,0 +1,7 @@
+name,field,answered,answers,top_share,most common answers
+number of wings,wCount,805,4,0.64,1.0 514 · 2.0 217 · 0.0 50 · 3.0 24
+tail type,empType,774,13,0.29,Tailless (None) 223 · Conventional (Horizontal at base) 96 · V-Tail 74 · Single Vertical Fin Only (No Horizontal Stabilizer) 73
+fuselage motion hover to cruise,fusKin,776,4,0.87,Fixed / Conventional 677 · Whole-Body Pitch 51 · Tail-sitter 35 · Variable Incidence 13
+wing configuration,wingConf,710,6,0.88,Standard Wings 624 · Other 51 · Blended Wing Body 25 · Lifting Body 6
+landing-gear type,gearArch,776,4,0.69,Unknown 532 · Skids / Fixed Skids 129 · Wheeled Gear 113 · Pads / Hull 2
+left-right symmetry,latSym,805,2,0.96,1.0 769 · 0.0 36

@@ -48,7 +48,7 @@ from pathlib import Path
 
 OUT_DIR = Path(
     "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs"
-    "/1639_LABELLED/1_labelling_analysis/labelling_analysis"
+    "/1639_LABELLED/1_labelling_analysis/labelling_analysis_preliminary"
 )
 DEFAULT_IN = OUT_DIR / "LABELLING_ANALYSIS_BRIEF.md"
 DEFAULT_OUT = OUT_DIR / "LABELLING_ANALYSIS_BRIEF.docx"

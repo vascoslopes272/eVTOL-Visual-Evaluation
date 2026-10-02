@@ -1,0 +1,11 @@
+source,exists,state,verdict
+"Image labels G1-M3 (wizard, 5 batches)",Yes,"1,639 patents; 1,110 approved / 529 rejected; 805 primary approved variants; master 1,797 x 435; 98 patents carry more than one variant",Ready. This is the dataset.
+Electric or not (03a),"Yes, machine",Yes 876 · Unknown 464 · Hybrid 229 · No 70,Priority 1 - inclusion gate.
+VTOL or STOL (03a),"Yes, machine",VTOL 1381 · V/STOL 195 · STOL 4 · blank 59; quote for 1580,Priority 1. DECIDE what V/STOL means for inclusion.
+Architecture from the TEXT (03a architecture_primary),"Yes, but a guess","agrees with the image label on 25.7% of 673 single-type approved patents (kappa 0.13); keyword 39.6% of 245, SBERT 17.8% of 428; 2.6 types listed per patent, image type among them 48.8%",Not a gold standard. Superseded by the reading pass of A.4.
+Scope (whole aircraft / subsystem / component),"Yes, machine","Architectural Subsystem Enabler 1371 · Whole Aircraft Architecture 258 · Component-Level Generic 9; 1346 SBERT, none reviewed","Not a gate, and not derivable from the figure labels (1,891 of 1,913 approved figures are Whole Vehicle Layout by construction)."
+Mission type (industry_primary),"Yes, weak","809 of 1,639 are General_Unspecified; the rest split over 9 industries",Park it.
+"Specs (pax, MTOW, range, speed)",Almost empty,pax 10 · MTOW 1 · range 3 · cruise speed 3 non-empty,Out of scope - confirmed by the data.
+Metadata (PatSeer via 03a),Yes,"priority_year for all 1,639; Granted 1,110 / Application 520; N. America 719 · Asia-Pacific 454 · Europe 431",Ready.
+Assignee type (company / university / individual),No,"not a column anywhere; suffix heuristic gives 1,029 company / 69 university / 541 unresolved","Cheap to add, high value. Plan line G8."
+Real aircraft name (03a),"Yes, proposals","387 proposals; aircraft_link Depicted 41 · CompanyAttributed 346 · empty 1,252; on the analysis patents 18 / 113 / 564",Only matters for a named-aircraft sub-analysis. Not a gate.

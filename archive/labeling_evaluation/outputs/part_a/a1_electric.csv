@@ -1,0 +1,9 @@
+kind,value,count,share
+verdict,Yes,876,0.53
+verdict,Unknown,464,0.28
+verdict,Hybrid,229,0.14
+verdict,No,70,0.04
+evidence,keyword,820,0.55
+evidence,gazetteer,345,0.23
+evidence,presumed,321,0.21
+evidence,company,10,0.01

@@ -1,0 +1,22 @@
+name,field,card,answered,answers,top_share,effective_answers
+tail type,empType,M2,774,13,0.29,8.8
+architecture type,topType,G1,802,12,0.28,7.1
+propulsor units on the booms,boom_count,M3,804,19,0.58,4.4
+propulsors along the wing span,wing1_zoneSpan,M3,397,5,0.49,3.7
+direction of boom group 1,boom1_orient,M1,365,5,0.62,3.1
+wing height on the fuselage,wing1_posV,M2,669,4,0.58,3.0
+fuselage cross-section,fusShape,M1,777,5,0.6,3.0
+wing planform,wing1_plan,M2,694,5,0.63,2.6
+propulsors along the wing chord,wing1_zoneChord,M3,400,4,0.69,2.5
+number of wings,wCount,M2,805,4,0.64,2.5
+landing-gear type,gearArch,M1,776,4,0.69,2.3
+figure readability,dinoUnderstanding,M1,799,3,0.56,2.3
+wing fore/aft position,wing1_posL,M2,669,3,0.68,2.3
+thrust axis of the wing propulsors,wing1_orient,M3,361,3,0.7,2.3
+what the booms attach to,boom1_attach,M1,364,4,0.61,2.2
+number of distinct boom groups,boom_ntypes,M3,804,6,0.77,2.1
+whether the wing propulsors tilt,wing1_propKin,M3,361,3,0.57,2.0
+booms present,boomsPresent,M1,805,2,0.55,2.0
+open or ducted wing propulsors,wing1_bmech,M3,361,2,0.71,1.8
+fuselage motion hover to cruise,fusKin,M1,776,4,0.87,1.7
+wing configuration,wingConf,M2,710,6,0.88,1.6

@@ -190,7 +190,7 @@ def main(argv) -> int:
     cfg = load_config()
     facts = dict(cfg["dataset_facts"])
     partial = facts.get("partial_window_start", 2024)
-    source = Path(facts["output_dir"]).parent / "labelling_analysis"
+    source = Path(facts["output_dir"]).parent / "labelling_analysis_preliminary"
     out = Path(args.out) if args.out else source
     out.mkdir(parents=True, exist_ok=True)
 

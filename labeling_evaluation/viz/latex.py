@@ -1,0 +1,131 @@
+"""Turn the saved figures and tables of notebooks 40–44 into LaTeX: used by notebook 45.
+
+    from viz import latex
+    latex.export(cfg)     # writes <output>/latex/: figures/*.pdf, tables/*.tex, figures.tex, tables.tex, FIGURE_INDEX.md
+
+Reads only what the notebooks saved (<output>/qN_*/figures/*.json + .pdf, tables/*.json + .csv); computes nothing.
+Captions come from the .json sidecars: caption, then Source / Unit / How to read as the caption's second part.
+Tables use booktabs (\\usepackage{booktabs}); figures use \\includegraphics (\\usepackage{graphicx}).
+Unicode the thesis text uses (≤ · ² ρ χ − × …) is written as LaTeX commands, so pdflatex also compiles it.
+"""
+from __future__ import annotations
+
+import json
+import re
+import shutil
+from pathlib import Path
+from typing import Dict, List
+
+import pandas as pd
+
+#: unicode → LaTeX, applied after the special characters are escaped
+_UNICODE = {
+    "≤": r"$\leq$", "≥": r"$\geq$", "·": r"$\cdot$", "×": r"$\times$", "−": r"$-$", "±": r"$\pm$",
+    "≈": r"$\approx$", "→": r"$\rightarrow$", "←": r"$\leftarrow$", "²": r"\textsuperscript{2}",
+    "¹": r"\textsuperscript{1}", "³": r"\textsuperscript{3}", "ρ": r"$\rho$", "χ": r"$\chi$",
+    "Δ": r"$\Delta$", "δ": r"$\delta$", "α": r"$\alpha$", "β": r"$\beta$", "κ": r"$\kappa$",
+    "Σ": r"$\Sigma$", "∑": r"$\Sigma$", "√": r"$\surd$", "✓": r"$\checkmark$", "✗": r"$\times$",
+    "°": r"\textdegree{}", "\u00a0": "~", "\u2009": r"\,", "\u202f": r"\,", "…": r"\ldots{}", "’": "'", "‘": "`",
+    "“": "``", "”": "''", "€": r"\texteuro{}", "★": r"$\star$",
+}
+_SPECIAL = [("\\", r"\textbackslash{}"), ("&", r"\&"), ("%", r"\%"), ("$", r"\$"), ("#", r"\#"),
+            ("_", r"\_"), ("{", r"\{"), ("}", r"\}"), ("~", r"\textasciitilde{}"), ("^", r"\textasciicircum{}")]
+
+
+def escape(text) -> str:
+    """Plain text → LaTeX-safe text (special characters escaped, unicode written as commands)."""
+    if text is None or (isinstance(text, float) and pd.isna(text)):
+        return ""
+    s = str(text)
+    out = []
+    for ch in s:
+        rep = next((r for c, r in _SPECIAL if c == ch), None)
+        out.append(rep if rep is not None else _UNICODE.get(ch, ch))
+    s = "".join(out)
+    s = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", s)          # markdown bold from the document
+    s = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\\emph{\1}", s)
+    return s
+
+
+def _label(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def _caption(meta: dict) -> str:
+    """Caption = the document's caption; a second sentence group with Source, Unit and How to read."""
+    main = escape(meta.get("caption", "")).rstrip(".")
+    parts = []
+    for key, word in (("source", "Source"), ("unit", "Unit"), ("how_to_read", "How to read")):
+        if meta.get(key):
+            parts.append(rf"\textit{{{word}:}} {escape(str(meta[key]).rstrip('.'))}.")
+    return f"{main}." + (" " + " ".join(parts) if parts else "")
+
+
+def table_tex(frame: pd.DataFrame, meta: dict, label: str, digits: int = 2) -> str:
+    """One booktabs table: text columns left, numbers right; the caption above the table."""
+    cols = list(frame.columns)
+    num = [pd.api.types.is_numeric_dtype(frame[c]) for c in cols]
+    spec = "".join("r" if n else "l" for n in num)
+
+    def cell(v, is_num):
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return "--"
+        if is_num and isinstance(v, float):
+            return f"{v:.{digits}f}".rstrip("0").rstrip(".") if abs(v - round(v)) > 1e-12 else f"{int(round(v))}"
+        return escape(v)
+
+    lines = [r"\begin{table}[htbp]", r"\centering", r"\small",
+             rf"\caption{{{_caption(meta)}}}", rf"\label{{tab:{label}}}",
+             rf"\begin{{tabular}}{{{spec}}}", r"\toprule",
+             " & ".join(rf"\textbf{{{escape(c)}}}" for c in cols) + r" \\", r"\midrule"]
+    for row in frame.itertuples(index=False):
+        lines.append(" & ".join(cell(v, n) for v, n in zip(row, num)) + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}", ""]
+    return "\n".join(lines)
+
+
+def figure_tex(name: str, meta: dict, label: str) -> str:
+    """One figure block at its drawn width (the figures are drawn at the text width or half of it)."""
+    w = float(meta.get("width_in", 6.3))
+    return "\n".join([r"\begin{figure}[htbp]", r"\centering",
+                      rf"\includegraphics[width={w:.2f}in]{{figures/{name}.pdf}}",
+                      rf"\caption{{{_caption(meta)}}}", rf"\label{{fig:{label}}}", r"\end{figure}", ""])
+
+
+def export(cfg) -> Dict[str, List[str]]:
+    """Collect every saved figure and table of the question folders into <output>/latex/."""
+    out = cfg.out("latex")
+    (out / "figures").mkdir(exist_ok=True)
+    (out / "tables").mkdir(exist_ok=True)
+    figs, tabs, index = [], [], ["# Figure and table index", "",
+                                 "Generated by notebook 45 from the outputs of notebooks 40–44.", "",
+                                 "| Item | Question | LaTeX label | File | Source |", "|---|---|---|---|---|"]
+    qkeys = [k for k in cfg.raw["outputs"] if re.fullmatch(r"q\d", k)]
+    for q in sorted(qkeys):
+        qdir = cfg.out(q, make=False)
+        for js in sorted((qdir / "figures").glob("*.json")):
+            meta = json.loads(js.read_text(encoding="utf-8"))
+            name = js.stem
+            pdf = js.with_suffix(".pdf")
+            if not pdf.exists():
+                continue
+            shutil.copy2(pdf, out / "figures" / pdf.name)
+            lab = _label(name)
+            figs.append(figure_tex(name, meta, lab))
+            index.append(f"| {name} | {q} | fig:{lab} | figures/{pdf.name} | {meta.get('source', '')} |")
+        for js in sorted((qdir / "tables").glob("*.json")):
+            meta = json.loads(js.read_text(encoding="utf-8"))
+            csv = js.with_suffix(".csv")
+            if not csv.exists():
+                continue
+            frame = pd.read_csv(csv, keep_default_na=False, na_values=[""])
+            lab = _label(js.stem)
+            tex = table_tex(frame, meta, lab)
+            (out / "tables" / f"{js.stem}.tex").write_text(tex, encoding="utf-8")
+            tabs.append(rf"\input{{tables/{js.stem}.tex}}")
+            index.append(f"| {js.stem} | {q} | tab:{lab} | tables/{js.stem}.tex | {meta.get('source', '')} |")
+    head = "% Generated by notebook 45 — do not edit; re-run the notebook.\n% Needs \\usepackage{graphicx,booktabs,amssymb}\n\n"
+    (out / "figures.tex").write_text(head + "\n".join(figs), encoding="utf-8")
+    (out / "tables.tex").write_text(head + "\n".join(tabs) + "\n", encoding="utf-8")
+    (out / "FIGURE_INDEX.md").write_text("\n".join(index) + "\n", encoding="utf-8")
+    return {"figures": [f for f in figs], "tables": tabs}

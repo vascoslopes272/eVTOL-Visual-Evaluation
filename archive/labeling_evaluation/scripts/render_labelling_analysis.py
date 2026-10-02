@@ -6,7 +6,7 @@
 Tables and figures only (user ruling 2026-09-22), structured by ``src/dataset_facts/la_index.py``.
 Reuses every Preliminary Analysis table (``export.build_all``) and adds the Labelling Analysis
 ones (``la_tables.build_all``); figures come from ``la_figures.render_all``. Output goes to
-``<preliminary output_dir>/../labelling_analysis/``.
+``<preliminary output_dir>/../labelling_analysis_preliminary/``.
 """
 import datetime as dt
 import subprocess
@@ -59,7 +59,7 @@ def main(argv):
     facts = dict(cfg["dataset_facts"])
     facts.pop("conformance_dir", None)          # the codebook-rule run is not part of this document
     ds = load_dataset(cfg)
-    out = Path(facts["output_dir"]).parent / "labelling_analysis"
+    out = Path(facts["output_dir"]).parent / "labelling_analysis_preliminary"
     out.mkdir(parents=True, exist_ok=True)
     partial = facts.get("partial_window_start", 2024)
     values = numbers.live(ds, partial)

@@ -1,0 +1,3 @@
+case,patents,how the comparison is made
+"Several aircraft, all of the same architecture",50,treated as a single-type patent; the text label is compared with that type
+Several aircraft of genuinely different architectures,18,"the text type is among the patent's image types (13 of 18), or none of them (5)"

@@ -1,0 +1,9 @@
+kind,value,count,share
+verbatim check,verbatim,553,0.8
+verbatim check,partial,74,0.11
+verbatim check,NS,63,0.09
+verbatim check,not_found,5,0.01
+section the citation comes from,abstract,230,0.37
+section the citation comes from,claim 1,95,0.15
+section the citation comes from,description,71,0.11
+section the citation comes from,mixed,231,0.36

@@ -1,0 +1,29 @@
+company,models,aircraft,types,architectures differ
+Airbus,2,CityAirbus · CityAirbus NextGen,MR · SLC,True
+Bell / Textron,2,APT · Nexus,TB · TR,True
+Kitty Hawk,2,Flyer · Heaviside,MR · TR,True
+Wisk Aero,2,Generation 6 · Cora,CVT · SLC,True
+Archer Aviation,2,Midnight · Maker,CVT,False
+AMSL Innovations,1,Vertiia,TR,False
+Ascendance Flight Technologies,1,ATEA,SLC,False
+Aurora Flight Sciences,1,Passenger Air Vehicle,SLC,False
+Beta Technologies,1,Alia-250,SLC,False
+Boeing,1,Passenger Air Vehicle,SLC,False
+CycloTech,1,BlackBird,(unknown),False
+Doroni Aerospace,1,H1,SLC,False
+Embraer / Eve,1,Eve eVTOL,SLC,False
+Honda,1,Honda eVTOL,SLC,False
+Horizon Aircraft,1,Cavorite X5,SLC,False
+Hoversurf,1,Hoverbike S3,HB,False
+Hyundai,1,S-A1,CVT,False
+Jetoptera,1,J-2000,TR,False
+Joby Aviation,1,S4,TR,False
+Karem Aircraft,1,Butterfly,TR,False
+Lilium,1,Lilium Jet,TR,False
+Overair,1,Butterfly,TR,False
+Supernal,1,S-A2,TR,False
+Tetra Aviation,1,Mk-5,SLC,False
+Urban Aeronautics,1,CityHawk,(unknown),False
+Vertical Aerospace,1,VX4,CVT,False
+Wofei / Geely Aviation,1,AE200,CVT,False
+Zuri,1,Zuri 2.0,SLC,False

@@ -1,3 +1,8 @@
+> **Archived 2026-10-01.** Everything in `archive/` is the code that produced the 45-page Labelling Analysis
+> (Drive: `1639_LABELLED/1_labelling_analysis/labelling_analysis_preliminary/`) and the earlier reports.
+> It still runs from here (paths are relative to its own folder). The thesis figures are built by the NEW
+> `labeling_evaluation/` at the repo root — see `labeling_evaluation/THESIS_PLAN.md`.
+
 # eVTOL-Visual-Evaluation
 
 Evaluation of eVTOL patent figures along two pillars, analysed separately because

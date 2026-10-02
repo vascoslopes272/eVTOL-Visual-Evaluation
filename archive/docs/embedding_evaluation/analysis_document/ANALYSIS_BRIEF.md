@@ -25,11 +25,12 @@ The analysis for research question RQ4. Private: contains evtol.news photographs
 <div class="toc-row toc-l1"><span class="toc-t">4.2 — What organises the photo embedding: the architecture, or the maturity of the aircraft?</span><span class="toc-d"></span><span class="toc-p">21</span></div>
 <div class="toc-row toc-l1"><span class="toc-t">4.3 — Does the choice of photograph change the result?</span><span class="toc-d"></span><span class="toc-p">22</span></div>
 <div class="toc-row toc-l1"><span class="toc-t">4.4 — Where does the model look on a photograph?</span><span class="toc-d"></span><span class="toc-p">22</span></div>
-<div class="toc-row toc-l0"><span class="toc-t">5 — Drawings against photographs: is the comparison fair, which source carries more of the architecture, and can one aircraft be found in both?</span><span class="toc-d"></span><span class="toc-p">24</span></div>
-<div class="toc-row toc-l1"><span class="toc-t">5.1 — Once pool, class mix, colour and background are controlled, do photographs carry more architecture than drawings?</span><span class="toc-d"></span><span class="toc-p">24</span></div>
-<div class="toc-row toc-l1"><span class="toc-t">5.2 — Can the same aircraft be found in both sources?</span><span class="toc-d"></span><span class="toc-p">25</span></div>
-<div class="toc-row toc-l0"><span class="toc-t">The answer to RQ4, what it rests on, and what is still open</span><span class="toc-d"></span><span class="toc-p">27</span></div>
-<div class="toc-row toc-l0"><span class="toc-t">Appendix A — Every layer and token under both models</span><span class="toc-d"></span><span class="toc-p">29</span></div>
+<div class="toc-row toc-l1"><span class="toc-t">4.5 — Do the directory classes change in appearance across the development years?</span><span class="toc-d"></span><span class="toc-p">23</span></div>
+<div class="toc-row toc-l0"><span class="toc-t">5 — Drawings against photographs: is the comparison fair, which source carries more of the architecture, and can one aircraft be found in both?</span><span class="toc-d"></span><span class="toc-p">28</span></div>
+<div class="toc-row toc-l1"><span class="toc-t">5.1 — Once pool, class mix, colour and background are controlled, do photographs carry more architecture than drawings?</span><span class="toc-d"></span><span class="toc-p">28</span></div>
+<div class="toc-row toc-l1"><span class="toc-t">5.2 — Can the same aircraft be found in both sources?</span><span class="toc-d"></span><span class="toc-p">29</span></div>
+<div class="toc-row toc-l0"><span class="toc-t">The answer to RQ4, what it rests on, and what is still open</span><span class="toc-d"></span><span class="toc-p">31</span></div>
+<div class="toc-row toc-l0"><span class="toc-t">Appendix A — Every layer and token under both models</span><span class="toc-d"></span><span class="toc-p">33</span></div>
 </div>
 <!-- /TOC -->
 
@@ -638,7 +639,7 @@ _Takeaway: **The figures group by view: a view is recovered from the five neares
 
 ## 4 — The photographs: do photographs of the aircraft carry the architecture, and does the choice of image matter?
 
-The same setup and protocol, on the 1 157 directory aircraft and their 5 classes: prediction (4.1), what organises the embedding (4.2), the choice of image (4.3) and where the model looks (4.4). Whether the scene around the aircraft matters is a fairness question, answered with the other controls in chapter 5.
+The same setup and protocol, on the 1 157 directory aircraft and their 5 classes: prediction (4.1), what organises the embedding (4.2), the choice of image (4.3), where the model looks (4.4) and whether the classes change in appearance across the development years (4.5). Whether the scene around the aircraft matters is a fairness question, answered with the other controls in chapter 5.
 
 </div>
 
@@ -779,6 +780,83 @@ At layer 24 CLS the maturity moves the vectors less than the class (d 0.12 again
 _Takeaway: **Layer 18 covers the airframe; layer 24 gathers in spots on the aircraft, with weak spots in the sky. In one wingless photo the people in front of the aircraft draw as much attention as the aircraft itself: a kept hero image can still be a scene.**_
 
 
+<div class="keep" markdown="1">
+
+### 4.5 — Do the directory classes change in appearance across the development years?
+
+#### Method
+
+**Objective.** Whether the photographs of each directory class change over time: whether a class's designs grow more alike, whether recent designs resemble the earlier ones of their class, and whether the class's centre moves. The class shares over time are read in the Labelling Analysis and not repeated here.
+
+</div>
+
+**Data and unit of analysis.** The aircraft, as in 4.1 (hero image, layer 24 CLS, maker held out), dated by its **development year**: the earliest dated record of that aircraft's development on its page. Only the year both readers gave is used: 949 of the 1 157 aircraft; 152 whose page states no year and 56 on which the readers disagree leave. Windows: ≤ 2011, 2012-15, 2016-19, 2020-23, 2024-26 (partial). For comparison, the 663 drawing aircraft on their parent classes, dated by their patent's priority year.
+
+**Procedure.** Figure 21 (i): each aircraft's cosine distance to its class centroid, built from the class's aircraft of other makers, as a median per window; (ii): the 533 aircraft of 2020-26 classified by kNN-5 from neighbours of ≤ 2019 only, then of 2020-26 only, the two pools matched class by class (375 aircraft, 200 draws). Table 10: the trend of the distance with the year, and the move of each class centre from 2016-19 to 2020-23. Figures 22 and 23: the map of each source, one panel per window, with each class's centre in the window (the mean of its aircraft's map positions, as the drift test's centroid is a mean) and the track of the centres over the earlier windows. Each source has **one** UMAP fit on all its aircraft (the 663 drawings; all 1 157 photo aircraft, the 208 undated ones in the fit but in no panel), with the parameters and seed of the document's other maps: a fit per window would put each window on its own arbitrary axes, and no position could be compared across panels. Table 11: the class separation within each window. Rotatable 3-D maps with a window slider accompany the document as separate files.
+
+**Scientific grounds.** Trend: Spearman ρ = 1 − 6 Σ d² / (n(n² − 1)) between distance and year (Spearman, 1904); pooled on each distance minus its class median, so the class mix cannot make a trend; interval from 1 000 maker resamples (Efron, 1979). Negative ρ = designs grow more alike. Drift = 1 − cos(μ₁, μ₂) of the two window centroids, p = (1 + #{permuted ≥ observed}) / (1 + 999), window labels shuffled within the class. The kNN difference resamples the makers; chance from 200 shuffles of the past labels. Separation within a window: the ratio of the methods box (T3) on that window's aircraft, interval from 1 000 maker resamples drawn jointly over the windows, which also gives the interval of the difference 2020-23 minus 2016-19. A map keeps neighbourhoods, not distances, so the maps only illustrate the drift; it is tested in the full 1 024-number space (Table 10). The design was fixed before any result was read; the Holm correction over the drift tests was added after (post hoc).
+
+**Assumptions and limits.** The drawings carry the priority year of their patent; the photo years come from two language-model readers (agreement 94.9 %), date only 949 of the 1 157 aircraft, are upper bounds of the start of development, and await the author's review. The separation ratio also moves with a window's class mix, which changes over time. The maturity moves the photo vectors (4.2), so a change over time can be a change in the kind of image. Windows with fewer than 15 aircraft of a class are faded and not tested (drawings: Electric Rotorcraft and Hover Bikes / PFD).
+
+<div class="keep" markdown="1">
+
+#### Results and discussion
+
+</div>
+
+![Figure 21 — The directory classes across the development years: (i) median distance of a design to its class centroid, per window; (ii) the 2020-26 aircraft classified from past or from same-period neighbours.](figs_brief/f_class_evolution.png){: width="100%" }
+
+*Figure 21 — The directory classes across the development years: (i) median distance of a design to its class centroid, per window; (ii) the 2020-26 aircraft classified from past or from same-period neighbours.*
+
+*Takeaway: **Recent designs look like the earlier ones of their class: the 533 aircraft of 2020-26 are classified from neighbours of ≤ 2019 at 0.50 [0.45, 0.55] and from their own period at 0.53 [0.47, 0.58], a difference of +0.031 [−0.041, +0.104], no difference detected (shuffled level 0.25).** No class's recall differs between the two pools either.*
+
+
+**Table 10 — Trend of the distance to the class centroid with the year (ρ), and the move of the class centre from 2016-19 to 2020-23 against the 95th percentile of its permutation band (registers, layer 24 CLS, maker held out; drawings by priority year). Photo aircraft per window in the order ≤ 2011 · 2012-15 · 2016-19 · 2020-23 · 2024-26.**
+
+| class | photo aircraft per window | ρ photos [makers] | centre move photos | ρ drawings [makers] | centre move drawings |
+|:---|:---|---:|:---|---:|:---|
+| VT Vectored Thrust | 14 · 29 · 94 · 150 · 41 | −0.13 [−0.27, +0.01] | 0.025 (band 0.017), p 0.003 | −0.07 [−0.20, +0.04] | 0.018 (band 0.010), p 0.001 |
+| LC Lift + Cruise | 6 · 5 · 56 · 81 · 37 | −0.20 [−0.39, +0.00] | 0.014 (band 0.024), p 0.578 | 0.03 [−0.15, +0.20] | 0.019 (band 0.022), p 0.129 |
+| WM Wingless | 9 · 19 · 87 · 116 · 39 | −0.12 [−0.29, +0.06] | 0.014 (band 0.017), p 0.161 | 0.14 [−0.19, +0.43] | 0.102 (band 0.097), p 0.037 |
+| ER Electric Rotorcraft | 7 · 5 · 18 · 34 · 9 | −0.04 [−0.25, +0.22] | 0.028 (band 0.033), p 0.151 | 0.22 [−0.63, +0.79] | not tested: 4 and 1 aircraft |
+| HB Hover Bikes | 8 · 7 · 52 · 21 · 5 | 0.01 [−0.19, +0.21] | 0.056 (band 0.075), p 0.335 | 0.00 [−0.43, +0.43] | not tested: 15 and 5 aircraft |
+| all classes, pooled | 949 | −0.12 [−0.22, −0.03] | n/a | −0.02 [−0.11, +0.07] | n/a |
+
+*Takeaway: **Pooled, a photographed design sits slightly closer to its class centre the later it is (ρ −0.12 [−0.22, −0.03]), but no single class shows a trend on its own, Lift + Cruise coming closest (−0.20 [−0.39, +0.00], its interval ending just above zero at +0.0002). In the drawings, pooled: no trend detected (−0.02 [−0.11, +0.07]).** 3 of the 8 tested centres move beyond their permutation band: Vectored Thrust in the photos (p 0.003), Vectored Thrust in the drawings (p 0.001) and Wingless (Multicopter) in the drawings (p 0.037); 2 survive the Holm correction: Vectored Thrust in both sources.*
+
+
+Vectored Thrust groups the most different machines (tilting rotors, tilting wings, tilting ducts), so a move of its centre fits a change in which of them are proposed, which the class label does not see; this reading is not tested here.
+
+**The maps, window by window.** Positions on a map are for looking; the drift itself is tested in the full space (Table 10).
+
+![Figure 22 — The drawing map window by window: each window's aircraft in class colour over all others in grey, each class's centre in the window (large marker) and the track of its earlier centres; a hollow centre rests on fewer than 15 aircraft and is not joined.](figs_brief/f_umap_by_window_drawings.png){: width="100%" }
+
+*Figure 22 — The drawing map window by window: each window's aircraft in class colour over all others in grey, each class's centre in the window (large marker) and the track of its earlier centres; a hollow centre rests on fewer than 15 aircraft and is not joined.*
+
+_Takeaway: **On the drawing map, of the 3 classes with at least 15 aircraft in both 2016-19 and 2020-23, the 2 largest centre moves are Vectored Thrust's and Wingless (Multicopter)'s, the moves the centre-move test detects in the full space (Table 10; Vectored Thrust also after the Holm correction).**_
+
+
+![Figure 23 — The photo map window by window: each window's aircraft in class colour over all others in grey, each class's centre in the window (large marker) and the track of its earlier centres; a hollow centre rests on fewer than 15 aircraft and is not joined.](figs_brief/f_umap_by_window_photos.png){: width="100%" }
+
+*Figure 23 — The photo map window by window: each window's aircraft in class colour over all others in grey, each class's centre in the window (large marker) and the track of its earlier centres; a hollow centre rests on fewer than 15 aircraft and is not joined.*
+
+_Takeaway: **On the photo map, of the 5 classes with at least 15 aircraft in both 2016-19 and 2020-23, the largest centre move is Lift + Cruise's, while the centre-move test detects a move for Vectored Thrust only: a map does not keep the full-space distances, so it shows where the classes sit and the drift is read from the test.**_
+
+
+**Table 11 — Class separation within each window: mean cosine distance between classes over mean distance within a class, pairs of the same maker left out (registers, layer 24 CLS; 95 % maker-bootstrap interval).**
+
+| window | drawing aircraft | ratio drawings [makers] | photo aircraft | ratio photos [makers] |
+|:---|---:|---:|---:|---:|
+| ≤ 2011 | 69 | 1.092 [1.018, 1.202] | 44 | 1.100 [1.010, 1.345] |
+| 2012-15 | 67 | 1.096 [1.010, 1.235] | 65 | 1.123 [1.044, 1.226] |
+| 2016-19 | 220 | 1.089 [1.052, 1.130] | 307 | 1.103 [1.068, 1.143] |
+| 2020-23 | 246 | 1.085 [1.041, 1.144] | 402 | 1.122 [1.089, 1.160] |
+| 2024-26 (partial) | 61 | 1.075 [1.009, 1.157] | 131 | 1.223 [1.151, 1.313] |
+| 2020-23 minus 2016-19 |  | −0.004 [−0.064, +0.063] |  | +0.019 [−0.027, +0.067] |
+
+_Takeaway: **Within every window same-class aircraft sit closer than different-class ones in both sources (every interval above 1); from 2016-19 to 2020-23 the separation changes by −0.004 in the drawings and +0.019 in the photos, no difference detected in either source.**_
+
+
 <div class="answer-box" markdown="1">
 
 #### Answer
@@ -789,6 +867,7 @@ _Takeaway: **Layer 18 covers the airframe; layer 24 gathers in spots on the airc
 - **Weak clusters, stronger than on drawings.** ARI 0.141 against 0.031 on the same 5 classes; separation d 0.44 against 0.28.
 - **The class leads the maturity only in some matrices**, the one carried forward among them; in 4 of 6 whether the aircraft was built moves the vectors more.
 - **The image rule does not decide it.** The mean of all images scores +0.014 [−0.016, +0.050] against the hero image, no difference detected.
+- **The classes keep their appearance across the development years.** The 2020-26 aircraft are classified from neighbours of ≤ 2019 as well as from their own period (+0.031 [−0.041, +0.104], no difference detected); pooled, designs draw slightly closer to their class (ρ −0.12 [−0.22, −0.03]), no single class does on its own, and Vectored Thrust's centre alone moves between 2016-19 and 2020-23.
 
 </div>
 
@@ -817,7 +896,7 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 
 **Data and unit of analysis.** The 663 drawing aircraft with their type folded to its parent, and the 1 157 photo aircraft; the two sets hold different aircraft.
 
-**Procedure.** Table 10 compares the sources on the full sets, then controls one difference at a time: **size**, 200 random photo subsets of 663 at the photos' own class mix; **size and mix**, 200 subsets with exactly the drawings' class counts; **colour**, both sources in greyscale; **background**, each hero image cropped to the aircraft by a zero-shot OWLv2 detector and re-embedded, against the uncropped image. Figure 21 sets each class's recall against its share of the neighbour pool.
+**Procedure.** Table 12 compares the sources on the full sets, then controls one difference at a time: **size**, 200 random photo subsets of 663 at the photos' own class mix; **size and mix**, 200 subsets with exactly the drawings' class counts; **colour**, both sources in greyscale; **background**, each hero image cropped to the aircraft by a zero-shot OWLv2 detector and re-embedded, against the uncropped image. Figure 24 sets each class's recall against its share of the neighbour pool.
 
 **Scientific grounds.** The difference of two independent sets resamples each on its own (1 000 draws); a subset score combines the 200 draws with a bootstrap of each draw's aircraft. A neighbour vote depends on its pool: a class that is thin in the pool is hard to recover whatever the medium.
 
@@ -829,7 +908,7 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 
 </div>
 
-**Table 10 — Photographs against drawings on the shared 5 classes, one control at a time (registers, layer 24 CLS, kNN-5, maker held out). The difference is photos minus drawings unless the row says otherwise.**
+**Table 12 — Photographs against drawings on the shared 5 classes, one control at a time (registers, layer 24 CLS, kNN-5, maker held out). The difference is photos minus drawings unless the row says otherwise.**
 
 | comparison | drawings | photos | difference [95 % CI] | reading |
 |:---|---:|---:|:---|:---|
@@ -843,9 +922,9 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 *Takeaway: **Photographs score higher at equal pool size (+0.110); once the photo pool also has the drawings' class mix, no difference is detected (+0.019), though the comparison is too imprecise to rule out a medium effect of the size found at full scale.** The class mix alone moves the photo score by +0.091, no difference detected, so it is the remaining candidate, not a demonstrated cause. Colour is not the cause (the lead survives with both sources in grey), and neither is the background (cropping moves the photo score by +0.010; on the base model +0.017).*
 
 
-![Figure 21 — Recall per class against the class's share of the neighbour pool: the shared 5 classes in both sources (left), the 12 G1 types of the drawings (right).](figs_brief/FB_recall_vs_pool_share.png){: width="92%" }
+![Figure 24 — Recall per class against the class's share of the neighbour pool: the shared 5 classes in both sources (left), the 12 G1 types of the drawings (right).](figs_brief/FB_recall_vs_pool_share.png){: width="92%" }
 
-*Figure 21 — Recall per class against the class's share of the neighbour pool: the shared 5 classes in both sources (left), the 12 G1 types of the drawings (right).*
+*Figure 24 — Recall per class against the class's share of the neighbour pool: the shared 5 classes in both sources (left), the 12 G1 types of the drawings (right).*
 
 *Takeaway: **A class is read well largely when it fills the pool.** Wingless multicopters, 8 % of the drawing pool and 29 % of the photo pool, are read at 0.22 from drawings and 0.74 from photos, and at 0.43 once the photos have the drawings' mix; Vectored Thrust goes the other way (0.79 drawings, 0.57 photos, 0.69 matched).*
 
@@ -862,7 +941,7 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 
 **Data and unit of analysis.** The 94 patent aircraft that have a directory page, as queries against the 1 141 photo aircraft whose hero image is not a line drawing, and those photo aircraft against the 665 aircraft of the patent main set. Of the 99 linked aircraft of 1.1, 4 leave through the domain gate (similar to a UAV) and 1 whose page shows only a line drawing.
 
-**Procedure.** Each query ranks the gallery by cosine distance. Table 11 gives the share of queries whose own page is in the top 10 and the top 50, with bootstrap intervals over the queries, by page status and for the base model, and the median rank; Figure 22 the share within the top k for every k. Line drawings leave the gallery because some pages reproduce the patent figure itself.
+**Procedure.** Each query ranks the gallery by cosine distance. Table 13 gives the share of queries whose own page is in the top 10 and the top 50, with bootstrap intervals over the queries, by page status and for the base model, and the median rank; Figure 25 the share within the top k for every k. Line drawings leave the gallery because some pages reproduce the patent figure itself.
 
 **Scientific grounds.** Against a random ranking: P(own page in the top k) = 1 − Π_{i<k} (G − n₊ − i) / (G − i), averaged over the queries, with G the gallery size and n₊ the query's own pages (the author's own baseline).
 
@@ -874,7 +953,7 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 
 </div>
 
-**Table 11 — Same-aircraft matching (layer 24 CLS, no line drawings in the gallery); at random the top 10 and top 50 hold the own page for 1.6 % and 7.6 % of the patent queries.**
+**Table 13 — Same-aircraft matching (layer 24 CLS, no line drawings in the gallery); at random the top 10 and top 50 hold the own page for 1.6 % and 7.6 % of the patent queries.**
 
 | direction | queries | top 10, % [95 % CI] | top 50, % [95 % CI] | median rank |
 |:---|---:|---:|---:|---:|
@@ -887,9 +966,9 @@ The two sources are read with the same model, readout and protocol on the 5 clas
 *Takeaway: **The own page is in the top 50 for 47.9 % of the patent queries [37.2, 58.5], against 7.6 % at random and 37.2 % with the base model.** Concept aircraft find their page in 60.0 % of the queries and built ones in 37.5 %; the two intervals overlap, so no difference is claimed.*
 
 
-![Figure 22 — How often a patent aircraft finds its own directory page within the top k photographs, against a random ranking.](figs_brief/f_matching.png){: width="70%" }
+![Figure 25 — How often a patent aircraft finds its own directory page within the top k photographs, against a random ranking.](figs_brief/f_matching.png){: width="70%" }
 
-*Figure 22 — How often a patent aircraft finds its own directory page within the top k photographs, against a random ranking.*
+*Figure 25 — How often a patent aircraft finds its own directory page within the top k photographs, against a random ranking.*
 
 _Takeaway: **The link is well above chance at every shortlist size but far from a retrieval tool: the median rank is 55.**_
 
@@ -904,6 +983,7 @@ _Takeaway: **The link is well above chance at every shortlist size but far from 
 - **Not the pool size, not the colour, not the background.** Equal size +0.110, both grey +0.123, cropping +0.010 (no difference detected).
 - **The class mix is the remaining candidate.** With the drawings' mix +0.019 [−0.121, +0.174], no difference detected; the mix alone +0.091, no difference detected.
 - **One aircraft in two media.** 48 % of the linked patent aircraft find their own page in the top 50 (random 7.6 %), on a subset of well-known programmes.
+- **Across the years, the two sources agree on the centre and differ on the spread.** Vectored Thrust's centre moves between 2016-19 and 2020-23 in drawings and photographs alike; the photos' slight pooled convergence (ρ −0.12 [−0.22, −0.03]) is not seen in the drawings (ρ −0.02 [−0.11, +0.07]; 4.5).
 
 </div>
 
@@ -925,6 +1005,7 @@ _Takeaway: **The link is well above chance at every shortlist size but far from 
 - **It holds** with the maker held out, under every image rule, without the photo backgrounds, in greyscale, and after the view of the drawing is linearly removed; these contrasts are read together, none of them surviving a correction for their number.
 - **The drawing embedding is organised first by how the aircraft is drawn**, second by what it is: the d ratio is 1.70, and the types form no clusters of their own.
 - **The human reading stays the reference.** The architecture is in the vector (the probe reads more than the neighbours) but does not decide which aircraft are nearest.
+- **Across the development years the directory classes keep their appearance.** Recent designs are classified from earlier ones as well as from their own period (no difference detected); Vectored Thrust's centre moves in drawings and photographs alike, the one change both sources show.
 
 </div>
 
@@ -952,6 +1033,7 @@ _Takeaway: **The link is well above chance at every shortlist size but far from 
 - **A photo filter audit that is not blind**, judged by the pipeline's AI assistant; the 239 review-band images were never decided by hand.
 - **A biased matching subset.** The 94 linked aircraft are well-known programmes.
 - **One frozen model.** A fine-tuned model, or one trained on technical drawings, is outside the scope.
+- **Development years not yet reviewed.** The years of 4.5 were read from the directory pages by two language-model readers; they are upper bounds of the start of development, only the 949 years both readers agree on are used (208 aircraft leave), and the author has not yet reviewed them.
 
 **Questions still open.** Each is a choice for the chapter and can be settled with the results already held.
 
@@ -989,7 +1071,7 @@ Wilson, E. B. (1927). Probable inference, the law of succession, and statistical
 
 Every matrix under both models, maker held out: kNN-5 balanced accuracy with the registers model's interval and shuffled level, and the linear probe. Base appears here only as the comparison; every chapter uses the registers model.
 
-**Table 12 — Patent drawings, 12 types (663 aircraft, main figure).**
+**Table 14 — Patent drawings, 12 types (663 aircraft, main figure).**
 
 | matrix | kNN-5 base | kNN-5 registers | 95 % interval | shuffled level | probe base | probe registers |
 |:---|---:|---:|---:|---:|---:|---:|
@@ -1003,7 +1085,7 @@ Every matrix under both models, maker held out: kNN-5 balanced accuracy with the
 _Takeaway: **Registers score higher than base in 5 of the 6 matrices, and L24 CLS is the best matrix under registers.**_
 
 
-**Table 13 — Patent drawings, 5 parent classes (663 aircraft, main figure).**
+**Table 15 — Patent drawings, 5 parent classes (663 aircraft, main figure).**
 
 | matrix | kNN-5 base | kNN-5 registers | 95 % interval | shuffled level | probe base | probe registers |
 |:---|---:|---:|---:|---:|---:|---:|
@@ -1017,7 +1099,7 @@ _Takeaway: **Registers score higher than base in 5 of the 6 matrices, and L24 CL
 _Takeaway: **Registers score higher than base in 5 of the 6 matrices, and L24 CLS is the best matrix under registers.**_
 
 
-**Table 14 — Photographs, 5 directory classes (1 157 aircraft, hero image).**
+**Table 16 — Photographs, 5 directory classes (1 157 aircraft, hero image).**
 
 | matrix | kNN-5 base | kNN-5 registers | 95 % interval | shuffled level | probe base | probe registers |
 |:---|---:|---:|---:|---:|---:|---:|

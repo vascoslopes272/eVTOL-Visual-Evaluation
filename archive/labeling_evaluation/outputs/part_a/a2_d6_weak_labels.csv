@@ -1,0 +1,8 @@
+flag,column,aircraft
+Mixed architecture,notPureArch,39
+"Figure readability ""Impossible""",dinoUnderstanding,38
+Annotator unsure at G1,g1_humanUncertain,35
+Annotator unsure at M2,m2_humanUncertain,8
+Annotator unsure at T1,t1_humanUncertain,5
+Quick count override,g1_quickOverride,3
+Annotator unsure at M1,m1_humanUncertain,2

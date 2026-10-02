@@ -1,0 +1,16 @@
+name,field,card,answered,answers,top_share,effective_answers
+,wing1_role,M2,780,1,1.0,1.0
+,emp_rmech,M3,119,1,1.0,1.0
+,wing2_rmech,M3,126,2,0.99,1.05
+,boom_sym,M3,804,2,0.98,1.11
+,wing2_chord,M3,119,2,0.98,1.09
+,wing1_rmech,M3,361,3,0.98,1.13
+,empTilts,M2,805,2,0.98,1.1
+,boom_t1_chord,M3,159,2,0.97,1.12
+,boom_rmech,M3,142,3,0.96,1.22
+,boom_t1_rmech,M3,179,3,0.96,1.21
+left-right symmetry,latSym,M1,805,2,0.96,1.2
+,wing1_chord,M3,335,2,0.95,1.22
+,fuselage_rmech,M3,210,3,0.95,1.25
+,notPureArch,G1,805,2,0.95,1.21
+,boom_t2_rmech,M3,179,3,0.95,1.25

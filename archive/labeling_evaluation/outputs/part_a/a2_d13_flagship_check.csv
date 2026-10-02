@@ -1,0 +1,63 @@
+company,aircraft,labels,distinct types,public products,public types differ,top label matches a public type
+Bell / Textron,80,Tilt Rotor 42 · Combined vectored thrust 16 · Tilt Body 9 · Tilt Wing 7 · Multirotor 4,7,APT (TB) · Nexus (TR),True,True
+Airbus,26,Lift + Cruise 17 · Multirotor 4 · Pitch-to-Cruise 3 · Tilt Rotor 2,4,CityAirbus (MR) · CityAirbus NextGen (SLC),True,True
+Kitty Hawk,12,Multirotor 3 · Tilt Rotor 3 · Tilt Wing 3 · Lift + Cruise 2 · Stopped/Slowed Rotor Wing 1,5,Flyer (MR) · Heaviside (TR),True,True
+Shenfeng Aviation,11,Lift + Cruise 5 · Combined vectored thrust 3 · Pitch-to-Cruise 1,3,,False,
+Boeing,10,Tilt Rotor 3 · Lift + Cruise 3 · Tilt Wing 1 · Multirotor 1 · Personal Flying Vehicle 1,6,Passenger Air Vehicle (SLC),False,False
+Leonardo,10,Combined vectored thrust 6 · Tilt Rotor 4,2,,False,
+Porsche,9,Lift + Cruise 3 · Combined vectored thrust 2 · Pitch-to-Cruise 2 · Tilt Rotor 1 · Rotorcraft 1,5,,False,
+Honda,9,Lift + Cruise 6 · Hoverbike 1 · Personal Flying Vehicle 1 · Multirotor 1,4,Honda eVTOL (SLC),False,True
+KARI,8,Tilt Rotor 5 · Combined vectored thrust 2 · Lift + Cruise 1,3,,False,
+Lilium,8,Lift + Cruise 3 · Deflected Slipstream 2 · Tilt Rotor 2 · Combined vectored thrust 1,4,Lilium Jet (TR),False,False
+Joby Aviation,8,Combined vectored thrust 3 · Lift + Cruise 2 · Tilt Rotor 2 · Tilt Wing 1,4,S4 (TR),False,False
+Aurora Flight Sciences,8,Lift + Cruise 5 · Multirotor 1 · Combined vectored thrust 1 · Tilt Wing 1,4,Passenger Air Vehicle (SLC),False,True
+Beihang University,7,Lift + Cruise 3 · Combined vectored thrust 2 · Tilt Wing 1 · Tilt Rotor 1,4,,False,
+EMT,7,Tilt Rotor 4 · Lift + Cruise 3,2,,False,
+Zuri,6,Lift + Cruise 4 · Combined vectored thrust 1 · Tilt Rotor 1,3,Zuri 2.0 (SLC),False,True
+NASA,5,Tilt Wing 2 · Combined vectored thrust 1 · Tilt Rotor 1 · Tilt Body 1,4,,False,
+Sikorsky,5,Tilt Wing 2 · Lift + Cruise 1 · Multirotor 1 · Tilt Body 1,4,,False,
+Uber Elevate,5,Combined vectored thrust 2 · Lift + Cruise 2 · Tilt Wing 1,3,,False,
+Mitsubishi,5,Combined vectored thrust 2 · Lift + Cruise 1 · Pitch-to-Cruise 1 · Tilt Rotor 1,4,,False,
+Volocopter,5,Lift + Cruise 2 · Multirotor 2 · Pitch-to-Cruise 1,3,,False,
+Wisk Aero,5,Tilt Rotor 3 · Lift + Cruise 2,2,Generation 6 (CVT) · Cora (SLC),True,False
+Rolls-Royce,5,Tilt Wing 2 · Pitch-to-Cruise 1 · Lift + Cruise 1 · Multirotor 1,4,,False,
+DeLorean Aerospace,5,Tilt Rotor 4 · Tilt Wing 1,2,,False,
+Hyundai,5,Lift + Cruise 2 · Pitch-to-Cruise 1 · Combined vectored thrust 1 · Tilt Rotor 1,4,S-A1 (CVT),False,False
+Lockheed Martin,4,Lift + Cruise 3 · Tilt Body 1,2,,False,
+Supernal,4,Lift + Cruise 3 · Tilt Rotor 1,2,S-A2 (TR),False,False
+Embraer / Eve,4,Lift + Cruise 3 · Tilt Rotor 1,2,Eve eVTOL (SLC),False,True
+Karem Aircraft,4,Tilt Rotor 4,1,Butterfly (TR),False,True
+Hop Flyt,3,Tilt Wing 1 · Combined vectored thrust 1 · Tilt Rotor 1,3,,False,
+Aerhart,3,Tilt Rotor 3,1,,False,
+General Electric,3,Tilt Wing 1 · Tilt Rotor 1 · Lift + Cruise 1,3,,False,
+Archer Aviation,3,Tilt Rotor 2 · Combined vectored thrust 1,2,Midnight (CVT) · Maker (CVT),False,False
+Aeronext,3,Multirotor 3,1,,False,
+Hi-Lite Aircraft,2,Tilt Rotor 2,1,,False,
+Jiangxi Handun Duoyu,2,Lift + Cruise 2,1,,False,
+JAXA,2,Lift + Cruise 2,1,,False,
+IAI,2,Combined vectored thrust 2,1,,False,
+Denso,2,Lift + Cruise 1 · Pitch-to-Cruise 1,2,,False,
+Amazon,2,Combined vectored thrust 1 · Pitch-to-Cruise 1,2,,False,
+AutoFlight,2,Lift + Cruise 2,1,,False,
+CASIC,2,Lift + Cruise 1 · Multirotor 1,2,,False,
+AeroVironment,2,Tilt Body 2,1,,False,
+Fujing Aircraft,2,Tilt Rotor 1 · Hoverbike 1,2,,False,
+Doroni Aerospace,2,Lift + Cruise 2,1,H1 (SLC),False,True
+GKN Aerospace,2,Pitch-to-Cruise 1 · Tilt Rotor 1,2,,False,
+Northwestern Polytechnic University,2,Tilt Wing 1 · Tilt Rotor 1,2,,False,
+Subaru,2,Lift + Cruise 1 · Pitch-to-Cruise 1,2,,False,
+Shanghai Shangshi Energy,2,Tilt Rotor 2,1,,False,
+Overair,2,Tilt Rotor 2,1,Butterfly (TR),False,True
+Safran,2,Combined vectored thrust 1 · Lift + Cruise 1,2,,False,
+NUAA,2,Tilt Wing 1 · Combined vectored thrust 1,2,,False,
+Sunlight Photonics,2,Lift + Cruise 2,1,,False,
+Tetra Aviation,2,Lift + Cruise 2,1,Mk-5 (SLC),False,True
+Sun Yat-sen University,2,Lift + Cruise 1 · Tilt Rotor 1,2,,False,
+Vertical Aerospace,2,Tilt Rotor 2,1,VX4 (CVT),False,False
+Tianjin Air Technology,2,Tilt Wing 2,1,,False,
+Wofei / Geely Aviation,2,Lift + Cruise 2,1,AE200 (CVT),False,False
+Whisper Aero,2,Deflected Slipstream 1 · Tilt Rotor 1,2,,False,
+Wollant Aviation,2,Tilt Rotor 1 · Lift + Cruise 1,2,,False,
+Xi'an Inno Aviation,2,Combined vectored thrust 1 · Lift + Cruise 1,2,,False,
+ZIPAIR,2,Multirotor 1 · Personal Flying Vehicle 1,2,,False,
+Zhejiang University,2,Tilt Rotor 1 · Combined vectored thrust 1,2,,False,

@@ -1,0 +1,5 @@
+level,fields combined,aircraft,distinct archetypes,singletons,effective number
+A0,topType,802,12,0,7.1
+A1,"topType, wCount, boomsPresent",802,63,14,29.6
+A2,"topType, wCount, boomsPresent, empType",802,223,92,140.1
+A3,"topType, wCount, boomsPresent, empType, fusKin, gearArch, wingConf",802,381,233,260.9

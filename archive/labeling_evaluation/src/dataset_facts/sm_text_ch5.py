@@ -39,6 +39,7 @@ E17           the shared objective: chapter 3's family F, reached by different r
 """
 from __future__ import annotations
 
+import pandas as pd
 from typing import Dict, Optional
 
 CHAPTER = "5"
@@ -401,6 +402,13 @@ def _ch5_numbers(tables: Optional[Dict], values: Dict) -> Dict:
             out[k + "_lo"] = _yrs(r["95 % low"])
             out[k + "_hi"] = _yrs(r["95 % high"])
             out[f"c5_med_{_R[r['region']]}_{c}"] = _int(r["median priority year"])
+        # 2026-09-30: the range of Asia-Pacific's delays on the three older classes, so the sentence
+        # "Asia-Pacific is 3-4 years late" follows the offsets instead of being written by hand
+        ap = off[off["region"].map(lambda x: _R.get(x) == "ap") & off["class"].isin(["Lift + Cruise", "Tilt Rotor", "Tilt Wing"])]
+        vals = pd.to_numeric(ap["offset vs North America (years)"], errors="coerce").dropna()
+        if len(vals):
+            lo, hi = int(vals.min()), int(vals.max())
+            out["c5_ap_delay_range"] = f"{lo}-{hi}" if lo != hi else f"{lo}"
     # 2026-09-28 (N15): the same delays on the aircraft of 2016 onward (la_lag_offsets_2016)
     o16 = t.get("la_lag_offsets_2016")
     if o16 is not None:
@@ -515,7 +523,7 @@ TAKEAWAY = {
         "share ({c5_na_w5_share}) is mostly the lag: its {c5_ap_2526_n} aircraft of 2025-26 are all "
         "Asia-Pacific's, and of 2025 the snapshot can have seen {c5_ap_2025_vis} of Asia-Pacific's "
         "aircraft but only {c5_na_2025_vis} of North America's. "
-        "**(ii) Asia-Pacific is 3-4 years late on the older classes, not on CVT.** It files Lift + "
+        "**(ii) Asia-Pacific is {c5_ap_delay_range} years late on the older classes, not on CVT.** It files Lift + "
         "Cruise {c5_off_ap_slc} years after North America ({c5_off_ap_slc_lo} to "
         "{c5_off_ap_slc_hi}), Tilt Rotor {c5_off_ap_tr} ({c5_off_ap_tr_lo} to {c5_off_ap_tr_hi}) "
         "and Tilt Wing {c5_off_ap_tw} ({c5_off_ap_tw_lo} to {c5_off_ap_tw_hi}); on CVT no delay is "
@@ -577,7 +585,7 @@ ANSWER = (
     "2016 take-off of filings and the Uber Elevate white paper of late 2016 (chapter 1, "
     "{sm_here_filings_per_year}; a coincidence in time, not a tested cause), and the other "
     "regions' medians follow it by {c5_follow_years}. Asia-Pacific files Lift + Cruise, Tilt "
-    "Propulsor and Tilt Wing 3-4 years after North America and shows no delay on CVT, the class "
+    "Propulsor and Tilt Wing {c5_ap_delay_range} years after North America and shows no delay on CVT, the class "
     "North America came to late ({sm_here_sm_region_timing} (ii)). North America's falling "
     "share since 2021 is in the labelled dataset, not a publication delay "
     "({sm_here_sm_region_timing} (i)).\n\n"

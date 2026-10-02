@@ -1,0 +1,38 @@
+patent_id,company_canonical,03a says,is_electric_source,the text says,powertrain read,citation
+US2017203839A1,Aurora Flight Sciences,Yes,gazetteer,Hybrid,HybridElectric,a turbo shaft engine that drives one or more generators through a gearbox. The generator provides AC power to a plurality of ducted fans (each being driven by an electric motor)
+US2021309351A1,Aurora Flight Sciences,Yes,gazetteer,Hybrid,HybridElectric,an engine; an electric motor; a first propeller driven by the engine; a second propeller driven by the electric motor; and a selector to control whether the propulsion
+US2018354615A1,Bell / Textron,Yes,gazetteer,Hybrid,HybridElectric,Electrical energy generation system 48 preferably includes redundant internal combustion engines ... each of the propulsion assemblies may include at least one battery disposed within the nacelle that is charged by the electrical energy generation system
+US2018362160A1,Bell / Textron,Yes,gazetteer,Hybrid,HybridElectric,"power source 72 includes a battery 74, a generator 76, and a combustion engine 78"
+US2019031333A1,Bell / Textron,Yes,gazetteer,Hybrid,HybridElectric,Electrical energy generation system 48 preferably includes redundant internal combustion engines ... one or both are used to drive an electric generator 54 to produce electrical energy
+US2019100313A1,Bell / Textron,Yes,gazetteer,Hybrid,HybridElectric,Electrical energy generation system 48 preferably includes one or more internal combustion engines 50 ... used to drive an electric generator 54 to produce electrical energy
+US2022126998A1,Hyundai,Yes,gazetteer,Hybrid,HybridElectric,a main thrust device including an engine and motors ... batteries configured to supply the electric power to the motors ... the auxiliary thrust device comprises micro jet engines
+US2022144443A1,Hyundai,Yes,gazetteer,Hybrid,HybridElectric,A hybrid air mobility vehicle comprising: an engine and a generator; a battery and a drive motor electrically connected to the generator
+US2014263854A1,Bell / Textron,Unknown,presumed,No,Turbine,"an improved turbine burst capability from the engine systems 140, 142 by angling any turbine burst cones in the engines away from each other"
+US2017144746A1,Bell / Textron,Yes,gazetteer,No,Turbine,"engines 24a, 24b are operable in turboshaft mode wherein hot combustion gases in each engine cause rotation of a power turbine coupled to an output shaft"
+US2019144109A1,Bell / Textron,Yes,gazetteer,No,Piston,"engines 108a, 108b, 114a, 114b are internal combustion engines operable to burn a liquid fluid"
+US8950698B1,Boeing,Yes,gazetteer,No,Turbine,"the fixed-wing aircraft 14 may include an engine 33, such as single or dual turbine engines ... single turboshaft (2,000+ shp class) enables 350+ knot dash speeds"
+US2009224096A1,Karem Aircraft,Yes,gazetteer,No,Turbine,the range of output shaft speed delivered by current turboshaft engine is not sufficient to meet the speed range required by the rotors
+US2024059393A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,an aircraft 10 is assumed to be an electric vertical take-off and landing (eVTOL) aircraft that generates lift and thrust using rotors each including an electric motor
+US2023192289A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,"The VTOL rotor 20 includes one or more blades 23, a motor 21, and an inverter 22"
+US2023192285A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,"The VTOL rotor 20 includes one or more blades 23, a motor 21, and an inverter 22"
+US2021101675A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,storage boxes for the battery packs 130
+US2021188427A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,"the main body frame 12 includes a battery 90 ... Each ESC 88 drives the corresponding electric motor 44L, 44R, 50L, 50R"
+US2025304243A1,Honda,Hybrid,gazetteer,Yes,BatteryElectric,The rotor is rotationally driven by a drive source (motor) that receives electric power from a battery
+US2018002003A1,AeroVironment,Unknown,presumed,Yes,BatteryElectric,"a first pair of motors (132b, 133b) disposed at a first end of the wing ... each motor is angled to provide a component of thrust by a propeller attached thereto"
+CN116215850A,Hubei Aerospace Institute,Unknown,presumed,Yes,BatteryElectric,the first propulsion system (6) and the second propulsion system (7) each comprise a servo motor and a propeller
+US2005178879A1,Individual Inventor,Unknown,presumed,Yes,BatteryElectric,"if four fixed pitch propellers are each powered by a variable speed electric brushless motor, then the only moving parts are the motor rotors, ball bearings and propellers"
+US2024246668A1,Mitsubishi,Unknown,presumed,Yes,BatteryElectric,ELECTRIC FAN AND ELECTRIC VERTICAL TAKEOFF/LANDING AIRCRAFT ... a drive unit provided on the outer peripheral part to rotate the rotor blade
+US2023303454A1,NTN Corporation,Unknown,presumed,Yes,BatteryElectric,a motor of a driving part of the electric vertical take-off and landing aircraft; NOTE: this is a silicon-nitride BEARING MATERIAL patent - check domain
+CN113998098A,Shanghai Shangshi Energy,Unknown,presumed,Yes,BatteryElectric,"The first connecting pieces 321 are fixedly arranged between the driving motors 332, and the driving motors 332 are connected in series"
+CN109263914A,Shenfeng Aviation,Unknown,presumed,Yes,BatteryElectric,"More rotor assemblies include the first propeller, the second propeller, third propeller, connecting rod, motor, are provided with motor"
+CN120503960A,Sun Yat-sen University,Unknown,presumed,Yes,BatteryElectric,"comprises a plate-rod thin-wall lifting body, a front wing, a rear wing, a power system, a flight control system and a power supply module"
+CN106965928A,Individual Inventor,Unknown,presumed,Yes,BatteryElectric,"the inner wing and outer wing are respectively provided with and its one-to-one brshless DC motor, electron speed regulator"
+CN118439173A,Individual Inventor,Unknown,presumed,Yes,BatteryElectric,"Part 1: using 4 rotors, each driven by a motor"
+CN111731476A,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,the driving end of the tilt driving device is connected with a tilt rotor driving motor
+JP2023526056A,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,setting the motor controller gain based on the vertical orientation of the leading edge of each wing
+US2017183088A1,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,"In the embodiment, the first driving device 5 and the second driving device 6 are motors"
+NL2019667B1,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,"thrust propellers usable as generators; NOTE: this is a tethered airborne WIND-ENERGY assembly with a ground station, not an aircraft with an onboard powertrain — check domain"
+US2025162736A1,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,The upstream blade may be fixed to the motor shaft
+GB202302628D0,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,Airfoils and evtols with airfoils (title commits to eVTOL)
+CN118618608A,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,"schematic view of the rear blade drum, rear drive motor, rear blade pitch change mechanism"
+CN119489922A,Unknown / Independent,Unknown,presumed,Yes,BatteryElectric,a high-speed motor and blades 9 are installed in an internal air inlet channel 10

@@ -1137,7 +1137,7 @@ TABLE_CAPTIONS.update({
                   "the corpus (both counts on the Unit line): the differences that survive correction for "
                   "multiple testing, ordered by p. `holds?` is `yes` only where the difference "
                   "also survives being re-run on the US-published patents alone",
-    "la_public_pairwise": "Three sources of a class compared two at a time on the 98 aircraft with a "
+    "la_public_pairwise": "Three sources of a class compared two at a time on the 97 aircraft with a "
                           "public counterpart: the drawing label, the patent text, the public aircraft",
     "la_ari_representativeness": "Do the index-firm aircraft stand for the corpus? One test per "
                                  "attribute",

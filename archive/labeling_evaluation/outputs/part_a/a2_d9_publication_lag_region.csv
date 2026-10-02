@@ -1,0 +1,9 @@
+region,patents,median lag,90th percentile
+North America,289,2.0,3.0
+Asia-Pacific,199,1.0,3.0
+Europe,191,2.0,3.0
+South America,8,2.0,3.0
+Middle East,4,2.0,4.0
+Unknown,2,2.0,2.0
+International (PCT),1,1.0,1.0
+Africa,1,1.0,1.0

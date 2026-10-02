@@ -1,0 +1,148 @@
+# labelling_analysis.yaml — every path and constant the thesis notebooks use.
+# Check the paths:  python -m viz.config
+# Who made each input and what it gives: INPUTS.md.  ⚠ review: later = not made by you, to review.
+
+roots:
+  labelled:  "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED"
+  evtolnews: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/EVTOLNEWS_DS"
+  reference: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/1_labelling_analysis/labelling_analysis_preliminary"   # the 45-page document, only to check numbers
+  output:    "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_LABELLED/1_labelling_analysis/labelling_analysis_thesis"
+
+# file paths are relative to roots.labelled, or to roots.evtolnews when `root: evtolnews`,
+# or to this folder when they start with assets/
+inputs:
+  labelled_dataset:   # written by notebook 04
+    aircraft_labels:   {file: 0_labelling/outputs/tables/aircraft_table.csv,   made_by: "you, joined by notebook 04"}
+    figure_labels:     {file: 0_labelling/outputs/tables/figure_table.csv,     made_by: "you, joined by notebook 04"}
+    label_dictionary:  {file: 0_labelling/outputs/tables/data_dictionary.csv,  made_by: "notebook 04"}
+
+  other_inputs:
+    patent_facts:      {file: 0_labelling/inputs/identity/aircraft_identity_ALL.xlsx,  made_by: "PatSeer + scripts; industry by SBERT", review: "later (industry only)"}
+    trl_per_aircraft:  {file: 0_labelling/inputs/trl/aircraft_trl.csv,                 made_by: "Claude (LLM)", review: later}
+    evtolnews_aircraft:      {file: 0_source/aircraft.csv,                    root: evtolnews, made_by: "evtol.news, script crawl"}
+    evtolnews_patent_links:  {file: 3_embedding_evaluation/patent_links.csv,  root: evtolnews, made_by: "you, on Claude's proposals"}
+    evtolnews_dev_years:     {file: 0_source/years/aircraft_dev_year.csv,     root: evtolnews, made_by: "Claude (LLM), two readers", review: later}
+    ari_scores:        {file: assets/external/aam_reality_index/ari_may2026.csv,          made_by: "AAM Reality Index"}
+    ari_history:       {file: assets/external/aam_reality_index/ari_history.csv,          made_by: "AAM Reality Index"}
+    ari_funding:       {file: assets/external/aam_reality_index/ari_funding_may2026.csv,  made_by: "AAM Reality Index"}
+    ari_firm_map:      {file: assets/external/aam_reality_index/ari_company_map.csv,      made_by: "Claude (LLM)", review: later}
+    baseline_wipo:              {file: assets/external/aviation_baseline/b64_by_priority_year.csv,                                         made_by: "WIPO PATENTSCOPE"}
+    baseline_patseer_b64:       {file: assets/external/aviation_baseline/patseer_worldwide/patseer_B64_worldwide_by_priority_year.csv,      made_by: "PatSeer"}
+    baseline_patseer_sectionb:  {file: assets/external/aviation_baseline/patseer_worldwide/patseer_sectionB_worldwide_by_priority_year.csv, made_by: "PatSeer"}
+    baseline_world:             {file: assets/external/aviation_baseline/patseer_worldwide/baselines_2000_2023.csv,                         made_by: "PatSeer / WIPO"}
+    grant_status_by_year:  {file: assets/external/lapse_check/status_by_priority_year.csv,  made_by: "you (script on PatSeer)"}
+    grant_lag:             {file: assets/external/lapse_check/grant_lag_summary.csv,        made_by: "you (script on PatSeer)"}
+    sector_funding:    {file: assets/external/investment/aam_funding_by_period.csv,    made_by: "Claude (LLM)", review: later}
+    market_forecasts:  {file: assets/external/investment/evtol_market_forecasts.csv,   made_by: "Claude (LLM)", review: later}
+    sector_events:     {file: assets/external/sector_events/sector_events.csv,         made_by: "Claude (LLM)", review: later}
+    codebook_dimensions: {file: assets/codebook/dimension_register.csv,                made_by: "you (codebook)"}
+
+outputs:              # folders inside roots.output
+  style: style
+  q1: q1_growth_protection_fidelity
+  q2: q2_design_space
+  q3: q3_evolution_dominant_design
+  q4: q4_filers
+  q5: q5_regions
+  latex: latex
+
+# -----------------------------------------------------------------------------
+# analysis constants — every threshold the document states, in one place
+# -----------------------------------------------------------------------------
+analysis:
+  # the analysis unit: representative (wizard-approved, passes the domain gate) primary aircraft
+  domain_gate_tags: [UAVSimilar, ElectricSimilar, STOLSimilar]
+  whole_vehicle_part: "Whole Vehicle Layout"
+  # time
+  last_complete_year: 2023              # counts and trends stop here
+  partial_window_start: 2024            # drawn hatched, labelled partial
+  publication_lag_p90_years: 3
+  windows:                              # label: [first, last] priority year (archive a2.WINDOWS)
+    "<= 2011":           [0, 2011]
+    "2012-15":           [2012, 2015]
+    "2016-19":           [2016, 2019]
+    "2020-23":           [2020, 2023]
+    "2024-26 (partial)": [2024, 2100]
+  # the evtol.news fold of the wizard class G1 (ruling 2026-09-22)
+  class_fold: {SLC: LC, TR: VT, TW: VT, CVT: VT, TB: VT, PTC: VT, DS: VT, MR: WM, RC: ER, SRW: LC, HB: HB, PFV: HB} #SRW is LC, but the wizard ruled it is a "special case" of LC, so it is folded into LC for the analysis
+  # tests 
+  alpha: 0.05
+  trend_min_n: 20                       # driver traces: class needs ≥ 20 aircraft
+  rarefy_n: 40                          # Hill numbers / dominant design rarefied to n aircraft Why 40? 40 is a good number for rarefaction because it provides a reasonable balance between statistical power and computational efficiency.
+  random_seed: 42                       #why 42? 42 is the answer to life, the universe, and everything. It is also a good seed for random number generators because it is a small integer that is easy to remember and reproduce. Using a fixed seed ensures that the results of the analysis are reproducible, which is important for scientific research.
+  # draws and permutation counts differ per test in the archived code (hill 1000, dominant_design 200,
+  # sm_open 5000); they are listed per lib function when lib/ is ported (step 2)
+  firm_tier_min_aircraft: 5             # firm profiles only for firms with ≥ 5 aircraft
+  # question 2 (the design space)
+  field_drop_top_share: 0.88            # Table 6 leaves out a field whose top answer holds this share or more
+  zone_min_aircraft: 5                  # Figure 8: C·U archetypes read when they hold at least this many aircraft
+  filer_panel_min_aircraft: 20          # Figure 7: archetypes on which one filer moves the ratio by a small step
+  archetype_screens:                    # the four screens of the archetype sets, fixed before they were compared
+    big_archetype_aircraft: 5           # an archetype is 'big' with at least this many aircraft
+    big_archetype_share: 0.05           # ... and 'readable' with at least this share of the corpus
+    max_singleton_share: 0.05           # at most this share of the aircraft alone in their archetype
+    min_share_in_big: 0.90              # at least this share of the aircraft in big archetypes
+    min_big_share_archetypes: 3         # at least this many archetypes with 5 % or more
+  discovery_orders: 400                 # tie orderings drawn inside a priority year (discovery curve)
+  discovery_tail: 100                   # the last aircraft the curve is read on
+  evtolnews_min_n: 30                   # Figure 2 / 3.1: a window is compared with the directory when both sources hold this many dated aircraft
+  check_tolerance: 0.0005               # |notebook − document| allowed when checking a number
+
+# -----------------------------------------------------------------------------
+# style — defaults until the thesis template is known (re-run 39–45 after changing)
+# -----------------------------------------------------------------------------
+style:
+  base: [science, no-latex]             # SciencePlots styles, applied in this order
+  text_width_in: 6.3                    # TO CONFIRM: \the\textwidth of the thesis, in inches
+  column_gap_in: 0.25
+  font_family: serif
+  font: "DejaVu Serif"                  # TO CONFIRM: thesis body font (or a close match)
+  base_font_pt: 9
+  small_font_pt: 8
+  min_font_pt: 7
+  dpi_png: 300
+  formats: [pdf, png]
+  palette: okabe_ito                    # colour-blind safe; class → colour/marker/dash/hatch in viz/style.py
+  print_bw_safe: true
+
+# -----------------------------------------------------------------------------
+# register — every figure and table of the 45-page document (read from its node list, 2026-10-01)
+# -----------------------------------------------------------------------------
+figures:                    # 24 — the figures of the 45-page document, in its order
+  # id: {doc: figure number in the document, subq: sub-question, out: output folder,
+  #      was: archived builder (reference only), reference_tables: the document's CSVs the checks compare with}
+  filings_per_year: {doc: 1, subq: "1.1", out: q1, title: "unique aircraft and patents per priority year", was: la_figures.fig_filings_per_year, reference_tables: [la_filings_per_year]}
+  sm_evtolnews_check: {doc: 2, subq: "1.1", out: q1, title: "class mix vs the evtol.news directory", was: sm_figures.panel_evtolnews_check, reference_tables: [la_evtolnews_check]}
+  ari_clock: {doc: 3, subq: "1.1", out: q1, title: "patent clock vs market clock, AAM Reality Index firms", was: la_figures.fig_ari_clock, reference_tables: [la_ari_timeline]}
+  sm_force_aircraft: {doc: 4, subq: "1.2", out: q1, title: "aircraft with no patent in force, per class", was: sm_figures.panel_force_aircraft, reference_tables: [la_force_aircraft]}
+  la_name_coverage: {doc: 5, subq: "1.3", out: q1, title: "unique aircraft by name and public match", was: la_figures.fig_name_coverage, reference_tables: [la_name_coverage]}
+  sm_propulsion_compact: {doc: 6, subq: "2.1", out: q2, title: "propulsor units, arrangement, ducting", was: sm_figures.panel_propulsion_compact, reference_tables: [la_duct_count, la_duct_conditional]}
+  sm_archetype_filers: {doc: 7, subq: "2.3", out: q2, title: "distinct filers per aircraft, largest C·U archetypes", was: sm_figures.panel_archetype_filers, reference_tables: [la_zones]}
+  zones: {doc: 8, subq: "2.3", out: q2, title: "C·U archetypes: concentration and filers", was: la_figures.fig_zones, reference_tables: [la_zones]}
+  discovery_curve: {doc: 9, subq: "2.3", out: q2, title: "archetype discovery curve", was: sm_open.fig_discovery_curve, reference_tables: [la_discovery_curve]}
+  atlas_arch_time: {doc: 10, subq: "3.1", out: q3, title: "architecture mix per priority window", was: atlas.fig_arch_time, reference_tables: [a2_d9_architecture_by_window]}
+  sm_family_yearly: {doc: 11, subq: "3.2", out: q3, title: "condition 1 on family F per priority year", was: sm_figures.panel_family_yearly, reference_tables: [la_family_yearly]}
+  sm_dd_conditions: {doc: 12, subq: "3.2", out: q3, title: "conditions 2 and 3 per window and archetype set", was: sm_figures.panel_dd_conditions, reference_tables: [la_dd_balance, la_dd_form]}
+  sm_class_configs: {doc: 13, subq: "3.3", out: q3, title: "spread of each class over its configurations", was: sm_figures.panel_class_configs_b, reference_tables: [la_class_configs_brief, la_class_config_mix]}
+  sm_driver_trajectory: {doc: 14, subq: "3.4", out: q3, title: "the move of the tilting classes", was: sm_figures.panel_driver_trajectory, reference_tables: [la_driver_windows, la_driver_links, la_sets_per_unit_brief]}
+  sm_driver_traces: {doc: 15, subq: "3.4", out: q3, title: "booms and ducting per class and window", was: sm_figures.panel_driver_traces_b, reference_tables: [la_driver_windows]}
+  sm_who_files: {doc: 16, subq: "4.1", out: q4, title: "who files", was: sm_figures.panel_who_files, reference_tables: [la_coverage_segments, la_filer_mix, la_filers_by_window]}
+  sm_one_firm: {doc: 17, subq: "4.1", out: q4, title: "can one filer decide a class share", was: sm_figures.panel_one_firm, reference_tables: [la_class_concentration_brief, la_firm_leverage]}
+  sm_ari_funding: {doc: 18, subq: "4.1", out: q4, title: "funding vs aircraft filed and patent-to-flight lead", was: sm_figures.panel_ari_funding, reference_tables: [la_ari_funding, la_ari_funding_tests]}
+  sm_entry_split: {doc: 19, subq: "4.2", out: q4, title: "first-time vs returning filers", was: sm_figures.panel_entry_split, reference_tables: [la_entry_split, la_entry_split_test, la_tw_entry]}
+  sm_successions: {doc: 20, subq: "4.2", out: q4, title: "where a firm's next aircraft lands", was: sm_figures.panel_successions, reference_tables: [la_succession_matrix]}
+  sm_region_countries: {doc: 21, subq: "5", out: q5, title: "applicant countries behind the regions", was: sm_figures.panel_region_countries, reference_tables: [la_region_countries]}
+  sm_region_design: {doc: 22, subq: "5.1", out: q5, title: "what each region files", was: sm_figures.panel_region_design, reference_tables: [la_region_mix_change]}
+  sm_region_timing: {doc: 23, subq: "5.2", out: q5, title: "when each region files", was: sm_figures.panel_region_timing, reference_tables: [la_region_years, la_lag_offsets]}
+  sm_region_converge: {doc: 24, subq: "5.3", out: q5, title: "regional convergence", was: sm_figures.panel_region_converge, reference_tables: [la_region_lean, la_region_tests, la_proximity_region, la_region_proximity_test]}
+tables:                     # 10
+  la_ari_timeline: {doc: 1, subq: "1.1", out: q1, title: "index firms: first patent, first flight, entry into service", reference_tables: [la_ari_timeline]}
+  la_public_pairwise: {doc: 2, subq: "1.3", out: q1, title: "three sources of a class compared pairwise (97 aircraft)", reference_tables: [la_public_pairwise]}
+  a2_d15_trl_by_class: {doc: 3, subq: "1.3", out: q1, title: "NASA TRL per class", reference_tables: [a2_d15_trl_by_class]}
+  la_trl_representativeness: {doc: 4, subq: "1.3", out: q1, title: "do the aircraft above TRL 2 stand for the corpus", reference_tables: [la_trl_representativeness]}
+  la_ari_representativeness: {doc: 5, subq: "1.3", out: q1, title: "do the index-firm aircraft stand for the corpus", reference_tables: [la_ari_representativeness]}
+  a2_d3_selected_fields: {doc: 6, subq: "2.1", out: q2, title: "label fields that tell designs apart", reference_tables: [a2_d3_selected_fields]}
+  la_archetype_levels_brief: {doc: 7, subq: "2.2", out: q2, title: "the four archetype sets", reference_tables: [la_archetype_levels_brief]}
+  la_dd_levels: {doc: 8, subq: "3.2", out: q3, title: "dominant-design verdict per condition and archetype set", reference_tables: [la_dd_levels]}
+  la_driver_verdicts: {doc: 9, subq: "3.4", out: q3, title: "traces that move and their drivers", reference_tables: [la_driver_verdicts]}
+  cannot_answer: {doc: 10, subq: "closing", out: q5, title: "what the dataset cannot answer (written table, two computed numbers: sm_pw_n, trl_above_s)", reference_tables: []}

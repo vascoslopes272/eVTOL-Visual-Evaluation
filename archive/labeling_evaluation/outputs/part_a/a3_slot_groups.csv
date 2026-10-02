@@ -1,0 +1,77 @@
+concept,slots,examples
+boom_orient,13,boom1_orient · boom2_orient · boom3_orient
+wing_chord,9,wing1_chord · wing1_t1_chord · wing1_t2_chord
+wing_orient,9,wing1_orient · wing1_t1_orient · wing1_t2_orient
+wing_zoneSpan,9,wing1_t1_zoneSpan · wing1_t2_zoneSpan · wing1_t3_zoneSpan
+wing_propKin,9,wing1_propKin · wing1_t1_propKin · wing1_t2_propKin
+wing_bmech,9,wing1_bmech · wing1_t1_bmech · wing1_t2_bmech
+wing_zoneChord,9,wing1_t1_zoneChord · wing1_t2_zoneChord · wing1_t3_zoneChord
+wing_rmech,9,wing1_rmech · wing1_t1_rmech · wing1_t2_rmech
+boom_rmech,7,boom_rmech · boom_t1_rmech · boom_t2_rmech
+boom_bmech,7,boom_bmech · boom_t1_bmech · boom_t2_bmech
+boom_propKin,7,boom_propKin · boom_t1_propKin · boom_t2_propKin
+boom_chord,7,boom_chord · boom_t1_chord · boom_t2_chord
+wing_count,7,wing1_t1_count · wing1_t2_count · wing1_t3_count
+boom_span,6,boom1_span · boom2_span · boom3_span
+boom_wingRel,6,boom1_wingRel · boom2_wingRel · boom3_wingRel
+boom_wingIdx,6,boom1_wingIdx · boom2_wingIdx · boom3_wingIdx
+wing_ctrlOnly,6,wing1_ctrlOnly · wing1_t1_ctrlOnly · wing1_t2_ctrlOnly
+boom_attach,6,boom1_attach · boom2_attach · boom3_attach
+boom_count,5,boom5_count · boom6_count · boom_count
+boom_retracts,5,boom1_retracts · boom3_retracts · boom4_retracts
+fuselage_bmech,4,fuselage_bmech · fuselage_t1_bmech · fuselage_t2_bmech
+hull_array_orient,4,hull_array_orient · hull_array_t1_orient · hull_array_t2_orient
+hull_array_zone,4,hull_array_t1_zone · hull_array_t2_zone · hull_array_t3_zone
+hull_array_rmech,4,hull_array_rmech · hull_array_t1_rmech · hull_array_t2_rmech
+boom_long,4,boom1_long · boom2_long · boom3_long
+fuselage_propKin,4,fuselage_propKin · fuselage_t1_propKin · fuselage_t2_propKin
+fuselage_orient,4,fuselage_orient · fuselage_t1_orient · fuselage_t2_orient
+fuselage_rmech,4,fuselage_rmech · fuselage_t1_rmech · fuselage_t2_rmech
+fuselage_chord,4,fuselage_chord · fuselage_t1_chord · fuselage_t2_chord
+hull_array_chord,4,hull_array_chord · hull_array_t1_chord · hull_array_t2_chord
+fuselage_zone,4,fuselage_t1_zone · fuselage_t2_zone · fuselage_t3_zone
+fuselage_ctrlOnly,4,fuselage_ctrlOnly · fuselage_t1_ctrlOnly · fuselage_t2_ctrlOnly
+hull_array_bmech,4,hull_array_bmech · hull_array_t1_bmech · hull_array_t2_bmech
+wing_posV,3,wing1_posV · wing2_posV · wing3_posV
+wing_plan,3,wing1_plan · wing2_plan · wing3_plan
+wing_posL,3,wing1_posL · wing2_posL · wing3_posL
+wing_tilt,3,wing1_tilt · wing2_tilt · wing3_tilt
+fuselage_count,3,fuselage_t1_count · fuselage_t2_count · fuselage_t3_count
+emp_orient,3,emp_orient · emp_t1_orient · emp_t2_orient
+emp_chord,3,emp_chord · emp_t1_chord · emp_t2_chord
+boom_sym,3,boom5_sym · boom6_sym · boom_sym
+emp_bmech,3,emp_bmech · emp_t1_bmech · emp_t2_bmech
+emp_zone,3,emp_t1_zone · emp_t2_zone · emp_zone
+emp_rmech,3,emp_rmech · emp_t1_rmech · emp_t2_rmech
+wing_role,3,wing1_role · wing2_role · wing3_role
+hull_array_count,3,hull_array_t1_count · hull_array_t2_count · hull_array_t3_count
+hull_array_propKin,3,hull_array_propKin · hull_array_t1_propKin · hull_array_t2_propKin
+hull_array_ctrlOnly,3,hull_array_ctrlOnly · hull_array_t1_ctrlOnly · hull_array_t2_ctrlOnly
+emp_propKin,2,emp_propKin · emp_t1_propKin
+boom_hasProps,2,boom5_hasProps · boom6_hasProps
+boom_ctrlOnly,2,boom_t3_ctrlOnly · boom_t4_ctrlOnly
+boom_circSym,2,boom5_circSym · boom6_circSym
+boom_tilts,2,boom5_tilts · boom6_tilts
+emp_count,2,emp_t1_count · emp_t2_count
+wing_tipJoin,2,wing1_tipJoin · wing3_tipJoin
+boom_ntypes,1,boom_ntypes
+core_layout_count,1,core_layout_count
+core_layout_ntypes,1,core_layout_ntypes
+core_layout_zone,1,core_layout_zone
+empType,1,empType
+fusShape,1,fusShape
+fusKin,1,fusKin
+emp_ctrlOnly,1,emp_ctrlOnly
+core_layout_sym,1,core_layout_sym
+dinoUnderstanding,1,dinoUnderstanding
+edgeTags,1,edgeTags
+empTilts,1,empTilts
+boomsPresent,1,boomsPresent
+wingConf,1,wingConf
+wCount,1,wCount
+topType,1,topType
+notPureArch,1,notPureArch
+latSym,1,latSym
+gearArch,1,gearArch
+wing_ntypes,1,wing3_ntypes
+wing_sym,1,wing3_sym

@@ -29,7 +29,7 @@ sys.path.insert(0, str(HERE))
 import render_digest as rd  # noqa: E402
 
 OUT = Path("/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/"
-           "1639_LABELLED/1_labelling_analysis/labelling_analysis")
+           "1639_LABELLED/1_labelling_analysis/labelling_analysis_preliminary")
 
 TITLE = "Labelling Analysis: the questions, the findings, and what to keep"
 

@@ -1,0 +1,380 @@
+name,chapters,value
+acquired_s,1,1 639
+c4_ari_air,4,147
+c4_ari_n,4,18
+c4_ari_share,4,23 %
+c4_big_1619,4,Bell / Textron
+c4_big_ret_1619,4,33
+c4_cell_min,4,10
+c4_class_min,4,20
+c4_co_share,4,63 %
+c4_conc_n,4,7
+c4_cont_1619,4,7
+c4_cont_2023,4,19
+c4_core_fpa,4,0.70
+c4_corp_n,4,4
+c4_ent_1619,4,57
+c4_ent_2023,4,82
+c4_fund_n,3 4,9
+c4_hist_n,4,5
+c4_ind_share,4,30 %
+c4_ind_w1,4,70 %
+c4_ind_w4,4,24 %
+c4_lead_n,4,8
+c4_lev1_pp,4,2.6
+c4_max_top_share,4,21 %
+c4_min_eff,4,13
+c4_new_1619,4,57
+c4_new_2023,4,82
+c4_org_n,4,199
+c4_org_share,4,70 %
+c4_p_1619,4,0.017
+c4_p_2023,4,0.07
+c4_p_fp,4,0.031
+c4_pair_firms,4,69
+c4_pairs,4,240
+c4_rep_n,4,879
+c4_ret_1619,4,57
+c4_rho_fp,4,-0.71
+c4_rim_fpa,4,0.89
+c4_single_n,4,130
+c4_slc_stay,4,61 %
+c4_succ_min,4,10
+c4_test_min,4,20
+c4_top4_n,4,4
+c4_top4_share,4,16 %
+c4_tr_stay,4,56 %
+c4_tw_n_1619,4,7
+c4_tw_n_2023,4,9
+c4_tw_stay,4,17 %
+c4_uni_share,4,7 %
+c5_all_n,5,627
+c5_ap_delay_range,5,2-4
+c5_ap_f2023,5,46 %
+c5_ap_lag,5,1
+c5_ap_median,5,2020
+c5_ap_n,5,186
+c5_ap_off,5,China
+c5_ap_off_share,5,50 %
+c5_ap_tilt,5,49 %
+c5_ap_u9_p,5,0.08
+c5_ap_w1_clas_base,5,11
+c5_big,5,Bell / Textron
+c5_big_n,5,60
+c5_big_tr,5,27
+c5_eu_f2023,5,57 %
+c5_eu_median,5,2019
+c5_eu_n,5,177
+c5_eu_tilt,5,46 %
+c5_eu_w1_clas_base,5,15
+c5_follow_years,5,one and two years
+c5_last,5,2023
+c5_na_cvt_s1215,5,24 %
+c5_na_cvt_s1619,5,10 %
+c5_na_cvt_s2023,5,36 %
+c5_na_f2023,5,48 %
+c5_na_fam_p,5,0.003
+c5_na_fam_rho,5,+0.20
+c5_na_lag,5,2
+c5_na_median,5,2018
+c5_na_n,5,250
+c5_na_off,5,United States
+c5_na_off_share,5,96 %
+c5_na_tilt,5,67 %
+c5_na_tilt_wo,5,60 %
+c5_na_tr_n,5,80
+c5_oth_n,5,14
+c5_p_tilt_all_wo,5,0.023
+c5_p_units_2023,5,0.003
+c5_px_diff,5,0.52
+c5_px_eu,5,0.40
+c5_px_firms,5,16
+c5_px_p,5,0.69
+c5_px_same,5,0.48
+c5_rep_n,5,879
+c5_thin,5,10
+c5_three_n,5,613
+c5_three_share,5,98 %
+lag_median_hi,1,2
+lag_median_lo,1,1
+lag_p90,1,3
+observations_s,1,963
+partial_start,1,2024
+representative_s,1,879
+sm3_f_gl_2020,3,53 %
+sm3_f_gl_2021,3,59 %
+sm3b_cc_gaps,3,3
+sm3b_cc_slc_23,3,48 %
+sm3b_cc_tr_11_cpa,3,0.15
+sm3b_cc_tr_11_k,3,3
+sm3b_cc_tr_11_n,3,20
+sm3b_cc_tr_23_cpa,3,0.06
+sm3b_cc_tr_23_k,3,3
+sm3b_cc_tr_23_n,3,49
+sm3b_duct_answer,3,"CVT's share with a ducted unit also drops (80 % to 32 %), to below Lift + Cruise's 48 %, though as a year trend this is not detected (p 0.05)."
+sm3b_dw_cvt_11_n,3,5
+sm3b_dw_cvt_11_nb,3,1
+sm3b_dw_cvt_23_n,3,53
+sm3b_dw_cvt_23_nb,3,33
+sm3b_dw_tr_11_units,3,2
+sm3b_dw_tr_23_units,3,4
+sm3b_min_cell,3,5
+sm3b_mix_cvt_rb_23,3,53 %
+sm3b_mix_cvt_re_11,3,80 %
+sm3b_mix_cvt_re_15,3,50 %
+sm3b_mix_cvt_re_19,3,46 %
+sm3b_mix_tr_one_11,3,75 %
+sm3b_mix_tr_twost_23,3,39 %
+sm3b_spu_tr_unit_11,3,0.50
+sm3b_spu_tr_unit_11_frac_long,3,one tilting set for every two propulsor units
+sm3b_spu_tr_unit_23,3,0.39
+sm3b_spu_tr_unit_23_frac,3,two for every five
+sm3b_t_onb_cvt_first,3,20 %
+sm3b_t_onb_cvt_last,3,62 %
+sm3b_t_onb_cvt_p,3,0.03
+sm3b_t_onb_slc_last,3,56 %
+sm3b_trend_min,3,20
+sm3b_win_11_n,3,63
+sm3b_win_15_n,3,58
+sm3b_win_19_n,3,213
+sm3b_win_23_n,3,237
+sm_a0_arch,Q3,12
+sm_a0c_dims,Q3,"architecture class · propulsive units, binned 1-3 / 4 / 5-6 / 7-8 / 9+"
+sm_a0c_top,Q3,TR · 1-3
+sm_a1t_dims,Q3,architecture class · number of wings · at least one tilting propulsor
+sm_a1t_top,Q3,SLC · 1 · False
+sm_a2c_arch,Q3,348
+sm_a2c_single,Q3,225
+sm_arch_levels,2 Q3,9
+sm_arch_max,2,348
+sm_arch_pass,2 Q3,3
+sm_c3_gap_alt,new,0.0018
+sm_c3_gap_main,new,0.0200
+sm_c3_met,new,in 2 of 10 level-windows
+sm_ch2_w1_n,2,63
+sm_ch2_w2_n,2,58
+sm_cite_idx,new,0.77
+sm_cite_q,new,<0.0001
+sm_cite_rest,new,0.44
+sm_cite_us,new,<0.0001
+sm_cu_top_2023_share,2,11 %
+sm_cvt4_fpa,new,1.00
+sm_cvt56_air,2 4 new,29
+sm_cvt56_filers,new,15
+sm_cvt56_fpa,new,0.52
+sm_cvt56_top,2 4,Bell / Textron
+sm_cvt56_top_n,2 4,13
+sm_cvt56_win2023,new,18
+sm_cvt_own_2023,new,50 %
+sm_d3_drop_share,2,88 %
+sm_d3_wings_top,2,57 %
+sm_dd_max_rest,3,39.0 %
+sm_dd_read_years,3,eight
+sm_dd_year_min,3,20
+sm_disc_a0_after,2,362
+sm_disc_a1t_exp100,2,1.6
+sm_disc_a1t_new100,2,4.1
+sm_duct13_med,2,2
+sm_duct9_med,2,13.0
+sm_duct9_units,2,63 %
+sm_duct_13,new,40 %
+sm_duct_78,new,23 %
+sm_duct_9,new,52 %
+sm_duct_9_n,new,61
+sm_duct_all,new,37 %
+sm_evn_agreed,3,1 000
+sm_evn_conflict,3,63
+sm_evn_dated,3,1 000
+sm_evn_dated_share,3,81 %
+sm_evn_list,3,1 229
+sm_evn_min_n,3,30
+sm_evn_notstated,3,166
+sm_ext_f_corpus,3,39 %
+sm_ext_f_weighted,3,68 %
+sm_ext_fc_cagr_max,1,36.8
+sm_ext_fc_cagr_min,1,10.5
+sm_ext_fc_max,1,39.0
+sm_ext_fc_min,1,5.6
+sm_ext_fc_n,1,5
+sm_ext_fund_1020,1,4.5
+sm_ext_fund_2021,1,6.8
+sm_ext_fund_2023,1,3.9
+sm_ext_top1,4,Joby Aviation
+sm_ext_top2,4,Beta Technologies
+sm_ext_top2_airshare,4,1.4 %
+sm_ext_top2_fundshare,4,57 %
+sm_fa_cvt,1,53 %
+sm_fa_mr,1,31 %
+sm_fa_mr_first,1,41 %
+sm_fa_p,1,0.043
+sm_fa_p_sens,1,0.079
+sm_fa_share,1,43 %
+sm_fa_slc,1,53 %
+sm_fa_tr,1,34 %
+sm_fam_b_n,2,246
+sm_fam_b_peak,Q3,49 %
+sm_fam_c3_cells,Q3,0
+sm_fam_c3_total,Q3,8
+sm_fam_c_n,Q3,224
+sm_fam_c_peak,Q3,46 %
+sm_fam_windows_met,Q3,0
+sm_ff_before,1,8
+sm_ff_flown,1,11
+sm_ff_lead,1,4
+sm_ff_visible,1,1
+sm_fo_cn,1,91 %
+sm_fo_else,1,69 %
+sm_fo_p_us,1,0.43
+sm_fo_us,1,31 %
+sm_fo_why_cn_k,1,19
+sm_fo_why_cn_n,1,22
+sm_fo_why_us_k,1,149
+sm_fo_why_us_n,1,228
+sm_fo_why_wo_n,1,16
+sm_fo_wo,1,94 %
+sm_fy_fa_2020,3,49.3 %
+sm_fy_fak_2020,3,34
+sm_fy_fi_2020,3,51.8 %
+sm_fy_fi_2021,3,59.3 %
+sm_fy_fi_2022,3,42.9 %
+sm_fy_fi_2023,3,43.2 %
+sm_fy_first,3,2016
+sm_fy_first_all,3,2015
+sm_fy_gl_2020,3,94 %
+sm_fy_gl_2021,3,92 %
+sm_fy_gl_2022,3,80 %
+sm_fy_gl_2023,3,34 %
+sm_fy_na_2020,3,69
+sm_g_all_dbl,1,10.7
+sm_g_b64_dbl,1,4.7
+sm_g_fam_dbl,1,3.6
+sm_g_secb_dbl,1,6.4
+sm_gr_fam_all,1,3.00
+sm_gr_fam_b64,1,1.32
+sm_gr_fam_b64_19,1,1.26
+sm_gr_fam_b64_19_ci,1,1.07 to 1.41
+sm_gr_fam_b64_19_va,1,the edge still holds
+sm_gr_fam_b64_ci,1,1.20 to 1.46
+sm_lapse_7y,1,97.7 %
+sm_lapse_grants,1,781
+sm_lapse_p2020,1,4.6 %
+sm_lapse_p2020_23,1,21.8 %
+sm_lapse_p2022,3,23.8 %
+sm_lapse_p2023,1 3,56.5 %
+sm_lv_c_arch,2,12
+sm_lv_c_eff,2,7.3
+sm_lv_cu_arch,2,43
+sm_lv_cu_big,2,33
+sm_lv_cwt_arch,2,39
+sm_lv_cwt_big,2,20
+sm_lv_f_share,2,39 %
+sm_nc_gen,1,530
+sm_nc_named,1,97
+sm_next_table,cannot,Table 10
+sm_own_slc_configs,Q3,9
+sm_pat_2018,1,98
+sm_perm_n,1 2 3,40
+sm_perm_seed,1 2,42
+sm_perms,1 2,200
+sm_pw_ci,1,0.83–0.94
+sm_pw_img_pub,1,87
+sm_pw_n,1 cannot,97
+sm_rare_draws,3,300
+sm_screen_big,2,5
+sm_screen_frag,2,5 %
+sm_screen_pop,2,90 %
+sm_screen_readable,2,3
+sm_screen_share,2,5 %
+sm_t_joints_all_first,3,0.7
+sm_t_joints_all_last,3,0.9
+sm_t_joints_all_p,3,0.822
+sm_t_joints_cvt_first,1,1.0
+sm_t_joints_cvt_last,1,1.4
+sm_t_joints_cvt_med_first,1,1.0
+sm_t_joints_cvt_med_last,1,1.0
+sm_t_joints_tr_first,3,1.4
+sm_t_joints_tr_last,3,1.8
+sm_t_joints_tr_p,3,0.010
+sm_t_units_mr_first,1,4.0
+sm_t_units_mr_last,1,6.0
+sm_t_units_mr_n,1,44
+sm_t_units_mr_p,1,0.075
+sm_t_units_mr_p100,1,8
+sm_t_units_tr_first,1,2.0
+sm_t_units_tr_last,1,4.0
+sm_t_units_tr_p,1,< 0.001
+sm_top1_a1t_w4,Q3,SLC · 1 · False 19%
+sm_top2,Q3,38 %
+sm_top2_level,Q3,A1t
+sm_top2_window,Q3,<= 2011
+sm_top3_a0_w4,Q3,75 %
+sm_top3_a0c_w4,Q3,26 %
+sm_top3_a1t_w1,Q3,49 %
+sm_top3_a1t_w3,Q3,38 %
+sm_top3_a1t_w4,Q3,47 %
+sm_trl_nottracked,new,517
+sm_trl_share,1 new,10 %
+sm_trl_tracked_n,new,110
+sm_trl_tracked_share,new,57 %
+sm_trl_tw,new,9 %
+sm_turn_ac_hi,1,2020
+sm_turn_ac_lo,1,2010
+sm_turn_ac_x,1,1.8
+sm_turn_ac_year,1,2017
+sm_turn_draws,1,2 000
+sm_turn_pat_after,1,58
+sm_turn_pat_boot,1,90 %
+sm_turn_pat_prev,1,21
+sm_turn_pat_prev_year,1,2015
+sm_turn_pat_x,1,3.4
+sm_turn_pat_year,1,2016
+sm_turn_sh_hi,1,2020
+sm_turn_sh_lo,1,2009
+sm_tw_1619,new,41 %
+sm_tw_2023,new,34 %
+sm_tw_air_2023,new,8 %
+sm_tw_ent_2023,new,11 %
+sm_tw_n,new,23
+sm_vis2023_hi,1,92 %
+sm_vis2023_lo,1,87 %
+sm_win_active_n,2,450
+sm_win_active_share,2,72 %
+sm_win_min_n,1,58
+sm_z_core_n,2,7
+sm_z_core_share,2,45 %
+sm_z_half_1619,2,10
+sm_z_half_2023,2,7
+sm_zones_big_n,2,11
+sm_zones_min,2,20
+sm_zones_n,2,33
+snapshot,1 3,2026-06-08
+tk_ari_firms_n,1,18
+tk_ari_timeline_n,1,13
+tk_dd_below,Q3,2
+tk_dd_cells,Q3,10
+tk_dd_top_share,Q3,24 %
+tk_emptype,2,29 %
+tk_fw_cvt_eff,new,24.3
+tk_gt_hb,M,18 %
+tk_gt_ptc,M,11 %
+tk_gt_slc,M,74 %
+tk_gt_tr,M,87 %
+tk_lev_pp,new,2.6
+tk_pw_share,1,90 %
+tk_q_below,Q3,4
+tk_q_cells,Q3,20
+tk_slc_n_2023,Q3,75
+tk_slc_w1,3,27 %
+tk_slc_w4,3,32 %
+tk_tr_w1,3,32 %
+tk_tr_w4,3,21 %
+tk_trans_pairs,new,240
+tk_units_top,2,23 %
+tk_y2018,1,68
+top_class,Q3,Lift + Cruise
+trl_above_s,cannot new,63
+trl_aircraft_s,new,627
+trl_zero_classes,new,"Hoverbike, Personal Flying Vehicle, Rotorcraft or Stopped/Slowed Rotor Wing"
+unique_s,1 4,627
+units_median,2,5
+units_n,2,596

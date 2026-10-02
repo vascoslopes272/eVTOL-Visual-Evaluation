@@ -1,0 +1,7 @@
+stage,count,note
+Patents acquired (PatSeer query),1639,
+Approved by the annotator,1110,68% of acquired
+Approved patents that are the primary record,695,the analysis set of patents
+Approved aircraft variants,1268,duplicates included
+Primary approved variants - the analysis unit,805,one row per aircraft
+Approved figures,1913,"on 729 patents, median 2 per patent"
