@@ -45,6 +45,11 @@ outputs:              # folders inside roots.output
   q4: q4_filers
   q5: q5_regions
   latex: latex
+  thesis_figures: thesis_figures      # notebook 46: one file per graph, folders per thesis question
+  thesis_document: thesis_document    # notebook 47: the LaTeX document and its PDF
+
+tools:
+  tectonic: /home/vasco/anaconda3/envs/tectonic/bin/tectonic   # LaTeX engine (conda env 'tectonic')
 
 # -----------------------------------------------------------------------------
 # analysis constants — every threshold the document states, in one place
