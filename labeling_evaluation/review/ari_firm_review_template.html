@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>AAM Reality Index firm mapping review</title>
+<style>
+*{box-sizing:border-box}
+body{font:14px system-ui,sans-serif;margin:0;background:#f4f4f2;color:#222}
+header{position:sticky;top:0;z-index:5;background:#1f2d3d;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header b{font-size:16px}
+button,input{font:inherit}
+button{cursor:pointer}
+.exp{background:#2e7d32;color:#fff;border:0;border-radius:4px;padding:6px 12px}
+.rule{font-size:12.5px;color:#e3eaf2;width:100%;line-height:1.4}
+.wrap{display:flex;align-items:flex-start}
+aside{width:240px;flex:0 0 240px;position:sticky;top:var(--hh,90px);max-height:calc(100vh - var(--hh,90px));overflow:auto;background:#fff;border-right:1px solid #ccc}
+.si{padding:6px 10px;font-size:12.5px;border-bottom:1px solid #eee;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si:hover{background:#f0f4f8}
+.si::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ccc}
+.si.confirmed::before{background:#2e7d32}.si.changed::before{background:#e69f00}
+main{flex:1;padding:14px;min-width:0}
+table{border-collapse:collapse;width:100%;background:#fff}
+th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top;font-size:13px}
+th{background:#eceff1;position:sticky;top:var(--hh,90px)}
+tr.changed td{background:#fff6e0}
+tr.confirmed td{background:#eef9ee}
+tr.flash td{outline:3px solid #ffb300}
+input.canon{width:210px;border:1px solid #ccc;border-radius:4px;padding:3px 6px}
+.ok{background:#e8f5e9;border:1px solid #2e7d32;color:#1b5e20;border-radius:4px;padding:3px 8px;font-size:12px}
+.ok.sel{background:#2e7d32;color:#fff}
+noscript{display:block;padding:40px;text-align:center;color:#c62828}
+</style></head><body>
+<noscript>This page needs JavaScript enabled to work.</noscript>
+<header id="hdr"><b>AAM Reality Index &rarr; patent-dataset firm mapping (all 43 rows)</b><span id="count"></span>
+<button class="exp" id="export">Export answers</button>
+<select id="flt"><option value="all">all rows</option><option value="blank">no proposed name</option><option value="note">has a note</option><option value="todo">not yet answered</option></select>
+<input id="q" placeholder="search name / note" style="padding:4px 8px">
+<span class="rule">Edit the canonical name if it's wrong, or confirm it as-is. A blank canonical name means the firm is not in your patent dataset — confirm that's still right, or type the name it should match. Click a name on the left to jump to its row.</span></header>
+<div class="wrap"><aside id="side"></aside><main><table><thead><tr><th>AAM OEM name</th><th>proposed canonical name</th><th>note</th><th>decision</th></tr></thead>
+<tbody id="rows"></tbody></table></main></div>
+<script>
+const A = __DATA__;
+const KEY = 'ariFirmReview_v1';
+let S = {}; try { S = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function row(it, i){
+  const s = S[it.oem] || {canon: it.canon, action: ''};
+  const cls = s.action === 'changed' ? 'changed' : (s.action === 'confirmed' ? 'confirmed' : '');
+  return '<tr class="' + cls + '" id="r-' + i + '"><td>' + esc(it.oem) + '</td>'
+    + '<td><input class="canon" value="' + esc(s.canon) + '" data-i="' + i + '"></td>'
+    + '<td>' + esc(it.note) + '</td>'
+    + '<td><button class="ok' + (s.action === 'confirmed' ? ' sel' : '') + '" data-i="' + i + '">confirm</button></td></tr>';
+}
+function vis(it){
+  const s = S[it.oem], f = document.getElementById('flt').value, q = document.getElementById('q').value.toLowerCase();
+  if (f === 'blank' && it.canon) return false;
+  if (f === 'note' && !it.note) return false;
+  if (f === 'todo' && s && s.action) return false;
+  return !q || (it.oem + ' ' + it.canon + ' ' + it.note).toLowerCase().indexOf(q) >= 0;
+}
+function side(){
+  return A.map((it, i) => { const s = S[it.oem]; if (!vis(it)) return ''; return '<div class="si ' + (s ? s.action : '') + '" data-i="' + i + '">' + (i + 1) + '. ' + esc(it.oem) + '</div>'; }).join('');
+}
+function render(){
+  document.getElementById('rows').innerHTML = A.map((it, i) => vis(it) ? row(it, i) : '').join('');
+  document.getElementById('side').innerHTML = side();
+  document.getElementById('count').textContent = Object.keys(S).length + ' / ' + A.length + ' touched';
+}
+document.addEventListener('click', e => {
+  const si = e.target.closest('.si');
+  if (si) { const el = document.getElementById('r-' + si.dataset.i); el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); return; }
+  const b = e.target.closest('.ok');
+  if (b) { const it = A[+b.dataset.i]; const cur = S[it.oem] || {canon: it.canon}; S[it.oem] = {canon: cur.canon, action: 'confirmed'}; persist(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+});
+document.addEventListener('change', e => {
+  const i = e.target.closest('input.canon');
+  if (i) { const it = A[+i.dataset.i]; S[it.oem] = {canon: i.value, action: i.value === it.canon ? '' : 'changed'}; persist(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+});
+document.getElementById('export').onclick = () => {
+  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+  const rows = [['oem', 'company_canonical', 'action'].map(q).join(',')];
+  A.forEach(it => { const s = S[it.oem]; if (s) rows.push([it.oem, s.canon, s.action || 'edited'].map(q).join(',')); });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.join('\n') + '\n'], {type: 'text/csv'})); a.download = 'ARI_FIRM_REVIEW_DECISIONS.csv'; a.click();
+};
+document.getElementById('flt').onchange = render; document.getElementById('q').oninput = render;
+function fitHeader(){ document.documentElement.style.setProperty('--hh', document.getElementById('hdr').offsetHeight + 'px'); }
+window.addEventListener('resize', fitHeader);
+render(); fitHeader();
+</script></body></html>

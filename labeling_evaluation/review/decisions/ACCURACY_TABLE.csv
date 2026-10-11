@@ -1,0 +1,11 @@
+input,method,agree,of,share %,95% interval %,what it measures
+Domain flag: deleting pages as out of domain,script rules,61,68,89.7,82.1-94.3,share of excluded pages that really are out
+Domain flag: keeping pages in the domain,script rules,67,88,76.1,66.7-83.6,share of kept pages that really are in
+Development year,LLM (reading step),84,90,93.3,86.5-96.8,proposed year kept by the author
+Development year,"script, exact year",49,81,60.5,50.0-70.1,script year = the author year
+Development year,"script, within 1 year",61,81,75.3,65.3-83.2,script year within +-1 of the author
+TRL,LLM (reading step),50,50,100.0,96.1-100.0,proposed TRL kept by the author (evidence-based rows)
+TRL,"script, exact level",34,50,68.0,58.1-76.5,script TRL = the author TRL
+TRL,"script, within 1 level",42,50,84.0,75.3-90.0,script TRL within +-1 of the author
+AAM index company map (all 43 rows),LLM (reading step),38,43,88.4,census (all rows),proposed name = the author name
+AAM index company map (all 43 rows),"script, name match",35,43,81.4,census (all rows),script name = the author name

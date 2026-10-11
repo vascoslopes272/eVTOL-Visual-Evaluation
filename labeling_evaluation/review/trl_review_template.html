@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>TRL review</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--card:#f6f6f8;--ink:#1d1d1f;--mute:#6e6e73;--line:#e3e3e8;--acc:#0969da;--ok:#1a7f37;--no:#cf222e;--ch:#9a6700}
+@media (prefers-color-scheme:dark){:root{--bg:#161618;--card:#202024;--ink:#e8e8ea;--mute:#9a9aa0;--line:#333338;--acc:#4f9cf9}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;margin:0}
+a{color:var(--acc)}header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+.bar{flex:1 1 160px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.m{color:var(--mute);font-size:13px}select,button,input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
+kbd{font:12px ui-monospace,monospace;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.8}
+.wrap{display:flex;align-items:flex-start}
+aside{width:260px;flex:0 0 260px;max-height:calc(100vh - 54px);overflow:auto;border-right:1px solid var(--line);position:sticky;top:0}
+.si{padding:7px 12px;font-size:12.5px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si:hover{background:var(--card)}.si.active{background:var(--acc);color:#fff}
+.si::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:var(--line)}
+.si.ok::before{background:var(--ok)}.si.ch::before{background:var(--ch)}.si.un::before{background:var(--no)}
+aside#lv{width:330px;flex:0 0 330px;border-right:0;border-left:1px solid var(--line);padding:6px 0}
+.lvr{padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.4}.lvr b{font-size:15px}.lvr.cur{background:#ffe08a;color:#000;font-weight:600}.lvr.cur::after{content:' ◀ proposed';font-weight:700}.lvr.ur{outline:2px dashed var(--acc)}
+mark.cue{background:#ffe08a;color:#000;padding:0 2px;border-radius:3px;font-style:normal}.why{background:#fff6cc;color:#000;border-radius:8px;padding:8px 12px;margin:10px auto;max-width:680px;text-align:left;font-size:13.5px}
+main{flex:1;max-width:700px;margin:40px auto;text-align:center;padding:0 16px}h2{margin:0 0 4px;font-size:21px}
+.cls{display:inline-block;font-weight:700;padding:1px 8px;border-radius:5px;background:var(--card);margin-left:6px;font-size:14px}
+.trl{font-size:58px;font-weight:800;margin:22px 0 6px;line-height:1}.sent{font-size:18px;line-height:1.55;margin:10px auto 8px;max-width:680px;font-style:italic}
+.def{font-size:14px;color:var(--mute);max-width:680px;margin:0 auto}
+.btns{display:flex;justify-content:center;gap:10px;margin:26px 0 10px;flex-wrap:wrap}.btns button{font-size:16px;padding:9px 18px}
+.yes{background:var(--ok)!important;color:#fff!important;border-color:var(--ok)!important}.nope{background:var(--no)!important;color:#fff!important;border-color:var(--no)!important}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--mute)}.done{color:var(--ok);font-weight:700}
+input#custom{width:60px;text-align:center}
+noscript{display:block;padding:40px;text-align:center;color:var(--no)}
+</style></head><body>
+<noscript>This page needs JavaScript enabled to work.</noscript>
+<header><b>TRL review</b>
+<select id=flt><option value=todo>to review</option><option value=all>all</option><option value=done>reviewed</option></select>
+<div class=bar><i id=bar></i></div><span id=prog class=m></span>
+<button id=exp>export CSV</button></header>
+<div class=wrap><aside id=side></aside><main id=main></main><aside id=lv></aside></div>
+<script>
+const A=__DATA__;const K='trlReview_v1';let D={};try{D=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+A.forEach(a=>{if(a.prior&&!D[a.s])D[a.s]=a.prior});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LV=[[1,'Basic principles observed and reported.'],[2,'Technology concept and/or application formulated.'],[3,'Analytical and experimental proof-of-concept of critical function and/or characteristics.'],[4,'Component and/or breadboard validated in a laboratory environment.'],[5,'Component and/or brassboard validated in a relevant environment.'],[6,'System/sub-system model or prototype demonstration in a relevant environment.'],[7,'System prototype demonstration in an operational environment.'],[8,'Actual system completed and "flight qualified" through test and demonstration.'],[9,'Actual system "flight proven" through successful mission operations.']];
+// cues in the sentence that point to a level (keyword matching, NOT the original reader's stored reasoning)
+const CUES=[[/type certificat|certification|certified|FAA|EASA|CAAC/i,'certification stage (TRL 7–8)'],[/production|entry into service|commercial operat|passenger service|in service|deliver/i,'production or operation (TRL 8–9)'],[/full[- ]scale|piloted|crewed|manned/i,'full-scale / piloted aircraft (TRL 6–7)'],[/test flights?|flight tests?|\bflown\b|first flight|maiden flight|in flight|hover|transition|flew|flying|flights?/i,'flight testing (TRL 6–7)'],[/sub[- ]?scale|scaled|half[- ]size|model/i,'scaled model (TRL 5–6)'],[/prototype|demonstrator|testbed|technology demonstrator/i,'prototype / demonstrator (TRL 5–7)'],[/wind tunnel|simulation|simulat|bench|rig|component|laborator/i,'component / lab / simulation work (TRL 3–5)'],[/concept|design|plans?|will |intend|aim|propos|announce/i,'concept or plan only (TRL 2)']];
+function cueHTML(q,why){let o=esc(q);CUES.forEach(([re,msg])=>{const g=new RegExp(re.source,'gi');o=o.replace(g,m=>{if(m.includes('<'))return m;why.add(msg);return '<mark class=cue title="'+msg+'">'+m+'</mark>'})});return o}
+function lvHTML(cur,user){return '<div class=lvr style="font-weight:700;color:var(--mute)">NASA technology readiness levels</div>'+LV.map(([n,d])=>'<div class="lvr'+(String(n)===String(cur)?' cur':'')+(user&&String(n)===String(user)?' ur':'')+'" data-lv='+n+'><b>TRL '+n+'</b> '+esc(d)+'</div>').join('')}
+let list=[],pos=0;
+function save(){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}}
+function match(a){return flt.value==='all'||(flt.value==='todo'?!D[a.s]:!!D[a.s])}
+function rebuild(){list=A.filter(match);pos=0;draw()}
+function dotClass(a){const d=D[a.s];return !d?'':d.action==='confirmed'?'ok':d.action==='changed'?'ch':'un'}
+function sideHTML(curKey){return A.map((a,i)=>'<div class="si '+dotClass(a)+(a.s===curKey?' active':'')+'" data-i="'+i+'">'+(i+1)+'. '+esc(a.co)+' &middot; '+esc(a.tt)+'</div>').join('')}
+function progress(){const v=A.map(a=>D[a.s]).filter(Boolean);bar.style.width=(100*v.length/A.length)+'%';
+ prog.textContent=`${v.length} / ${A.length} reviewed · ${v.filter(d=>d.action==='confirmed').length} confirmed · ${v.filter(d=>d.action==='changed').length} changed`}
+function draw(){progress();const a=list[pos];
+ side.innerHTML=sideHTML(a?a.s:null);lv.innerHTML=lvHTML(a?a.trl:'', a&&D[a.s]?D[a.s].trl:'');
+ if(!a){main.innerHTML='<p>Nothing left to review in this view. Export the CSV.</p>';return}
+ const d=D[a.s];
+ main.innerHTML=`<h2>${esc(a.n)}<span class=cls>${esc(a.tt)}</span></h2>
+ <div class=m>${esc(a.co)} &middot; priority year ${esc(a.y)} &middot; design ${pos+1} of ${list.length}${d?' &middot; <span class=done>reviewed: TRL '+d.trl+'</span>':''}</div>
+ <div class=trl>TRL ${esc(a.trl)}</div><div class=m>proposed <b>TRL ${esc(a.trl)}</b> &middot; confidence: ${esc(a.conf)} &middot; source: ${esc(a.src)||'(none stated)'}</div>
+ ${(()=>{const why=new Set();const t=cueHTML(a.q,why);return '<p class=sent>“'+t+'”</p><div class=why><b>Why TRL '+esc(a.trl)+':</b> '+esc(a.def)+(why.size?'<br><b>Cues found in the sentence (yellow):</b> '+[...why].map(esc).join('; '):'<br>No keyword cue found in the sentence; check the source.')+(a.note?'<br><b>Note on the evidence:</b> '+esc(a.note):'')+(a.prog?'<br><b>Programme-level TRL:</b> '+esc(a.prog)+(a.pstat?' ('+esc(a.pstat)+')':''):'')+'</div>'})()}
+ <div class=btns><button class=yes id=bY>✓ confirm TRL ${esc(a.trl)} <kbd>Enter</kbd></button>
+ <input id=custom type=number min=1 max=9 placeholder=TRL><button id=bC>use this TRL instead</button>
+ <button class=nope id=bN>✗ not sure / needs a human source <kbd>X</kbd></button><button id=bB>← back <kbd>←</kbd></button></div>`;
+ bY.onclick=()=>decide(a,a.trl,'confirmed');bN.onclick=()=>decide(a,a.trl,'unsure');bB.onclick=back;
+ bC.onclick=()=>{const v=document.getElementById('custom').value;if(v)decide(a,v,'changed')}}
+function decide(a,trl,action){D[a.s]={trl:String(trl),action,t:new Date().toISOString()};save();
+ if(flt.value==='todo')list=A.filter(match);else pos++;if(pos>=list.length)pos=Math.max(0,list.length-1);draw()}
+function back(){pos=Math.max(0,pos-1);draw()}
+function jump(i){flt.value='all';list=A.slice();pos=i;draw()}
+document.onkeydown=e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;const a=list[pos];if(!a)return;
+ if(e.key==='Enter')decide(a,a.trl,'confirmed');else if(e.key==='x'||e.key==='X')decide(a,a.trl,'unsure');
+ else if(e.key==='ArrowLeft')back();else return;e.preventDefault()};
+flt.onchange=rebuild;
+side.onclick=e=>{const el=e.target.closest('.si');if(el)jump(+el.dataset.i)};
+const csvq=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+exp.onclick=()=>{const by=Object.fromEntries(A.map(a=>[a.s,a]));const rows=[['aircraft_id','trl','action','proposed_trl','reviewed_at']];
+ for(const[s,d]of Object.entries(D)){const a=by[s]||{};rows.push([s,d.trl,d.action,a.trl||'',d.t])}
+ const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(csvq).join(',')).join('\n')+'\n'],{type:'text/csv'}));l.download='TRL_REVIEW_DECISIONS.csv';l.click()};
+rebuild();
+</script></body></html>

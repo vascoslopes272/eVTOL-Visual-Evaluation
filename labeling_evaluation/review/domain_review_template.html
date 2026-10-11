@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>evtol.news domain review</title>
+<style>
+*{box-sizing:border-box}
+body{font:14px system-ui,sans-serif;margin:0;background:#f4f4f2;color:#222}
+header{position:sticky;top:0;z-index:5;background:#1f2d3d;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header b{font-size:16px}
+button,select,textarea,input{font:inherit}
+button{cursor:pointer}
+.exp{background:#2e7d32;color:#fff;border:0;border-radius:4px;padding:6px 12px}
+.rule{font-size:12.5px;color:#e3eaf2;width:100%;line-height:1.45}
+.rule b{color:#fff}
+.wrap{display:flex;align-items:flex-start}
+aside{width:290px;flex:0 0 290px;position:sticky;top:var(--hh,90px);max-height:calc(100vh - var(--hh,90px));overflow:auto;background:#fff;border-right:1px solid #ccc}
+aside h4{margin:0;padding:6px 10px;background:#eceff1;font-size:12px;position:sticky;top:0}
+.si{padding:5px 10px;font-size:12px;border-bottom:1px solid #eee;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si:hover{background:#f0f4f8}.si.active{background:#1f2d3d;color:#fff}
+.si::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#ccc}
+.si.excl::before{background:#2e7d32}.si.ind::before{background:#c62828}.si.contra{font-weight:600}
+main{flex:1;padding:10px 14px;min-width:0}
+h2{font-size:16px;margin:20px 0 4px}
+.sub{font-size:12.5px;color:#666;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:12px}
+.c{width:100%;background:#fff;border:2px solid #ccc;border-radius:6px;padding:8px}
+.c.contra{border-color:#c62828;background:#fff6f6}
+.c.changed{border-color:#1565c0}.c.kept{border-color:#81c784}
+.c.flash,.row.flash{outline:3px solid #ffb300}
+.meta{font-size:12px;color:#555;margin:2px 0}
+.meta b{color:#222;font-size:13px}
+.b{font-size:10.5px;border-radius:6px;padding:0 6px;background:#eceff1;margin-left:3px}
+.why{font-size:12px;background:#fff8e1;border:1px solid #e0b400;border-radius:4px;padding:3px 6px;margin:4px 0}
+.opts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.o{border:1px solid #999;background:#fff;border-radius:4px;padding:4px 8px;font-size:12.5px}
+.o.sel{background:#1f2d3d;color:#fff;border-color:#1f2d3d}
+.o.was{outline:2px dashed #81c784}
+.grp{background:#fff;border:1px solid #ccc;border-radius:6px;padding:8px 10px;margin-bottom:8px}
+.grp .gh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.grp .gh b{font-size:13.5px}
+.gbtn{border:1px solid #2e7d32;background:#e8f5e9;color:#1b5e20;border-radius:4px;padding:3px 10px;font-size:12px}
+.gbtn.done{background:#2e7d32;color:#fff}
+.items{display:none;margin-top:8px;border-top:1px dashed #ccc;padding-top:8px}
+.items.open{display:block}
+.row{display:flex;gap:8px;align-items:center;padding:3px 0;font-size:12.5px;border-bottom:1px solid #eee;flex-wrap:wrap}
+.row a{color:#1565c0}
+noscript{display:block;padding:40px;text-align:center;color:#c62828}
+.cite{margin-top:5px;font-size:12px;line-height:1.35}.cite .b{background:#fff;border:1px solid #e0b400}
+.imgs{display:flex;gap:8px;margin:6px 0}.imgs img{height:150px;max-width:48%;object-fit:contain;border-radius:6px;background:#0001}
+.ev{font-size:16px;line-height:1.45;background:#fff8e1;border-left:5px solid #e0b400;border-radius:4px;padding:8px 10px;margin:6px 0}
+.ev small{display:block;font-size:11.5px;color:#666;margin-bottom:2px}
+.ev mark{background:#ffd54f;color:#000;padding:0 2px;border-radius:3px;font-weight:600}
+.spec{font-size:13px;color:#444;margin:4px 0}.spec mark{background:#ffd54f;color:#000}
+.imgs img{height:190px;width:100%}.imgs a{flex:1;min-width:0}
+</style></head><body>
+<noscript>This page needs JavaScript enabled to work.</noscript>
+<header id="hdr"><b>evtol.news domain review</b><span id="count"></span>
+<button class="exp" id="export">Export answers</button>
+<span class="rule" id="rule"></span></header>
+<div class="wrap"><aside id="side"></aside><main id="main"></main></div>
+<script>
+const D = __DATA__;
+const KEY = D.mode === 'included' ? 'domainReviewIncluded_v1' : 'domainReview_v1';
+let S = {v: {}, t: {}, g: {}, exp: {}};
+try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function escs(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const ALL = D.contradictions.concat(D.sample);
+ALL.forEach((it, i) => { it.n = i; });
+const reasons = Array.from(new Set(D.sample.map(it => it.reason))).sort();
+const val = it => S.v[it.key] || it.cur;
+function saveToFolder(blob, name){
+  function fallback(){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); return Promise.resolve('downloads'); }
+  if (!window.showSaveFilePicker) return fallback();
+  return window.showSaveFilePicker({suggestedName: name, id: 'review_decisions'})
+    .then(function(h){ return h.createWritable().then(function(w){ return w.write(blob).then(function(){ return w.close(); }); }); })
+    .then(function(){ return 'folder'; }).catch(function(e){ return (e && e.name === 'AbortError') ? 'cancelled' : fallback(); });
+}
+function opts(it){
+  return '<div class="opts">' + D.opts.map(o => '<button class="o' + (val(it) === o[0] ? ' sel' : '') + (it.cur === o[0] ? ' was' : '') + '" data-k="' + it.n + '" data-v="' + o[0] + '">' + escs(o[1]) + '</button>').join('') + '</div>';
+}
+const HL_C = /hybrid|fuel cells?|turbines?|engines?|\bgas\b|hydrogen|combustion|petrol|gasoline|diesel|kerosene|jet-a1?|fuel/gi;
+const HL_U = /cargo[- ]only|air cargo|cargo|drones?|unmanned|uncrewed|uninhabited|no passengers|remote(?:ly)?[- ]?(?:controlled|piloted)?|autonomous|pilotless|delivery|freight|logistic|spray|agricultur/gi;
+function hl(s, it){ if (D.mode === 'included') return escs(s).replace(HL_C, m => '<mark>' + m + '</mark>').replace(HL_U, m => m.indexOf('<') < 0 ? '<mark>' + m + '</mark>' : m); const re = it.why.indexOf('combustion') === 0 ? HL_C : HL_U; return escs(s).replace(re, m => '<mark>' + m + '</mark>'); }
+function citeHTML(it){
+  const x = it.best;
+  const same = it.text && it.text.indexOf(x.text.trim()) === 0;
+  return '<div class="ev"><small>' + escs(x.kind) + ' <a href="' + escs(x.link) + '" target="evtolnews">open page ↗</a></small>“' + hl(x.text, it) + '”</div>'
+    + (it.text && !same ? '<div class="spec"><b>Spec sheet:</b> ' + hl(it.text, it) + '</div>' : '');
+}
+function imgsHTML(it){ return (it.imgs && it.imgs.length) ? '<div class="imgs">' + it.imgs.map(u => '<a href="' + escs(u) + '" target="_blank"><img loading="lazy" src="' + escs(u) + '"></a>').join('') + '</div>' : ''; }
+function card(it){
+  const ch = val(it) !== it.cur;
+  return '<div class="c ' + (it.section === 'A' ? 'contra ' : '') + (ch ? 'changed' : (S.v[it.key] ? 'kept' : '')) + '" id="it-' + it.n + '">'
+    + '<div class="meta"><b style="font-size:16px"><a href="' + escs(it.url) + '" target="evtolnews">' + escs(it.title) + '</a></b>' + (it.patented ? ' <span class="b">patent-linked</span>' : '') + '</div>'
+    + '<div style="margin:3px 0;font-weight:700;color:#8a5a00">' + (D.mode === 'included' ? 'Kept in the domain — is it really a passenger/crewed, not combustion-only aircraft?' : 'Excluded because: ' + escs(it.why)) + '</div>'
+    + citeHTML(it) + imgsHTML(it)
+    + opts(it) + '</div>';
+}
+function rowHTML(it){
+  return '<div class="row" id="it-' + it.n + '"><span style="flex:1;min-width:260px"><b><a href="' + escs(it.url) + '" target="evtolnews">' + escs(it.title) + '</a></b> · ' + escs(it.why) + '<br><span class="sub">' + citeHTML(it) + '</span></span>' + opts(it) + '</div>';
+}
+function sideHTML(cur){
+  let h = D.contradictions.length ? '<h4>A. Contradictions (' + D.contradictions.length + ')</h4>' : '';
+  D.contradictions.forEach(it => { h += '<div class="si contra ' + dot(it) + (cur === it.n ? ' active' : '') + '" data-n="' + it.n + '">' + (it.n + 1) + '. ' + escs(it.title) + '</div>'; });
+  reasons.forEach(r => {
+    const items = D.sample.filter(it => it.reason === r);
+    h += '<h4>B. ' + escs(r) + ' (' + items.length + ')</h4>';
+    items.forEach(it => { h += '<div class="si ' + dot(it) + (cur === it.n ? ' active' : '') + '" data-n="' + it.n + '">' + (it.n + 1) + '. ' + escs(it.title) + '</div>'; });
+  });
+  return h;
+}
+function dot(it){ const v = S.v[it.key]; return !v ? '' : (v === it.cur ? 'excl' : 'ind'); }
+let cur = null;
+function render(){
+  let h = D.contradictions.length ? '<h2>A. Contradictions (' + D.contradictions.length + ')</h2><div class="sub">excluded by the rule, but linked to a patent in your dataset — check each one</div>' : '';
+  if (D.contradictions.length) h += '<div class="grid">' + D.contradictions.map(card).join('') + '</div>';
+  h += '<h2>B. Spot-check sample (' + D.sample.length + ' of ' + D.pool_n + ')</h2>';
+  reasons.forEach(r => {
+    const items = D.sample.filter(it => it.reason === r);
+    h += '<h3 style="margin:16px 0 6px">' + escs(r) + ' <span class="sub">(' + items.length + ' in the sample)</span></h3><div class="grid">' + items.map(card).join('') + '</div>';
+  });
+  document.getElementById('main').innerHTML = h;
+  document.getElementById('side').innerHTML = sideHTML(cur);
+  count();
+}
+function count(){
+  const n = ALL.filter(it => S.v[it.key]).length;
+  const gdone = Object.values(S.g).filter(Boolean).length;
+  document.getElementById('count').textContent = n + ' / ' + ALL.length + ' individually decided · ' + gdone + ' group' + (gdone === 1 ? '' : 's') + ' bulk-confirmed';
+}
+function goto(n){
+  const it = ALL[n]; cur = n;
+  if (it.section === 'B') { S.exp[it.reason] = true; persist(); }
+  render();
+  const el = document.getElementById('it-' + n);
+  if (el) { el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+}
+document.addEventListener('click', e => {
+  const si = e.target.closest('.si');
+  if (si) { goto(+si.dataset.n); return; }
+  const b = e.target.closest('button.o[data-k]');
+  if (b) { const it = ALL[+b.dataset.k]; S.v[it.key] = b.dataset.v; persist(); cur = it.n; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  const gb = e.target.closest('.gbtn');
+  if (gb) { const r = reasons[+gb.dataset.gi]; S.g[r] = !S.g[r]; persist(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  const tg = e.target.closest('[data-toggle]');
+  if (tg) { const r = reasons[+tg.dataset.toggle]; S.exp[r] = !S.exp[r]; persist(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+});
+document.getElementById('export').onclick = () => {
+  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+  const head = ['slug_key', 'section', 'reason', 'cur', 'decision', 'note'];
+  const rows = [];
+  ALL.forEach(it => { if (S.v[it.key]) rows.push([it.key, it.section, it.reason || '', it.cur, S.v[it.key], ''].map(q).join(',')); });
+  reasons.forEach(r => { if (S.g[r]) rows.push(['(group)', 'B', r, 'exclude', 'confirmed_group', ''].map(q).join(',')); });
+  saveToFolder(new Blob([head.map(q).join(',') + '\n' + rows.join('\n') + '\n'], {type: 'text/csv'}), D.mode === 'included' ? 'DOMAIN_INCLUDED_REVIEW_DECISIONS.csv' : 'DOMAIN_REVIEW_DECISIONS.csv')
+    .then(w => { if (w !== 'cancelled') alert('Saved (' + w + '). Tell Claude it is exported.'); });
+};
+if (D.mode === 'included') document.getElementById('rule').innerHTML = '<b>Checking the pages the rules KEPT in the domain.</b> Random sample (seed 42, 95% CI, e = 10%) of ' + D.sample.length + ' of the ' + D.pool_n + ' kept pages. Read the spec line and the photos. Confirm if it can carry people and is not combustion-only (an electric option counts as electric); override if it is really a cargo/unmanned drone or combustion-only. Yellow = words that suggest an exclusion reason. Click a name on the left to jump.'; else document.getElementById('rule').innerHTML = '<b>Rule checked:</b> a page is in domain when its power source is not combustion-only (an electric option counts as electric) and it is not a UAV (cargo-only, no-passengers, cargo drone, or cargo/drone by type or name with no person in the capacity; a page saying it can carry people stays in). <b>A</b> = ' + D.contradictions.length + ' excluded pages linked to a patent in your dataset (all reviewed). <b>B</b> = random sample (seed 42, 95% CI, e = 10%) of ' + D.sample.length + ' of the other ' + D.pool_n + ' excluded pages. Yellow = the words that triggered the exclusion. Read the quote and the photos, then confirm or override; click a name on the left to jump.';
+function fitHeader(){ document.documentElement.style.setProperty('--hh', document.getElementById('hdr').offsetHeight + 'px'); }
+window.addEventListener('resize', fitHeader);
+render(); fitHeader();
+</script></body></html>

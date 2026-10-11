@@ -728,6 +728,12 @@ def evtolnews_years(cfg, windows) -> pd.DataFrame:
     Ported from: sm_open.py:evtolnews_years"""
     d = pd.read_csv(cfg.path("evtolnews_dev_years"))
     d["year"] = pd.to_numeric(d["dev_year"], errors="coerce")
+    # years the author corrected on the review page (review/year_overrides.csv); the source csv itself is never edited
+    ov_path = _Path(__file__).resolve().parents[1] / "review" / "year_overrides.csv"
+    if ov_path.exists():
+        ov = pd.read_csv(ov_path, keep_default_na=False).set_index("slug_key")["dev_year"]
+        hit = d["slug_key"].isin(ov.index)
+        d.loc[hit, "year"] = pd.to_numeric(d.loc[hit, "slug_key"].map(ov), errors="coerce")
     d["window"] = d["year"].map(lambda y: window_of(y, windows))
     return d
 
@@ -2885,6 +2891,63 @@ DIRECTORY_FLYING = ("prototype", "technology demonstrator", "production model", 
                     "subscale prototype", "proof of concept")
 
 
+#: regexes of the 2026-10-11 cargo / drone test (aircraft type, page name) and of a capacity that names a person
+DIRECTORY_CARGO_TYPE = r"cargo|drone|unmanned|uncrewed|uav|delivery|logistic|freight|agricultur|spray|surveillance|inspection"
+DIRECTORY_CARGO_NAME = r"cargo|drone|uav|freight|logistic|delivery|agri|spray"
+DIRECTORY_PEOPLE = r"passenger|pilot|person|people|seat|occupant|patient|human"
+
+
+#: a sentence of the page's own text saying THIS aircraft can be crewed / piloted ("crewed and uncrewed", "piloted or remotely
+#: piloted", "optionally piloted", "can be flown by a pilot"); negations ("no pilot or passengers", "autopilot or remote") and
+#: sector-wide statements ("low-altitude economy") do not count
+DIRECTORY_CREWED = (r"(?<!un)crewed (?:and|or) |(?<!un)manned (?:and|or) |(?<!auto)(?<!no )(?<!remotely )(?<!remote )piloted or (?:remote|un|autonom)|"
+                    r"(?<!auto)(?<!no )pilot(?:ed)? (?:or|and/or) (?:remote|pilotless)|optionally[- ]piloted|"
+                    r"can (?:also )?be (?:flown|piloted|operated) (?:by|with|as) (?:a |an |one |1 )?(?:pilot|crew|person|human)")
+
+
+def directory_crewed_pages(cfg) -> dict:
+    """slug_key -> True when a non-Resources sentence of the crawled evtol.news page matches DIRECTORY_CREWED."""
+    import json
+    import re
+    rx = re.compile(DIRECTORY_CREWED, re.I)
+    ev = pd.read_csv(cfg.path("evtolnews_dev_years").parent / "readers" / "evidence_ids.csv", dtype=str, keep_default_na=False)
+    resources = {k: " ".join(g.loc[g["is_resource"].eq("True"), "sentence"]) for k, g in ev.groupby("slug_key")}
+    out = {}
+    for line in open(cfg.path("evtolnews_aircraft").parent / "pages.jsonl", encoding="utf-8"):
+        r = json.loads(line)
+        res = resources.get(r["slug_key"], "")
+        out[r["slug_key"]] = any(rx.search(s) and "low-altitude economy" not in s and s.strip()[:60] not in res
+                                 for s in re.split(r"(?<=[.!?])\s+|\n+", r["text"]))
+    return out
+
+
+#: sentence says the aircraft (or its maker's product line) is built for people: passengers, air taxi, seats, optionally piloted,
+#: cabin / cockpit. Negations ("no passengers", "carries no passengers", "no pilot") do not count. Used only to rescue the
+#: WEAK exclusions ("no passengers" capacity, uncrewed type): a demonstrator that flew empty is still a passenger design.
+DIRECTORY_PAXDESIGN = (r"(?<!no )(?<!without )(?<!carries no )(?<!carry no )(?<!carrying no )\bpassengers?\b(?! (?:or cargo|aircraft only))|air[- ]taxi|"
+                       r"personal air ?(?:vehicle|craft)|\b(?:one|two|three|four|five|six|1|2|3|4|5|6)[- ]?(?:seat|seater|person)\b|crash rated seat|"
+                       r"optionally[- ]piloted|pilot[- ]optional|\bcabin\b|\bcockpit\b|(?<!un)(?<!auto)(?<!remotely )(?<!remote )(?<!no )\bpiloted (?:eVTOL|electric|all-electric|hybrid|aircraft|VTOL)")
+
+
+DIRECTORY_PAXNOT = __import__("re").compile(r"low-altitude economy|original plan|decided that|instead|NASA has continued|no plans|might include|registered as a drone|passenger compartment has|\bairlines?\b|Korean Air services|grocery", __import__("re").I)
+
+
+def directory_paxdesign_pages(cfg) -> dict:
+    """slug_key -> True when a non-Resources sentence of the crawled page matches DIRECTORY_PAXDESIGN."""
+    import json
+    import re
+    rx = re.compile(DIRECTORY_PAXDESIGN, re.I)
+    ev = pd.read_csv(cfg.path("evtolnews_dev_years").parent / "readers" / "evidence_ids.csv", dtype=str, keep_default_na=False)
+    resources = {k: " ".join(g.loc[g["is_resource"].eq("True"), "sentence"]) for k, g in ev.groupby("slug_key")}
+    out = {}
+    for line in open(cfg.path("evtolnews_aircraft").parent / "pages.jsonl", encoding="utf-8"):
+        r = json.loads(line)
+        res = resources.get(r["slug_key"], "")
+        out[r["slug_key"]] = any(rx.search(x) and not DIRECTORY_PAXNOT.search(x) and x.strip()[:60] not in res
+                                 for x in re.split(r"(?<=[.!?])\s+|\n+", r["text"]))
+    return out
+
+
 def directory_frame(cfg) -> pd.DataFrame:
     """One row per evtol.news aircraft page (1 229) with what can explain a different class mix.
 
@@ -2904,11 +2967,49 @@ def directory_frame(cfg) -> pd.DataFrame:
     group = np.select([status.eq("concept design"), status.isin(DIRECTORY_FLYING), status.eq("defunct"),
                        status.eq("")], ["concept design", "flying hardware", "defunct", "not stated"], "other")
     power = d["spec_power_source"].str.lower()
-    combustion_only = power.str.contains("hybrid|fuel cell|turbine|engine|gas|hydrogen") & ~power.str.contains("batter")
-    cap, pil = d["spec_capacity"].str.lower(), d["spec_piloting"].str.lower()
-    unmanned = pil.str.contains("autonomous|remote") & ~pil.str.contains("pilot or|piloted|1 pilot")
-    uav = (cap.str.contains("cargo only|no passengers") | status.eq("cargo drone")
-           | (unmanned & cap.isin(["", "unknown"])))
+    # 2026-10-11 ruling: a power source that offers an electric version ("hybrid-electric", "or all-electric") counts as
+    # electric (as the 2026-09-13 ruling); only a source naming no battery and no electric option is combustion-only
+    # 2026-10-11 ruling: "hybrid-electric" is NOT an electric option (it carries a combustion engine or fuel cell); an electric option is
+    # a battery or an all-electric alternative. Fuel cells / engine "and" / "plus" batteries with no "or" is one hybrid system, not a choice.
+    power_nohy = power.str.replace(r"hybrid[- ]?electric|hybrid", "", regex=True)
+    electric_option = power_nohy.str.contains("batter|electric")
+    one_system = power.str.contains(r"fuel cell|engine|turbine|hydrogen") & power.str.contains(r"\band\b|\bplus\b|\+") & ~power.str.contains(r"\bor\b|,")
+    combustion_only = power.str.contains("hybrid|fuel cell|turbine|engine|gas|hydrogen") & (~electric_option | one_system)
+    cap = d["spec_capacity"].str.lower()
+    # 2026-10-11 ruling: only truly unmanned pages are UAVs; autonomous / remote pages are taken as piloted first
+    # ... unless the same capacity text says it CAN hold people ("capable of holding 4 passengers but no passengers flew")
+    can_carry = cap.str.contains(r"capable of|designed (?:for|to)|can (?:carry|hold|seat)|holding|\d+\s*(?:passengers?|seats?|people|persons?|pilots?)|(?:one|two|three|four|five|six)\s+(?:passengers?|seats?|people)")
+    strong_cap = cap.str.contains("cargo only|cargo") & cap.str.contains("cargo only|no passengers")   # explicit cargo-only capacity
+    weak_cap = cap.str.contains("no passengers") & ~strong_cap
+    uav_cap = (cap.str.contains("cargo only") | cap.str.contains("no passengers")) & ~can_carry
+    title_l = d["title"].str.lower()
+    type_l = d["spec_aircraft_type"].str.lower()
+    cargo_name = title_l.str.contains(DIRECTORY_CARGO_NAME)
+    cargo_type = type_l.str.contains(DIRECTORY_CARGO_TYPE)
+    # a person named in the type ("passenger or air cargo") or the piloting field ("1 pilot", "2 pilots") is a crewed design
+    people_other = (type_l + " " + d["spec_piloting"].str.lower()).str.contains(r"passengers?|\b[1-9] pilots?\b|\bseats?\b")
+    typ_rule = (cargo_type | cargo_name) & ~cap.str.contains(DIRECTORY_PEOPLE) & ~people_other
+    # 2026-10-11 ruling (multicopters were far too many against the patents): type / name saying cargo / drone ... with no person
+    # in the capacity is a UAV. 2026-10-11 ruling: only truly unmanned pages are UAVs; autonomous / remote count as piloted
+    cargo_cap = cap.str.contains(r"(?<!no )\bcargo\b") & cap.str.contains(r"\bonly\b|no passengers|no pilot") & ~cap.str.contains(r"no passengers? or cargo")
+    strong = (cargo_cap & ~can_carry) | (cargo_name & cap.str.contains(r"(?<!no )\bcargo\b")) | (type_l.str.contains(r"\bcargo\b|drone") & ~can_carry & ~cap.str.replace(r"no (?:passengers?|pilots?)", "", regex=True).str.contains(DIRECTORY_PEOPLE)) | status.eq("cargo drone") | (typ_rule & (cargo_name | type_l.str.contains("cargo|drone|delivery|logistic|freight|agricultur|spray")))
+    weak = ((weak_cap & uav_cap) | typ_rule) & ~strong
+    # a WEAK exclusion is dropped when the page says the aircraft (or its line) is built for people: a demonstrator that flew
+    # empty (Joby S4-T, KARI OPPAV, Vahana) is a passenger design
+    pax_design = d["slug_key"].map(directory_paxdesign_pages(cfg)).astype(object).where(lambda x: x.notna(), False).astype(bool)
+    uav = strong | (weak & ~pax_design)
+    # 2026-10-11 ruling: a UAV is excluded only when it is uncrewed EXCLUSIVELY; if the page text says it can be crewed /
+    # piloted (own description, not the Resources list), it is not a UAV
+    crewed_text = d["slug_key"].map(directory_crewed_pages(cfg)).astype(object).where(lambda s: s.notna(), False).astype(bool)
+    uav = uav & ~crewed_text
+    # author's individual rulings on the review page (review/domain_overrides.csv): in domain whatever the rules say
+    ov_path = _Path(__file__).resolve().parents[1] / "review" / "domain_overrides.csv"
+    if ov_path.exists():
+        ovd = pd.read_csv(ov_path, keep_default_na=False)
+        ov = set(ovd.query("decision == 'in_domain'")["slug_key"])
+        ovx = set(ovd.query("decision == 'exclude'")["slug_key"])
+        uav = (uav & ~d["slug_key"].isin(ov)) | d["slug_key"].isin(ovx)
+        combustion_only = combustion_only & ~d["slug_key"].isin(ov)
     links = pd.read_csv(cfg.path("evtolnews_patent_links"), keep_default_na=False)
     linked = {s for x in links.loc[links["use"].eq("yes"), "slug_keys"] for s in str(x).split("|") if s}
     return pd.DataFrame({"slug_key": d["slug_key"], "class5": d["evtol_class"], "status": status,
