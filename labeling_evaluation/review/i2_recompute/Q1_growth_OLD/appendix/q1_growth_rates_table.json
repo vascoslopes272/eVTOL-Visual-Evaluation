@@ -1,0 +1,14 @@
+{
+ "name": "q1_growth_rates_table",
+ "slot": "appendix",
+ "kind": "table",
+ "sub": "A",
+ "title": "Doubling times against the baselines",
+ "caption": "Doubling time of every series over 2005-2023 with its bootstrap interval, and how many times as fast the eVTOL architecture patents grow against each baseline.",
+ "source_item": "la_growth_rates / la_growth_ratios (Figure 1 ii data)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer · WIPO · human labelling (lib.growth.loglinear_fit, growth_ratio_table: 2 000 bootstrap draws over years, seed 42)",
+ "unit": "patent families per priority year (the eVTOL unique aircraft row counts aircraft)",
+ "read": "A ratio whose interval excludes 1 is a growth rate told apart from the baseline's."
+}

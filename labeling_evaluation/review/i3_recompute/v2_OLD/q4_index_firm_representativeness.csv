@@ -1,0 +1,7 @@
+attribute,n index firms,n rest,largest gap,test,p,verdict
+architecture group,152,475,VT (+5.4 pp),chi-square,0.15,no difference detected
+applicant region,152,475,North America (+27.3 pp),chi-square,< 0.001,differs
+priority window,152,475,2016-19 (+17.7 pp),chi-square,< 0.001,differs
+filer type,152,475,Named company (+48.4 pp),chi-square,< 0.001,differs
+priority year,152,475,median +0.0,Mann-Whitney,0.35,no difference detected
+propulsive units,152,475,median +1.0,Mann-Whitney,< 0.001,differs

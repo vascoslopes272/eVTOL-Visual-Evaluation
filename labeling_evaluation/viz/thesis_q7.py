@@ -24,9 +24,9 @@ from lib import dominant_design, regional
 from viz import flow, frames, plots, style
 
 PERMS = 200                                   # permutations behind the bands of conditions 2 and 3 (as the document)
-SET_LABEL = {"A0": "C (class)", "A1t": "C·W·T (class + wings + tilt)", "A0c": "C·U (class + propulsor units)",
+SET_LABEL = {"A0": "A (architecture)", "A1t": "A·W·T (architecture + wings + tilt)", "A0c": "A·U (architecture + propulsor units)",
              "family_b": "F (Lift + Cruise + CVT* family)"}
-SET_TITLE = {"A0": "C\nclass", "A1t": "C·W·T\nclass + wings + tilt", "A0c": "C·U\nclass + propulsor units",
+SET_TITLE = {"A0": "A\narchitecture", "A1t": "A·W·T\narchitecture + wings + tilt", "A0c": "A·U\narchitecture + propulsor units",
              "family_b": "F\nLift + Cruise + CVT*"}
 ABBR = {"North America": "NA", "Europe": "EU", "Asia-Pacific": "AP"}
 NA, EU, AP = frames.REGIONS
@@ -150,7 +150,7 @@ def fig_condition2_balance(ctx):
         ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axs[0].set_ylabel("²D: large designs in play")
     for ax in axs:
-        ax.set_xlabel("priority window", fontsize=7.5)
+        ax.set_xlabel("priority cohort", fontsize=7.5)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.3, label=f"²D rarefied to {ctx.cfg.analysis['rarefy_n']} (95 % of the draws)"),
                         Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
@@ -159,27 +159,25 @@ def fig_condition2_balance(ctx):
 
 
 def fig_condition3_cohesion(ctx):
-    """Figure 12 (ii): ΔQ against its permutation band, main weighting and check (one variable, two aircraft bases)."""
+    """Figure 12 (ii): ΔQ against its permutation band under the one weighting (every subsystem weighs the same)."""
     d = _data(ctx)
     form, win = d["form"], ctx.WIN_NAMES
     partial = [("partial" in w) for w in win]
-    main, alt = frames.Q_WEIGHTINGS
+    main = frames.Q_WEIGHTINGS[0]
     fig, axb = plt.subplots(1, 2, figsize=(ctx.W, 3.4), constrained_layout=True, sharey=True)
-    for ax, lvl, ttl in zip(axb, ("A0", "A1t"), ("C, C·U and F (the same aircraft)", "C·W·T")):
+    for ax, lvl, ttl in zip(axb, ("A0", "A1t"), ("A, A·U and F (the same aircraft)", "A·W·T")):
         s = form[form["level"] == lvl]
         sm = s[s["weighting"] == main].set_index("window").reindex(win).reset_index()
-        su = s[s["weighting"] == alt].set_index("window").reindex(win).reset_index()
-        plots.cohesion_panel(ax, sm, su, partial, [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(win, sm["aircraft"])])
+        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(win, sm["aircraft"])])
         ax.set_title(ttl, fontsize=7.5, loc="left")
-    axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest windows")
+    axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest cohorts")
     for ax in axb:
-        ax.set_xlabel("priority window", fontsize=7.5)
-    fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band, main weighting (every subsystem equal)"),
-                        Line2D([], [], color=style.MUTED, linestyle=":", linewidth=0.9, label="band edges, every field equal"),
-                        Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="ΔQ, main weighting (every subsystem equal)"),
-                        Line2D([], [], color=style.MUTED, marker="^", markersize=3.8, linewidth=1.2, linestyle="--", label="ΔQ, every field equal")],
-               loc="outside lower center", ncol=2, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
-    return fig, form
+        ax.set_xlabel("priority cohort", fontsize=7.5)
+    fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
+                        Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="ΔQ"),
+                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
+               loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
+    return fig, form[form["weighting"] == main]
 
 
 def _printed(cell: str) -> str:
@@ -193,9 +191,11 @@ def tab_verdict(ctx):
     """Table 8: the verdict per condition and archetype set (✓ met, ✗ not met, with the years or windows)."""
     lv = _data(ctx)["lv"].copy()
     lv["condition"] = lv["condition"].str.replace(" — ", ", ", n=1)
+    lv["condition"] = (lv["condition"].str.replace("archetype", "architecture").str.replace("windows", "cohorts")
+                       .str.replace("window", "cohort").str.replace("priority years", "priority years"))
     for c in lv.columns[1:]:
         lv[c] = lv[c].map(_printed)
-    lv.columns = ["condition", "C", "C·W·T", "C·U", "F (defined after the first readings)"]
+    lv.columns = ["condition", "A", "A·W·T", "A·U", "F"]
     return lv, None
 
 
@@ -406,7 +406,7 @@ def numbers(ctx) -> dict:
     top3 = lambda sid: frames.archetype_key(ctx.v[ctx.v["window"] == "2020-23"], sid).value_counts(normalize=True).head(3).sum()  # noqa: E731
     b = bal.set_index(["level", "window"])
     q = form.set_index(["level", "weighting", "window"])
-    main, alt = frames.Q_WEIGHTINGS
+    main = frames.Q_WEIGHTINGS[0]
     status = pd.read_csv(cfg.path("grant_status_by_year"))
     pending = lambda y: f"{float(status.loc[status['priority_year'] == y, 'pending_pct'].iloc[0]):.1f} %"   # noqa: E731
     lni = ln.set_index("region")
@@ -453,7 +453,6 @@ def numbers(ctx) -> dict:
         "cu_d2_w1": f"{b.loc[('A0c', '<= 2011'), 'D2']:.2f}", "cu_d2_w1_edge": f"{b.loc[('A0c', '<= 2011'), 'D2 permutation low']:.2f}",
         "cu_d2_w2": f"{b.loc[('A0c', '2012-15'), 'D2']:.2f}", "cu_d2_w2_edge": f"{b.loc[('A0c', '2012-15'), 'D2 permutation low']:.2f}",
         "dq_main": _signed(q.loc[("A0", main, "2020-23"), "ΔQ"]), "dq_main_edge": _signed(q.loc[("A0", main, "2020-23"), "ΔQ permutation low"]),
-        "dq_alt": _signed(q.loc[("A0", alt, "2020-23"), "ΔQ"]), "dq_alt_edge": _signed(q.loc[("A0", alt, "2020-23"), "ΔQ permutation low"]),
         "top3_cwt": pct(top3("A1t")), "top3_cu": pct(top3("A0c")),
         "rarefy_n": str(cfg.analysis["rarefy_n"]), "perms": str(PERMS), "seed": str(ctx.SEED),
         # C — external comparison

@@ -17,7 +17,7 @@ The archetype set, not the corpus, sets how many designs there are, so every cla
 
 [fig:q7_condition2_balance] shows the balance condition met by F and by C in {w_last}, and by C·U in the two earliest windows only. F's ²D is {f_d2_last} against a band edge of {f_d2_edge}.
 
-[fig:q7_condition3_cohesion] shows the form condition met in every archetype set in {w_last}, under the main weighting only. For C, C·U and F, which read the same aircraft, ΔQ is {dq_main}, past a band edge of {dq_main_edge}. With every field weighted equally it is {dq_alt}, inside its band.
+[fig:q7_condition3_cohesion] shows the form condition met in every archetype set in {w_last}, under the main weighting only. For C, C·U and F, which read the same aircraft, ΔQ is {dq_main}, past a band edge of {dq_main_edge}.
 
 Only F meets the three conditions in the same period, {w_last} ([tab:q7_verdict_table]). C, C·W·T and C·U each meet at most two and fail on the counts condition, where their largest archetype reaches at most {max_c} of a year's in-force aircraft. The pass rests on the in-force base and on the weighting, and the next sub-question shows each the other way."""),
     dict(sub="C", title="Robustness", text="""The pass rests on three choices, F, the in-force base and the subsystem weighting, and each is shown both ways. Counted subsystem by subsystem the aircraft of {w_last} are more alike than chance gives, counted field by field they are not. The convergence therefore sits in the subsystems described by few fields and not in the propulsion fields.

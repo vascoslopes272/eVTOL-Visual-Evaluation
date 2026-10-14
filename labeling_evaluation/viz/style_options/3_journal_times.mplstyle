@@ -1,0 +1,29 @@
+# 3. Engineering journal (IEEE / Elsevier type): Times-type serif, small, inward ticks with minor ticks, dashed grid
+font.family: serif
+font.serif: Times New Roman, Nimbus Roman, TeX Gyre Termes, DejaVu Serif
+mathtext.fontset: stix
+font.size: 8
+axes.labelsize: 8
+axes.titlesize: 8
+xtick.labelsize: 7
+ytick.labelsize: 7
+legend.fontsize: 7
+legend.frameon: False
+axes.spines.top: True
+axes.spines.right: True
+axes.grid: True
+grid.linestyle: --
+grid.color: 0.82
+grid.linewidth: 0.4
+axes.linewidth: 0.6
+xtick.direction: in
+ytick.direction: in
+ytick.minor.visible: True
+xtick.top: True
+ytick.right: True
+xtick.major.size: 3
+ytick.major.size: 3
+ytick.minor.size: 1.5
+lines.linewidth: 1.2
+savefig.bbox: tight
+pdf.fonttype: 42

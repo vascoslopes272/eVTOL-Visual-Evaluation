@@ -1,0 +1,26 @@
+"""Thesis question 1, growth: the text (THESIS_CONTRACT.md §1, §2). Numbers are {placeholders} from thesis_q1.numbers."""
+
+METHOD = """- **Objective:** How fast eVTOL patenting grows against aeronautics, transport and all patenting, when it turned, and where it grows.
+- **Data and unit:** {unique_s} unique aircraft by priority year and applicant region, {representative_s} patents and three baselines in families.
+- **Procedure:** Series scaled to their 2005 to 2009 mean; regional counts corrected for publication lag.
+- **Test:** Log-linear fit over 2005 to 2023; doubling-time ratio with bootstrap interval; turning point by two-segment fit.
+- **Limit:** Only architecture patents are counted, and the two latest years are not yet fully published."""
+
+RESULTS = [
+    dict(sub="A", title="Growth of the field", text="""Filing takes off in {turn_pat_year}, the year chosen by {turn_pat_boot} of the resampled fits ([fig:q1_filings_per_year]). In 2015 the dataset gains {ac_2015} unique aircraft. In 2018 it gains {ac_2018}, and the count holds near that level to the last complete year. The unique aircraft turn in {turn_ac_year}. The resamples place that year anywhere from {turn_ac_lo} to {turn_ac_hi}. The fall at the right edge is the publication lag, not a decline. The Uber Elevate paper of late 2016 stands beside the rise as a coincidence in time, never tested as a cause.
+
+eVTOL is the fastest-growing series ([fig:q1_growth_rates]), its architecture patents doubling every {dbl_fam} years against {dbl_b64} for aeronautics. Transport doubles every {dbl_secb} years and all patenting every {dbl_all} ([tab:q1_growth_rates_table]). Counted in families, eVTOL grows {gr_fam_b64} times as fast as aeronautics ({gr_fam_b64_ci}). The lead rests partly on the latest years, and with the fit ended at 2019 the ratio falls to {gr_fam_b64_19}. Its interval, {gr_fam_b64_19_ci}, still leaves eVTOL the faster series. The comparison is conservative, because aeronautics counts the component patents and cargo drones that the labelled dataset screens out."""),
+    dict(sub="B", title="Entry by region", text="""North America's share of new aircraft halves between 2021 and 2023, and publication lag does not explain it. Its share falls from {na_share_2021} to {na_share_2023} over those two years ([fig:q1_na_drop_is_real]). Corrected for lag, the share of 2023 stays at {na_share_2023_corr}. The snapshot already sees {vis_2023_lo} to {vis_2023_hi} of every region's aircraft of that year. North America's count falls from {na_2021} to {na_2023} aircraft over the same two years. Lag explains only the two latest years, whose {ap_2526} aircraft are all Asia-Pacific's.
+
+The order of entry by class is read in Q3 ([fig:q3_region_entry_lag]). Asia-Pacific files Lift + Cruise, Tilt Propulsor and Tilt Wing {ap_delay_range} years after North America. On Combined Vectored Thrust (CVT) no delay is detected, {ap_delay_cvt} years with an interval of {ap_delay_cvt_ci} that takes in zero, because North America itself came late to that class. No European delay is detected on any class.
+
+Of the aircraft with a priority year of 2019 or earlier, {fa_share} have no patent left in force ([fig:q1_in_force_status]). The classes appear to differ, CVT and Lift + Cruise at {fa_cvt} against Multirotor at {fa_mr}, but the difference follows the filing office. Aircraft filed at the US office are out of force {fo_us} of the time, against {fo_else} elsewhere. Within the US office no class difference is detected (p {fo_p_us}, {fo_n_us} aircraft). Counting a patent that names several aircraft for its first aircraft only, Multirotor rises to {fa_mr_first} and the class difference is no longer detected (p {fa_p_first})."""),
+]
+
+ANSWER = """eVTOL patenting grows faster than patenting at large and a little faster than aeronautics, with its architecture patents doubling every {dbl_fam} years against {dbl_b64} for aeronautics. The turning point is {turn_pat_year} for the patents and {turn_ac_year} for the unique aircraft. North America's share of new aircraft halves between 2021 and 2023, a fall the publication lag does not explain. Asia-Pacific holds its yearly count and enters the older classes {ap_delay_range} years after North America. The share of the older aircraft that lost protection, {fa_share}, follows the filing office and not the class."""
+
+APPENDIX = {
+    "q1_growth_rates_table": "eVTOL architecture patents double every {dbl_fam} years, against {dbl_b64} for aeronautics. Against all patenting they grow {gr_fam_all} times as fast, and the unique aircraft double every {dbl_ac} years.",
+    "q1_na_drop_is_real": "North America's share of the year falls from {na_share_2021} to {na_share_2023} in two years, and its count falls with it.",
+    "q1_in_force_status": "Of the aircraft with a priority year to 2019, {fa_share} are out of force. The class difference (p {fa_p}) does not survive the filing office.",
+}

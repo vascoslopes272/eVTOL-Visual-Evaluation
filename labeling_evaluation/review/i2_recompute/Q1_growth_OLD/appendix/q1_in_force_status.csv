@@ -1,0 +1,9 @@
+,class,code,unique aircraft,out of force,out of force share,"out of force, primary patent only"
+0,Tilt Propulsor,TR,90,31,0.34,0.38
+1,Lift + Cruise,SLC,74,39,0.53,0.53
+2,Combined Vectored Thrust,CVT,43,23,0.53,0.56
+3,Tilt Wing,TW,33,13,0.39,0.39
+4,Multirotor,MR,29,9,0.31,0.45
+5,Hoverbike,HB,17,7,0.41,0.41
+6,Tilt Body,TB,16,10,0.62,0.62
+7,Pitch-to-Cruise,PTC,14,3,0.21,0.21

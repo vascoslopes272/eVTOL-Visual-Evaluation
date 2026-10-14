@@ -2,4 +2,4 @@ input,agree,of,pool N,share,95 % low,95 % high,lower bound ≥ 90%
 TRL (evidence-based rows),50,50,105,1.0,0.961,1.0,yes
 evtol.news year (kept as proposed),84,90,1229,0.933,0.865,0.968,NO
 "domain exclusion (sample, rules as at review time)",61,68,223,0.897,0.821,0.943,NO
-domain: pages KEPT in the domain (sample),67,88,884,0.761,0.668,0.835,NO
+domain: pages KEPT in the domain (sample),67,88,871,0.761,0.668,0.835,NO

@@ -17,7 +17,7 @@ Only a named aircraft can be checked at all, {nc_named} of {unique}, so these sh
 
 [hl]The AAM Reality Index firms, the index firms, file before they fly ([fig:q4_patent_vs_market_clock]). {ff_before} of the {ff_flown} firms with a first flight on record filed their first patent in this corpus before flying.[/hl] [hl]The lead is a median of {ff_lead} years, and planned entry into service sits a median of {eis_lead} years after the first patent.[/hl]
 
-[hl]The aircraft that got built, {trl_n} of {unique}, differ from the rest on filer type and propulsor units and on nothing else tested ([tab:q4_trl_representativeness]).[/hl] [hl]The {ari_n} aircraft of the index firms differ on four of the six attributes ([tab:q4_index_firm_representativeness]): region, priority window, filer type and propulsor units.[/hl] Neither group differs detectably in architecture class (p {trl_class_p} and {ari_class_p}).
+[hl]Of the {unique} designs, {flown_n} have flown. They differ from the rest on {flown_differs} of the six attributes ([tab:q4_flown_representativeness]).[/hl] [hl]The {fari_n} designs of the index firms that have flown differ on {fari_differs} of the six ([tab:q4_flown_index_firm_representativeness]).[/hl] By architecture group the flown designs give p {flown_class_p}, the flown index-firm designs p {fari_class_p}.
 
 The Wingless gap sits in the directory pages no patent of this corpus describes, so it rests on which aircraft get patented. The directory's Vectored Thrust pools Tilt Propulsor with CVT and Tilt Wing, so the Tilt Propulsor crossover of Q6 has no outside check. Whether the money follows is read next, in Q5."""),
 ]

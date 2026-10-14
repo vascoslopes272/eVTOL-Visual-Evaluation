@@ -99,9 +99,12 @@ lines.append("- The evtol.news text used here (directory pages, development year
              "first existed (\"existed by\" = a prototype existed by then, even if sub-scale), not a start date.")
 lines.append("- Domain flag of the directory pages (rulings 2026-10-11): a power source offering an electric version counts as "
              "electric; only unmanned pages (cargo-only, no passengers, cargo drone) are UAVs; autonomous or remote pages count as "
-             "piloted; a \"no passengers\" / uncrewed demonstrator whose page says the aircraft (or its maker's line) is built for people "
-             "(passengers, air taxi, seats, optionally piloted) stays in the domain. It applies to the evtol.news side only; the patent dataset's own domain gate is unchanged.\n")
+             "piloted; hybrid-electric is not an electric option; an uncrewed demonstrator is out; the author's single-page rulings "
+             "(review/domain_overrides.csv) override the rules. It applies to the evtol.news side only; the patent dataset's own domain gate is unchanged.\n")
 
+lines.append("- External inputs (2026-10-11): the evtol.news development year, the TRL and the AAM Reality Index company map are set by "
+             "rule-based scripts with no model (`viz/script_inputs.py`, lists in `review/script_outputs/`, written by notebook 60); "
+             "where the author read an item in the review, his value is used. Agreement of each script with the author: notebook 60.\n")
 lines.append("- Kinds of date used in the year review: **announced / unveiled** = presented as a project in order to start being developed (an already built aircraft shown is \"existed by\"); **existed by** = a prototype existed by then, even if sub-scale; a concept design has neither flown nor has a prototype.\n")
 
 lines.append("## Judgement calls flagged for review\n")
@@ -110,7 +113,7 @@ lines.append("- The five sector events kept on `q1_filings_per_year` (main slot 
              "across the timeline; not a stated criterion.")
 lines.append("- `q1_growth_rates_table`'s old \"families 2005-2023\" column is renamed \"count 2005-2023\" "
              "(neutral), since the eVTOL unique-designs row counts designs, not patent families.")
-lines.append("- `q4_coding_agreement` / `q4_trl_representativeness` / `q4_index_firm_representativeness`: \"folded "
+lines.append("- `q4_coding_agreement` / `q4_flown_representativeness` / `q4_flown_index_firm_representativeness`: \"folded "
              "class\" -> **architecture group**, and \"configuration\" / \"class\" -> **architecture** in the "
              "disagreement notes (step 2's naming rules, applied by inference since neither term was given "
              "explicitly for these spots).\n")

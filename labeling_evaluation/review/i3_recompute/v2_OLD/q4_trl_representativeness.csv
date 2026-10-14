@@ -1,0 +1,7 @@
+attribute,n above TRL 2,n rest,largest gap,test,p,verdict
+architecture group,68,559,HB (-5.2 pp),chi-square,0.17,no difference detected
+applicant region,68,559,Asia-Pacific (-10.2 pp),chi-square,0.35,no difference detected
+priority window,68,559,2020-23 (+13.7 pp),chi-square,0.03,differs
+filer type,68,559,Named company (+37.8 pp),chi-square,< 0.001,differs
+priority year,68,559,median +1.0,Mann-Whitney,0.08,no difference detected
+propulsive units,68,559,median +3.0,Mann-Whitney,< 0.001,differs

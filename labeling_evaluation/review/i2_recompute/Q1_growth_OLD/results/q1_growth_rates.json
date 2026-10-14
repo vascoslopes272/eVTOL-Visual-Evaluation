@@ -1,0 +1,16 @@
+{
+ "name": "q1_growth_rates",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "A",
+ "title": "Growth of each series, log axis",
+ "caption": "eVTOL architecture patents against three worldwide baselines (WIPO, PatSeer), each relative to its own 2005-09 mean on a log axis, with its fitted line over 2005-2023.",
+ "source_item": "Figure 1 (ii)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer worldwide simple families for CPC B64 and CPC section B · WIPO patent families by origin (indicator 6a) for all patents, exported 2026-09-25 · human labelling",
+ "unit": "patent families per priority year, each relative to its own 2005-09 mean",
+ "read": "Equal slopes are equal growth rates; points are yearly counts, lines are least-squares fits of log count on year over 2005-2023; the legend prints each doubling time.",
+ "width_in": 6.3,
+ "height_in": 3.3
+}

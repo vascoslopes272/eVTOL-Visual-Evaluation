@@ -1,11 +1,15 @@
 input,method,agree,of,share %,95% interval %,what it measures
 Domain flag: deleting pages as out of domain,script rules,61,68,89.7,82.1-94.3,share of excluded pages that really are out
+Domain flag: deleting pages as out of domain,"script rules, CURRENT version (no single-page rulings)",59,68,86.8,78.6-92.1,"same answers, rules as they are now (adjusted after the review: optimistic)"
+Domain flag: keeping pages in the domain,"script rules, CURRENT version (no single-page rulings)",77,88,87.5,79.4-92.7,"same answers, rules as they are now (adjusted after the review: optimistic)"
 Domain flag: keeping pages in the domain,script rules,67,88,76.1,66.7-83.6,share of kept pages that really are in
 Development year,LLM (reading step),84,90,93.3,86.5-96.8,proposed year kept by the author
 Development year,"script, exact year",49,81,60.5,50.0-70.1,script year = the author year
 Development year,"script, within 1 year",61,81,75.3,65.3-83.2,script year within +-1 of the author
+Development year,"script, same time window",58,81,71.6,61.4-80.0,script year in the same window as the author (the unit the figures use)
 TRL,LLM (reading step),50,50,100.0,96.1-100.0,proposed TRL kept by the author (evidence-based rows)
-TRL,"script, exact level",34,50,68.0,58.1-76.5,script TRL = the author TRL
-TRL,"script, within 1 level",42,50,84.0,75.3-90.0,script TRL within +-1 of the author
+TRL,"script, exact level",23,50,46.0,36.3-56.0,script TRL = the author TRL
+TRL,"script, same side of TRL 2",37,50,74.0,64.3-81.8,"above / not above TRL 2, as the figures use it"
+TRL,"script, within 1 level",37,50,74.0,64.3-81.8,script TRL within +-1 of the author
 AAM index company map (all 43 rows),LLM (reading step),38,43,88.4,census (all rows),proposed name = the author name
 AAM index company map (all 43 rows),"script, name match",35,43,81.4,census (all rows),script name = the author name

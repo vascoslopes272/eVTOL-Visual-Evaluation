@@ -55,7 +55,7 @@ def _ygrid(ax):
 def _class_handles(codes, kind: str = "patch"):
     if kind == "patch":
         return [Patch(facecolor=style.cls(c).color, hatch=style.cls(c).hatch, edgecolor="white",
-                      label=f"{style.cls(c).short} {style.cls(c).name}" if c != "Other" else "no class recorded") for c in codes]
+                      label=f"{style.cls(c).short} {style.cls(c).name}" if c != "Other" else "no architecture recorded") for c in codes]
     return [Line2D([], [], color=style.cls(c).color, linestyle=style.cls(c).dash, marker=style.cls(c).marker, markersize=4.6,
                    linewidth=1.4, label=f"{style.cls(c).short} {style.cls(c).name}") for c in codes]
 
@@ -300,8 +300,8 @@ def fig_class_shares_by_window(ctx):
     sh.index = list(range(len(sh)))
     plots.share_bars(ax, sh, partial=[len(sh) - 1], min_label=0.05, label_kind="pct")
     ax.set_xticks(range(len(ctx.WIN_NAMES)), tick10)
-    ax.set_ylabel("share of the window's\nunique aircraft")
-    ax.set_xlabel("priority window (* still filling)")
+    ax.set_ylabel("share of the cohort's\naircraft")
+    ax.set_xlabel("priority cohort (* still filling)")
     fig.legend(handles=_class_handles(codes10), loc="outside lower center", ncol=5, fontsize=7.5, handlelength=1.2, columnspacing=1.0)
     return fig, share.round(4).assign(aircraft=n_win)
 
@@ -322,8 +322,8 @@ def fig_largest_classes_over_time(ctx):
     last = lines.iloc[-1]
     plots.end_labels(ax, len(ctx.WIN_NAMES) - 1, [last[c] for c in CLASSES5], [style.cls(c).short for c in CLASSES5],
                      [style.cls(c).color for c in CLASSES5], gap=0.024)
-    ax.set_ylabel("share of the window's\nunique aircraft")
-    ax.set_xlabel("priority window (* still filling)")
+    ax.set_ylabel("share of the cohort's\naircraft")
+    ax.set_xlabel("priority cohort (* still filling)")
     fig.legend(handles=_class_handles(CLASSES5, "line"), loc="outside lower center", ncol=5, fontsize=7.5, handlelength=2.0, columnspacing=1.0)
     return fig, share[CLASSES5].round(4)
 

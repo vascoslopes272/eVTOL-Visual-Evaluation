@@ -1,0 +1,14 @@
+{
+ "name": "q4_trl_representativeness",
+ "slot": "results",
+ "kind": "table",
+ "sub": "B",
+ "title": "Aircraft above TRL 2 against the rest",
+ "caption": "The aircraft above NASA TRL 2 against the rest of the labelled dataset on six attributes, one test per attribute: chi-square for a category, Mann-Whitney for a number.",
+ "source_item": "Table 4",
+ "flag": "verify",
+ "flag_note": "author re-verifies these values and the evtol.news class mapping; the folded-class row differs from the 45-page document by the SRW to Lift + Cruise ruling of 2026-10-01",
+ "source": "NASA TRL (inputs/trl/aircraft_trl.csv) · human labelling · PatSeer",
+ "unit": "unique aircraft",
+ "read": ""
+}

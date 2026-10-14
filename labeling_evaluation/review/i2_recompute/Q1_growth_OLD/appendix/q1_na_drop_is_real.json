@@ -1,0 +1,16 @@
+{
+ "name": "q1_na_drop_is_real",
+ "slot": "appendix",
+ "kind": "figure",
+ "sub": "B",
+ "title": "Aircraft per priority year and region",
+ "caption": "Unique aircraft per priority year and applicant region from 2012, North America's share printed on its segment, the years the snapshot has not fully seen faded.",
+ "source_item": "Figure 23 (i)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer (applicant country, priority and publication date) · human labelling · sector events: the author's dated list",
+ "unit": "unique aircraft per priority year, the three regions",
+ "read": "The number on the North America segment is its share of that year's aircraft (years from 2016 with 8 aircraft or more). Faded and shaded: years the snapshot of June 2026 has not fully seen. Dotted lines: dated sector events, hypotheses never tested as causes. The legend gives each region's median priority year to 2023.",
+ "width_in": 6.3,
+ "height_in": 3.9
+}

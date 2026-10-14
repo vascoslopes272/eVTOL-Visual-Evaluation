@@ -1,0 +1,46 @@
+,priority year,region,aircraft,share of the year,visible at the snapshot,share corrected for publication lag,complete
+0,2012,North America,9,0.6429,1.0,0.6429,True
+1,2012,Europe,3,0.2143,1.0,0.2143,True
+2,2012,Asia-Pacific,2,0.1429,1.0,0.1429,True
+3,2013,North America,5,0.4545,1.0,0.4545,True
+4,2013,Europe,6,0.5455,1.0,0.5455,True
+5,2013,Asia-Pacific,0,0.0,1.0,0.0,True
+6,2014,North America,8,0.6667,1.0,0.6667,True
+7,2014,Europe,2,0.1667,1.0,0.1667,True
+8,2014,Asia-Pacific,2,0.1667,1.0,0.1667,True
+9,2015,North America,7,0.3333,1.0,0.3333,True
+10,2015,Europe,12,0.5714,1.0,0.5714,True
+11,2015,Asia-Pacific,2,0.0952,1.0,0.0952,True
+12,2016,North America,25,0.7353,1.0,0.7353,True
+13,2016,Europe,6,0.1765,1.0,0.1765,True
+14,2016,Asia-Pacific,3,0.0882,1.0,0.0882,True
+15,2017,North America,32,0.6154,1.0,0.6154,True
+16,2017,Europe,12,0.2308,1.0,0.2308,True
+17,2017,Asia-Pacific,8,0.1538,1.0,0.1538,True
+18,2018,North America,23,0.3651,1.0,0.3651,True
+19,2018,Europe,19,0.3016,1.0,0.3016,True
+20,2018,Asia-Pacific,21,0.3333,1.0,0.3333,True
+21,2019,North America,24,0.4211,1.0,0.4211,True
+22,2019,Europe,27,0.4737,1.0,0.4737,True
+23,2019,Asia-Pacific,6,0.1053,1.0,0.1053,True
+24,2020,North America,19,0.2836,1.0,0.2836,True
+25,2020,Europe,13,0.194,1.0,0.194,True
+26,2020,Asia-Pacific,35,0.5224,1.0,0.5224,True
+27,2021,North America,32,0.4444,1.0,0.4444,True
+28,2021,Europe,22,0.3056,1.0,0.3056,True
+29,2021,Asia-Pacific,18,0.25,1.0,0.25,True
+30,2022,North America,16,0.3333,0.982,0.335,True
+31,2022,Europe,14,0.2917,0.983,0.2928,True
+32,2022,Asia-Pacific,18,0.375,0.994,0.3723,True
+33,2023,North America,10,0.2222,0.917,0.2158,True
+34,2023,Europe,14,0.3111,0.873,0.3173,True
+35,2023,Asia-Pacific,21,0.4667,0.89,0.4669,True
+36,2024,North America,5,0.1316,0.655,0.1358,False
+37,2024,Europe,12,0.3158,0.627,0.3407,False
+38,2024,Asia-Pacific,21,0.5526,0.714,0.5235,False
+39,2025,North America,0,0.0,0.211,0.0,False
+40,2025,Europe,0,0.0,0.284,0.0,False
+41,2025,Asia-Pacific,16,1.0,0.464,1.0,False
+42,2026,North America,0,0.0,0.0,,False
+43,2026,Europe,0,0.0,0.053,0.0,False
+44,2026,Asia-Pacific,2,1.0,0.144,1.0,False

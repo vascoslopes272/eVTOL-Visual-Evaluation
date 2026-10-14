@@ -1,0 +1,16 @@
+{
+ "name": "q1_in_force_status",
+ "slot": "appendix",
+ "kind": "figure",
+ "sub": "B",
+ "title": "Aircraft with no patent in force, per class",
+ "caption": "Share of each class's aircraft with no patent left in force at the snapshot, priority year 2019 or earlier, classes of ten aircraft or more.",
+ "source_item": "Figure 4",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer legal status at the snapshot (2026-06-08) · human labelling (class, duplicates)",
+ "unit": "unique aircraft with priority year 2019 or earlier; share of the class",
+ "read": "An aircraft is out of force only when none of its patents is in force. Black dash: the share when only the aircraft's first patent is read; dashed line: all classes.",
+ "width_in": 6.3,
+ "height_in": 2.9
+}

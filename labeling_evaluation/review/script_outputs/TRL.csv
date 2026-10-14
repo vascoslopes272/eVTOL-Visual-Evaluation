@@ -1,0 +1,799 @@
+aircraft_id,patent_id,aircraft_name,company,script_page,script_sentence,script_trl,author_trl,final_trl,source
+US2021331794A1_ua1,US2021331794A1,US2021331794A1_ua1,Aerhart,,,2,,2,script
+US2023067713A1_ua1,US2023067713A1,US2023067713A1_ua1,Aerhart,,,2,,2,script
+US2023067713A1_ua2,US2023067713A1,US2023067713A1_ua2,Aerhart,,,2,,2,script
+US2023033507A1_ua1,US2023033507A1,US2023033507A1_ua1,Aeronext,,,2,,2,script
+US2023056709A1_ua1,US2023056709A1,US2023056709A1_ua1,Aeronext,,,2,,2,script
+US2023056709A1_ua2,US2023056709A1,US2023056709A1_ua2,Aeronext,,,2,,2,script
+US2018002003A1_ua1,US2018002003A1,Quantix,AeroVironment,,,2,,2,script
+US2015014475A1_ua1,US2015014475A1,US2015014475A1_ua1,AeroVironment,,,2,,2,script
+US2018244367A1_ua1,US2018244367A1,CityAirbus,Airbus,airbus-helicopters,The vehicle is designed to fly autonomously.,6,,6,script
+US2018265189A1_ua1,US2018265189A1,CityAirbus v1,Airbus,airbus-helicopters,The vehicle is designed to fly autonomously.,6,,6,script
+EP3770063A1_ua1,EP3770063A1,CityAirbus v2,Airbus,airbus-helicopters,The vehicle is designed to fly autonomously.,6,,6,script
+EP3770063A1_ua2,EP3770063A1,CityAirbus v3,Airbus,airbus-helicopters,The vehicle is designed to fly autonomously.,6,,6,script
+US2019291863A1_ua1,US2019291863A1,Vahana,Airbus,a3-by-airbus,"The Airbus A3 Vahana project started in 2015 in a Silicon Valley (Northern California, USA) in a innovation center of Airbus to develop an electric vertical takeoff and landing (eVTOL) aircraft for people to replace cars and train travel for short-range advanced air mobility (AAM), formerly called urban air mobility (UAM).",6,6,6,author review
+US2016207625A1_ua1,US2016207625A1,US2016207625A1_ua1,Airbus,,,2,,2,script
+US2016207625A1_ua2,US2016207625A1,US2016207625A1_ua2,Airbus,,,2,,2,script
+US2016207625A1_ua3,US2016207625A1,US2016207625A1_ua3,Airbus,,,2,,2,script
+US2016207625A1_ua4,US2016207625A1,US2016207625A1_ua4,Airbus,,,2,,2,script
+US2016207625A1_ua5,US2016207625A1,US2016207625A1_ua5,Airbus,,,2,,2,script
+US2016236774A1_ua1,US2016236774A1,US2016236774A1_ua1,Airbus,,,2,,2,script
+US2016347447A1_ua1,US2016347447A1,US2016347447A1_ua1,Airbus,,,2,,2,script
+US2018354613A1_ua1,US2018354613A1,US2018354613A1_ua1,Airbus,,,2,,2,script
+US2019112039A1_ua1,US2019112039A1,US2019112039A1_ua1,Airbus,,,2,,2,script
+US2020115045A1_ua1,US2020115045A1,US2020115045A1_ua1,Airbus,,,2,,2,script
+US2020115045A1_ua2,US2020115045A1,US2020115045A1_ua2,Airbus,,,2,,2,script
+US2020269975A1_ua1,US2020269975A1,US2020269975A1_ua1,Airbus,,,2,,2,script
+US2020269975A1_ua2,US2020269975A1,US2020269975A1_ua2,Airbus,,,2,,2,script
+US2020269975A1_ua3,US2020269975A1,US2020269975A1_ua3,Airbus,,,2,,2,script
+US2020269975A1_ua4,US2020269975A1,US2020269975A1_ua4,Airbus,,,2,,2,script
+US2020269980A1_ua1,US2020269980A1,US2020269980A1_ua1,Airbus,,,2,,2,script
+US2020269980A1_ua2,US2020269980A1,US2020269980A1_ua2,Airbus,,,2,,2,script
+US2020398980A1_ua1,US2020398980A1,US2020398980A1_ua1,Airbus,,,2,,2,script
+US2022380033A1_ua1,US2022380033A1,US2022380033A1_ua1,Airbus,,,2,,2,script
+US2022380033A1_ua2,US2022380033A1,US2022380033A1_ua2,Airbus,,,2,,2,script
+US2023192279A1_ua1,US2023192279A1,US2023192279A1_ua1,Airbus,,,2,,2,script
+US6607161B1_ua1,US6607161B1,US6607161B1_ua1,Airbus,,,2,,2,script
+US2019382106A1_ua1,US2019382106A1,Wing delivery drone,Alphabet / X,,,2,,2,script
+US10450062B1_ua1,US10450062B1,US10450062B1_ua1,Amazon,,,2,,2,script
+US11124286B1_ua1,US11124286B1,US11124286B1_ua1,Amazon,,,2,,2,script
+US2020223542A1_ua1,US2020223542A1,Vertiia,AMSL Innovations,amsl-aero-vertiia-production-model-concept,"The propellers are stationary on the wings and when the wings tilt upward, the aircraft can fly vertically and for forward flight, the wings tilt horizontally.",6,6,6,author review
+US2025083808A1_ua1,US2025083808A1,US2025083808A1_ua1,Anduril,,,2,,2,script
+US2021362849A1_ua1,US2021362849A1,Maker,Archer Aviation,archer-maker,"The aircraft has 12 electric propellers, six tilt-props (each with five blades) for forward and VTOL flight, and six stationary propellers for VTOL-only flight (each propeller having two blades).",6,6,6,author review
+US2022250742A1_ua1,US2022250742A1,Maker v1,Archer Aviation,archer-maker,"The aircraft has 12 electric propellers, six tilt-props (each with five blades) for forward and VTOL flight, and six stationary propellers for VTOL-only flight (each propeller having two blades).",6,,6,script
+US11787551B1_ua1,US11787551B1,Midnight,Archer Aviation,archer,"The company announced it completed a 55 mile piloted flight with the Midnight production aircraft at its test facility in Salinas, California, USA.",7,7,7,author review
+US2022388649A1_ua1,US2022388649A1,US2022388649A1_ua1,Archer Aviation,,,2,,2,script
+FR3143549A1_ua1,FR3143549A1,ATEA,Ascendance Flight Technologies,ascendance-flight-technologies-atea,Ascendance Flight Technologies ATEA (production aircraft),6,5,5,author review
+US2017203839A1_ua1,US2017203839A1,US2017203839A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2018162525A1_ua1,US2018162525A1,US2018162525A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2021016876A1_ua1,US2021016876A1,US2021016876A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2021031910A1_ua1,US2021031910A1,US2021031910A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2021300527A1_ua1,US2021300527A1,US2021300527A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2021309351A1_ua1,US2021309351A1,US2021309351A1_ua1,Aurora Flight Sciences,,,2,,2,script
+US2021362836A1_ua1,US2021362836A1,US2021362836A1_ua1,Aurora Flight Sciences,,,2,,2,script
+USD902828S_ua1,USD902828S,USD902828S_ua1,Aurora Flight Sciences,,,2,,2,script
+CN111301676A_ua1,CN111301676A,CarryAll,AutoFlight,autoflight-carryall,"In March 2024, AutoFlight achieved a significant milestone when its CarryAll air cargo aircraft received a Type Certificate (TC) from the CAAC.",8,,8,script
+US2021362850A1_ua1,US2021362850A1,CarryAll v1,AutoFlight,,,2,,2,script
+DE102020007836A1_ua1,DE102020007836A1,DE102020007836A1_ua1,BAAZ,,,2,,2,script
+GB202302720D0_ua1,GB202302720D0,GB202302720D0_ua1,BAE Systems,,,2,,2,script
+CN105730692A_ua1,CN105730692A,CN105730692A_ua1,Beihang University,,,2,,2,script
+CN105923154A_ua1,CN105923154A,CN105923154A_ua1,Beihang University,,,2,,2,script
+CN106043685A_ua1,CN106043685A,CN106043685A_ua1,Beihang University,,,2,,2,script
+CN106585976A_ua1,CN106585976A,CN106585976A_ua1,Beihang University,,,2,,2,script
+CN113525678A_ua1,CN113525678A,CN113525678A_ua1,Beihang University,,,2,,2,script
+CN115303479A_ua1,CN115303479A,CN115303479A_ua1,Beihang University,,,2,,2,script
+CN120397241A_ua1,CN120397241A,CN120397241A_ua1,Beihang University,,,2,,2,script
+US11319064B1_ua1,US11319064B1,APT,Bell / Textron,bellapt,The Bell Autonomous Pod Transport (APT) is an autonomous electric vertical takeoff and landing (eVTOL) multicopter cargo drone being developed for both commercial and military use.,6,,6,script
+US2020062384A1_ua1,US2020062384A1,APT v1,Bell / Textron,bellapt,The Bell Autonomous Pod Transport (APT) is an autonomous electric vertical takeoff and landing (eVTOL) multicopter cargo drone being developed for both commercial and military use.,6,,6,script
+US2020148345A1_ua1,US2020148345A1,APT v2,Bell / Textron,,,2,,2,script
+US2021122468A1_ua1,US2021122468A1,APT v3,Bell / Textron,bellapt,The Bell Autonomous Pod Transport (APT) is an autonomous electric vertical takeoff and landing (eVTOL) multicopter cargo drone being developed for both commercial and military use.,6,,6,script
+US2018208305A1_ua1,US2018208305A1,Nexus,Bell / Textron,bell-nexus-4ex,The Nexus 4EX an eVTOL passenger concept design aircraft that is flown with one pilot and holds four passengers with luggage.,6,,6,script
+US2020148354A1_ua1,US2020148354A1,Nexus v1,Bell / Textron,bell-nexus-4ex,The Nexus 4EX an eVTOL passenger concept design aircraft that is flown with one pilot and holds four passengers with luggage.,6,2,2,author review
+US2020239134A1_ua1,US2020239134A1,Nexus v2,Bell / Textron,bell-nexus-4ex,The Nexus 4EX an eVTOL passenger concept design aircraft that is flown with one pilot and holds four passengers with luggage.,6,,6,script
+US2021197953A1_ua1,US2021197953A1,Nexus v3,Bell / Textron,bell-air-taxi,The Bell Nexus is a hybrid-electric (or all battery) vertical takeoff and landing (VTOL) passenger aircraft designed for on-demand air taxi advanced air mobility (AAM).,6,2,2,author review
+US2021316849A1_ua1,US2021316849A1,Nexus v4,Bell / Textron,bell-nexus-4ex,The Nexus 4EX an eVTOL passenger concept design aircraft that is flown with one pilot and holds four passengers with luggage.,6,2,2,author review
+US2020391879A1_ua1,US2020391879A1,Nexus v5,Bell / Textron,bell-air-taxi,The Bell Nexus is a hybrid-electric (or all battery) vertical takeoff and landing (VTOL) passenger aircraft designed for on-demand air taxi advanced air mobility (AAM).,6,,6,script
+US2023118750A1_ua1,US2023118750A1,Nexus v6,Bell / Textron,bell-air-taxi,The Bell Nexus is a hybrid-electric (or all battery) vertical takeoff and landing (VTOL) passenger aircraft designed for on-demand air taxi advanced air mobility (AAM).,6,,6,script
+EP3636545A1_ua1,EP3636545A1,EP3636545A1_ua1,Bell / Textron,,,2,,2,script
+US11072423B1_ua1,US11072423B1,US11072423B1_ua1,Bell / Textron,,,2,,2,script
+US11780576B1_ua1,US11780576B1,US11780576B1_ua1,Bell / Textron,,,2,,2,script
+US12202600B1_ua1,US12202600B1,US12202600B1_ua1,Bell / Textron,,,2,,2,script
+US2011259687A1_ua1,US2011259687A1,US2011259687A1_ua1,Bell / Textron,,,2,,2,script
+US2012061526A1_ua1,US2012061526A1,US2012061526A1_ua1,Bell / Textron,,,2,,2,script
+US2012199699A1_ua1,US2012199699A1,US2012199699A1_ua1,Bell / Textron,,,2,,2,script
+US2012199699A1_ua2,US2012199699A1,US2012199699A1_ua2,Bell / Textron,,,2,,2,script
+US2014263854A1_ua1,US2014263854A1,US2014263854A1_ua1,Bell / Textron,,,2,,2,script
+US2015048213A1_ua1,US2015048213A1,US2015048213A1_ua1,Bell / Textron,,,2,,2,script
+US2015274290A1_ua1,US2015274290A1,US2015274290A1_ua1,Bell / Textron,,,2,,2,script
+US2016229531A1_ua1,US2016229531A1,US2016229531A1_ua1,Bell / Textron,,,2,,2,script
+US2017144746A1_ua1,US2017144746A1,US2017144746A1_ua1,Bell / Textron,,,2,,2,script
+US2017158323A1_ua1,US2017158323A1,US2017158323A1_ua1,Bell / Textron,,,2,,2,script
+US2018002011A1_ua1,US2018002011A1,US2018002011A1_ua1,Bell / Textron,,,2,,2,script
+US2018044012A1_ua1,US2018044012A1,US2018044012A1_ua1,Bell / Textron,,,2,,2,script
+US2018079487A1_ua1,US2018079487A1,US2018079487A1_ua1,Bell / Textron,,,2,,2,script
+US2018334240A1_ua1,US2018334240A1,US2018334240A1_ua1,Bell / Textron,,,2,,2,script
+US2018339761A1_ua1,US2018339761A1,US2018339761A1_ua1,Bell / Textron,,,2,,2,script
+US2018339773A1_ua1,US2018339773A1,US2018339773A1_ua1,Bell / Textron,,,2,,2,script
+US2018354615A1_ua1,US2018354615A1,US2018354615A1_ua1,Bell / Textron,,,2,,2,script
+US2018354616A1_ua1,US2018354616A1,US2018354616A1_ua1,Bell / Textron,,,2,,2,script
+US2018362160A1_ua1,US2018362160A1,US2018362160A1_ua1,Bell / Textron,,,2,,2,script
+US2019031333A1_ua1,US2019031333A1,US2019031333A1_ua1,Bell / Textron,,,2,,2,script
+US2019100303A1_ua1,US2019100303A1,US2019100303A1_ua1,Bell / Textron,,,2,,2,script
+US2019100313A1_ua1,US2019100313A1,US2019100313A1_ua1,Bell / Textron,,,2,,2,script
+US2019135424A1_ua1,US2019135424A1,US2019135424A1_ua1,Bell / Textron,,,2,,2,script
+US2019135424A1_ua2,US2019135424A1,US2019135424A1_ua2,Bell / Textron,,,2,,2,script
+US2019135424A1_ua3,US2019135424A1,US2019135424A1_ua3,Bell / Textron,,,2,,2,script
+US2019144107A1_ua1,US2019144107A1,US2019144107A1_ua1,Bell / Textron,,,2,,2,script
+US2019144109A1_ua1,US2019144109A1,US2019144109A1_ua1,Bell / Textron,,,2,,2,script
+US2019144126A1_ua1,US2019144126A1,US2019144126A1_ua1,Bell / Textron,,,2,,2,script
+US2019277353A1_ua1,US2019277353A1,US2019277353A1_ua1,Bell / Textron,,,2,,2,script
+US2019389568A1_ua1,US2019389568A1,US2019389568A1_ua1,Bell / Textron,,,2,,2,script
+US2020055586A1_ua1,US2020055586A1,US2020055586A1_ua1,Bell / Textron,,,2,,2,script
+US2020115035A1_ua1,US2020115035A1,US2020115035A1_ua1,Bell / Textron,,,2,,2,script
+US2020140079A1_ua1,US2020140079A1,US2020140079A1_ua1,Bell / Textron,,,2,,2,script
+US2020164975A1_ua1,US2020164975A1,US2020164975A1_ua1,Bell / Textron,,,2,,2,script
+US2020223537A1_ua1,US2020223537A1,US2020223537A1_ua1,Bell / Textron,,,2,,2,script
+US2020361622A1_ua1,US2020361622A1,US2020361622A1_ua1,Bell / Textron,,,2,,2,script
+US2020391859A1_ua1,US2020391859A1,US2020391859A1_ua1,Bell / Textron,,,2,,2,script
+US2020391861A1_ua1,US2020391861A1,US2020391861A1_ua1,Bell / Textron,,,2,,2,script
+US2020391862A1_ua1,US2020391862A1,US2020391862A1_ua1,Bell / Textron,,,2,,2,script
+US2020398977A1_ua1,US2020398977A1,US2020398977A1_ua1,Bell / Textron,,,2,,2,script
+US2021047029A1_ua1,US2021047029A1,US2021047029A1_ua1,Bell / Textron,,,2,,2,script
+US2021094674A1_ua1,US2021094674A1,US2021094674A1_ua1,Bell / Textron,,,2,,2,script
+US2021107640A1_ua1,US2021107640A1,US2021107640A1_ua1,Bell / Textron,,,2,,2,script
+US2021107640A1_ua2,US2021107640A1,US2021107640A1_ua2,Bell / Textron,,,2,,2,script
+US2021269148A1_ua1,US2021269148A1,US2021269148A1_ua1,Bell / Textron,,,2,,2,script
+US2022306292A1_ua1,US2022306292A1,US2022306292A1_ua1,Bell / Textron,,,2,,2,script
+US2022306292A1_ua2,US2022306292A1,US2022306292A1_ua2,Bell / Textron,,,2,,2,script
+US2022306292A1_ua3,US2022306292A1,US2022306292A1_ua3,Bell / Textron,,,2,,2,script
+US2022306292A1_ua4,US2022306292A1,US2022306292A1_ua4,Bell / Textron,,,2,,2,script
+US2022306292A1_ua5,US2022306292A1,US2022306292A1_ua5,Bell / Textron,,,2,,2,script
+US2022306293A1_ua1,US2022306293A1,US2022306293A1_ua1,Bell / Textron,,,2,,2,script
+US2022324558A1_ua1,US2022324558A1,US2022324558A1_ua1,Bell / Textron,,,2,,2,script
+US2022324558A1_ua2,US2022324558A1,US2022324558A1_ua2,Bell / Textron,,,2,,2,script
+US2022371727A1_ua1,US2022371727A1,US2022371727A1_ua1,Bell / Textron,,,2,,2,script
+US2022371727A1_ua2,US2022371727A1,US2022371727A1_ua2,Bell / Textron,,,2,,2,script
+US2022371727A1_ua3,US2022371727A1,US2022371727A1_ua3,Bell / Textron,,,2,,2,script
+US2022371727A1_ua4,US2022371727A1,US2022371727A1_ua4,Bell / Textron,,,2,,2,script
+US2022388647A1_ua1,US2022388647A1,US2022388647A1_ua1,Bell / Textron,,,2,,2,script
+US2022388647A1_ua2,US2022388647A1,US2022388647A1_ua2,Bell / Textron,,,2,,2,script
+US2022388647A1_ua3,US2022388647A1,US2022388647A1_ua3,Bell / Textron,,,2,,2,script
+US2023056974A1_ua1,US2023056974A1,US2023056974A1_ua1,Bell / Textron,,,2,,2,script
+US2023091705A1_ua1,US2023091705A1,US2023091705A1_ua1,Bell / Textron,,,2,,2,script
+US2023331380A1_ua1,US2023331380A1,US2023331380A1_ua1,Bell / Textron,,,2,,2,script
+USD739335S_ua1,USD739335S,USD739335S_ua1,Bell / Textron,,,2,,2,script
+WO2025216782A2_ua1,WO2025216782A2,WO2025216782A2_ua1,Bell / Textron,,,2,,2,script
+US2022315236A1_ua1,US2022315236A1,Alia-250,Beta Technologies,beta-technologies-alia,The ALIA-250 is a five passenger electric vertical takeoff and landing (eVTOL) aircraft that can also be used for air cargo transportation for advanced air mobility (AAM).,6,,6,script
+US2006192046A1_ua1,US2006192046A1,US2006192046A1_ua1,Boeing,,,2,,2,script
+US2015375860A1_ua1,US2015375860A1,US2015375860A1_ua1,Boeing,,,2,,2,script
+US2016026190A1_ua1,US2016026190A1,US2016026190A1_ua1,Boeing,,,2,,2,script
+US2017159674A1_ua1,US2017159674A1,US2017159674A1_ua1,Boeing,,,2,,2,script
+US2019092461A1_ua1,US2019092461A1,US2019092461A1_ua1,Boeing,,,2,,2,script
+US2019332126A1_ua1,US2019332126A1,US2019332126A1_ua1,Boeing,,,2,,2,script
+US2019332126A1_ua2,US2019332126A1,US2019332126A1_ua2,Boeing,,,2,,2,script
+US2020324886A1_ua1,US2020324886A1,US2020324886A1_ua1,Boeing,,,2,,2,script
+US2022375449A1_ua1,US2022375449A1,US2022375449A1_ua1,Boeing,,,2,,2,script
+US8950698B1_ua1,US8950698B1,US8950698B1_ua1,Boeing,,,2,,2,script
+CN118343291A_ua1,CN118343291A,CN118343291A_ua1,CASIC,,,2,,2,script
+CN120024492A_ua1,CN120024492A,CN120024492A_ua1,CASIC,,,2,,2,script
+CN116374167A_ua1,CN116374167A,CN116374167A_ua1,CHRDI,,,2,,2,script
+US2022033071A1_ua1,US2022033071A1,US2022033071A1_ua1,Collins Aerospace,,,2,,2,script
+CN117682065A_ua1,CN117682065A,CN117682065A_ua1,COMAC Research Institute,,,2,,2,script
+US2019023393A1_ua1,US2019023393A1,CycloTech,CycloTech,,,2,2,2,author review
+DE102016001771A1_ua1,DE102016001771A1,DE102016001771A1_ua1,Daimler,,,2,,2,script
+US2014158816A1_ua1,US2014158816A1,DR-7,DeLorean Aerospace,,,2,,2,script
+US2018222580A1_ua1,US2018222580A1,US2018222580A1_ua1,DeLorean Aerospace,,,2,,2,script
+US2018222580A1_ua2,US2018222580A1,US2018222580A1_ua2,DeLorean Aerospace,,,2,,2,script
+US2018222580A1_ua3,US2018222580A1,US2018222580A1_ua3,DeLorean Aerospace,,,2,,2,script
+US2018222580A1_ua4,US2018222580A1,US2018222580A1_ua4,DeLorean Aerospace,,,2,,2,script
+US2023006598A1_ua1,US2023006598A1,US2023006598A1_ua1,Denso,,,2,,2,script
+US2024272652A1_ua1,US2024272652A1,US2024272652A1_ua1,Denso,,,2,,2,script
+US2022081107A1_ua1,US2022081107A1,H1,Doroni Aerospace,doroni-aerospace-h1-x,The range of the aircraft has been calculated to be 60 miles (97 km) with a projected flight time of 45 minutes.,6,,6,script
+US2025242909A1_ua1,US2025242909A1,US2025242909A1_ua1,Doroni Aerospace,,,2,,2,script
+US2020354048A1_ua1,US2020354048A1,EMBR3,Embraer / Eve,,,2,,2,script
+US2021354816A1_ua1,US2021354816A1,Pulse,Embraer / Eve,embraer-pulse-concept,"For Embraer’s 50th anniversary, Embraer Design Ops has designed a futuristic vertical takeoff and landing aircraft (VTOL), called the Pulse Concept, with the cabin being a removable pod which can be transferred to a ground vehicle and vice versa.",6,,6,script
+US2019329880A1_ua1,US2019329880A1,US2019329880A1_ua1,Embraer / Eve,,,2,,2,script
+US2020079501A1_ua1,US2020079501A1,US2020079501A1_ua1,Embraer / Eve,,,2,,2,script
+DE102012020498A1_ua1,DE102012020498A1,DE102012020498A1_ua1,EMT,,,2,,2,script
+DE102015000703A1_ua1,DE102015000703A1,DE102015000703A1_ua1,EMT,,,2,,2,script
+EP2570345A1_ua1,EP2570345A1,EP2570345A1_ua1,EMT,,,2,,2,script
+EP2570345A1_ua2,EP2570345A1,EP2570345A1_ua2,EMT,,,2,,2,script
+EP2669195A1_ua1,EP2669195A1,EP2669195A1_ua1,EMT,,,2,,2,script
+EP2669195A1_ua2,EP2669195A1,EP2669195A1_ua2,EMT,,,2,,2,script
+EP2669195A1_ua3,EP2669195A1,EP2669195A1_ua3,EMT,,,2,,2,script
+CN119611751A_ua1,CN119611751A,CN119611751A_ua1,Fujing Aircraft,,,2,,2,script
+CN119611752A_ua1,CN119611752A,CN119611752A_ua1,Fujing Aircraft,,,2,,2,script
+US2018229606A1_ua1,US2018229606A1,US2018229606A1_ua1,General Electric,,,2,,2,script
+US2018362155A1_ua1,US2018362155A1,US2018362155A1_ua1,General Electric,,,2,,2,script
+US2019023391A1_ua1,US2019023391A1,US2019023391A1_ua1,General Electric,,,2,,2,script
+GB202210440D0_ua1,GB202210440D0,GB202210440D0_ua1,GKN Aerospace,,,2,,2,script
+US2022266995A1_ua1,US2022266995A1,US2022266995A1_ua1,GKN Aerospace,,,2,,2,script
+US2024246669A1_ua1,US2024246669A1,US2024246669A1_ua1,GreenSky,,,2,,2,script
+US2021107639A1_ua1,US2021107639A1,US2021107639A1_ua1,Hi-Lite Aircraft,,,2,,2,script
+US2023322376A1_ua1,US2023322376A1,US2023322376A1_ua1,Hi-Lite Aircraft,,,2,,2,script
+US2024190562A1_ua1,US2024190562A1,Honda eVTOL,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,,6,script
+US2024059393A1_ua1,US2024059393A1,Honda eVTOL v1,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,6,6,author review
+US2023192285A1_ua1,US2023192285A1,Honda eVTOL v2,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,,6,script
+US2023192289A1_ua1,US2023192289A1,Honda eVTOL v3,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,,6,script
+US2024300643A1_ua1,US2024300643A1,Honda eVTOL v4,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,6,6,author review
+US2024300643A1_ua2,US2024300643A1,Honda eVTOL v5,Honda,honda-evtol,"In a very short segment of the video, Honda also plans on making an all-electric or a hybrid-electric or possibly both, vertical takeoff and landing (VTOL) aircraft for advanced air mobility (AAM) and expects it to be in service sometime after 2030.",6,,6,script
+US2021101675A1_ua1,US2021101675A1,US2021101675A1_ua1,Honda,,,2,,2,script
+US2021188427A1_ua1,US2021188427A1,US2021188427A1_ua1,Honda,,,2,,2,script
+US2025304243A1_ua1,US2025304243A1,US2025304243A1_ua1,Honda,,,2,,2,script
+US2006192047A1_ua1,US2006192047A1,US2006192047A1_ua1,Honeywell,,,2,,2,script
+US2021086897A1_ua1,US2021086897A1,Venturi,Hop Flyt,hopflyt,The Venturi design can take off and land vertically and fly like a conventional aircraft during cruise.,6,,6,script
+WO2025236002A1_ua1,WO2025236002A1,Venturi v1,Hop Flyt,hopflyt,The Venturi design can take off and land vertically and fly like a conventional aircraft during cruise.,6,,6,script
+WO2025106962A1_ua1,WO2025106962A1,WO2025106962A1_ua1,Hop Flyt,,,2,,2,script
+US11001377B1_ua1,US11001377B1,Cavorite X5,Horizon Aircraft,horizon-aircraft-cavorite-x5,The aircraft has a patented fan in wing system allowing for VTOL flight and has a pusher propeller forward flight allowing the plane to fly as a conventional airplane.,6,5,5,author review
+US2019308723A1_ua1,US2019308723A1,US2019308723A1_ua1,Hoversurf,,,2,,2,script
+CN116215850A_ua1,CN116215850A,CN116215850A_ua1,Hubei Aerospace Institute,,,2,,2,script
+US2022126998A1_ua1,US2022126998A1,Supernal,Hyundai,supernal-hyundai-motor-group-s-a2-concept-design,Supernal S-A2 passenger and air cargo eVTOL concept design on flight pad,6,2,2,author review
+WO2025116483A1_ua1,WO2025116483A1,Supernal v1,Hyundai,hyundai-s-a1,"6, 2020 during the Consumer Electronics Show (CES) in Las Vegas, Nevada, USA, Uber and Hyundai Motor Company announced a new partnership to develop Uber Air Taxis for Uber's future aerial ride share network and Hyundai also unveiled their new full-scale electric vertical takeoff and landing (eVTOL) aircraft mock-up named the S-A1.",6,2,2,author review
+US2022144443A1_ua1,US2022144443A1,US2022144443A1_ua1,Hyundai,,,2,,2,script
+US2022169373A1_ua1,US2022169373A1,US2022169373A1_ua1,Hyundai,,,2,,2,script
+US2022194618A1_ua1,US2022194618A1,US2022194618A1_ua1,Hyundai,,,2,,2,script
+US2012091257A1_ua1,US2012091257A1,US2012091257A1_ua1,IAI,,,2,,2,script
+US2012091257A1_ua2,US2012091257A1,Panther,IAI,,,2,,2,script
+US2015053826A1_ua1,US2015053826A1,US2015053826A1_ua1,IHI,,,2,,2,script
+JP7438589B1_ua1,JP7438589B1,JP7438589B1_ua1,Ishikawa Energy Research,,,2,,2,script
+WO2024252755A1_ua1,WO2024252755A1,WO2024252755A1_ua1,JAXA,,,2,,2,script
+WO2024252755A1_ua2,WO2024252755A1,WO2024252755A1_ua2,JAXA,,,2,,2,script
+CN120863861A_ua1,CN120863861A,CN120863861A_ua1,Jiangxi Handun Duoyu,,,2,,2,script
+CN120863865A_ua1,CN120863865A,CN120863865A_ua1,Jiangxi Handun Duoyu,,,2,,2,script
+US2016031556A1_ua1,US2016031556A1,S4,Joby Aviation,joby-aviation-s4-10-technology-demonstrator,"13, 2017 and is most likely a picture of the aircraft’s first full conversion to wingborne flight, following its first hover flight in April 2017.",6,7,7,author review
+US2018290736A1_ua1,US2018290736A1,S4 v1,Joby Aviation,,,2,2,2,author review
+US11465737B1_ua1,US11465737B1,S4 v2,Joby Aviation,joby-s4,"25, 2020 Aviation Week article included the first photo of the aircraft in flight (other than a photo in January with it hovering just a few feet off the ground) and reiterated that the original unmanned prototype sized for four seats is referred to as ""1.0"" and the second aircraft, sized for five seats, is referred to as ""2.0"" or ""second generation.""",6,7,7,author review
+US2020010187A1_ua1,US2020010187A1,S4 v3,Joby Aviation,joby-aviation-s4-10-technology-demonstrator,"13, 2017 and is most likely a picture of the aircraft’s first full conversion to wingborne flight, following its first hover flight in April 2017.",6,,6,script
+EP3119674A2_ua1,EP3119674A2,EP3119674A2_ua1,Joby Aviation,,,2,,2,script
+US2015028151A1_ua1,US2015028151A1,US2015028151A1_ua1,Joby Aviation,,,2,,2,script
+US2020361601A1_ua1,US2020361601A1,US2020361601A1_ua1,Joby Aviation,,,2,,2,script
+US2026054830A1_ua1,US2026054830A1,US2026054830A1_ua1,Joby Aviation,,,2,,2,script
+US2025340290A1_ua1,US2025340290A1,Butterfly,Karem Aircraft,,,2,,2,script
+US2009224096A1_ua1,US2009224096A1,US2009224096A1_ua1,Karem Aircraft,,,2,,2,script
+US2011024552A1_ua1,US2011024552A1,US2011024552A1_ua1,Karem Aircraft,,,2,,2,script
+US2018346111A1_ua1,US2018346111A1,US2018346111A1_ua1,Karem Aircraft,,,2,,2,script
+KR20230089903A_ua1,KR20230089903A,OPPAV,KARI,,,2,,2,script
+KR20230075012A_ua1,KR20230075012A,Quad Tilt-Prop UAV,KARI,,,2,,2,script
+KR100555176B1_ua1,KR100555176B1,KR100555176B1_ua1,KARI,,,2,,2,script
+KR100822366B1_ua1,KR100822366B1,KR100822366B1_ua1,KARI,,,2,,2,script
+KR20240080620A_ua1,KR20240080620A,KR20240080620A_ua1,KARI,,,2,,2,script
+KR20250038333A_ua1,KR20250038333A,KR20250038333A_ua1,KARI,,,2,,2,script
+US2013026302A1_ua1,US2013026302A1,US2013026302A1_ua1,KARI,,,2,,2,script
+US2018105267A1_ua1,US2018105267A1,Cora,Kitty Hawk,wisk-aero-formerly-kitty-hawk-cora-generation-4,"The aircraft made 1,311 test flights during 2017-2018.",6,,6,script
+US9975631B1_ua1,US9975631B1,Cora v1,Kitty Hawk,,,2,2,2,author review
+US10526079B1_ua1,US10526079B1,Flyer,Kitty Hawk,kitty-hawk-flyer,The Kitty Hawk Flyer is an electric vertical takeoff and landing (eVTOL) aircraft designed for Urban Air Mobility (UAM).,6,,6,script
+USD892710S_ua1,USD892710S,Heaviside,Kitty Hawk,kitty-hawk-heaviside,"On October 3, 2019, Kitty Hawk revealed they’ve been secretly working for two years on a single-seat electric vertical takeoff and landing (eVTOL) aircraft called Heaviside (HVSD).",6,6,6,author review
+US2022402603A1_ua1,US2022402603A1,Heaviside v1,Kitty Hawk,kitty-hawk-heaviside,"On October 3, 2019, Kitty Hawk revealed they’ve been secretly working for two years on a single-seat electric vertical takeoff and landing (eVTOL) aircraft called Heaviside (HVSD).",6,,6,script
+US2018086448A1_ua1,US2018086448A1,Wisk Aero,Kitty Hawk,,,2,,2,script
+US9764833B1_ua1,US9764833B1,Wisk Aero v1,Kitty Hawk,wisk-aero-formerly-zee-aero-z-p2-generation-3,The aircraft made 70 test flights from 2015-2017.,6,6,6,author review
+US2017341740A1_ua1,US2017341740A1,US2017341740A1_ua1,Kitty Hawk,,,2,,2,script
+US2018044011A1_ua1,US2018044011A1,US2018044011A1_ua1,Kitty Hawk,,,2,,2,script
+US2018044011A1_ua2,US2018044011A1,US2018044011A1_ua2,Kitty Hawk,,,2,,2,script
+US9957042B1_ua1,US9957042B1,US9957042B1_ua1,Kitty Hawk,,,2,,2,script
+US2022355923A1_ua1,US2022355923A1,US2022355923A1_ua1,Kymatics,,,2,,2,script
+US2022073201A1_ua1,US2022073201A1,AW609,Leonardo,,,2,7,7,author review
+US2024167561A1_ua1,US2024167561A1,AW609 v1,Leonardo,,,2,,2,script
+US2024270378A1_ua1,US2024270378A1,Leonardo,Leonardo,leonardo-helicopters-unnamed-evtol,"In 2013, the company had announced its research team had created an uncrewed electric vertical takeoff and landing (eVTOL) hybrid tilt-rotor/fan-in-wing technology incubator aircraft named Project Zero .",6,2,2,author review
+US2025304249A1_ua1,US2025304249A1,Leonardo v1,Leonardo,agustawestland-project-zero,"Project Zero was an uncrewed electric vertical takeoff and landing (eVTOL) hybrid tilt-rotor/fan-in-wing technology incubator created by Leonardo Helicopters (at the time, the company's name was AgustaWestland).",6,,6,script
+US2013026303A1_ua1,US2013026303A1,Project Zero,Leonardo,agustawestland-project-zero,"Project Zero was an uncrewed electric vertical takeoff and landing (eVTOL) hybrid tilt-rotor/fan-in-wing technology incubator created by Leonardo Helicopters (at the time, the company's name was AgustaWestland).",6,,6,script
+EP4653315A1_ua1,EP4653315A1,EP4653315A1_ua1,Leonardo,,,2,,2,script
+EP4653315A1_ua2,EP4653315A1,EP4653315A1_ua2,Leonardo,,,2,,2,script
+EP4748710A1_ua1,EP4748710A1,EP4748710A1_ua1,Leonardo,,,2,,2,script
+EP4748711A1_ua1,EP4748711A1,EP4748711A1_ua1,Leonardo,,,2,,2,script
+US2023025366A1_ua1,US2023025366A1,US2023025366A1_ua1,Leonardo,,,2,,2,script
+DE102015017425B3_ua1,DE102015017425B3,Lilium Eagle,Lilium,lilium-jet-prototype-eagle,"The Lilium Eagle electric vertical takeoff and landing (eVTOL) prototype two passenger jet was designed to demonstrate the company's initial two seat aircraft which was to have a cruising speed of 300 km/h (186 mph, 160 kt), a range of 300 km (186 miles) and a payload of 200 kg (440 lb).",6,,6,script
+EP3998191A1_ua1,EP3998191A1,Lilium Eagle v1,Lilium,lilium-jet-prototype-eagle,"The Lilium Eagle electric vertical takeoff and landing (eVTOL) prototype two passenger jet was designed to demonstrate the company's initial two seat aircraft which was to have a cruising speed of 300 km/h (186 mph, 160 kt), a range of 300 km (186 miles) and a payload of 200 kg (440 lb).",6,6,6,author review
+BR112023017877B1_ua1,BR112023017877B1,Lilium Jet,Lilium,lilium-gmbh-lilium-jet-7-seater,Wiegand originally conceived the basic electric Vertical and Take-Off and Landing (eVTOL) jet concept in 2013.,6,,6,script
+EP4506770A1_ua1,EP4506770A1,Lilium Jet v1,Lilium,lilium-gmbh-lilium-jet-7-seater,Wiegand originally conceived the basic electric Vertical and Take-Off and Landing (eVTOL) jet concept in 2013.,6,,6,script
+EP3998209A1_ua1,EP3998209A1,EP3998209A1_ua1,Lilium,,,2,,2,script
+EP3998209A1_ua2,EP3998209A1,EP3998209A1_ua2,Lilium,,,2,,2,script
+EP3998209A1_ua3,EP3998209A1,EP3998209A1_ua3,Lilium,,,2,,2,script
+US2023257103A1_ua1,US2023257103A1,S-97 Raider,Lockheed Martin,,,2,7,7,author review
+US2018118335A1_ua1,US2018118335A1,US2018118335A1_ua1,Lockheed Martin,,,2,,2,script
+US2023192280A1_ua1,US2023192280A1,US2023192280A1_ua1,Lockheed Martin,,,2,,2,script
+US2025256840A1_ua1,US2025256840A1,US2025256840A1_ua1,Lockheed Martin,,,2,,2,script
+US2024417073A1_ua1,US2024417073A1,US2024417073A1_ua1,Method Aeronautics,,,2,,2,script
+CN113443135A_ua1,CN113443135A,CN113443135A_ua1,Mitsubishi,,,2,,2,script
+US2021291973A1_ua1,US2021291973A1,US2021291973A1_ua1,Mitsubishi,,,2,,2,script
+US2023257132A1_ua1,US2023257132A1,US2023257132A1_ua1,Mitsubishi,,,2,,2,script
+US2024246668A1_ua1,US2024246668A1,US2024246668A1_ua1,Mitsubishi,,,2,,2,script
+CN114620226A_ua1,CN114620226A,CN114620226A_ua1,Nanchang Hangkong University,,,2,,2,script
+US2016244158A1_ua1,US2016244158A1,GL-10 Greased Lightning,NASA,,,2,,2,script
+US2016200436A1_ua1,US2016200436A1,US2016200436A1_ua1,NASA,,,2,,2,script
+US2019061936A1_ua1,US2019061936A1,US2019061936A1_ua1,NASA,,,2,,2,script
+US2021331791A1_ua1,US2021331791A1,US2021331791A1_ua1,NASA,,,2,,2,script
+US2024375799A1_ua1,US2024375799A1,US2024375799A1_ua1,NASA,,,2,,2,script
+GB201817002D0_ua1,GB201817002D0,eOpter,Neoptera,neoptera,"As a result, Neoptera has patented a simple concept featuring a single mechanism that does not contribute directly to the transition (from vertical to level flight and back) resulting in greatly improved safety and reliability.""",6,5,5,author review
+CN113844647A_ua1,CN113844647A,CN113844647A_ua1,Northwestern Polytechnic University,,,2,,2,script
+CN120270494A_ua1,CN120270494A,CN120270494A_ua1,Northwestern Polytechnic University,,,2,,2,script
+US2023303454A1_ua1,US2023303454A1,US2023303454A1_ua1,NTN Corporation,,,2,,2,script
+CN108674654A_ua1,CN108674654A,CN108674654A_ua1,NUAA,,,2,,2,script
+CN118457914A_ua1,CN118457914A,CN118457914A_ua1,NUAA,,,2,,2,script
+CN114684361A_ua1,CN114684361A,CN114684361A_ua1,NUDT,,,2,,2,script
+US2021229802A1_ua1,US2021229802A1,Butterfly v1,Overair,overair-butterfly,"The Butterfly configuration solves the trade-off between hover and cruise efficiency, creating an optimal vehicle configuration for advanced air mobility (AAM).",6,,6,script
+US2021229802A1_ua2,US2021229802A1,Butterfly v2,Overair,overair-butterfly,"The Butterfly configuration solves the trade-off between hover and cruise efficiency, creating an optimal vehicle configuration for advanced air mobility (AAM).",6,5,5,author review
+DE102023108565B3_ua1,DE102023108565B3,Porsche-Boeing concept,P3X,,,2,,2,script
+DE202024104657U1_ua1,DE202024104657U1,DE202024104657U1_ua1,Phoenix Aircraft,,,2,,2,script
+US10053213B1_ua1,US10053213B1,US10053213B1_ua1,Pinnacle Vista,,,2,,2,script
+US12325540B1_ua1,US12325540B1,Nuuva V300,Pipistrel,,,2,,2,script
+US2021371117A1_ua1,US2021371117A1,Porsche-Boeing concept v1,Porsche,,,2,,2,script
+DE102023133781B3_ua1,DE102023133781B3,Porsche-Boeing concept v2,Porsche,,,2,2,2,author review
+DE102018116158A1_ua1,DE102018116158A1,DE102018116158A1_ua1,Porsche,,,2,,2,script
+DE102024102439A1_ua1,DE102024102439A1,DE102024102439A1_ua1,Porsche,,,2,,2,script
+DE102024102441A1_ua1,DE102024102441A1,DE102024102441A1_ua1,Porsche,,,2,,2,script
+DE102024105440A1_ua1,DE102024105440A1,DE102024105440A1_ua1,Porsche,,,2,,2,script
+DE102024105448A1_ua1,DE102024105448A1,DE102024105448A1_ua1,Porsche,,,2,,2,script
+US2020010188A1_ua1,US2020010188A1,US2020010188A1_ua1,Porsche,,,2,,2,script
+DE102024122189A1_ua1,DE102024122189A1,DE102024122189A1_ua1,Rolls-Royce,,,2,,2,script
+US11688723B1_ua1,US11688723B1,US11688723B1_ua1,Rolls-Royce,,,2,,2,script
+US2020023963A1_ua1,US2020023963A1,US2020023963A1_ua1,Rolls-Royce,,,2,,2,script
+US2021122465A1_ua1,US2021122465A1,US2021122465A1_ua1,Rolls-Royce,,,2,,2,script
+US2024154490A1_ua1,US2024154490A1,US2024154490A1_ua1,Rolls-Royce,,,2,,2,script
+FR3115264A1_ua1,FR3115264A1,FR3115264A1_ua1,Safran,,,2,,2,script
+FR3136745A1_ua1,FR3136745A1,FR3136745A1_ua1,Safran,,,2,,2,script
+CN113022848A_ua1,CN113022848A,CN113022848A_ua1,Shanghai Shangshi Energy,,,2,,2,script
+CN113998098A_ua1,CN113998098A,CN113998098A_ua1,Shanghai Shangshi Energy,,,2,,2,script
+CN116443246A_ua1,CN116443246A,E20,Shanghai Shidi Technology,tcab-tech-e20,The E20 has no single point of failure in the flight control system and in the propulsion system.,6,,6,script
+CN109263907A_ua1,CN109263907A,CN109263907A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263910A_ua1,CN109263910A,CN109263910A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263914A_ua1,CN109263914A,CN109263914A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263926A_ua1,CN109263926A,CN109263926A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263932A_ua1,CN109263932A,CN109263932A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263945A_ua1,CN109263945A,CN109263945A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263947A_ua1,CN109263947A,CN109263947A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263949A_ua1,CN109263949A,CN109263949A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263961A_ua1,CN109263961A,CN109263961A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263968A_ua1,CN109263968A,CN109263968A_ua1,Shenfeng Aviation,,,2,,2,script
+CN109263981A_ua1,CN109263981A,CN109263981A_ua1,Shenfeng Aviation,,,2,,2,script
+US2017101176A1_ua1,US2017101176A1,US2017101176A1_ua1,Sikorsky,,,2,,2,script
+US2017101176A1_ua2,US2017101176A1,US2017101176A1_ua2,Sikorsky,,,2,,2,script
+US2017183091A1_ua1,US2017183091A1,US2017183091A1_ua1,Sikorsky,,,2,,2,script
+US2017336809A1_ua1,US2017336809A1,US2017336809A1_ua1,Sikorsky,,,2,,2,script
+US2019084684A1_ua1,US2019084684A1,US2019084684A1_ua1,Sikorsky,,,2,,2,script
+US2022097835A1_ua1,US2022097835A1,US2022097835A1_ua1,Subaru,,,2,,2,script
+US2024150013A1_ua1,US2024150013A1,US2024150013A1_ua1,Subaru,,,2,,2,script
+CN119872875A_ua1,CN119872875A,CN119872875A_ua1,Sun Yat-sen University,,,2,,2,script
+CN120503960A_ua1,CN120503960A,CN120503960A_ua1,Sun Yat-sen University,,,2,,2,script
+EP3290334A1_ua1,EP3290334A1,EP3290334A1_ua1,Sunlight Photonics,,,2,,2,script
+EP3290334A1_ua2,EP3290334A1,EP3290334A1_ua2,Sunlight Photonics,,,2,,2,script
+US2024253779A1_ua1,US2024253779A1,S-A1,Supernal,,,2,,2,script
+WO2024151705A1_ua1,WO2024151705A1,S-A1 v1,Supernal,,,2,2,2,author review
+WO2026024461A1_ua1,WO2026024461A1,S-A2,Supernal,supernal-hyundai-motor-group-s-a2-concept-design,Supernal S-A2 passenger and air cargo eVTOL concept design on flight pad,6,6,6,author review
+US2023339601A1_ua1,US2023339601A1,US2023339601A1_ua1,Supernal,,,2,,2,script
+US2025042543A1_ua1,US2025042543A1,Mk-5,Tetra Aviation,tetra-aviation-mk-5,"In October 2021, teTra Aviation released a video of an experimental prototype of the Mk-5, referred to by the company as the SN2, performing an uncrewed test flight in an airfield in California.",6,6,6,author review
+WO2022180755A1_ua1,WO2022180755A1,Mk-5 v1,Tetra Aviation,tetra-aviation-mk-5,"In October 2021, teTra Aviation released a video of an experimental prototype of the Mk-5, referred to by the company as the SN2, performing an uncrewed test flight in an airfield in California.",6,,6,script
+CN114180048A_ua1,CN114180048A,CN114180048A_ua1,Tianjin Air Technology,,,2,,2,script
+CN114180048A_ua2,CN114180048A,CN114180048A_ua2,Tianjin Air Technology,,,2,,2,script
+US2019135413A1_ua1,US2019135413A1,eCRM,Uber Elevate,uber-elevate-ecrm-001,Uber’s eCRM-001 has four sets of stacked co-rotating propellers for vertical flight located on the tops of booms and on the fuselage and has one M-wing for forward flight.,6,,6,script
+US2019337614A1_ua1,US2019337614A1,eCRM v1,Uber Elevate,uber-elevate-ecrm-001,Uber’s eCRM-001 has four sets of stacked co-rotating propellers for vertical flight located on the tops of booms and on the fuselage and has one M-wing for forward flight.,6,2,2,author review
+US2020156778A1_ua1,US2020156778A1,US2020156778A1_ua1,Uber Elevate,,,2,,2,script
+US2020156778A1_ua2,US2020156778A1,US2020156778A1_ua2,Uber Elevate,,,2,,2,script
+US2021122466A1_ua1,US2021122466A1,US2021122466A1_ua1,Uber Elevate,,,2,,2,script
+GB202410221D0_ua1,GB202410221D0,VX4,Vertical Aerospace,vertical-aerospace-va-1x,"The prototype, named Seraph, completed its maiden flight at Llanbedr Airfield in Wales on Aug.",6,,6,script
+US2020369363A1_ua1,US2020369363A1,VoloCity,Volocopter,volocopter-volocity,"The company is poised to use the Pointoise Airfield's dedicated testing area, currently in planning, to perform test flights of the Volocity production model.",6,7,7,author review
+US2022281593A1_ua1,US2022281593A1,VoloConnect,Volocopter,volocopter-voloconnect,"During flight tests, no passengers traveled in the prototype aircraft.",6,,6,script
+DE102023135708A1_ua1,DE102023135708A1,DE102023135708A1_ua1,Volocopter,,,2,,2,script
+US2020407055A1_ua1,US2020407055A1,US2020407055A1_ua1,Volocopter,,,2,,2,script
+US2024002034A1_ua1,US2024002034A1,Whisper Jet,Whisper Aero,,,2,5,5,author review
+US2024409209A1_ua1,US2024409209A1,US2024409209A1_ua1,Whisper Aero,,,2,,2,script
+US2021245873A1_ua1,US2021245873A1,Cora v2,Wisk Aero,wisk-aero-formerly-kitty-hawk-cora-generation-4,"The aircraft made 1,311 test flights during 2017-2018.",6,7,7,author review
+US2022126996A1_ua1,US2022126996A1,Generation 6,Wisk Aero,wisk-aero-generation-6,"The first test flight of the aircraft took place on December 16, 2025 at 12:26 p.m.",6,6,6,author review
+US12486026B1_ua1,US12486026B1,Generation 6 v1,Wisk Aero,wisk-aero-generation-6,"The first test flight of the aircraft took place on December 16, 2025 at 12:26 p.m.",6,6,6,author review
+US2023234705A1_ua1,US2023234705A1,US2023234705A1_ua1,Wisk Aero,,,2,,2,script
+CN119262274A_ua1,CN119262274A,AE200,Wofei / Geely Aviation,,,2,,2,script
+CN119231794A_ua1,CN119231794A,CN119231794A_ua1,Wofei / Geely Aviation,,,2,,2,script
+CN114449860A_ua1,CN114449860A,CN114449860A_ua1,Wollant Aviation,,,2,,2,script
+CN121158211A_ua1,CN121158211A,CN121158211A_ua1,Wollant Aviation,,,2,,2,script
+CN110450948A_ua1,CN110450948A,CN110450948A_ua1,Xi'an Inno Aviation,,,2,,2,script
+CN110450948A_ua2,CN110450948A,CN110450948A_ua2,Xi'an Inno Aviation,,,2,,2,script
+CN117341965A_ua1,CN117341965A,CN117341965A_ua1,Zhejiang University,,,2,,2,script
+CN117465666A_ua1,CN117465666A,CN117465666A_ua1,Zhejiang University,,,2,,2,script
+US2019161188A1_ua1,US2019161188A1,US2019161188A1_ua1,ZIPAIR,,,2,,2,script
+US2025136287A1_ua1,US2025136287A1,US2025136287A1_ua1,ZIPAIR,,,2,,2,script
+US2023211877A1_ua1,US2023211877A1,Zuri 2.0,Zuri,zuri-20,Zuri 2.0 passenger VTOL aircraft (prior version) flying rear view.,6,5,5,author review
+EP3974315A1_ua1,EP3974315A1,EP3974315A1_ua1,Zuri,,,2,,2,script
+EP3974315A1_ua2,EP3974315A1,EP3974315A1_ua2,Zuri,,,2,,2,script
+EP3974315A1_ua3,EP3974315A1,EP3974315A1_ua3,Zuri,,,2,,2,script
+EP3974315A1_ua4,EP3974315A1,EP3974315A1_ua4,Zuri,,,2,,2,script
+GB201801766D0_ua1,GB201801766D0,e-Starling,Individual Inventor,,,2,,2,script
+US2021078701A1_ua1,US2021078701A1,eCruzer,Individual Inventor,sharifzadeh-zero-g-ecruzer,"Sharifzadeh is back again and has created the Zero G eCruzer six to eight passenger hybrid-electric vertical takeoff and landing (VTOL) aircraft for clean, intercity (between two cities) air travel.",6,2,2,author review
+GB201801059D0_ua1,GB201801059D0,eOpter v1,Individual Inventor,neoptera,"As a result, Neoptera has patented a simple concept featuring a single mechanism that does not contribute directly to the transition (from vertical to level flight and back) resulting in greatly improved safety and reliability.""",6,,6,script
+US2021053672A1_ua1,US2021053672A1,GyroBike,Individual Inventor,,,2,,2,script
+US2021053672A1_ua2,US2021053672A1,US2021053672A1_ua2,Individual Inventor,,,2,,2,script
+US2021061456A1_ua1,US2021061456A1,Mad Bat,Individual Inventor,,,2,,2,script
+US2011042510A1_ua1,US2011042510A1,Monarch,Individual Inventor,joby-s4-monarch,"The company combines elements of helicopters and small airplanes, offering benefits that include high reliability, zero emissions, fast flight speeds, quiet operations, lower operating costs, lower costs of maintenance, and enhanced safety features.",6,,6,script
+RU2657650C1_ua1,RU2657650C1,RU2657650C1_ua1,Individual Inventor,,,2,,2,script
+RU2657650C1_ua2,RU2657650C1,Scorpion,Individual Inventor,hoversurf-scorpion-d,Hover Scorpion D,6,2,2,author review
+AT503689A1_ua1,AT503689A1,AT503689A1_ua1,Individual Inventor,,,2,,2,script
+AU2020100605A4_ua1,AU2020100605A4,AU2020100605A4_ua1,Individual Inventor,,,2,,2,script
+AU2020100605A4_ua2,AU2020100605A4,AU2020100605A4_ua2,Individual Inventor,,,2,,2,script
+AU2020100605A4_ua3,AU2020100605A4,AU2020100605A4_ua3,Individual Inventor,,,2,,2,script
+CA2874341A1_ua1,CA2874341A1,CA2874341A1_ua1,Individual Inventor,,,2,,2,script
+CA2947683A1_ua1,CA2947683A1,CA2947683A1_ua1,Individual Inventor,,,2,,2,script
+CA2963502A1_ua1,CA2963502A1,CA2963502A1_ua1,Individual Inventor,,,2,,2,script
+CN104229137A_ua1,CN104229137A,CN104229137A_ua1,Individual Inventor,,,2,,2,script
+CN105836121A_ua1,CN105836121A,CN105836121A_ua1,Individual Inventor,,,2,,2,script
+CN106314794A_ua1,CN106314794A,CN106314794A_ua1,Individual Inventor,,,2,,2,script
+CN106965928A_ua1,CN106965928A,CN106965928A_ua1,Individual Inventor,,,2,,2,script
+CN108163193A_ua1,CN108163193A,CN108163193A_ua1,Individual Inventor,,,2,,2,script
+CN108502167A_ua1,CN108502167A,CN108502167A_ua1,Individual Inventor,,,2,,2,script
+CN108657426A_ua1,CN108657426A,CN108657426A_ua1,Individual Inventor,,,2,,2,script
+CN108688803A_ua1,CN108688803A,CN108688803A_ua1,Individual Inventor,,,2,,2,script
+CN109606635A_ua1,CN109606635A,CN109606635A_ua1,Individual Inventor,,,2,,2,script
+CN111056002A_ua1,CN111056002A,CN111056002A_ua1,Individual Inventor,,,2,,2,script
+CN111846213A_ua1,CN111846213A,CN111846213A_ua1,Individual Inventor,,,2,,2,script
+CN111846213A_ua2,CN111846213A,CN111846213A_ua2,Individual Inventor,,,2,,2,script
+CN111846213A_ua3,CN111846213A,CN111846213A_ua3,Individual Inventor,,,2,,2,script
+CN111874224A_ua1,CN111874224A,CN111874224A_ua1,Individual Inventor,,,2,,2,script
+CN113247244A_ua1,CN113247244A,CN113247244A_ua1,Individual Inventor,,,2,,2,script
+CN113306714A_ua1,CN113306714A,CN113306714A_ua1,Individual Inventor,,,2,,2,script
+CN114056558A_ua1,CN114056558A,CN114056558A_ua1,Individual Inventor,,,2,,2,script
+CN114435591A_ua1,CN114435591A,CN114435591A_ua1,Individual Inventor,,,2,,2,script
+CN114735209A_ua1,CN114735209A,CN114735209A_ua1,Individual Inventor,,,2,,2,script
+CN115285345A_ua1,CN115285345A,CN115285345A_ua1,Individual Inventor,,,2,,2,script
+CN115447786A_ua1,CN115447786A,CN115447786A_ua1,Individual Inventor,,,2,,2,script
+CN115583348A_ua1,CN115583348A,CN115583348A_ua1,Individual Inventor,,,2,,2,script
+CN118439173A_ua1,CN118439173A,CN118439173A_ua1,Individual Inventor,,,2,,2,script
+CN118701285A_ua1,CN118701285A,CN118701285A_ua1,Individual Inventor,,,2,,2,script
+CN119262283A_ua1,CN119262283A,CN119262283A_ua1,Individual Inventor,,,2,,2,script
+CN120191516A_ua1,CN120191516A,CN120191516A_ua1,Individual Inventor,,,2,,2,script
+CN120863869A_ua1,CN120863869A,CN120863869A_ua1,Individual Inventor,,,2,,2,script
+CN120887008A_ua1,CN120887008A,CN120887008A_ua1,Individual Inventor,,,2,,2,script
+CN1907806A_ua1,CN1907806A,CN1907806A_ua1,Individual Inventor,,,2,,2,script
+CN202728574U_ua1,CN202728574U,CN202728574U_ua1,Individual Inventor,,,2,,2,script
+DE10028631A1_ua1,DE10028631A1,DE10028631A1_ua1,Individual Inventor,,,2,,2,script
+DE102007055313A1_ua1,DE102007055313A1,DE102007055313A1_ua1,Individual Inventor,,,2,,2,script
+DE102008044812A1_ua1,DE102008044812A1,DE102008044812A1_ua1,Individual Inventor,,,2,,2,script
+DE102013001852A1_ua1,DE102013001852A1,DE102013001852A1_ua1,Individual Inventor,,,2,,2,script
+DE102016011273A1_ua1,DE102016011273A1,DE102016011273A1_ua1,Individual Inventor,,,2,,2,script
+DE102017122359A1_ua1,DE102017122359A1,DE102017122359A1_ua1,Individual Inventor,,,2,,2,script
+DE102019001240A1_ua1,DE102019001240A1,DE102019001240A1_ua1,Individual Inventor,,,2,,2,script
+DE102019001834A1_ua1,DE102019001834A1,DE102019001834A1_ua1,Individual Inventor,,,2,,2,script
+DE102019004808A1_ua1,DE102019004808A1,DE102019004808A1_ua1,Individual Inventor,,,2,,2,script
+DE102019006484B3_ua1,DE102019006484B3,DE102019006484B3_ua1,Individual Inventor,,,2,,2,script
+DE102019009187A1_ua1,DE102019009187A1,DE102019009187A1_ua1,Individual Inventor,,,2,,2,script
+DE202013011072U1_ua1,DE202013011072U1,DE202013011072U1_ua1,Individual Inventor,,,2,,2,script
+DE202014004877U1_ua1,DE202014004877U1,DE202014004877U1_ua1,Individual Inventor,,,2,,2,script
+DE202014004877U1_ua2,DE202014004877U1,DE202014004877U1_ua2,Individual Inventor,,,2,,2,script
+DE202014004877U1_ua3,DE202014004877U1,DE202014004877U1_ua3,Individual Inventor,,,2,,2,script
+DE202015007089U1_ua1,DE202015007089U1,DE202015007089U1_ua1,Individual Inventor,,,2,,2,script
+DE202016005012U1_ua1,DE202016005012U1,DE202016005012U1_ua1,Individual Inventor,,,2,,2,script
+DE202018002525U1_ua1,DE202018002525U1,DE202018002525U1_ua1,Individual Inventor,,,2,,2,script
+DE202019002731U1_ua1,DE202019002731U1,DE202019002731U1_ua1,Individual Inventor,,,2,,2,script
+DE202023102941U1_ua1,DE202023102941U1,DE202023102941U1_ua1,Individual Inventor,,,2,,2,script
+EP4339109A1_ua1,EP4339109A1,EP4339109A1_ua1,Individual Inventor,,,2,,2,script
+ES2268941A1_ua1,ES2268941A1,ES2268941A1_ua1,Individual Inventor,,,2,,2,script
+ES2288083A1_ua1,ES2288083A1,ES2288083A1_ua1,Individual Inventor,,,2,,2,script
+ES2288083A1_ua2,ES2288083A1,ES2288083A1_ua2,Individual Inventor,,,2,,2,script
+ES2288083A1_ua3,ES2288083A1,ES2288083A1_ua3,Individual Inventor,,,2,,2,script
+ES2288083A1_ua4,ES2288083A1,ES2288083A1_ua4,Individual Inventor,,,2,,2,script
+ES2555162A1_ua1,ES2555162A1,ES2555162A1_ua1,Individual Inventor,,,2,,2,script
+ES2604711A1_ua1,ES2604711A1,ES2604711A1_ua1,Individual Inventor,,,2,,2,script
+ES2775773A1_ua1,ES2775773A1,ES2775773A1_ua1,Individual Inventor,,,2,,2,script
+FR2942455A1_ua1,FR2942455A1,FR2942455A1_ua1,Individual Inventor,,,2,,2,script
+FR2993245A1_ua1,FR2993245A1,FR2993245A1_ua1,Individual Inventor,,,2,,2,script
+FR3033363A1_ua1,FR3033363A1,FR3033363A1_ua1,Individual Inventor,,,2,,2,script
+FR3119159A1_ua1,FR3119159A1,FR3119159A1_ua1,Individual Inventor,,,2,,2,script
+GB201307739D0_ua1,GB201307739D0,GB201307739D0_ua1,Individual Inventor,,,2,,2,script
+GB201903200D0_ua1,GB201903200D0,GB201903200D0_ua1,Individual Inventor,,,2,,2,script
+IT202300024612A1_ua1,IT202300024612A1,IT202300024612A1_ua1,Individual Inventor,,,2,,2,script
+ITPI20130073A1_ua1,ITPI20130073A1,ITPI20130073A1_ua1,Individual Inventor,,,2,,2,script
+KR102622742B1_ua1,KR102622742B1,KR102622742B1_ua1,Individual Inventor,,,2,,2,script
+KR20060074923A_ua1,KR20060074923A,KR20060074923A_ua1,Individual Inventor,,,2,,2,script
+KR20160120094A_ua1,KR20160120094A,KR20160120094A_ua1,Individual Inventor,,,2,,2,script
+KR20200079649A_ua1,KR20200079649A,KR20200079649A_ua1,Individual Inventor,,,2,,2,script
+KR20220033079A_ua1,KR20220033079A,KR20220033079A_ua1,Individual Inventor,,,2,,2,script
+KR20220033079A_ua2,KR20220033079A,KR20220033079A_ua2,Individual Inventor,,,2,,2,script
+KR20220033079A_ua3,KR20220033079A,KR20220033079A_ua3,Individual Inventor,,,2,,2,script
+KR20240170008A_ua1,KR20240170008A,KR20240170008A_ua1,Individual Inventor,,,2,,2,script
+KR20240170008A_ua2,KR20240170008A,KR20240170008A_ua2,Individual Inventor,,,2,,2,script
+KR20260072583A_ua1,KR20260072583A,KR20260072583A_ua1,Individual Inventor,,,2,,2,script
+PT109064A_ua1,PT109064A,PT109064A_ua1,Individual Inventor,,,2,,2,script
+RO131684A0_ua1,RO131684A0,RO131684A0_ua1,Individual Inventor,,,2,,2,script
+RU2641952C1_ua1,RU2641952C1,RU2641952C1_ua1,Individual Inventor,,,2,,2,script
+RU2681464C1_ua1,RU2681464C1,RU2681464C1_ua1,Individual Inventor,,,2,,2,script
+RU2700154C1_ua1,RU2700154C1,RU2700154C1_ua1,Individual Inventor,,,2,,2,script
+RU2725833C1_ua1,RU2725833C1,RU2725833C1_ua1,Individual Inventor,,,2,,2,script
+RU2764311C1_ua1,RU2764311C1,RU2764311C1_ua1,Individual Inventor,,,2,,2,script
+UA124132C2_ua1,UA124132C2,UA124132C2_ua1,Individual Inventor,,,2,,2,script
+UA152017U_ua1,UA152017U,UA152017U_ua1,Individual Inventor,,,2,,2,script
+US2003085319A1_ua1,US2003085319A1,US2003085319A1_ua1,Individual Inventor,,,2,,2,script
+US2004026563A1_ua1,US2004026563A1,US2004026563A1_ua1,Individual Inventor,,,2,,2,script
+US2004155143A1_ua1,US2004155143A1,US2004155143A1_ua1,Individual Inventor,,,2,,2,script
+US2004155143A1_ua2,US2004155143A1,US2004155143A1_ua2,Individual Inventor,,,2,,2,script
+US2004155143A1_ua3,US2004155143A1,US2004155143A1_ua3,Individual Inventor,,,2,,2,script
+US2004155143A1_ua4,US2004155143A1,US2004155143A1_ua4,Individual Inventor,,,2,,2,script
+US2005127238A1_ua1,US2005127238A1,US2005127238A1_ua1,Individual Inventor,,,2,,2,script
+US2005178879A1_ua1,US2005178879A1,US2005178879A1_ua1,Individual Inventor,,,2,,2,script
+US2005230519A1_ua1,US2005230519A1,US2005230519A1_ua1,Individual Inventor,,,2,,2,script
+US2006016929A1_ua1,US2006016929A1,US2006016929A1_ua1,Individual Inventor,,,2,,2,script
+US2006151666A1_ua1,US2006151666A1,US2006151666A1_ua1,Individual Inventor,,,2,,2,script
+US2007158494A1_ua1,US2007158494A1,US2007158494A1_ua1,Individual Inventor,,,2,,2,script
+US2007221779A1_ua1,US2007221779A1,US2007221779A1_ua1,Individual Inventor,,,2,,2,script
+US2008169375A1_ua1,US2008169375A1,US2008169375A1_ua1,Individual Inventor,,,2,,2,script
+US2008173769A1_ua1,US2008173769A1,US2008173769A1_ua1,Individual Inventor,,,2,,2,script
+US2009008510A1_ua1,US2009008510A1,US2009008510A1_ua1,Individual Inventor,,,2,,2,script
+US2009084890A1_ua1,US2009084890A1,US2009084890A1_ua1,Individual Inventor,,,2,,2,script
+US2009140095A1_ua1,US2009140095A1,US2009140095A1_ua1,Individual Inventor,,,2,,2,script
+US2009212166A1_ua1,US2009212166A1,US2009212166A1_ua1,Individual Inventor,,,2,,2,script
+US2009261209A1_ua1,US2009261209A1,US2009261209A1_ua1,Individual Inventor,,,2,,2,script
+US2009266941A1_ua1,US2009266941A1,US2009266941A1_ua1,Individual Inventor,,,2,,2,script
+US2009266942A1_ua1,US2009266942A1,US2009266942A1_ua1,Individual Inventor,,,2,,2,script
+US2009283644A1_ua1,US2009283644A1,US2009283644A1_ua1,Individual Inventor,,,2,,2,script
+US2010072325A1_ua1,US2010072325A1,US2010072325A1_ua1,Individual Inventor,,,2,,2,script
+US2010171001A1_ua1,US2010171001A1,US2010171001A1_ua1,Individual Inventor,,,2,,2,script
+US2011001020A1_ua1,US2011001020A1,US2011001020A1_ua1,Individual Inventor,,,2,,2,script
+US2011163199A1_ua1,US2011163199A1,US2011163199A1_ua1,Individual Inventor,,,2,,2,script
+US2011168835A1_ua1,US2011168835A1,US2011168835A1_ua1,Individual Inventor,,,2,,2,script
+US2012012692A1_ua1,US2012012692A1,US2012012692A1_ua1,Individual Inventor,,,2,,2,script
+US2012119016A1_ua1,US2012119016A1,US2012119016A1_ua1,Individual Inventor,,,2,,2,script
+US2012211608A1_ua1,US2012211608A1,US2012211608A1_ua1,Individual Inventor,,,2,,2,script
+US2012234968A1_ua1,US2012234968A1,US2012234968A1_ua1,Individual Inventor,,,2,,2,script
+US2012261523A1_ua1,US2012261523A1,US2012261523A1_ua1,Individual Inventor,,,2,,2,script
+US2012261523A1_ua2,US2012261523A1,US2012261523A1_ua2,Individual Inventor,,,2,,2,script
+US2012318908A1_ua1,US2012318908A1,US2012318908A1_ua1,Individual Inventor,,,2,,2,script
+US2013020429A1_ua1,US2013020429A1,US2013020429A1_ua1,Individual Inventor,,,2,,2,script
+US2013092799A1_ua1,US2013092799A1,US2013092799A1_ua1,Individual Inventor,,,2,,2,script
+US2013092799A1_ua2,US2013092799A1,US2013092799A1_ua2,Individual Inventor,,,2,,2,script
+US2013092799A1_ua3,US2013092799A1,US2013092799A1_ua3,Individual Inventor,,,2,,2,script
+US2013092799A1_ua4,US2013092799A1,US2013092799A1_ua4,Individual Inventor,,,2,,2,script
+US2013092799A1_ua5,US2013092799A1,US2013092799A1_ua5,Individual Inventor,,,2,,2,script
+US2013092799A1_ua6,US2013092799A1,US2013092799A1_ua6,Individual Inventor,,,2,,2,script
+US2014084114A1_ua1,US2014084114A1,US2014084114A1_ua1,Individual Inventor,,,2,,2,script
+US2014158815A1_ua1,US2014158815A1,US2014158815A1_ua1,Individual Inventor,,,2,,2,script
+US2014339354A1_ua1,US2014339354A1,US2014339354A1_ua1,Individual Inventor,,,2,,2,script
+US2015175260A1_ua1,US2015175260A1,US2015175260A1_ua1,Individual Inventor,,,2,,2,script
+US2015191243A1_ua1,US2015191243A1,US2015191243A1_ua1,Individual Inventor,,,2,,2,script
+US2015251749A1_ua1,US2015251749A1,US2015251749A1_ua1,Individual Inventor,,,2,,2,script
+US2015314865A1_ua1,US2015314865A1,US2015314865A1_ua1,Individual Inventor,,,2,,2,script
+US2016096613A1_ua1,US2016096613A1,US2016096613A1_ua1,Individual Inventor,,,2,,2,script
+US2017240273A1_ua1,US2017240273A1,US2017240273A1_ua1,Individual Inventor,,,2,,2,script
+US2017240273A1_ua2,US2017240273A1,US2017240273A1_ua2,Individual Inventor,,,2,,2,script
+US2017240273A1_ua3,US2017240273A1,US2017240273A1_ua3,Individual Inventor,,,2,,2,script
+US2018029704A1_ua1,US2018029704A1,US2018029704A1_ua1,Individual Inventor,,,2,,2,script
+US2018141652A1_ua1,US2018141652A1,US2018141652A1_ua1,Individual Inventor,,,2,,2,script
+US2018141652A1_ua2,US2018141652A1,US2018141652A1_ua2,Individual Inventor,,,2,,2,script
+US2018141653A1_ua1,US2018141653A1,US2018141653A1_ua1,Individual Inventor,,,2,,2,script
+US2018155017A1_ua1,US2018155017A1,US2018155017A1_ua1,Individual Inventor,,,2,,2,script
+US2018178907A1_ua1,US2018178907A1,US2018178907A1_ua1,Individual Inventor,,,2,,2,script
+US2018201369A1_ua1,US2018201369A1,US2018201369A1_ua1,Individual Inventor,,,2,,2,script
+US2018215465A1_ua1,US2018215465A1,US2018215465A1_ua1,Individual Inventor,,,2,,2,script
+US2018215465A1_ua2,US2018215465A1,US2018215465A1_ua2,Individual Inventor,,,2,,2,script
+US2018215465A1_ua3,US2018215465A1,US2018215465A1_ua3,Individual Inventor,,,2,,2,script
+US2018215465A1_ua4,US2018215465A1,US2018215465A1_ua4,Individual Inventor,,,2,,2,script
+US2018215465A1_ua5,US2018215465A1,US2018215465A1_ua5,Individual Inventor,,,2,,2,script
+US2018215465A1_ua6,US2018215465A1,US2018215465A1_ua6,Individual Inventor,,,2,,2,script
+US2018290735A1_ua1,US2018290735A1,US2018290735A1_ua1,Individual Inventor,,,2,,2,script
+US2018370625A1_ua1,US2018370625A1,US2018370625A1_ua1,Individual Inventor,,,2,,2,script
+US2018370626A1_ua1,US2018370626A1,US2018370626A1_ua1,Individual Inventor,,,2,,2,script
+US2019127060A1_ua1,US2019127060A1,US2019127060A1_ua1,Individual Inventor,,,2,,2,script
+US2019135426A1_ua1,US2019135426A1,US2019135426A1_ua1,Individual Inventor,,,2,,2,script
+US2019144100A1_ua1,US2019144100A1,US2019144100A1_ua1,Individual Inventor,,,2,,2,script
+US2019168866A1_ua1,US2019168866A1,US2019168866A1_ua1,Individual Inventor,,,2,,2,script
+US2019256200A1_ua1,US2019256200A1,US2019256200A1_ua1,Individual Inventor,,,2,,2,script
+US2019256200A1_ua2,US2019256200A1,US2019256200A1_ua2,Individual Inventor,,,2,,2,script
+US2019256200A1_ua3,US2019256200A1,US2019256200A1_ua3,Individual Inventor,,,2,,2,script
+US2019340933A1_ua1,US2019340933A1,US2019340933A1_ua1,Individual Inventor,,,2,,2,script
+US2020055595A1_ua1,US2020055595A1,US2020055595A1_ua1,Individual Inventor,,,2,,2,script
+US2020062383A1_ua1,US2020062383A1,US2020062383A1_ua1,Individual Inventor,,,2,,2,script
+US2020079503A1_ua1,US2020079503A1,US2020079503A1_ua1,Individual Inventor,,,2,,2,script
+US2020140078A1_ua1,US2020140078A1,US2020140078A1_ua1,Individual Inventor,,,2,,2,script
+US2020180756A1_ua1,US2020180756A1,US2020180756A1_ua1,Individual Inventor,,,2,,2,script
+US2020262553A1_ua1,US2020262553A1,US2020262553A1_ua1,Individual Inventor,,,2,,2,script
+US2021039776A1_ua1,US2021039776A1,US2021039776A1_ua1,Individual Inventor,,,2,,2,script
+US2021171188A1_ua1,US2021171188A1,US2021171188A1_ua1,Individual Inventor,,,2,,2,script
+US2021245872A1_ua1,US2021245872A1,US2021245872A1_ua1,Individual Inventor,,,2,,2,script
+US2021245872A1_ua2,US2021245872A1,US2021245872A1_ua2,Individual Inventor,,,2,,2,script
+US2021245872A1_ua3,US2021245872A1,US2021245872A1_ua3,Individual Inventor,,,2,,2,script
+US2021245872A1_ua4,US2021245872A1,US2021245872A1_ua4,Individual Inventor,,,2,,2,script
+US2021253235A1_ua1,US2021253235A1,US2021253235A1_ua1,Individual Inventor,,,2,,2,script
+US2021284333A1_ua1,US2021284333A1,US2021284333A1_ua1,Individual Inventor,,,2,,2,script
+US2021316848A1_ua1,US2021316848A1,US2021316848A1_ua1,Individual Inventor,,,2,,2,script
+US2021331792A1_ua1,US2021331792A1,US2021331792A1_ua1,Individual Inventor,,,2,,2,script
+US2021403155A1_ua1,US2021403155A1,US2021403155A1_ua1,Individual Inventor,,,2,,2,script
+US2022097837A1_ua1,US2022097837A1,US2022097837A1_ua1,Individual Inventor,,,2,,2,script
+US2022097837A1_ua2,US2022097837A1,US2022097837A1_ua2,Individual Inventor,,,2,,2,script
+US2022097840A1_ua1,US2022097840A1,US2022097840A1_ua1,Individual Inventor,,,2,,2,script
+US2022135204A1_ua1,US2022135204A1,US2022135204A1_ua1,Individual Inventor,,,2,,2,script
+US2022169380A1_ua1,US2022169380A1,US2022169380A1_ua1,Individual Inventor,,,2,,2,script
+US2022315217A1_ua1,US2022315217A1,US2022315217A1_ua1,Individual Inventor,,,2,,2,script
+US2022355922A1_ua1,US2022355922A1,US2022355922A1_ua1,Individual Inventor,,,2,,2,script
+US2022380037A1_ua1,US2022380037A1,US2022380037A1_ua1,Individual Inventor,,,2,,2,script
+US2022388648A1_ua1,US2022388648A1,US2022388648A1_ua1,Individual Inventor,,,2,,2,script
+US2022388648A1_ua2,US2022388648A1,US2022388648A1_ua2,Individual Inventor,,,2,,2,script
+US2022402608A1_ua1,US2022402608A1,US2022402608A1_ua1,Individual Inventor,,,2,,2,script
+US2023026745A1_ua1,US2023026745A1,US2023026745A1_ua1,Individual Inventor,,,2,,2,script
+US2023038458A1_ua1,US2023038458A1,US2023038458A1_ua1,Individual Inventor,,,2,,2,script
+US2023086655A1_ua1,US2023086655A1,US2023086655A1_ua1,Individual Inventor,,,2,,2,script
+US2023234703A1_ua1,US2023234703A1,US2023234703A1_ua1,Individual Inventor,,,2,,2,script
+US2023257114A1_ua1,US2023257114A1,US2023257114A1_ua1,Individual Inventor,,,2,,2,script
+US2023331379A1_ua1,US2023331379A1,US2023331379A1_ua1,Individual Inventor,,,2,,2,script
+US2023356836A1_ua1,US2023356836A1,US2023356836A1_ua1,Individual Inventor,,,2,,2,script
+US2023382525A1_ua1,US2023382525A1,US2023382525A1_ua1,Individual Inventor,,,2,,2,script
+US2024002048A1_ua1,US2024002048A1,US2024002048A1_ua1,Individual Inventor,,,2,,2,script
+US2024002048A1_ua2,US2024002048A1,US2024002048A1_ua2,Individual Inventor,,,2,,2,script
+US2024002048A1_ua3,US2024002048A1,US2024002048A1_ua3,Individual Inventor,,,2,,2,script
+US2024002048A1_ua4,US2024002048A1,US2024002048A1_ua4,Individual Inventor,,,2,,2,script
+US2024025540A1_ua1,US2024025540A1,US2024025540A1_ua1,Individual Inventor,,,2,,2,script
+US2024124128A1_ua1,US2024124128A1,US2024124128A1_ua1,Individual Inventor,,,2,,2,script
+US2024140627A1_ua1,US2024140627A1,US2024140627A1_ua1,Individual Inventor,,,2,,2,script
+US2024190561A1_ua1,US2024190561A1,US2024190561A1_ua1,Individual Inventor,,,2,,2,script
+US2024253778A1_ua1,US2024253778A1,US2024253778A1_ua1,Individual Inventor,,,2,,2,script
+US2024253778A1_ua2,US2024253778A1,US2024253778A1_ua2,Individual Inventor,,,2,,2,script
+US2024383602A1_ua1,US2024383602A1,US2024383602A1_ua1,Individual Inventor,,,2,,2,script
+US2025002146A1_ua1,US2025002146A1,US2025002146A1_ua1,Individual Inventor,,,2,,2,script
+US2025026472A1_ua1,US2025026472A1,US2025026472A1_ua1,Individual Inventor,,,2,,2,script
+US2025058870A1_ua1,US2025058870A1,US2025058870A1_ua1,Individual Inventor,,,2,,2,script
+US2025083809A1_ua1,US2025083809A1,US2025083809A1_ua1,Individual Inventor,,,2,,2,script
+US2025145283A1_ua1,US2025145283A1,US2025145283A1_ua1,Individual Inventor,,,2,,2,script
+US2025172947A1_ua1,US2025172947A1,US2025172947A1_ua1,Individual Inventor,,,2,,2,script
+US2025388318A1_ua1,US2025388318A1,US2025388318A1_ua1,Individual Inventor,,,2,,2,script
+US2026001646A1_ua1,US2026001646A1,US2026001646A1_ua1,Individual Inventor,,,2,,2,script
+US2026035071A1_ua1,US2026035071A1,US2026035071A1_ua1,Individual Inventor,,,2,,2,script
+US6367736B1_ua1,US6367736B1,US6367736B1_ua1,Individual Inventor,,,2,,2,script
+US6622962B1_ua1,US6622962B1,US6622962B1_ua1,Individual Inventor,,,2,,2,script
+WO2010024593A2_ua1,WO2010024593A2,WO2010024593A2_ua1,Individual Inventor,,,2,,2,script
+WO2010132901A1_ua1,WO2010132901A1,WO2010132901A1_ua1,Individual Inventor,,,2,,2,script
+WO2015089679A1_ua1,WO2015089679A1,WO2015089679A1_ua1,Individual Inventor,,,2,,2,script
+WO2015094020A2_ua1,WO2015094020A2,WO2015094020A2_ua1,Individual Inventor,,,2,,2,script
+WO2016004852A1_ua1,WO2016004852A1,WO2016004852A1_ua1,Individual Inventor,,,2,,2,script
+WO2016028358A2_ua1,WO2016028358A2,WO2016028358A2_ua1,Individual Inventor,,,2,,2,script
+WO2016062223A1_ua1,WO2016062223A1,WO2016062223A1_ua1,Individual Inventor,,,2,,2,script
+WO2017021391A1_ua1,WO2017021391A1,WO2017021391A1_ua1,Individual Inventor,,,2,,2,script
+WO2019010554A1_ua1,WO2019010554A1,WO2019010554A1_ua1,Individual Inventor,,,2,,2,script
+WO2019010554A1_ua2,WO2019010554A1,WO2019010554A1_ua2,Individual Inventor,,,2,,2,script
+WO2019202493A1_ua1,WO2019202493A1,WO2019202493A1_ua1,Individual Inventor,,,2,,2,script
+WO2019202493A1_ua2,WO2019202493A1,WO2019202493A1_ua2,Individual Inventor,,,2,,2,script
+WO2019211875A1_ua1,WO2019211875A1,WO2019211875A1_ua1,Individual Inventor,,,2,,2,script
+WO2021029947A2_ua1,WO2021029947A2,WO2021029947A2_ua1,Individual Inventor,,,2,,2,script
+WO2023021054A1_ua1,WO2023021054A1,WO2023021054A1_ua1,Individual Inventor,,,2,,2,script
+WO2024227493A1_ua1,WO2024227493A1,WO2024227493A1_ua1,Individual Inventor,,,2,,2,script
+WO2025065072A1_ua1,WO2025065072A1,WO2025065072A1_ua1,Individual Inventor,,,2,,2,script
+WO2025177317A2_ua1,WO2025177317A2,WO2025177317A2_ua1,Individual Inventor,,,2,,2,script
+CN121448607A_ua1,CN121448607A,Aerial Rider,Unknown / Independent,,,2,2,2,author review
+US2022089279A1_ua1,US2022089279A1,US2022089279A1_ua1,Unknown / Independent,,,2,,2,script
+US2022089279A1_ua2,US2022089279A1,AIR ONE,Unknown / Independent,air-one,The company is in the business of designing and manufacturing passenger electric vertical takeoff and landing (eVTOL) aircraft for advanced air mobility (AAM).,6,7,7,author review
+US10913529B1_ua1,US10913529B1,ARES,Unknown / Independent,,,2,,2,script
+US2022043465A1_ua1,US2022043465A1,Atlis,Unknown / Independent,aergility-atlis,The aircraft has eight VTOL propellers and one pusher propeller for forward flight using nine electric motors and uses battery packs for its power source.,5,6,6,author review
+US2017183088A1_ua1,US2017183088A1,EH184,Unknown / Independent,ehang,"The company also reported that the “EHang 184 eVTOL aircraft has achieved a series of manned flight tests with up to 40 persons,” including the EHang CEO onboard.",7,7,7,author review
+CN117985223A_ua1,CN117985223A,Honghu,Unknown / Independent,,,2,,2,script
+US2024051687A1_ua1,US2024051687A1,Katla,Unknown / Independent,katla-aero-katla-700,"The Katla 700 is a sleek futuristic looking eVTOL two passenger aircraft using a novel closed-wing aircraft design using ten fixed VTOL propellers and two fixed forward flight propellers, using a total of 12 electric motors.",6,,6,script
+US2019337612A1_ua1,US2019337612A1,MAV55,Unknown / Independent,,,2,2,2,author review
+US2022144421A1_ua1,US2022144421A1,MOBi-One,Unknown / Independent,airspace-experience-technologies-asx-mobi-one-v3,The MOBi-One V3 VTOL passenger concept design aircraft carries a total of five passengers with the option to for autonomous flight or pilot optional flight.,6,5,5,author review
+US2023312089A1_ua1,US2023312089A1,Odys Aviation,Unknown / Independent,craft-aerospace-unnamed-evtol,"For the VTOL portion of the flight, the aircraft's box wings have several flaps which extend to the vertical position allowing vertical takeoff and landings.",6,5,5,author review
+USD1017462S_ua1,USD1017462S,Prosperity I,Unknown / Independent,autoflight-v1500m,"For forward flight, the aircraft has a high-wing and two rear pusher propellers.",6,7,7,author review
+GB202410204D0_ua1,GB202410204D0,SeaHorse,Unknown / Independent,seahorse-air-seahorse-h5,The anticipated range of the aircraft is 360 km (224 m) and has a planned flight time of three hours.,6,2,2,author review
+USD912602S_ua1,USD912602S,Skai,Unknown / Independent,alakai-technologies-skai-prototype,"A non-flying version of the aircraft was unveiled on May 29, 2019 in Newbury Park, California, USA.",6,6,6,author review
+WO2025109312A1_ua1,WO2025109312A1,Sora,Unknown / Independent,sora-aviation-limited-s-1,"The aircraft is flown by one pilot, has one flight attendant and has enough room for luggage for each passenger.",6,,6,script
+CN218288104U_ua1,CN218288104U,V.MO,Unknown / Independent,volkswagen-group-china-vmo-flying-tiger-prototype-1,Volkswagen Group China V.MO Flying Tiger (Prototype 1),5,,5,script
+US11077937B1_ua1,US11077937B1,Vy,Unknown / Independent,transcend-air-vy-400r,The aircraft is still a hybrid-electric aircraft as there are four small electric VTOL propellers in the rear of the fuselage used primarily to keep the aircraft stable during VTOL flight in any windy condition.,6,,6,script
+CN103786881A_ua1,CN103786881A,CN103786881A_ua1,Unknown / Independent,,,2,,2,script
+CN106628168A_ua1,CN106628168A,CN106628168A_ua1,Unknown / Independent,,,2,,2,script
+CN106882372A_ua1,CN106882372A,CN106882372A_ua1,Unknown / Independent,,,2,,2,script
+CN106882373A_ua1,CN106882373A,CN106882373A_ua1,Unknown / Independent,,,2,,2,script
+CN108928471A_ua1,CN108928471A,CN108928471A_ua1,Unknown / Independent,,,2,,2,script
+CN109263969A_ua1,CN109263969A,CN109263969A_ua1,Unknown / Independent,,,2,,2,script
+CN109649650A_ua1,CN109649650A,CN109649650A_ua1,Unknown / Independent,,,2,,2,script
+CN110040248A_ua1,CN110040248A,CN110040248A_ua1,Unknown / Independent,,,2,,2,script
+CN111532426A_ua1,CN111532426A,CN111532426A_ua1,Unknown / Independent,,,2,,2,script
+CN111532426A_ua2,CN111532426A,CN111532426A_ua2,Unknown / Independent,,,2,,2,script
+CN111532426A_ua3,CN111532426A,CN111532426A_ua3,Unknown / Independent,,,2,,2,script
+CN111532426A_ua4,CN111532426A,CN111532426A_ua4,Unknown / Independent,,,2,,2,script
+CN111731475A_ua1,CN111731475A,CN111731475A_ua1,Unknown / Independent,,,2,,2,script
+CN111731476A_ua1,CN111731476A,CN111731476A_ua1,Unknown / Independent,,,2,,2,script
+CN111762314A_ua1,CN111762314A,CN111762314A_ua1,Unknown / Independent,,,2,,2,script
+CN111874226A_ua1,CN111874226A,CN111874226A_ua1,Unknown / Independent,,,2,,2,script
+CN112061386A_ua1,CN112061386A,CN112061386A_ua1,Unknown / Independent,,,2,,2,script
+CN112141347A_ua1,CN112141347A,CN112141347A_ua1,Unknown / Independent,,,2,,2,script
+CN112896499A_ua1,CN112896499A,CN112896499A_ua1,Unknown / Independent,,,2,,2,script
+CN113460300A_ua1,CN113460300A,CN113460300A_ua1,Unknown / Independent,,,2,,2,script
+CN113716033A_ua1,CN113716033A,CN113716033A_ua1,Unknown / Independent,,,2,,2,script
+CN114802742A_ua1,CN114802742A,CN114802742A_ua1,Unknown / Independent,,,2,,2,script
+CN115258146A_ua1,CN115258146A,CN115258146A_ua1,Unknown / Independent,,,2,,2,script
+CN117048822A_ua1,CN117048822A,CN117048822A_ua1,Unknown / Independent,,,2,,2,script
+CN117184468A_ua1,CN117184468A,CN117184468A_ua1,Unknown / Independent,,,2,,2,script
+CN117566089A_ua1,CN117566089A,CN117566089A_ua1,Unknown / Independent,,,2,,2,script
+CN118083120A_ua1,CN118083120A,CN118083120A_ua1,Unknown / Independent,,,2,,2,script
+CN118494752A_ua1,CN118494752A,CN118494752A_ua1,Unknown / Independent,,,2,,2,script
+CN118618608A_ua1,CN118618608A,CN118618608A_ua1,Unknown / Independent,,,2,,2,script
+CN118723072A_ua1,CN118723072A,CN118723072A_ua1,Unknown / Independent,,,2,,2,script
+CN118770545A_ua1,CN118770545A,CN118770545A_ua1,Unknown / Independent,,,2,,2,script
+CN119239928A_ua1,CN119239928A,CN119239928A_ua1,Unknown / Independent,,,2,,2,script
+CN119460096A_ua1,CN119460096A,CN119460096A_ua1,Unknown / Independent,,,2,,2,script
+CN119460097A_ua1,CN119460097A,CN119460097A_ua1,Unknown / Independent,,,2,,2,script
+CN119489922A_ua1,CN119489922A,CN119489922A_ua1,Unknown / Independent,,,2,,2,script
+CN120096807A_ua1,CN120096807A,CN120096807A_ua1,Unknown / Independent,,,2,,2,script
+CN120135432A_ua1,CN120135432A,CN120135432A_ua1,Unknown / Independent,,,2,,2,script
+CN120517586A_ua1,CN120517586A,CN120517586A_ua1,Unknown / Independent,,,2,,2,script
+CN120922349A_ua1,CN120922349A,CN120922349A_ua1,Unknown / Independent,,,2,,2,script
+CN121822815A_ua1,CN121822815A,CN121822815A_ua1,Unknown / Independent,,,2,,2,script
+CN121871769A_ua1,CN121871769A,CN121871769A_ua1,Unknown / Independent,,,2,,2,script
+CZ36702U1_ua1,CZ36702U1,CZ36702U1_ua1,Unknown / Independent,,,2,,2,script
+DE102019102189A1_ua1,DE102019102189A1,DE102019102189A1_ua1,Unknown / Independent,,,2,,2,script
+DE102019121788A1_ua1,DE102019121788A1,DE102019121788A1_ua1,Unknown / Independent,,,2,,2,script
+DE102020202612A1_ua1,DE102020202612A1,DE102020202612A1_ua1,Unknown / Independent,,,2,,2,script
+DE102021113538A1_ua1,DE102021113538A1,DE102021113538A1_ua1,Unknown / Independent,,,2,,2,script
+EP3805100A1_ua1,EP3805100A1,EP3805100A1_ua1,Unknown / Independent,,,2,,2,script
+EP4151521A1_ua1,EP4151521A1,EP4151521A1_ua1,Unknown / Independent,,,2,,2,script
+EP4741286A1_ua1,EP4741286A1,EP4741286A1_ua1,Unknown / Independent,,,2,,2,script
+FR2997924A1_ua1,FR2997924A1,FR2997924A1_ua1,Unknown / Independent,,,2,,2,script
+FR3041930A1_ua1,FR3041930A1,FR3041930A1_ua1,Unknown / Independent,,,2,,2,script
+FR3074779A1_ua1,FR3074779A1,FR3074779A1_ua1,Unknown / Independent,,,2,,2,script
+FR3146308A1_ua1,FR3146308A1,FR3146308A1_ua1,Unknown / Independent,,,2,,2,script
+GB202302628D0_ua1,GB202302628D0,GB202302628D0_ua1,Unknown / Independent,,,2,,2,script
+GB202302628D0_ua2,GB202302628D0,GB202302628D0_ua2,Unknown / Independent,,,2,,2,script
+GB202306162D0_ua1,GB202306162D0,GB202306162D0_ua1,Unknown / Independent,,,2,,2,script
+GB202311251D0_ua1,GB202311251D0,GB202311251D0_ua1,Unknown / Independent,,,2,,2,script
+ITUB20150829A1_ua1,ITUB20150829A1,ITUB20150829A1_ua1,Unknown / Independent,,,2,,2,script
+JP2023526056A_ua1,JP2023526056A,JP2023526056A_ua1,Unknown / Independent,,,2,,2,script
+KR101129249B1_ua1,KR101129249B1,KR101129249B1_ua1,Unknown / Independent,,,2,,2,script
+KR102712524B1_ua1,KR102712524B1,KR102712524B1_ua1,Unknown / Independent,,,2,,2,script
+KR102760903B1_ua1,KR102760903B1,KR102760903B1_ua1,Unknown / Independent,,,2,,2,script
+NL2019667B1_ua1,NL2019667B1,NL2019667B1_ua1,Unknown / Independent,,,2,,2,script
+NL2019667B1_ua2,NL2019667B1,NL2019667B1_ua2,Unknown / Independent,,,2,,2,script
+RU180474U1_ua1,RU180474U1,RU180474U1_ua1,Unknown / Independent,,,2,,2,script
+RU2701284C1_ua1,RU2701284C1,RU2701284C1_ua1,Unknown / Independent,,,2,,2,script
+RU2757693C1_ua1,RU2757693C1,RU2757693C1_ua1,Unknown / Independent,,,2,,2,script
+RU2757693C1_ua2,RU2757693C1,RU2757693C1_ua2,Unknown / Independent,,,2,,2,script
+RU2759061C1_ua1,RU2759061C1,RU2759061C1_ua1,Unknown / Independent,,,2,,2,script
+RU2762441C1_ua1,RU2762441C1,RU2762441C1_ua1,Unknown / Independent,,,2,,2,script
+SK500442018A3_ua1,SK500442018A3,SK500442018A3_ua1,Unknown / Independent,,,2,,2,script
+TWI627104B_ua1,TWI627104B,TWI627104B_ua1,Unknown / Independent,,,2,,2,script
+TWI627104B_ua2,TWI627104B,TWI627104B_ua2,Unknown / Independent,,,2,,2,script
+US10501173B1_ua1,US10501173B1,US10501173B1_ua1,Unknown / Independent,,,2,,2,script
+US10589838B1_ua1,US10589838B1,US10589838B1_ua1,Unknown / Independent,,,2,,2,script
+US11485488B1_ua1,US11485488B1,US11485488B1_ua1,Unknown / Independent,,,2,,2,script
+US11485488B1_ua2,US11485488B1,US11485488B1_ua2,Unknown / Independent,,,2,,2,script
+US2006239824A1_ua1,US2006239824A1,US2006239824A1_ua1,Unknown / Independent,,,2,,2,script
+US2006239824A1_ua2,US2006239824A1,US2006239824A1_ua2,Unknown / Independent,,,2,,2,script
+US2012056040A1_ua1,US2012056040A1,US2012056040A1_ua1,Unknown / Independent,,,2,,2,script
+US2012056040A1_ua2,US2012056040A1,US2012056040A1_ua2,Unknown / Independent,,,2,,2,script
+US2013099065A1_ua1,US2013099065A1,US2013099065A1_ua1,Unknown / Independent,,,2,,2,script
+US2013099065A1_ua2,US2013099065A1,US2013099065A1_ua2,Unknown / Independent,,,2,,2,script
+US2013118856A1_ua1,US2013118856A1,US2013118856A1_ua1,Unknown / Independent,,,2,,2,script
+US2013264429A1_ua1,US2013264429A1,US2013264429A1_ua1,Unknown / Independent,,,2,,2,script
+US2016009387A1_ua1,US2016009387A1,US2016009387A1_ua1,Unknown / Independent,,,2,,2,script
+US2016167780A1_ua1,US2016167780A1,US2016167780A1_ua1,Unknown / Independent,,,2,,2,script
+US2016214710A1_ua1,US2016214710A1,US2016214710A1_ua1,Unknown / Independent,,,2,,2,script
+US2016236775A1_ua1,US2016236775A1,US2016236775A1_ua1,Unknown / Independent,,,2,,2,script
+US2016236775A1_ua2,US2016236775A1,US2016236775A1_ua2,Unknown / Independent,,,2,,2,script
+US2016236775A1_ua3,US2016236775A1,US2016236775A1_ua3,Unknown / Independent,,,2,,2,script
+US2016311529A1_ua1,US2016311529A1,US2016311529A1_ua1,Unknown / Independent,,,2,,2,script
+US2017174335A1_ua1,US2017174335A1,US2017174335A1_ua1,Unknown / Independent,,,2,,2,script
+US2018170517A1_ua1,US2018170517A1,US2018170517A1_ua1,Unknown / Independent,,,2,,2,script
+US2018305005A1_ua1,US2018305005A1,US2018305005A1_ua1,Unknown / Independent,,,2,,2,script
+US2018346108A1_ua1,US2018346108A1,US2018346108A1_ua1,Unknown / Independent,,,2,,2,script
+US2018370629A1_ua1,US2018370629A1,US2018370629A1_ua1,Unknown / Independent,,,2,,2,script
+US2019063574A1_ua1,US2019063574A1,US2019063574A1_ua1,Unknown / Independent,,,2,,2,script
+US2019071174A1_ua1,US2019071174A1,US2019071174A1_ua1,Unknown / Independent,,,2,,2,script
+US2019152593A1_ua1,US2019152593A1,US2019152593A1_ua1,Unknown / Independent,,,2,,2,script
+US2019270517A1_ua1,US2019270517A1,US2019270517A1_ua1,Unknown / Independent,,,2,,2,script
+US2019337615A1_ua1,US2019337615A1,US2019337615A1_ua1,Unknown / Independent,,,2,,2,script
+US2020247536A1_ua1,US2020247536A1,US2020247536A1_ua1,Unknown / Independent,,,2,,2,script
+US2020301446A1_ua1,US2020301446A1,US2020301446A1_ua1,Unknown / Independent,,,2,,2,script
+US2020307767A1_ua1,US2020307767A1,US2020307767A1_ua1,Unknown / Independent,,,2,,2,script
+US2020354050A1_ua1,US2020354050A1,US2020354050A1_ua1,Unknown / Independent,,,2,,2,script
+US2020354054A1_ua1,US2020354054A1,US2020354054A1_ua1,Unknown / Independent,,,2,,2,script
+US2021016877A1_ua1,US2021016877A1,US2021016877A1_ua1,Unknown / Independent,,,2,,2,script
+US2021064062A1_ua1,US2021064062A1,US2021064062A1_ua1,Unknown / Independent,,,2,,2,script
+US2021064062A1_ua2,US2021064062A1,US2021064062A1_ua2,Unknown / Independent,,,2,,2,script
+US2021086893A1_ua1,US2021086893A1,US2021086893A1_ua1,Unknown / Independent,,,2,,2,script
+US2021197965A1_ua1,US2021197965A1,US2021197965A1_ua1,Unknown / Independent,,,2,,2,script
+US2021206487A1_ua1,US2021206487A1,US2021206487A1_ua1,Unknown / Independent,,,2,,2,script
+US2021309382A1_ua1,US2021309382A1,US2021309382A1_ua1,Unknown / Independent,,,2,,2,script
+US2022169371A1_ua1,US2022169371A1,US2022169371A1_ua1,Unknown / Independent,,,2,,2,script
+US2022363374A1_ua1,US2022363374A1,US2022363374A1_ua1,Unknown / Independent,,,2,,2,script
+US2022363376A1_ua1,US2022363376A1,US2022363376A1_ua1,Unknown / Independent,,,2,,2,script
+US2023121845A1_ua1,US2023121845A1,US2023121845A1_ua1,Unknown / Independent,,,2,,2,script
+US2023249816A1_ua1,US2023249816A1,US2023249816A1_ua1,Unknown / Independent,,,2,,2,script
+US2023348088A1_ua1,US2023348088A1,US2023348088A1_ua1,Unknown / Independent,,,2,,2,script
+US2024124134A1_ua1,US2024124134A1,US2024124134A1_ua1,Unknown / Independent,,,2,2,2,author review
+US2024132207A1_ua1,US2024132207A1,US2024132207A1_ua1,Unknown / Independent,,,2,,2,script
+US2024140598A1_ua1,US2024140598A1,US2024140598A1_ua1,Unknown / Independent,,,2,,2,script
+US2024300644A1_ua1,US2024300644A1,US2024300644A1_ua1,Unknown / Independent,,,2,,2,script
+US2024400199A1_ua1,US2024400199A1,US2024400199A1_ua1,Unknown / Independent,,,2,,2,script
+US2025019086A1_ua1,US2025019086A1,US2025019086A1_ua1,Unknown / Independent,,,2,,2,script
+US2025074586A1_ua1,US2025074586A1,US2025074586A1_ua1,Unknown / Independent,,,2,,2,script
+US2025162736A1_ua1,US2025162736A1,US2025162736A1_ua1,Unknown / Independent,,,2,,2,script
+US2025171141A1_ua1,US2025171141A1,US2025171141A1_ua1,Unknown / Independent,,,2,,2,script
+US2025340293A1_ua1,US2025340293A1,US2025340293A1_ua1,Unknown / Independent,,,2,,2,script
+US2025353590A1_ua1,US2025353590A1,US2025353590A1_ua1,Unknown / Independent,,,2,,2,script
+US2025353590A1_ua2,US2025353590A1,US2025353590A1_ua2,Unknown / Independent,,,2,,2,script
+US2026015083A1_ua1,US2026015083A1,US2026015083A1_ua1,Unknown / Independent,,,2,,2,script
+US2026131887A1_ua1,US2026131887A1,US2026131887A1_ua1,Unknown / Independent,,,2,,2,script
+US2026138739A1_ua1,US2026138739A1,US2026138739A1_ua1,Unknown / Independent,,,2,,2,script
+US9120560B1_ua1,US9120560B1,US9120560B1_ua1,Unknown / Independent,,,2,,2,script
+USD1082648S_ua1,USD1082648S,USD1082648S_ua1,Unknown / Independent,,,2,,2,script
+WO2012047337A1_ua1,WO2012047337A1,WO2012047337A1_ua1,Unknown / Independent,,,2,,2,script
+WO2017042291A1_ua1,WO2017042291A1,WO2017042291A1_ua1,Unknown / Independent,,,2,,2,script
+WO2018200879A1_ua1,WO2018200879A1,WO2018200879A1_ua1,Unknown / Independent,,,2,,2,script
+WO2019062257A1_ua1,WO2019062257A1,WO2019062257A1_ua1,Unknown / Independent,,,2,,2,script
+WO2020003657A1_ua1,WO2020003657A1,WO2020003657A1_ua1,Unknown / Independent,,,2,,2,script
+WO2020003657A1_ua2,WO2020003657A1,WO2020003657A1_ua2,Unknown / Independent,,,2,,2,script
+WO2020183739A1_ua1,WO2020183739A1,WO2020183739A1_ua1,Unknown / Independent,,,2,,2,script
+WO2022225421A1_ua1,WO2022225421A1,WO2022225421A1_ua1,Unknown / Independent,,,2,,2,script
+WO2023051929A1_ua1,WO2023051929A1,WO2023051929A1_ua1,Unknown / Independent,,,2,,2,script
+WO2024164048A1_ua1,WO2024164048A1,WO2024164048A1_ua1,Unknown / Independent,,,2,,2,script
+WO2024168389A1_ua1,WO2024168389A1,WO2024168389A1_ua1,Unknown / Independent,,,2,,2,script
+WO2025255583A1_ua1,WO2025255583A1,WO2025255583A1_ua1,Unknown / Independent,,,2,,2,script
+WO2026062567A1_ua1,WO2026062567A1,WO2026062567A1_ua1,Unknown / Independent,,,2,,2,script

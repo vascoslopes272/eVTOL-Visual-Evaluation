@@ -329,4 +329,10 @@ def load_dataset(cfg) -> Dataset:
         data_dictionary=dd,
         trl=read(cfg, "trl_per_aircraft", required=False),
     )
+    from viz import script_inputs
+    if ds.trl is not None and script_inputs.enabled(cfg):
+        st = script_inputs.trl(cfg)
+        if st is not None:
+            ds.trl = ds.trl.copy()
+            ds.trl["trl"] = ds.trl["aircraft_id"].map(st).fillna(ds.trl["trl"])
     return ds

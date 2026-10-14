@@ -7,7 +7,7 @@ Terminology (author's ruling, 2026-10-11), in every label, legend, axis and titl
     archetype -> configuration      aircraft (as a count) -> design      filer -> assignee
     window -> cohort                class -> architecture                Multirotor -> Multicopter
     Tilt Body TB -> Tilt Frame TF   Tilt Propulsor = TP                  Lift + Cruise code = SLC
-    levels of description are written C, C·W·T, C·U.
+    levels of description are written A, A·W·T, A·U (A = architecture; was C before 2026-10-13).
 Style: the Part I v2 style, 6.3 in wide, no text under 8 pt at print size, no in-plot text boxes, no label that
 overlaps a mark or another label, a legend only for what is drawn, at most ~6 colours per figure (the rest grey).
 """
@@ -25,13 +25,15 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.transforms import Bbox
 
-from viz import plots, style
+from lib import diversity
+from viz import frames, plots, style
 from viz import thesis_q6 as q6
 from viz import thesis_q7 as q7
 from viz import thesis_v2_part1 as p1
 
 FS = 8.0                      # the smallest text of any figure, pt at print size
 TITLE_FS = 9.0
+LEVEL = {"A0": "A", "A1t": "A·W·T", "A0c": "A·U"}      # printed names of the levels of description
 GREY = "#9a9a9a"              # the unlabelled marks
 SHADE = "#c9c9c9"
 TAIL_FILL = "#dce9f5"         # the last-100-designs window
@@ -50,15 +52,16 @@ def arch(code: str):
 
 
 def cfg_label(key: str) -> str:
-    """A C·U configuration key as the figures print it: 'SLC · 9+' -> 'SLC 9+', 'TB · 1-3' -> 'TF 1–3',
+    """An A·U configuration key as the figures print it: 'SLC · 9+' -> 'SLC 9+', 'TB · 1-3' -> 'TF 1–3',
     'HB · n/a (no M3 card)' -> 'HB'. The suffix is the propulsor-unit band."""
     c, _, b = key.partition(" · ")
-    b = re.sub(r"(?<=\d)-(?=\d)", "–", b.replace("n/a (no M3 card)", ""))
+    b = _dash(b.replace("n/a (no M3 card)", ""))
     return f"{arch(c).short} {b}".strip()
 
 
 def _dash(s: str) -> str:
-    return re.sub(r"(?<=\d)-(?=\d)", "–", s)
+    """En dash in number ranges; the lowest propulsor-unit band has ONE name everywhere: 0–3 (the data's own bin, frames.ROTOR_BINS)."""
+    return re.sub(r"(?<=\d)-(?=\d)", "–", re.sub(r"\b1-3\b", "0-3", s))
 
 
 def _arch_legend(codes):
@@ -85,8 +88,8 @@ def _free_spot(ax, size, avoid, targets, step=0.01):
     return best
 
 
-def _label_size(ax, text, fs=FS):
-    t = ax.text(0, 0, text, fontsize=fs)
+def _label_size(ax, text, fs=FS, weight="normal"):
+    t = ax.text(0, 0, text, fontsize=fs, fontweight=weight)
     bb = t.get_window_extent(ax.figure.canvas.get_renderer())
     t.remove()
     return bb.width + 4, bb.height + 3
@@ -198,14 +201,13 @@ def fig_propulsor_units_per_architecture_v2(ctx):
         else:
             empty.append((c, int(n_all)))
     n_drawn = [int(np.isfinite(u).sum()) for u in units]
-    fig, ax = plt.subplots(figsize=(ctx.W, 3.4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, 'fig_h', 3.4)), constrained_layout=True)
     plots.unit_strips(ax, codes, units, cap=30, seed=ctx.SEED)
     ax.set_xticks(range(len(codes)), [f"{arch(c).short}\n{n}" for c, n in zip(codes, n_drawn)])
     ax.set_xlim(-0.6, len(codes) - 0.4)
     ax.set_ylabel("propulsor units per design\n(capped at 30)")
     note = "; ".join(f"{arch(c).short} ({n} designs)" for c, n in empty)
     ax.set_xlabel("architecture, with its designs that have a propulsor record" + (f"\nno propulsor record: {note}" if empty else ""))
-    ax.set_title("Propulsor units per design, by architecture", fontsize=TITLE_FS)
     fig.legend(handles=[Line2D([], [], marker="o", markersize=3.5, color=GREY, linestyle="none", label="one design"),
                         Line2D([], [], color=style.INK, linewidth=2.6, solid_capstyle="butt", label="middle half of the designs"),
                         Line2D([], [], marker="o", markersize=6, markerfacecolor="white", markeredgecolor=style.INK,
@@ -227,6 +229,7 @@ def _feature_heat(ax, mat: pd.DataFrame):
     ax.set_yticks(range(m.shape[0]), list(mat.index))
     ax.set_xticks(np.arange(-0.5, m.shape[1]), minor=True)
     ax.set_yticks(np.arange(-0.5, m.shape[0]), minor=True)
+    ax.grid(False, which="major")                 # the thesis style's y grid would cross the cell numbers
     ax.grid(which="minor", color="white", linewidth=1.2)
     ax.tick_params(length=0, which="both")
     for sp in ax.spines.values():
@@ -274,7 +277,7 @@ def _duct_bands(ax, dc: pd.DataFrame, cd: pd.DataFrame, band_col: str = "propuls
             markeredgewidth=1.2, zorder=7, label="share of the band's propulsor units in a duct")
     for xi, u_ in zip(x, unit_s):
         ax.text(xi + w / 2 + 0.09, u_, f"{100 * u_:.0f}%", ha="left", va="center", fontsize=FS, color=style.INK, zorder=7)
-    ax.set_xticks(x, [f"{_dash(g)}\n{int(a)} · {int(b)}\nmed {m:g}" for g, a, b, m in zip(order, n, any_n, med)])
+    ax.set_xticks(x, [f"{_dash(g)}\n{int(a)} designs\n{int(b)} duct\nmedian {m:g}" for g, a, b, m in zip(order, n, any_n, med)])
     ax.set_xlim(-0.6, x[-1] + 0.95)
     ax.set_ylim(0, 0.9)
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
@@ -289,7 +292,7 @@ def fig_ducting_by_units_v2(ctx):
     fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
     _duct_bands(ax, d["dcount"], d["dcond"])
     ax.set_ylabel("share of the band's designs")
-    ax.set_xlabel("propulsor-unit band; under it: designs · designs that duct ·\nmedian ducted propulsors of those")
+    ax.set_xlabel("propulsor units per design (band); under each band: its designs, the designs with a duct,\nand the median number of ducted propulsors among those")
     h, l = ax.get_legend_handles_labels()
     h, l = h[1:] + h[:1], l[1:] + l[:1]
     fig.legend(h, l, loc="outside lower center", ncol=2, fontsize=FS)
@@ -303,10 +306,10 @@ def _largest_configuration(s: str) -> str:
 
 
 def tab_levels_of_description_v2(ctx):
-    """II2 main: Table 7 reduced to the three levels C, C·W·T, C·U (the F row moves to III.3)."""
+    """II2 main: Table 7 reduced to the three levels A, A·W·T, A·U (the F row moves to III.3)."""
     b = q7._data(ctx)["brief7"]
     b = b[b["level id"].isin(["A0", "A1t", "A0c"])].set_index("level id").loc[["A0", "A1t", "A0c"]]
-    t = pd.DataFrame({"level": [q6.NAMES3[i] for i in b.index], "configurations": b["archetypes"].astype(int).to_numpy(),
+    t = pd.DataFrame({"level": [LEVEL[i] for i in b.index], "configurations": b["archetypes"].astype(int).to_numpy(),
                       "single-design configurations": b["aircraft alone in their archetype"].astype(int).to_numpy(),
                       "¹D": b["effective number ¹D"].map(lambda x: f"{x:.1f}").to_numpy(),
                       "largest configuration": b["largest archetype"].map(_largest_configuration).to_numpy(),
@@ -316,7 +319,7 @@ def tab_levels_of_description_v2(ctx):
 
 # ================================================================================== II3. distribution and new variety
 def fig_configuration_core_v2(ctx):
-    """II3 main: the C·U configurations of five designs or more by share of the 2016–23 designs and distinct assignees per
+    """II3 main: the A·U configurations of five designs or more by share of the 2016–23 designs and distinct assignees per
     design. Label only the 7 core configurations and the 3 non-core ones with the largest 2016–23 share; every other
     point grey and unlabelled; the core outlined solid, the rim dashed, each named once."""
     d = q6._data(ctx)
@@ -326,14 +329,14 @@ def fig_configuration_core_v2(ctx):
     s_pt2 = 46.0
     r_pt = float(np.sqrt(s_pt2 / np.pi))
 
-    fig, ax = plt.subplots(figsize=(ctx.W, 4.7), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, 'fig_h', 4.7)), constrained_layout=True)
     ax.scatter(zz["share 2016-23"], zz["filers per aircraft"], s=s_pt2, color=GREY, edgecolor="white", linewidth=0.6, zorder=3)
     for _, r in lab.iterrows():
         ax.scatter(r["share 2016-23"], r["filers per aircraft"], s=s_pt2, color=arch(r["code"]).color, edgecolor="white", linewidth=0.6, zorder=4)
     ax.set_xlim(-0.002, zz["share 2016-23"].max() * 1.12)
     ax.set_ylim(0.4, 1.08)
     ax.xaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
-    ax.set_xlabel("share of the 2016–23 designs")
+    ax.set_xlabel("share of the 2016–23 designs\n(label: architecture, propulsor units; SLC 5–6 = Lift + Cruise, 5–6 units)")
     ax.set_ylabel("distinct assignees per design")
     codes = [c for c in style.CLASS_ORDER if c in set(lab["code"])]
     fig.legend(handles=_arch_legend(codes), loc="outside lower center", ncol=len(codes), fontsize=FS, columnspacing=1.2, handletextpad=0.3)
@@ -345,18 +348,20 @@ def fig_configuration_core_v2(ctx):
     failed = _place_point_labels(ax, lab[["share 2016-23", "filers per aircraft"]].to_numpy(), [cfg_label(a) for a in lab["archetype"]], r_pt,
                                  obstacles, zz[["share 2016-23", "filers per aircraft"]].to_numpy())
     assert not failed, failed
+    for t in ax.texts:                       # a point label never shows a ring line through it
+        t.set_bbox(dict(fc="white", ec="none", pad=0.3, alpha=0.9))
     fig.canvas.draw()
     rend = fig.canvas.get_renderer()
     placed = [t.get_window_extent(rend).expanded(1.04, 1.12) for t in ax.texts]
     pts = [Bbox([[x - r_pt * fig.dpi / 72, y - r_pt * fig.dpi / 72], [x + r_pt * fig.dpi / 72, y + r_pt * fig.dpi / 72]])
            for x, y in ax.transData.transform(np.c_[zz["share 2016-23"], zz["filers per aircraft"]])]
-    for name, ring, colour in (("core", ring_core, style.INK), ("rim", ring_rim, style.MUTED)):
-        size = _label_size(ax, name)
-        target = [tuple(ring.mean(axis=0))] if name == "core" else [tuple(p) for p in ring]      # the core's name sits inside it
+    for name, ring, colour in (("core: largest configurations", ring_core, style.INK), ("rim: smallest configurations", ring_rim, style.MUTED)):
+        size = _label_size(ax, name, weight="bold" if name.startswith("core") else "normal")
+        target = [tuple(ring.mean(axis=0))] if name.startswith("core") else [tuple(p) for p in ring]      # the core's name sits inside it
         spot = _free_spot(ax, size, placed + pts + _ring_boxes(ring_core) + _ring_boxes(ring_rim), target)
         assert spot is not None, name
         x_d, y_d = ax.transData.inverted().transform(spot)
-        ax.text(x_d, y_d, name, fontsize=FS, color=colour, ha="left", va="bottom", fontweight="bold" if name == "core" else "normal")
+        ax.text(x_d, y_d, name, fontsize=FS, color=colour, ha="left", va="bottom", fontweight="bold" if name.startswith("core") else "normal")
         placed.append(Bbox([[spot[0], spot[1]], [spot[0] + size[0], spot[1] + size[1]]]))
     cols = ["archetype", "class", "aircraft", "filers", "filers per aircraft", "share 2016-23", "zone"]
     data = zz[cols].reset_index(drop=True).rename(columns={"archetype": "configuration", "class": "architecture", "aircraft": "designs",
@@ -373,21 +378,44 @@ def _year_start(g: pd.DataFrame, year: int) -> int:
     return int(g.loc[g["priority year reached"] == year, "aircraft"].min())
 
 
+def curve_to_2026(ctx) -> pd.DataFrame:
+    """The discovery curve to 2026 WITHOUT touching any complete-year value: the rows up to the last complete year are thesis_q6's own
+    curve; the 2024–26 rows continue it, step by step, from the same functions run over all designs with a priority year
+    (frames.discovery_inputs without the complete-year cut), shifted so that the curve is continuous at the join. Cached on ctx."""
+    if getattr(ctx, "_v2p2_curve", None) is None:
+        orig = q6._data(ctx)["curve"]
+        inputs = frames.discovery_inputs(ctx.v, q6.SETS3, 2100)
+        full = diversity.discovery_curve_levels(inputs, orders=ctx.cfg.analysis["discovery_orders"], seed=ctx.SEED)
+        parts = []
+        for lvl, g0 in orig.groupby("level", sort=False):
+            g1 = full[full["level"] == lvl].reset_index(drop=True)
+            n = len(g0)
+            ext = g1.iloc[n:].copy()
+            for col in ("archetypes (date order)", "archetypes (random order)"):
+                ext[col] = (ext[col] - g1[col].iloc[n - 1] + g0[col].iloc[-1]).round(2)
+            ext["2.5 %"] = ext["97.5 %"] = np.nan
+            parts += [g0[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)", "2.5 %", "97.5 %"]], ext]
+        ctx._v2p2_curve = pd.concat(parts, ignore_index=True)
+    return ctx._v2p2_curve
+
+
 def fig_discovery_curve_v2(ctx):
-    """II3 main: configurations seen as the designs accumulate in priority order, three small panels (C | C·W·T | C·U),
-    each with the real curve, the random-order expectation as a shaded area, and the last 100 designs shaded."""
+    """II3 main: configurations seen as the designs accumulate in priority order, to 2026, three small panels (A | A·W·T | A·U):
+    the real curve, the random-order expectation as a thin dashed grey line, the 2024–26 designs shaded as not yet all published,
+    and the last 100 designs of the complete years (to 2023) shaded; the last-100 numbers are those of the complete years."""
     d = q6._data(ctx)
-    curve, est, tail = d["curve"], d["est"], ctx.cfg.analysis["discovery_tail"]
-    levels = [("A0", "C"), ("A1t", "C·W·T"), ("A0c", "C·U")]
-    fig, axs = plt.subplots(1, 3, figsize=(ctx.W, 3.5), constrained_layout=True)
+    full, est, tail = curve_to_2026(ctx), d["est"], ctx.cfg.analysis["discovery_tail"]
+    n_done = d["curve"].groupby("level")["aircraft"].max()
+    levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
+    fig, axs = plt.subplots(1, 3, figsize=(ctx.W, getattr(ctx, 'fig_h', 3.5)), constrained_layout=True)
     for ax, (lvl, name) in zip(axs, levels):
-        g = curve[curve["level"] == lvl]
+        g = full[full["level"] == lvl]
         x = g["aircraft"].to_numpy()
         real, rnd = g["archetypes (date order)"].to_numpy(), g["archetypes (random order)"].to_numpy()
-        n_max = int(x.max())
-        ax.axvspan(n_max - tail, n_max, color=TAIL_FILL, zorder=0, linewidth=0)
-        ax.fill_between(x, 0, rnd, color=SHADE, alpha=0.75, linewidth=0, zorder=1)
-        ax.plot(x, rnd, color="#8c8c8c", linewidth=0.8, zorder=2)
+        n_c, n_max = int(n_done[lvl]), int(x.max())
+        ax.axvspan(n_c - tail, n_c, color=TAIL_FILL, zorder=0, linewidth=0)
+        ax.axvspan(n_c, n_max, facecolor="white", edgecolor=GREY, hatch="////", linewidth=0, alpha=0.9, zorder=0)
+        ax.plot(x, rnd, color="#8c8c8c", linewidth=0.8, linestyle=(0, (3, 2)), zorder=2)
         ax.plot(x, real, color=style.INK, linewidth=1.7, zorder=4)
         ax.set_xlim(0, n_max + 3)
         ax.set_ylim(0, max(real.max(), rnd.max()) * 1.1)
@@ -396,36 +424,38 @@ def fig_discovery_curve_v2(ctx):
         ax.grid(axis="y", color=style.GRID, linewidth=0.5)
         ax.set_axisbelow(True)
         top = ax.secondary_xaxis("top")
-        starts = [_year_start(g, 2016), _year_start(g, 2020)]
-        top.set_xticks(starts, ["2016", "2020"])
+        top.set_xticks([_year_start(g, 2016), _year_start(g, 2020)], ["2016", "2020"])
         top.tick_params(length=4, labelsize=FS)
         ax.set_title(name, loc="left", fontsize=TITLE_FS, fontweight="bold", pad=18)
-        ax.set_xlabel(f"last {tail}: {est.loc[lvl, 'new in the last 100 aircraft']:.1f} new\nvs {est.loc[lvl, 'new in the last 100, random order']:.1f} by chance",
-                      fontsize=FS)
+        ax.set_xlabel(f"last {tail} to 2023: {est.loc[lvl, 'new in the last 100 aircraft']:.1f} new\n"
+                      f"vs {est.loc[lvl, 'new in the last 100, random order']:.1f} by chance", fontsize=FS)
     axs[0].set_ylabel("distinct configurations seen")
-    fig.supxlabel("designs, in priority order (top ticks: the first design of 2016 and of 2020)", fontsize=FS)
+    fig.supxlabel("designs, in priority order, to 2026 (top ticks: the first design of 2016 and of 2020)", fontsize=FS)
     fig.legend(handles=[Line2D([], [], color=style.INK, linewidth=1.7, label="real order (priority year)"),
-                        Patch(facecolor=SHADE, edgecolor="#8c8c8c", alpha=0.9, label="same designs in random order"),
-                        Patch(facecolor=TAIL_FILL, label=f"last {tail} designs")],
-               loc="outside upper center", ncol=3, fontsize=FS)
-    cols = {"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"}
-    data = curve[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(columns=cols)
-    data["level"] = data["level"].map(q6.NAMES3)
+                        Line2D([], [], color="#8c8c8c", linewidth=0.8, linestyle=(0, (3, 2)), label="same designs in random order"),
+                        Patch(facecolor=TAIL_FILL, label=f"last {tail} designs to 2023"),
+                        Patch(facecolor="white", edgecolor=GREY, hatch="////", label="2024–26: not yet all published")],
+               loc="outside upper center", ncol=2, fontsize=FS)
+    data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
+        columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
+    data["level"] = data["level"].map(LEVEL)
+    data["complete years"] = [bool(a <= n_done[l]) for l, a in zip(full["level"], full["aircraft"])]
     return fig, data
 
 
 def fig_half_of_cohort_v2(ctx):
-    """II3 auxiliary: replaces the configuration × cohort heatmap. One line per complete cohort: the cumulative share of the
-    cohort's designs held by its k largest configurations (ranked by size within the cohort, among the C·U configurations
+    """II3 auxiliary: replaces the configuration × cohort heatmap. One line per cohort (2024–26 dashed and faded, incomplete): the cumulative share of the
+    cohort's designs held by its k largest configurations (ranked by size within the cohort, among the A·U configurations
     of five designs or more), the 50 % line, and where each cohort crosses it."""
     d = q6._data(ctx)
     z = d["zones"]
-    cohorts = ctx.COMPLETE
+    cohorts = ctx.WIN_NAMES                      # the four complete cohorts and 2024–26, which is incomplete
     style_of = {"<= 2011": ("#b0b0b0", (0, (4, 2)), "s"), "2012-15": ("#6b6b6b", (0, (1, 1.6)), "D"),
-                "2016-19": ("#0072B2", "-", "o"), "2020-23": ("#D55E00", "-", "o")}
+                "2016-19": ("#0072B2", "-", "o"), "2020-23": ("#D55E00", "-", "o"),
+                "2024-26 (partial)": ("#8fb8d6", (0, (5, 2)), "o")}
     K = 20
     ranks = np.arange(1, K + 1)
-    fig, ax = plt.subplots(figsize=(ctx.W, 3.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, 'fig_h', 3.5)), constrained_layout=True)
     ax.axhline(0.5, color=style.INK, linewidth=0.8, linestyle="--", zorder=1)
     rows, ends = [], []
     for w in cohorts:
@@ -433,27 +463,34 @@ def fig_half_of_cohort_v2(ctx):
         cs = np.cumsum(c) / c.sum()
         k = int(np.searchsorted(cs, 0.5)) + 1
         col, ls, mk = style_of[w]
-        ax.plot(ranks, cs[:K], color=col, linestyle=ls, linewidth=1.6, zorder=3)
-        ax.plot(k, cs[k - 1], marker=mk, markersize=8, markerfacecolor="white", markeredgecolor=col, markeredgewidth=1.8, linestyle="none", zorder=5)
-        ends.append((cs[K - 1], f"{plots.WINDOW_TICKS[w]}: half in {k}", col))
-        rows += [{"cohort": plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
+        part = "partial" in w
+        ax.plot(ranks, cs[:K], color=col, linestyle=ls, linewidth=1.3 if part else 1.6, zorder=3)
+        nudge = {"<= 2011": -0.18, "2012-15": 0.18}.get(w, 0.0)      # ≤2011 and 2012-15 both cross at 5: keep both visible
+        ax.plot(k + nudge, cs[k - 1], marker=mk, markersize=8, markerfacecolor="white" if part else col, markeredgecolor=col, markeredgewidth=1.8, linestyle="none", zorder=5)
+        ends.append((cs[K - 1], f"2024–26 (incomplete): half in {k}" if part else f"{plots.WINDOW_TICKS[w]}: half in {k}", col))
+        rows += [{"cohort": "2024–26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
                   "cumulative share": round(float(cs[r - 1]), 4), "crosses 50 % here": bool(r == k)} for r in ranks]
-    ax.set_xlim(0.5, K + 8)
-    ax.set_ylim(0, 1.08)
+    ax.set_xlim(0.5, K + 11)
+    ax.set_ylim(0, 1.12)
     ax.set_xticks([1, 5, 10, 15, 20])
     ax.spines["bottom"].set_bounds(1, K)
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
     ax.grid(axis="y", color=style.GRID, linewidth=0.5)
     ax.set_axisbelow(True)
     ax.set_xlabel("configurations, ranked by size within the cohort")
-    ax.set_ylabel("cumulative share of the cohort's designs")
+    ax.set_ylabel("cumulative share of designs")
     ax.text(0.7, 0.505, "50 %", ha="left", va="bottom", fontsize=FS)
     ys = [e[0] for e in ends]
-    placed = plots._spread(ys, 0.075)
-    for (y0, text, col), yl in zip(ends, placed):
-        ax.annotate(text, xy=(K, y0), xytext=(K + 0.9, yl), textcoords="data", ha="left", va="center", fontsize=FS,
-                    color=style.INK, annotation_clip=False,
-                    arrowprops=dict(arrowstyle="-", color=col, linewidth=0.8, shrinkA=0, shrinkB=2) if abs(yl - y0) > 0.02 else None)
+    fig.canvas.draw()
+    lo, hi = ax.get_ylim()
+    gap = 1.5 * FS * 1.2 / 72 * fig.dpi / ax.get_window_extent().height * (hi - lo)      # one text line and a half, whatever the figure's size
+    placed = [0.0] * len(ys)                                  # from the top down: each label under the one above it, never higher than its line's end
+    top_y = np.inf
+    for i in np.argsort(ys)[::-1]:
+        top_y = placed[i] = min(ys[i], top_y - gap) if np.isfinite(top_y) else ys[i]
+    for (y0, text, col), yl in zip(ends, placed):            # the name is plain text; its leader is a separate line (so a text box never includes it)
+        ax.text(K + 0.9, yl, text, ha="left", va="center", fontsize=FS, color=style.INK, clip_on=False)
+        ax.plot([K, K + 0.75], [y0, yl], color=col, linewidth=0.8, clip_on=False, solid_capstyle="butt")
     return fig, pd.DataFrame(rows)
 
 
@@ -486,9 +523,21 @@ def out_root(cfg):
 
 
 def save_v2_item(item: dict, cfg, ctx) -> None:
+    """Same as before, built and saved under the author's thesis figure style (viz/part1.mplstyle, style 1), as Part I."""
+    import matplotlib.pyplot as plt
+    from pathlib import Path
+    with plt.style.context(str(Path(__file__).with_name("part1.mplstyle"))):
+        return _save_v2_item(item, cfg, ctx)
+
+
+def _save_v2_item(item: dict, cfg, ctx) -> None:
     """Build one item and write it to <out_root>/<group>/<role>/<name>.{pdf,png,csv,json}."""
     import json
     obj, data = item["builder"](ctx)
+    if item.get("kind", "figure") == "figure" and hasattr(obj, "axes"):
+        for a in obj.axes:                   # one grid per plot: a right-hand twin axis draws none
+            if a.yaxis.get_label_position() == "right":
+                a.grid(False)
     out = out_root(cfg) / item["group"] / item["role"]
     out.mkdir(parents=True, exist_ok=True)
     name = item["name"]
@@ -502,3 +551,4 @@ def save_v2_item(item: dict, cfg, ctx) -> None:
     else:
         obj.to_csv(out / f"{name}.csv", index=False)
     (out / f"{name}.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
+    return obj, data

@@ -55,6 +55,9 @@ tools:
 # analysis constants — every threshold the document states, in one place
 # -----------------------------------------------------------------------------
 analysis:
+  # 2026-10-11: Part I external inputs (evtol.news year, TRL, AAM index company map) come from the rule-based scripts
+  # (viz/script_inputs.py, written by notebook 60), the author's reading where he read the item; 'reading' = the old inputs
+  external_inputs: script
   # the analysis unit: representative (wizard-approved, passes the domain gate) primary aircraft
   domain_gate_tags: [UAVSimilar, ElectricSimilar, STOLSimilar]
   whole_vehicle_part: "Whole Vehicle Layout"

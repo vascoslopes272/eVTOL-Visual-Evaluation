@@ -779,11 +779,13 @@ def cohesion_panel(ax, main: pd.DataFrame, alt: pd.DataFrame, partial: Sequence[
     check (dashed line, dotted band edges); a window below the main band is a MET-coloured dot; partial windows hatched."""
     x = np.arange(len(main))
     ax.fill_between(x, main["ΔQ permutation low"], main["ΔQ permutation high"], color="#dedcd8", zorder=1, linewidth=0)
-    ax.plot(x, alt["ΔQ permutation low"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
-    ax.plot(x, alt["ΔQ permutation high"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
+    if alt is not None:
+        ax.plot(x, alt["ΔQ permutation low"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
+        ax.plot(x, alt["ΔQ permutation high"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
     ax.axhline(0, color=MUTED, linewidth=0.8, zorder=2)
     ax.plot(x, main["ΔQ"], marker="o", markersize=3.6, linewidth=1.5, color=INK, zorder=4)
-    ax.plot(x, alt["ΔQ"], marker="^", markersize=3.8, linewidth=1.2, color=MUTED, linestyle="--", zorder=4)
+    if alt is not None:
+        ax.plot(x, alt["ΔQ"], marker="^", markersize=3.8, linewidth=1.2, color=MUTED, linestyle="--", zorder=4)
     hit = [i for i, (q, lo) in enumerate(zip(main["ΔQ"], main["ΔQ permutation low"])) if q < lo and not partial[i]]
     if hit:
         ax.plot(x[hit], main["ΔQ"].to_numpy()[hit], "o", markersize=7.2, color=MET, markeredgecolor=INK, markeredgewidth=0.8, zorder=5)

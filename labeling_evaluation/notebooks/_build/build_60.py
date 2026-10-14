@@ -42,14 +42,16 @@ print('patent-linked pages the rules now exclude (they are in the patent dataset
 print(sorted(d[d.patented & ~d.in_domain].index))"""))
 c.append(md("## 3. Development year: rule-based script vs the author\n\n`year_rule.py` keeps Resources entries and event sentences about the aircraft, drops company-history and future statements, and takes the earliest year. It was developed on the pages the author did **not** review and scored once on the author's sample."))
 c.append(code("run('notebooks/_build/yearscript/evaluate_year_rule.py')"))
-c.append(md("## 4. TRL: rule-based script vs the author\n\n`trl_rule.py`: certification 8; piloted flight 7; flight of a sub-scale model 5; any other flight 6; ground / wind-tunnel / simulation 4; otherwise 2. The rules were written before scoring and not tuned on the answers."))
+c.append(md("## 4. TRL: fully programmatic script vs the author\n\n`trl_page_rule.py` reads the linked evtol.news pages of the same class as the patent drawing, sentence by sentence, with `trl_rule.py` (certification 8; piloted flight 7; flight of a sub-scale model 5; any other flight 6; ground / wind-tunnel / simulation 4; otherwise 2) and takes the highest level. Developed on the 53 linked designs the author did not review, frozen, scored once here."))
 c.append(code("""import pandas as pd
 from trl_rule import rule_trl
 from lib import intervals
 t = pd.read_csv(cfg.path('trl_per_aircraft'), keep_default_na=False, dtype=str).set_index('aircraft_id')
 r = pd.read_csv('review/decisions/TRL_REVIEW_DECISIONS.csv', dtype=str, keep_default_na=False)
 r = r[r.action.isin(['confirmed', 'changed'])].copy()
-r['author'] = r.trl.astype(int); r['script'] = r.aircraft_id.map(lambda a: rule_trl(t.loc[a, 'evidence_quote'])); r['reading step'] = r.aircraft_id.map(lambda a: int(t.loc[a, 'trl']))
+from trl_page_rule import all_designs as _trl_pages
+R_ = _trl_pages(cfg)
+r['author'] = r.trl.astype(int); r['script'] = r.aircraft_id.map(lambda a: R_.get(a, (2, '', ''))[0]); r['reading step'] = r.aircraft_id.map(lambda a: int(t.loc[a, 'trl']))
 n = len(r); ex = int((r.script == r.author).sum()); w1 = int(((r.script - r.author).abs() <= 1).sum()); rd = int((r['reading step'] == r.author).sum())
 print(f'rows answered: {n}')
 print(f'reading step agrees with the author: {rd}/{n} = {rd/n:.3f}  95% {intervals.wilson_fpc_interval(rd, n, 105)}')
@@ -72,14 +74,22 @@ def add(inp, who, k, n, N, what):
 dec_ex = pd.read_csv('review/decisions/DOMAIN_REVIEW_DECISIONS.csv', keep_default_na=False); dec_ex = dec_ex[(dec_ex.section == 'B') & dec_ex.decision.isin(['exclude', 'in_domain'])]
 dec_in = pd.read_csv('review/decisions/DOMAIN_INCLUDED_REVIEW_DECISIONS.csv', keep_default_na=False)
 add('Domain flag: deleting pages as out of domain', 'script rules', int((dec_ex.decision == 'exclude').sum()), len(dec_ex), 223, 'share of excluded pages that really are out')
+d0 = frames.directory_frame(cfg, use_overrides=False).set_index('slug_key')
+for t_, N_, lab in [(dec_ex, 223, 'Domain flag: deleting pages as out of domain'), (dec_in, 1040, 'Domain flag: keeping pages in the domain')]:
+    add(lab, 'script rules, CURRENT version (no single-page rulings)', int((t_.slug_key.map(d0.in_domain) == t_.decision.eq('in_domain')).sum()), len(t_), N_, 'same answers, rules as they are now (adjusted after the review: optimistic)')
 add('Domain flag: keeping pages in the domain', 'script rules', int((dec_in.decision == 'in_domain').sum()), len(dec_in), 1040, 'share of kept pages that really are in')
 ye = pd.read_csv('review/decisions/YEAR_REVIEW_SAMPLE.csv', keep_default_na=False, dtype=str)
 add('Development year', 'LLM (reading step)', int((ye.action == 'confirmed').sum()), len(ye), 1229, 'proposed year kept by the author')
 yr = pd.read_csv('review/decisions/YEAR_RULE_VS_AUTHOR.csv')
 add('Development year', 'script, exact year', int(yr.exact.sum()), len(yr), 1229, 'script year = the author year')
 add('Development year', 'script, within 1 year', int(yr.within1.sum()), len(yr), 1229, 'script year within +-1 of the author')
+W_ = frames.windows_from_config(cfg)
+same_w = int((yr.script.map(lambda y: frames.window_of(y, W_) if pd.notna(y) else None) == yr.gold.map(lambda y: frames.window_of(y, W_))).sum())
+add('Development year', 'script, same time window', same_w, len(yr), 1229, 'script year in the same window as the author (the unit the figures use)')
 add('TRL', 'LLM (reading step)', 50, 50, 105, 'proposed TRL kept by the author (evidence-based rows)')
 add('TRL', 'script, exact level', ex, n, 105, 'script TRL = the author TRL')
+side2 = int(((r.author > 2) == (r.script > 2)).sum())
+add('TRL', 'script, same side of TRL 2', side2, n, 105, 'above / not above TRL 2, as the figures use it')
 add('TRL', 'script, within 1 level', w1, n, 105, 'script TRL within +-1 of the author')
 import ari_rule
 from viz import thesis
@@ -96,7 +106,95 @@ print()
 for side, k_, n_, N_ in [('deleted as out of domain', int((dec_ex.decision == 'exclude').sum()), len(dec_ex), 223), ('kept in the domain', int((dec_in.decision == 'in_domain').sum()), len(dec_in), 1040)]:
     lo, hi = intervals.wilson_fpc_interval(k_, n_, N_)
     print(f'{side}: pool {N_} pages -> estimated RIGHT {round(N_*k_/n_)} ({round(N_*lo)}-{round(N_*hi)}), estimated WRONG {round(N_*(1-k_/n_))} ({round(N_*(1-hi))}-{round(N_*(1-lo))})')"""))
-c.append(md("## 7. Reading the numbers\n\n- A script is acceptable as a stand-in when its agreement with the author is at or above the author's threshold; otherwise report it as a transparent baseline.\n- The author's threshold for the reading-step inputs was a lower bound of 90 %; the question of whether a script may be judged on \"within one year / one level\" is the author's to decide."))
+c.append(md("""## 8. The lists the figures read (written here)
+
+`review/script_outputs/` holds one CSV per input, one row per item, with the script's value, the author's value where he read the item, and the final value the Part I figures use (`final_*`, the author's reading where it exists, else the script's):
+
+- `DOMAIN.csv`: every evtol.news page with `in_domain` (rules + the author's single-page rulings)
+- `YEAR.csv`: every page with `script_year`, the sentence that gave it, `author_year`, `final_year`
+- `TRL.csv`: every design with `script_trl`, `author_trl`, `final_trl`
+- `COMPANY_MAP.csv`: the 43 index companies with `script_match` and the author's name (`company_canonical`)
+
+The switch is `analysis.external_inputs: script` in `labelling_analysis.yaml` ('reading' brings back the old inputs). Re-run notebook 48 after this cell."""))
+c.append(code("""from viz import script_inputs
+files = script_inputs.build(cfg)
+for k, f in files.items():
+    x = pd.read_csv(f, keep_default_na=False)
+    print(k.ljust(12), len(x), 'rows ->', f)
+y_ = pd.read_csv(files['YEAR'], keep_default_na=False); t_ = pd.read_csv(files['TRL'], keep_default_na=False)
+print('year: final from the author', int(y_.source.eq('author review').sum()), '| from the script', int((y_.source.eq('script') & y_.final_year.ne('')).sum()), '| no year', int(y_.final_year.eq('').sum()))
+print('TRL : final from the author', int(t_.source.eq('author review').sum()), '| from the script', int(t_.source.eq('script').sum()))
+# item by item: every reviewed domain page, what the rules said then (sampled as excluded / kept), what they say now, and the author
+d_now = frames.directory_frame(cfg, use_overrides=False).set_index('slug_key')
+a_ = pd.read_csv('review/decisions/DOMAIN_REVIEW_DECISIONS.csv', keep_default_na=False); a_ = a_[a_.decision.isin(['exclude', 'in_domain'])]
+b_ = pd.read_csv('review/decisions/DOMAIN_INCLUDED_REVIEW_DECISIONS.csv', keep_default_na=False)
+cmp_ = pd.concat([a_.assign(rules_at_review='out', sample=a_.section.map({'A': 'patent-linked, excluded', 'B': 'excluded sample'})),
+                  b_.assign(rules_at_review='in', sample='kept sample')])[['slug_key', 'sample', 'rules_at_review', 'decision']]
+cmp_['rules_now'] = cmp_.slug_key.map(d_now.in_domain).map({True: 'in', False: 'out'})
+cmp_['author'] = cmp_.decision.map({'in_domain': 'in', 'exclude': 'out'})
+cmp_['agree_at_review'] = cmp_.rules_at_review.eq(cmp_.author); cmp_['agree_now'] = cmp_.rules_now.eq(cmp_.author)
+cmp_.drop(columns='decision').to_csv('review/script_outputs/DOMAIN_RULES_VS_AUTHOR.csv', index=False)
+print('DOMAIN_RULES_VS_AUTHOR.csv', len(cmp_), 'reviewed pages; agree at review', int(cmp_.agree_at_review.sum()), '| agree now', int(cmp_.agree_now.sum()))
+print('per-item comparisons: YEAR.csv (script_year vs author_year), TRL.csv (script_trl vs author_trl), COMPANY_MAP.csv (script_match vs author), DOMAIN_RULES_VS_AUTHOR.csv; year detail also in review/decisions/YEAR_RULE_VS_AUTHOR.csv')"""))
+c.append(md("## 9. Reading the numbers\n\n- A script is acceptable as a stand-in when its agreement with the author is at or above the author's threshold; otherwise report it as a transparent baseline.\n- The author's threshold for the reading-step inputs was a lower bound of 90 %; the question of whether a script may be judged on \"within one year / one level\" is the author's to decide."))
+c.append(md("""## 10. Download evtol.news again (optional, off by default)
+
+Set `DOWNLOAD = True` to fetch the directory again into a **new** folder (`EVTOLNEWS_DS_<date>`, never over the frozen one), parse it, and rebuild the dated sentences. Nothing in the thesis reads the new folder until `labelling_analysis.yaml` is pointed at it. If it is, every script value is recomputed from today's pages, and the author's review answers (made on the 17 September 2026 text) no longer score them: a new review sample would be needed.
+
+The fetch is polite (2 workers, a pause between pages) and takes about an hour for ~1 250 pages. Pages behind the VFS member login are fetched as the public view, as before."""))
+c.append(code("""DOWNLOAD = False
+if DOWNLOAD:
+    import datetime
+    sys.path.insert(0, str(PILLAR.parents[1] / 'eVTOL-Embedding-Extraction' / 'src'))
+    import evtolnews
+    from split_sentences import build
+    new_root = cfg.path('evtolnews_aircraft').parents[1].with_name('EVTOLNEWS_DS_' + datetime.date.today().isoformat())
+    ecfg = {'evtolnews': {'root': str(new_root)}}
+    evtolnews.build_index(ecfg)                 # 1. the directory list page
+    evtolnews.crawl_pages(ecfg)                 # 1. every aircraft page, raw HTML
+    evtolnews.parse_pages(ecfg)                 # 2. pages.jsonl + aircraft.csv
+    s0 = new_root / '0_source'
+    (s0 / 'years' / 'readers').mkdir(parents=True, exist_ok=True)
+    d = build(s0 / 'pages.jsonl', s0 / 'aircraft.csv', s0 / 'years' / 'readers' / 'evidence_ids.csv')   # 3. dated sentences
+    print('new download in', new_root, '|', len(d), 'dated sentences')
+else:
+    print('DOWNLOAD is False: the frozen download of 17 September 2026 is used.')"""))
+prov = [md("""# Where the information comes from (no LLM in the data)
+
+Every input the scripts of this notebook read is **raw text taken from the web pages**, never text chosen or written by a language model.
+
+| step | what it is | file | made by | LLM? |
+|---|---|---|---|---|
+| 1 | the 1 229 evtol.news aircraft pages, as downloaded on **17 September 2026** | `EVTOLNEWS_DS/0_source/html/<page>.html`, `index.html` | `eVTOL-Embedding-Extraction/src/evtolnews.py` (`build_index`, `crawl_pages`) | no |
+| 2 | page text and specification lines (power source, capacity, aircraft type, piloting, status, class) | `0_source/pages.jsonl`, `0_source/aircraft.csv` | `evtolnews.py` (`parse_pages`): HTML stripped, nothing rewritten | no |
+| 3 | every sentence that contains a year, word for word, with a fixed id and a flag for the source list | `0_source/years/readers/evidence_ids.csv` (14 148 sentences) | a sentence split of step 2; rebuilt by `notebooks/_build/yearscript/split_sentences.py` | no |
+| 4 | the evtol.news pages linked to each patent design (`use = yes`) | `evtolnews_patent_links` | the author's earlier linking | no |
+| 5 | the author's review answers | `review/decisions/*.csv` | the author | no |
+
+The four rule scripts (domain, year, TRL, company) read only these files, so their scores against the author (sections 1 to 6) are the scores of the keyword rules alone. The cell below checks steps 2 and 3 on the files themselves.
+
+The one place a language model touched this work: while the year and TRL rules were written, they were compared with the earlier reading-step values on pages the author did not review. The data the rules read, and their scores against the author, involve no model.
+
+The analysis uses the **frozen download of 17 September 2026**. Downloading again gives today's pages, which change over time; the author's review would no longer match the text it scored (see the last section)."""),
+code("""import sys, json, re, pathlib
+import pandas as pd
+PILLAR = pathlib.Path.cwd().parent if pathlib.Path.cwd().name == 'notebooks' else pathlib.Path.cwd()
+sys.path.insert(0, str(PILLAR)); sys.path.insert(0, str(PILLAR / 'notebooks' / '_build' / 'yearscript'))
+from viz import config
+cfg = config.load()
+SRC = cfg.path('evtolnews_aircraft').parent
+html = sorted((SRC / 'html').glob('*.html'))
+pages = {r['slug_key']: r['text'] for r in map(json.loads, open(SRC / 'pages.jsonl', encoding='utf-8'))}
+ev = pd.read_csv(SRC / 'years' / 'readers' / 'evidence_ids.csv', dtype=str, keep_default_na=False)
+print('raw HTML pages saved:', len(html), '| parsed pages:', len(pages))
+verb = sum(s in pages.get(k, '') for k, s in zip(ev.slug_key, ev.sentence))
+print(f'dated sentences found word for word in the page text: {verb} of {len(ev)}')
+from split_sentences import build
+re_ = build(SRC / 'pages.jsonl', SRC / 'aircraft.csv')
+a = set(zip(ev.slug_key, ev.sentence)); b = set(zip(re_.slug_key, re_.sentence))
+print(f'rebuilt from pages.jsonl by split_sentences.py: {len(re_)} sentences, {len(a & b)} identical to the file used ({len(a & b)/len(a):.1%}); '
+      'the rest differ only in where a sentence is cut')""")]
+c = prov + c
 nb = nbf.v4.new_notebook(); nb.cells = c
 nb.metadata["kernelspec"] = {"display_name": "Python 3", "language": "python", "name": "python3"}
 out = HERE / "60_review_scripts_vs_author.ipynb"

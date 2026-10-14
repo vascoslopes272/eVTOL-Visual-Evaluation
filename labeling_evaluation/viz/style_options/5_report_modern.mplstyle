@@ -1,0 +1,25 @@
+# 5. Modern report: Open Sans, slightly larger text, light full grid, soft grey axes (common in dissertations read on screen)
+font.family: sans-serif
+font.sans-serif: Open Sans, Roboto, DejaVu Sans
+font.size: 9.5
+axes.labelsize: 9.5
+axes.titlesize: 10
+xtick.labelsize: 8.5
+ytick.labelsize: 8.5
+legend.fontsize: 8.5
+legend.frameon: False
+axes.spines.top: False
+axes.spines.right: False
+axes.spines.left: False
+axes.grid: True
+grid.color: 0.88
+grid.linewidth: 0.6
+axes.edgecolor: 0.35
+axes.linewidth: 0.7
+xtick.color: 0.25
+ytick.color: 0.25
+ytick.major.size: 0
+xtick.major.size: 3
+lines.linewidth: 1.6
+savefig.bbox: tight
+pdf.fonttype: 42

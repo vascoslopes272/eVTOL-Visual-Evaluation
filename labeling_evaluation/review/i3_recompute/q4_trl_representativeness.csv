@@ -1,0 +1,7 @@
+attribute,n above TRL 2,n rest,largest gap,test,p,verdict
+folded class,63,564,LC (+6.4 pp),chi-square,0.11,no difference detected
+applicant region,63,564,Asia-Pacific (-4.7 pp),chi-square,0.83,no difference detected
+priority window,63,564,2020-23 (+12.7 pp),chi-square,0.07,no difference detected
+filer type,63,564,Named company (+35.5 pp),chi-square,< 0.001,differs
+priority year,63,564,median +1.0,Mann-Whitney,0.05,no difference detected
+propulsive units,63,564,median +3.0,Mann-Whitney,< 0.001,differs

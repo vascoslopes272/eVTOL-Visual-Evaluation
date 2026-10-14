@@ -55,27 +55,25 @@ def _calc(ctx):
     ry = frames.region_years(ds, v)
     _, ll = regional.lead_lag(v, "region3")
     off = regional.lag_offsets(regional.lag_frame(v, class_names=frames.LAG_CLASS_NAMES))
-    # §1.2 out of force per class and per office
-    w = frames.force_frame(ds, v)
-    g = w.groupby("topType").agg(**{"unique aircraft": ("aircraft_id", "size"), "out of force": ("out", "sum"), "_old": ("lapsed", "mean")})
+    # §1.2 active protection (method of 2026-10-12): EVERY priority year; a design is actively protected when any patent that
+    # shows it is in force at the snapshot. The old priority <= 2019 cut, the primary-patent-only reading and the US-only test
+    # are dropped.
+    w = frames.force_frame(ds, v, max_year=None)
+    g = w.groupby("topType").agg(**{"unique aircraft": ("aircraft_id", "size"), "out of force": ("out", "sum")})
     g["out of force share"] = (g["out of force"] / g["unique aircraft"]).round(2)
-    g["out of force, primary patent only"] = g["_old"].round(2)
     g["class"] = [style.cls(x).name for x in g.index]
     force = g.sort_values(["unique aircraft", "class"], ascending=[False, True]).reset_index().rename(columns={"topType": "code"})
-    force = force[["class", "code", "unique aircraft", "out of force", "out of force share", "out of force, primary patent only"]]
-    w_first = frames.force_frame(ds, v, first_only=True).set_index("aircraft_id")["out"]
-    w["out_first"] = w["aircraft_id"].map(w_first).astype(bool)
+    force = force[["class", "code", "unique aircraft", "out of force", "out of force share"]]
     tested = force.loc[force["unique aircraft"] >= frames.FORCE_TEST_MIN, "code"]
     big = w[w["topType"].isin(tested)]
     p_all, k_tested = _class_test(big, "out")
-    p_first, _ = _class_test(big, "out_first")
-    meta = v.drop_duplicates("aircraft_id").set_index("aircraft_id")[["firm", "pub_office", "legal_status_raw"]]
+    meta = v.drop_duplicates("aircraft_id").set_index("aircraft_id")[["firm", "pub_office", "legal_status_raw", "window"]]
     wo = w.join(meta, on="aircraft_id")
-    us = wo[wo["pub_office"] == "US"]
-    us_big = us[us["topType"].isin(us["topType"].value_counts()[lambda s: s >= frames.FORCE_TEST_MIN].index)]
-    p_us, _ = _class_test(us_big, "out")
+    wo["office"] = np.where(wo["pub_office"].eq("US"), "US office", "other offices")
+    p_office = association.chi2_test(pd.crosstab(wo["office"], wo["out"]).values)["p"]
+    cohort = wo.groupby("window").agg(n=("aircraft_id", "size"), not_protected=("out", "mean"))
     c.update(fpy=fpy, ser=ser, names=names, rates=rates, ratios=ratios, tp=tp, fits=fits, lag=lag, ry=ry, ll=ll, off=off,
-             w=w, force=force, p_all=p_all, k_tested=k_tested, p_first=p_first, wo=wo, p_us=p_us, n_us=len(us_big))
+             w=w, force=force, p_all=p_all, k_tested=k_tested, wo=wo, p_office=p_office, cohort=cohort)
     _CACHE[key] = c
     return c
 
@@ -182,17 +180,32 @@ def fig_na_drop_is_real(ctx):
 
 
 def fig_in_force_status(ctx):
-    """Figure 4: the share of each class's aircraft (priority year 2019 or earlier) with no patent left in force."""
+    """Figure 4: the share of each architecture's designs (every priority year) that no patent in force protects at the
+    snapshot; architectures of ten designs or more, n under each bar, the all-architectures share as a dashed line."""
+    import textwrap
+    from matplotlib.lines import Line2D
+    from viz.thesis_v2_part1 import arch
     c = _calc(ctx)
     force, w = c["force"], c["w"]
-    fd = force[(force["unique aircraft"] >= frames.FORCE_TEST_MIN) & (force["code"] != "ALL")]
-    fig, ax = plt.subplots(figsize=(ctx.W, 2.9), constrained_layout=True)
-    plots.class_value_bars(ax, list(fd["code"]), fd["out of force share"].tolist(), fd["unique aircraft"].astype(int).tolist(),
-                           marks=fd["out of force, primary patent only"].tolist(), mark_label="first patent alone (earlier reading)",
-                           overall=float(w["out"].mean()), overall_label=f"all classes\n{w['out'].mean():.0%} of {len(w)}")
-    ax.set_ylabel("share of the class's aircraft\nout of force")
-    ax.set_ylim(0, 0.8)
-    ax.legend(loc="upper right")
+    fd = force[(force["unique aircraft"] >= frames.FORCE_TEST_MIN) & (force["code"] != "ALL")].reset_index(drop=True)
+    overall = float(w["out"].mean())
+    fig, ax = plt.subplots(figsize=(ctx.W, 3.4), constrained_layout=True)
+    x = np.arange(len(fd))
+    small = plt.rcParams["xtick.labelsize"] - 1
+    for i, r in fd.iterrows():
+        s = arch(r["code"])
+        ax.bar(x[i], r["out of force share"], 0.62, color=s.color, hatch=s.hatch, edgecolor="white", linewidth=0.6, zorder=3)
+        ax.text(x[i], r["out of force share"] + 0.015, f"{r['out of force share']:.0%}", ha="center", va="bottom", fontsize=small)
+        ax.annotate(f"n {int(r['unique aircraft'])}", (x[i], 0), xycoords=("data", "axes fraction"), xytext=(0, -3),
+                    textcoords="offset points", ha="center", va="top", fontsize=small - 0.5, color=style.MUTED, annotation_clip=False)
+    ax.set_xticks(x, ["\n".join(textwrap.wrap(arch(code).name, 10, break_long_words=False)) for code in fd["code"]], fontsize=small)   # names never touch
+    ax.tick_params(axis="x", pad=14, length=0)          # n under each bar first, then the architecture name
+    ax.axhline(overall, color=style.INK, linewidth=1, linestyle="--", zorder=2)
+    ax.set_ylabel("Designs not actively protected (%)")
+    ax.set_ylim(0, 1.0)
+    ax.yaxis.set_major_formatter(plt.matplotlib.ticker.PercentFormatter(1, decimals=0))
+    ax.legend(handles=[Line2D([], [], color=style.INK, linewidth=1, linestyle="--",
+                              label=f"all architectures: {overall:.0%} of {len(w)} designs")], loc="upper right")
     return fig, fd
 
 
@@ -248,12 +261,12 @@ ITEMS = [
          unit="unique aircraft per priority year, the three regions",
          read="The number on the North America segment is its share of that year's aircraft (years from 2016 with 8 aircraft or more). Faded and shaded: years the snapshot of June 2026 has not fully seen. Dotted lines: dated sector events, hypotheses never tested as causes. The legend gives each region's median priority year to 2023."),
     dict(name="q1_in_force_status", slot="appendix", kind="figure", sub="B",
-         title="Aircraft with no patent in force, per class",
-         caption="Share of each class's aircraft with no patent left in force at the snapshot, priority year 2019 or earlier, classes of ten aircraft or more.",
+         title="Designs not actively protected, by architecture",
+         caption="Share of each architecture's designs that no patent in force protects at the snapshot (2026-06-08), every priority year, architectures of ten designs or more.",
          source_item="Figure 4", flag=None, flag_note="", builder=fig_in_force_status,
          source="PatSeer legal status at the snapshot (2026-06-08) · human labelling (class, duplicates)",
-         unit="unique aircraft with priority year 2019 or earlier; share of the class",
-         read="An aircraft is out of force only when none of its patents is in force. Black dash: the share when only the aircraft's first patent is read; dashed line: all classes."),
+         unit="designs, every priority year; share of the architecture's designs",
+         read="A design is actively protected when any patent that shows it is in force at the snapshot. Number under each bar: its designs; dashed line: all architectures."),
 ]
 
 
@@ -314,15 +327,21 @@ def numbers(ctx) -> dict:
         "ap_delay_range": f"{int(min(ap_old))} to {int(max(ap_old))}" if min(ap_old) != max(ap_old) else f"{int(min(ap_old))}",
         "ap_delay_cvt": _yrs(offi.loc[(frames.LAG_CLASS_NAMES["CVT"], AP), "offset vs North America (years)"]),
         "ap_delay_cvt_ci": f"{_yrs(offi.loc[(frames.LAG_CLASS_NAMES['CVT'], AP), '95 % low'])} to {_yrs(offi.loc[(frames.LAG_CLASS_NAMES['CVT'], AP), '95 % high'])}",
-        # §1.2 out of force
+        # §1.2 active protection, every priority year (method of 2026-10-12)
         "fa_n": str(n_all), "fa_share": pct(float(c["w"]["out"].mean())), "fa_out": str(int(c["w"]["out"].sum())),
         "fa_cvt": pct(fa("CVT")), "fa_slc": pct(fa("SLC")), "fa_tr": pct(fa("TR")), "fa_mr": pct(fa("MR")),
-        "fa_mr_first": pct(float(wo.loc[wo["topType"] == "MR", "out_first"].mean())),
-        "fa_p": f"{c['p_all']:.3f}", "fa_p_first": f"{c['p_first']:.3f}", "fa_k": str(c["k_tested"]),
+        "fa_p": pval(c["p_all"]), "fa_k": str(c["k_tested"]),
         "fo_us": pct(share_of(wo["pub_office"] == "US")), "fo_else": pct(share_of(wo["pub_office"] != "US")),
         "fo_wo": pct(share_of(wo["pub_office"] == "WO")), "fo_cn": pct(share_of(wo["pub_office"] == "CN")),
-        "fo_p_us": f"{c['p_us']:.2f}", "fo_n_us": str(c["n_us"]),
+        "fo_n_us": str(int((wo["pub_office"] == "US").sum())), "fo_n_else": str(int((wo["pub_office"] != "US").sum())),
+        "fo_p": pval(c["p_office"]),
+        **{f"fa_c_{k}": pct(float(c["cohort"].loc[w_, "not_protected"])) for k, w_ in COHORT_KEYS.items() if w_ in c["cohort"].index},
+        **{f"fa_c_{k}_n": str(int(c["cohort"].loc[w_, "n"])) for k, w_ in COHORT_KEYS.items() if w_ in c["cohort"].index},
     }
+
+
+#: the priority-year cohorts of the active-protection age read, numbers.json key -> window label
+COHORT_KEYS = {"le2011": "<= 2011", "1215": "2012-15", "1619": "2016-19", "2023": "2020-23", "2426": "2024-26 (partial)"}
 
 
 def _yrs(x) -> str:

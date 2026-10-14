@@ -1,0 +1,10 @@
+{
+ "name": "q1_in_force_status",
+ "group": "I2_active_protection",
+ "role": "main",
+ "kind": "figure",
+ "title": "Designs with no patent in force, by architecture and office",
+ "source_item": "v2 of Figure 4",
+ "width_in": 6.3,
+ "height_in": 4.3
+}

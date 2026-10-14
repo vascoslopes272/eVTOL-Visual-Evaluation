@@ -1,0 +1,23 @@
+# 4. Minimal (Nature / Tufte type): Helvetica-type sans, small, no grid, no box, thin outward ticks
+font.family: sans-serif
+font.sans-serif: Helvetica, Arial, Nimbus Sans, Liberation Sans
+font.size: 8
+axes.labelsize: 8
+axes.titlesize: 8
+xtick.labelsize: 7
+ytick.labelsize: 7
+legend.fontsize: 7
+legend.frameon: False
+axes.spines.top: False
+axes.spines.right: False
+axes.grid: False
+axes.linewidth: 0.5
+xtick.major.width: 0.5
+ytick.major.width: 0.5
+xtick.major.size: 2.5
+ytick.major.size: 2.5
+xtick.direction: out
+ytick.direction: out
+lines.linewidth: 1.2
+savefig.bbox: tight
+pdf.fonttype: 42

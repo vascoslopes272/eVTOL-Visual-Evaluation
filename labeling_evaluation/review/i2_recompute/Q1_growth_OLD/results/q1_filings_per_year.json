@@ -1,0 +1,16 @@
+{
+ "name": "q1_filings_per_year",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "A",
+ "title": "Unique aircraft per priority year",
+ "caption": "Unique aircraft by the priority year of their first patent, stacked by applicant region, with the representative patents as a line and the dated sector events under the bars.",
+ "source_item": "Figure 1 (i)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer (snapshot 2026-06-08) · human labelling · sector events: the author's dated list (checked 2026-09-23)",
+ "unit": "unique aircraft and representative patents per priority year",
+ "read": "The first bar holds 1999-2005. A year is faded with a dashed outline while the snapshot is less than the 90th-percentile publication lag (3 years) after its end; its bar total is printed on it. An event stands on its calendar year.",
+ "width_in": 6.3,
+ "height_in": 4.6
+}

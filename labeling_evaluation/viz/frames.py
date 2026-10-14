@@ -728,6 +728,12 @@ def evtolnews_years(cfg, windows) -> pd.DataFrame:
     Ported from: sm_open.py:evtolnews_years"""
     d = pd.read_csv(cfg.path("evtolnews_dev_years"))
     d["year"] = pd.to_numeric(d["dev_year"], errors="coerce")
+    from viz import script_inputs
+    if script_inputs.enabled(cfg) and script_inputs.year(cfg) is not None:
+        # rule-based year (the author's reading where he read the page); the year overrides below are then already in it
+        d["year"] = pd.to_numeric(d["slug_key"].map(script_inputs.year(cfg)), errors="coerce")
+        d["window"] = d["year"].map(lambda y: window_of(y, windows))
+        return d
     # years the author corrected on the review page (review/year_overrides.csv); the source csv itself is never edited
     ov_path = _Path(__file__).resolve().parents[1] / "review" / "year_overrides.csv"
     if ov_path.exists():
@@ -765,9 +771,11 @@ def ari_load(cfg) -> tuple:
     """(current release, history, company map) of the AAM Reality Index, as stored.
 
     Ported from: la_tables.py:_load_ari"""
+    from viz import script_inputs
+    cmap = script_inputs.company_map(cfg) if script_inputs.enabled(cfg) else None
     return (pd.read_csv(cfg.path("ari_scores"), keep_default_na=False),
             pd.read_csv(cfg.path("ari_history")),
-            pd.read_csv(cfg.path("ari_firm_map"), keep_default_na=False))
+            cmap if cmap is not None else pd.read_csv(cfg.path("ari_firm_map"), keep_default_na=False))
 
 
 def ari_firms(v: pd.DataFrame, cfg) -> pd.DataFrame:
@@ -847,7 +855,8 @@ def force_frame(ds, v: pd.DataFrame, max_year: int = FORCE_MAX_YEAR, first_only:
     links["_live"] = links["status_known"] & ~links["inactive"]
     per = links.groupby("aircraft_id").agg(linked=("patent_id", "size"), known=("status_known", "sum"),
                                            live=("_live", "any"))
-    w = v[v["year"].le(max_year) & v["topType"].notna()][["aircraft_id", "topType", "lapsed"]]
+    keep = v["topType"].notna() if max_year is None else (v["year"].le(max_year) & v["topType"].notna())
+    w = v[keep][["aircraft_id", "topType", "lapsed", "year"]]
     w = w.join(per, on="aircraft_id")
     unread = int(w["known"].fillna(0).eq(0).sum())
     w = w[w["known"].fillna(0).gt(0)].copy()
@@ -1953,7 +1962,7 @@ def dd_levels(yearly: pd.DataFrame, balance: pd.DataFrame, form: pd.DataFrame, w
         hit_alt = fm[fm["weighting"].eq(alt) & fm["below band"].astype(str).eq("True")]["window"].tolist()
         if hit:
             only = [w for w in hit if w not in hit_alt]
-            c["3"] = "met in " + ", ".join(hit) + (f" ({main} weighting only)" if only else "")
+            c["3"] = "met in " + ", ".join(hit)
         else:
             c["3"] = "no"
         m["3"] = set(hit)
@@ -2948,7 +2957,7 @@ def directory_paxdesign_pages(cfg) -> dict:
     return out
 
 
-def directory_frame(cfg) -> pd.DataFrame:
+def directory_frame(cfg, use_overrides: bool = True) -> pd.DataFrame:
     """One row per evtol.news aircraft page (1 229) with what can explain a different class mix.
 
     Columns: ``slug_key``, ``class5`` (the directory's own class), ``status`` (list status, else page status),
@@ -2992,19 +3001,19 @@ def directory_frame(cfg) -> pd.DataFrame:
     # 2026-10-11 ruling (multicopters were far too many against the patents): type / name saying cargo / drone ... with no person
     # in the capacity is a UAV. 2026-10-11 ruling: only truly unmanned pages are UAVs; autonomous / remote count as piloted
     cargo_cap = cap.str.contains(r"(?<!no )\bcargo\b") & cap.str.contains(r"\bonly\b|no passengers|no pilot") & ~cap.str.contains(r"no passengers? or cargo")
-    strong = (cargo_cap & ~can_carry) | (cargo_name & cap.str.contains(r"(?<!no )\bcargo\b")) | (type_l.str.contains(r"\bcargo\b|drone") & ~can_carry & ~cap.str.replace(r"no (?:passengers?|pilots?)", "", regex=True).str.contains(DIRECTORY_PEOPLE)) | status.eq("cargo drone") | (typ_rule & (cargo_name | type_l.str.contains("cargo|drone|delivery|logistic|freight|agricultur|spray")))
+    strong = (cargo_cap & ~can_carry) | (cargo_name & cap.str.contains(r"(?<!no )\bcargo\b")) | (type_l.str.contains(r"\bcargo\b|drone") & ~can_carry & ~people_other & ~cap.str.replace(r"no (?:passengers?|pilots?)", "", regex=True).str.contains(DIRECTORY_PEOPLE)) | status.eq("cargo drone") | (typ_rule & ~people_other & (cargo_name | type_l.str.contains("cargo|drone|delivery|logistic|freight|agricultur|spray")))
     weak = ((weak_cap & uav_cap) | typ_rule) & ~strong
-    # a WEAK exclusion is dropped when the page says the aircraft (or its line) is built for people: a demonstrator that flew
-    # empty (Joby S4-T, KARI OPPAV, Vahana) is a passenger design
+    # 2026-10-11, after the author's review: an uncrewed demonstrator is OUT even when its maker builds passenger aircraft
+    # (Section 3.1.1 occupancy rule: piloted, passenger-carrying). directory_paxdesign_pages is kept for reference only.
     pax_design = d["slug_key"].map(directory_paxdesign_pages(cfg)).astype(object).where(lambda x: x.notna(), False).astype(bool)
-    uav = strong | (weak & ~pax_design)
+    uav = strong | weak
     # 2026-10-11 ruling: a UAV is excluded only when it is uncrewed EXCLUSIVELY; if the page text says it can be crewed /
     # piloted (own description, not the Resources list), it is not a UAV
     crewed_text = d["slug_key"].map(directory_crewed_pages(cfg)).astype(object).where(lambda s: s.notna(), False).astype(bool)
     uav = uav & ~crewed_text
     # author's individual rulings on the review page (review/domain_overrides.csv): in domain whatever the rules say
     ov_path = _Path(__file__).resolve().parents[1] / "review" / "domain_overrides.csv"
-    if ov_path.exists():
+    if use_overrides and ov_path.exists():
         ovd = pd.read_csv(ov_path, keep_default_na=False)
         ov = set(ovd.query("decision == 'in_domain'")["slug_key"])
         ovx = set(ovd.query("decision == 'exclude'")["slug_key"])

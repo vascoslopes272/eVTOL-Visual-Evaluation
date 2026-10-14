@@ -1,0 +1,25 @@
+# Part I (Evidence base) figure style, given by the author 2026-10-11. Arial is not installed here; Liberation Sans
+# (metric-compatible with Arial) is used in its place by the fallback list.
+font.family        : sans-serif
+font.sans-serif    : Arial, Helvetica, Liberation Sans, TeX Gyre Heros
+font.size          : 9
+axes.labelsize     : 9
+xtick.labelsize    : 8
+ytick.labelsize    : 8
+legend.fontsize    : 8
+legend.frameon     : False
+axes.titlesize     : 9
+axes.spines.top    : False
+axes.spines.right  : False
+axes.grid          : True
+axes.grid.axis     : y
+grid.color         : 0.9
+grid.linewidth     : 0.6
+axes.linewidth     : 0.6
+xtick.major.width  : 0.6
+ytick.major.width  : 0.6
+lines.linewidth    : 1.6
+figure.figsize     : 6.3, 3.2
+savefig.bbox       : tight
+savefig.format     : pdf
+pdf.fonttype       : 42

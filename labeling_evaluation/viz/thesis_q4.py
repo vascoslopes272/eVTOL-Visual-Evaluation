@@ -135,15 +135,30 @@ def representativeness(ctx) -> dict:
         in_ari = v["company_canonical"].isin(firms)
         rep_ari = frames.representativeness(v.copy(), in_ari, "index firms", ctx.WIN_NAMES)
         verdict = {"matches the rest": "no difference detected", "does NOT match the rest": "differs"}
+        # 2026-10-12, new definition of "flown" (author): FLOWN = TRL 5 or more (5 sub-scale flight, 6 any other flight,
+        # 7 piloted flight, 8 certification); FLOWN index-firm designs = designs of the index firms whose first flight, as the
+        # index states it, is on or before the snapshot (the index prints years only: earliest year <= 2025; a 2026 year in
+        # the May 2026 release is read as a plan, as in the market-clock figure). Everyone else is "the rest".
+        flown = pd.to_numeric(wt["trl"], errors="coerce").fillna(2).ge(5)
+        rep_flown = frames.representativeness(wt, flown, "flown", ctx.WIN_NAMES)
+        tl = frames.ari_timeline(v, ctx.cfg)
+        ff = pd.to_numeric(tl["first flight (ARI)"], errors="coerce")
+        flown_firms = set(tl.loc[ff.notna() & ff.le(frames.ARI_RELEASE_YEAR - 1), "company"])
+        in_fari = v["company_canonical"].isin(flown_firms)
+        rep_fari = frames.representativeness(v.copy(), in_fari, "flown", ctx.WIN_NAMES)
+        names = {"folded class": "architecture group", "filer type": "assignee type", "priority window": "priority-year cohort",
+                 "propulsive units": "propulsor units"}
 
         def printed(rep, label):
             s = rep[rep["test"] != ""].copy()
-            return pd.DataFrame({"attribute": s["attribute"], f"n {label}": s[f"n {label}"].astype(int),
-                                 "n rest": s["n rest"].astype(int), "largest gap": s["largest gap"], "test": s["test"],
-                                 "p": s["p"].map(lambda p: "< 0.001" if p < 0.001 else f"{p:.2f}"),
+            return pd.DataFrame({"attribute": s["attribute"].replace(names), f"n {label}": s[f"n {label}"].astype(int),
+                                 "n rest": s["n rest"].astype(int), "largest gap": s["largest gap"].str.replace("<= ", "≤", regex=False), "test": s["test"],
+                                 "p": s["p"].map(lambda p: "< 0.001" if p < 0.001 else (f"{p:.3f}" if p < 0.1 else f"{p:.2f}")),
                                  "verdict": s["verdict"].map(verdict)}).reset_index(drop=True)
-        return {"trl": rep_trl, "ari": rep_ari, "tab4": printed(rep_trl, "above TRL 2"), "tab5": printed(rep_ari, "index firms"),
-                "n_above": int(above.sum()), "n_ari": int(in_ari.sum()), "n_firms": len(firms)}
+        return {"trl": rep_trl, "ari": rep_ari, "flown": rep_flown, "fari": rep_fari,
+                "tab4": printed(rep_flown, "flown"), "tab5": printed(rep_fari, "flown"),
+                "n_above": int(above.sum()), "n_ari": int(in_ari.sum()), "n_firms": len(firms),
+                "n_flown": int(flown.sum()), "n_fari": int(in_fari.sum()), "n_fari_firms": len(flown_firms), "fari_firms": sorted(flown_firms)}
     return _cache(ctx, "rep", build)
 
 
@@ -364,18 +379,18 @@ ITEMS = [
          read="Bar: first to last priority year in this corpus; tick: the year the firm filed most. Square: first flight; "
               "triangle: entry into service; an open marker is a plan (after the index release of 2026). The gap from first "
               "patent to first flight is a floor, since an earlier filing may lie outside this corpus."),
-    dict(name="q4_trl_representativeness", slot="results", kind="table", sub="B",
-         title="Aircraft above TRL 2 against the rest",
-         caption="The aircraft above NASA TRL 2 against the rest of the labelled dataset on six attributes, one test per "
-                 "attribute: chi-square for a category, Mann-Whitney for a number.",
+    dict(name="q4_flown_representativeness", slot="results", kind="table", sub="B",
+         title="Flown designs against the rest",
+         caption="The flown designs (NASA TRL 5 or more: a sub-scale, full-scale, piloted or certified flight) against the rest "
+                 "of the patent dataset on six attributes, one test per attribute: chi-square for a category, Mann-Whitney for a number.",
          source_item="Table 4", flag="verify", flag_note=VERIFY_NOTE, builder=tab_trl_representativeness,
-         source="NASA TRL (inputs/trl/aircraft_trl.csv) · human labelling · PatSeer", unit="unique aircraft", read=""),
-    dict(name="q4_index_firm_representativeness", slot="results", kind="table", sub="B",
-         title="Index-firm aircraft against the rest",
-         caption="The aircraft of the AAM Reality Index firms against the rest of the labelled dataset on six attributes, "
-                 "one test per attribute.",
+         source="NASA TRL per design (rule-based script on the evtol.news pages, the author's reading where reviewed) · human labelling · PatSeer", unit="designs", read=""),
+    dict(name="q4_flown_index_firm_representativeness", slot="results", kind="table", sub="B",
+         title="Flown index-firm designs against the rest",
+         caption="The designs of the AAM Reality Index firms whose first flight, as the index states it, is before the snapshot, "
+                 "against the rest of the patent dataset on six attributes, one test per attribute.",
          source_item="Table 5", flag="verify", flag_note=VERIFY_NOTE, builder=tab_index_firm_representativeness,
-         source="AAM Reality Index · human labelling · PatSeer", unit="unique aircraft", read=""),
+         source="AAM Reality Index (first_flight as the index prints it; years only, a 2026 year read as a plan) · human labelling · PatSeer", unit="designs", read=""),
     dict(name="q4_dataset_vs_directory_classes", slot="appendix", kind="figure", sub="B",
          title="Dataset against directory, all years",
          caption="Unique aircraft per directory class in the labelled dataset (filled) and in the evtol.news directory "
@@ -477,15 +492,17 @@ def numbers(ctx) -> dict:
         "trl_share": pct(float(trl.loc["Total", "share above TRL 2"])),
         "trl_lc": str(int(trl.loc["Lift + Cruise", "above TRL 2"])), "trl_tp": str(int(trl.loc["Tilt Propulsor", "above TRL 2"])),
         "trl_mr_share": pct(float(trl.loc["Multirotor", "share above TRL 2"])),
-        "trl_class_p": p_of(tab4, "folded class"), "trl_region_p": p_of(tab4, "applicant region"),
-        "trl_window_p": p_of(tab4, "priority window"), "trl_filer_p": p_of(tab4, "filer type"),
-        "trl_year_p": p_of(tab4, "priority year"), "trl_units_p": p_of(tab4, "propulsive units"),
-        "trl_differs": str(int((tab4["verdict"] == "differs").sum())),
+        "flown_n": str(rep["n_flown"]), "flown_rest": thin(len(v) - rep["n_flown"]),
+        "flown_class_p": p_of(tab4, "architecture group"), "flown_region_p": p_of(tab4, "applicant region"),
+        "flown_window_p": p_of(tab4, "priority-year cohort"), "flown_filer_p": p_of(tab4, "assignee type"),
+        "flown_year_p": p_of(tab4, "priority year"), "flown_units_p": p_of(tab4, "propulsor units"),
+        "flown_differs": str(int((tab4["verdict"] == "differs").sum())),
         "ari_n": str(rep["n_ari"]), "ari_rest": thin(len(v) - rep["n_ari"]), "ari_firms_n": str(rep["n_firms"]),
-        "ari_class_p": p_of(tab5, "folded class"), "ari_region_p": p_of(tab5, "applicant region"),
-        "ari_window_p": p_of(tab5, "priority window"), "ari_filer_p": p_of(tab5, "filer type"),
-        "ari_year_p": p_of(tab5, "priority year"), "ari_units_p": p_of(tab5, "propulsive units"),
-        "ari_differs": str(int((tab5["verdict"] == "differs").sum())),
-        "ari_region_gap": tab5.set_index("attribute").loc["applicant region", "largest gap"],
-        "ari_window_gap": tab5.set_index("attribute").loc["priority window", "largest gap"],
+        "fari_n": str(rep["n_fari"]), "fari_rest": thin(len(v) - rep["n_fari"]), "fari_firms_n": str(rep["n_fari_firms"]),
+        "fari_class_p": p_of(tab5, "architecture group"), "fari_region_p": p_of(tab5, "applicant region"),
+        "fari_window_p": p_of(tab5, "priority-year cohort"), "fari_filer_p": p_of(tab5, "assignee type"),
+        "fari_year_p": p_of(tab5, "priority year"), "fari_units_p": p_of(tab5, "propulsor units"),
+        "fari_differs": str(int((tab5["verdict"] == "differs").sum())),
+        "fari_region_gap": tab5.set_index("attribute").loc["applicant region", "largest gap"],
+        "fari_class_gap": tab5.set_index("attribute").loc["architecture group", "largest gap"],
     }
