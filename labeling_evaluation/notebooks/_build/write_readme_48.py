@@ -108,8 +108,8 @@ lines.append("- External inputs (2026-10-11): the evtol.news development year, t
 lines.append("- Kinds of date used in the year review: **announced / unveiled** = presented as a project in order to start being developed (an already built aircraft shown is \"existed by\"); **existed by** = a prototype existed by then, even if sub-scale; a concept design has neither flown nor has a prototype.\n")
 
 lines.append("## Judgement calls flagged for review\n")
-lines.append("- The five sector events kept on `q1_filings_per_year` (main slot only, at most 5 allowed): EHang 184 "
-             "unveiled, Uber Elevate white paper, EASA SC-VTOL, SPAC listings, first eVTOL TC — chosen for spread "
+lines.append("- The six sector events kept on `q1_filings_per_year` (main slot only): EHang 184 "
+             "unveiled, Uber Elevate white paper, EASA SC-VTOL, COVID-19 pandemic declared, SPAC listings, first uncrewed eVTOL type certificate — chosen for spread "
              "across the timeline; not a stated criterion.")
 lines.append("- `q1_growth_rates_table`'s old \"families 2005-2023\" column is renamed \"count 2005-2023\" "
              "(neutral), since the eVTOL unique-designs row counts designs, not patent families.")

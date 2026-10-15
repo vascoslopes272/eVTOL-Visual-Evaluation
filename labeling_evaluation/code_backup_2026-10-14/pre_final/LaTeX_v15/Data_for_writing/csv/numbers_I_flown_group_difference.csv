@@ -1,0 +1,16 @@
+aircraft_id,company_canonical,topType,year,"TRL, earlier inputs","TRL, script inputs","in the old group (TRL above 2, earlier inputs)","in the new group (TRL 5 or more, script inputs)"
+US2018208305A1_ua1,Bell / Textron,TR,2016,2,6,False,True
+US2020239134A1_ua1,Bell / Textron,CVT,2019,2,6,False,True
+US2020391879A1_ua1,Bell / Textron,TR,2019,2,6,False,True
+US2023118750A1_ua1,Bell / Textron,TR,2021,2,6,False,True
+US2014158816A1_ua1,DeLorean Aerospace,TR,2012,3,2,True,False
+US2020354048A1_ua1,Embraer / Eve,SLC,2019,6,2,True,False
+US2021354816A1_ua1,Embraer / Eve,TR,2018,2,6,False,True
+KR20230089903A_ua1,KARI,CVT,2021,7,2,True,False
+US2025304249A1_ua1,Leonardo,CVT,2022,2,6,False,True
+US2019135413A1_ua1,Uber Elevate,CVT,2017,2,6,False,True
+GB201801766D0_ua1,Samad Aerospace,SLC,2018,5,2,True,False
+US2011042510A1_ua1,,TW,2009,2,6,False,True
+CN117985223A_ua1,Changsha Huayu Xianxiang Aviation Technology,TR,2024,6,2,True,False
+US2024051687A1_ua1,Katla Aero,SLC,2020,2,6,False,True
+WO2025109312A1_ua1,Sora Aviation,TR,2023,2,6,False,True

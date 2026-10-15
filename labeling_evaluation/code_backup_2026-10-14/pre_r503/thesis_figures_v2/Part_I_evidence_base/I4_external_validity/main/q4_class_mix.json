@@ -1,0 +1,12 @@
+{
+ "name": "q4_class_mix",
+ "group": "I4_external_validity",
+ "role": "main",
+ "kind": "figure",
+ "title": "Architecture mix per cohort, dataset and directory side by side",
+ "source_item": "v2 merging Figure 2 (i) and (ii)",
+ "width_in": 6.299,
+ "height_in": 3.401,
+ "final_width_fraction": 1.0,
+ "text_block_cm": 16
+}

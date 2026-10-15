@@ -1,0 +1,12 @@
+{
+ "name": "q5_patenting_vs_investment",
+ "group": "I1_patenting_rate",
+ "role": "appendix",
+ "kind": "figure",
+ "title": "Designs per year against sector investment per year",
+ "source_item": "v2 of q5_patenting_vs_investment",
+ "width_in": 3.78,
+ "height_in": 2.078,
+ "final_width_fraction": 0.6,
+ "text_block_cm": 16
+}

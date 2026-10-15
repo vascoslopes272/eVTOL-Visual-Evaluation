@@ -71,7 +71,7 @@ def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
     v, ds = ctx.v, ctx.ds
     frame, fields, numeric = frames.gower_inputs(ds)
     at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
-    w = frames._dist.subsystem_weights(fields, frames.SUBSYSTEM_OF)
+    w = frames.form_weights(fields)
     D = frames._dist.gower_distance(frame, fields, numeric, w)
     sub = v[frames.archetype_key(v, "A0").notna()].dropna(subset=["window"]).copy()
     sub["row"] = sub["aircraft_id"].map(at)
@@ -94,7 +94,7 @@ def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
     b = pd.DataFrame([dict(cohort=x, aircraft=len(per[x]), d_between=round(obs[x], 4),
                            d_between_low=round(float(np.percentile(draws[x], 2.5)), 4),
                            d_between_high=round(float(np.percentile(draws[x], 97.5)), 4)) for x in ctx.COMPLETE])
-    q = q[q["window"].isin(ctx.COMPLETE)].rename(columns={"window": "cohort"})
+    q = q[q["window"].isin(ctx.COMPLETE)].rename(columns={"window": "cohort", "Q of the earliest windows": "Q of the earliest cohorts"})
     return b.merge(q.drop(columns="aircraft"), on="cohort"), len(fields), len(frame)
 
 

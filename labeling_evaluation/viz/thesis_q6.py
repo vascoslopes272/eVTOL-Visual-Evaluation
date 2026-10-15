@@ -85,7 +85,16 @@ def _data(ctx):
     d["split"] = frames.archetype_filer_split(v, cfg.analysis["filer_panel_min_aircraft"])
     zz = zones[zones["filers 2016-23"] > 0]
     d["zz"] = zz
-    d["core"] = zz[frames.zone_core(zones).reindex(zz.index).fillna(False).astype(bool)]
+    # core (ruling 2026-10-15): the configurations ranked by share of the 2016-23 designs, taken in order until the cumulative share reaches 50 %
+    # of those designs (the one that crosses 50 % is included, and so is any configuration tied with it); read on the unrounded shares
+    n_recent = int(v["window"].isin(["2016-19", "2020-23"]).sum())
+    exact = (zz["2016-19"].astype(float) + zz["2020-23"].astype(float)) / n_recent
+    ranked = exact.sort_values(ascending=False, kind="stable")
+    k_cross = int(np.searchsorted(ranked.cumsum().to_numpy(), 0.5 - 1e-12))
+    d["share_exact"] = exact
+    d["core_rank"] = ranked[ranked >= ranked.iloc[k_cross] - 1e-12].index
+    d["core"] = zz.loc[d["core_rank"]]
+    d["core_share_exact"] = float(ranked.loc[d["core_rank"]].sum())
     d["rim"] = zz[zz["share 2016-23"] <= zz["share 2016-23"].median()]
     d["half"] = {w: frames.half_column(zones[w]) for w in ("2016-19", "2020-23")}
     inputs = frames.discovery_inputs(v, SETS3, cfg.analysis["last_complete_year"])
@@ -606,7 +615,7 @@ def numbers(ctx) -> dict:
         "zones_n": str(len(zones)), "zones_min": str(cfg.analysis["zone_min_aircraft"]), "filers_min": str(cfg.analysis["filer_panel_min_aircraft"]),
         "filers_n": str(len(split)), "recent_n": str(int(v["window"].isin(["2016-19", "2020-23"]).sum())),
         "recent_share": pct(v["window"].isin(["2016-19", "2020-23"]).sum() / len(v)),
-        "core_n": str(len(core)), "core_share": pct(core["share 2016-23"].sum()), "rim_n": str(len(rim)), "rim_share": pct(rim["share 2016-23"].sum()),
+        "core_n": str(len(core)), "core_share": pct(d["core_share_exact"]), "rim_n": str(len(rim)), "rim_share": pct(rim["share 2016-23"].sum()),
         "half_w3": str(half["2016-19"] + 1), "half_w4": str(half["2020-23"] + 1), "cu_top_w4": pct(top_share),
         "zones_throughout": str(int((zones["zone"] == "persistent").sum())), "zones_new": str(int((zones["zone"] == "new").sum())),
         "zones_fading": str(int((zones["zone"] == "fading").sum())),

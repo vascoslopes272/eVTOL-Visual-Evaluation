@@ -1,0 +1,12 @@
+{
+ "name": "q2_largest_filer_per_class",
+ "section": "V1",
+ "slot": "results",
+ "kind": "table",
+ "title": "Largest assignee of each architecture",
+ "caption": "The architectures of 20 designs or more: assignees, effective number of assignees (1 / Σ sᵢ²), the largest assignee over all years and the highest share one assignee holds inside a single priority cohort of 10 or more of the architecture's aircraft.",
+ "source_item": "Figure 17 (i)",
+ "source": "PatSeer (assignee, priority date) · human labelling",
+ "propulsor": "unique aircraft",
+ "read": "The effective number of assignees is how many equally sized assignees would give the same concentration."
+}

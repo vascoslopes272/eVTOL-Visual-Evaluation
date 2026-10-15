@@ -59,12 +59,105 @@ def rho_table(ctx) -> pd.DataFrame:
 # ---- condition 3 weights
 def weights_report(ctx) -> dict:
     frame, fields, numeric = frames.gower_inputs(ctx.ds)
-    w = frames._dist.subsystem_weights(fields, frames.SUBSYSTEM_OF)
-    subs = {f: frames.SUBSYSTEM_OF.get(f, "propulsion") for f in fields}
-    t = pd.DataFrame({"field": fields, "subsystem": [subs[f] for f in fields], "weight": [w[f] for f in fields]})
-    g = t.groupby("subsystem").agg(dimensions=("field", "size"), weight_per_dimension=("weight", "first"), subsystem_weight=("weight", "sum"))
-    return {"table": g.reset_index(), "fields": t, "n_fields": len(fields), "n_aircraft": len(frame),
-            "numeric": sorted(numeric)}
+    return {"table": frames.form_weights_table(), "n_fields": len(fields), "n_aircraft": len(frame), "numeric": sorted(numeric)}
+
+
+# ---- condition 3 on F, three bases
+def form_family(ctx) -> pd.DataFrame:
+    """Condition 3 on F: Q of the form distance per cohort against the two earliest cohorts and its permutation band, on the designs of F's
+    base (an architecture recorded, as at A: Q uses no architecture, F only regroups the designs), for the actively protected designs, all
+    designs and the granted-and-live designs. A fresh generator (seed) per base; the same weights as :func:`weights_report`."""
+    ds, v = ctx.ds, ctx.v
+    frame, fields, numeric = frames.gower_inputs(ds)
+    at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
+    D = frames._dist.gower_distance(frame, fields, numeric, frames.form_weights(fields))
+    state = frames.patent_state(ds, v)
+    f = frames.dd_level_keys(ds, v)["family_b"]
+    out = []
+    for base, st in (("actively protected", "in_force"), ("all designs", None), ("granted and live", "granted_live")):
+        m = f.notna() & v["window"].notna()
+        if st:
+            m &= v["aircraft_id"].map(state[st]).astype(bool)
+        sub = v[m].copy()
+        sub["row"] = sub["aircraft_id"].map(at)
+        sub = sub[sub["row"].notna()]
+        t = dd.cohesion_band(D, sub["row"].astype(int).to_numpy(), sub["window"].to_numpy(), ctx.WIN_NAMES, perms=thesis_q7.PERMS, seed=ctx.SEED)
+        t.insert(0, "base", base)
+        out.append(t)
+    t = pd.concat(out, ignore_index=True).rename(columns={"window": "cohort", "aircraft": "designs", "Q of the earliest windows": "Q of the earliest cohorts"})
+    t["partial"] = t["cohort"].astype(str).str.contains("partial")
+    return t
+
+
+# ---- the verdict on each base, never mixed (results freeze 2026-10-14)
+_BASE_DY = {"all designs": "all", "actively protected": "in force"}
+_LVL = {"A0": "A", "A1t": "A·W·T", "A0c": "A·U", "family_b": "F"}
+
+
+def _base_frames(ctx):
+    """Condition 2 and 3 frames on each base: all designs (thesis_q7's own) and the actively protected designs (the same functions on that subset)."""
+    key = id(ctx)
+    if getattr(ctx, "_a3_bases", None) is not None:
+        return ctx._a3_bases
+    d = thesis_q7._data(ctx)
+    v = ctx.v
+    live = v["aircraft_id"].map(frames.patent_state(ctx.ds, v)["in_force"]).astype(bool)
+    vp = v[live]
+    out = {"all designs": (d["bal"], d["form"]),
+           "actively protected": (frames.dd_balance_table(ctx.ds, vp, ctx.WIN_NAMES, ctx.cfg.analysis["rarefy_n"], thesis_q7.PERMS, ctx.SEED),
+                                  frames.dd_form_table(ctx.ds, vp, ctx.WIN_NAMES, thesis_q7.PERMS, ctx.SEED))}
+    ctx._a3_bases = out
+    return out
+
+
+def verdict_two_bases(ctx):
+    """The verdict per base (all designs = the main reading; actively protected = sensitivity), each condition read on the SAME base,
+    and the numbers behind it. Returns (verdict table, detail table)."""
+    frames.set_window_bounds(ctx.cfg)
+    d = thesis_q7._data(ctx)
+    dy = d["dy"]
+    complete = [w for w in ctx.WIN_NAMES if "partial" not in w]
+    wof = lambda yy: next(w for w, lo, hi in frames._WIN_BOUNDS if lo <= yy <= hi)      # noqa: E731
+    main = frames.Q_WEIGHTINGS[0]
+    pc = lambda x: f"{100 * x:.1f} %"                                                   # noqa: E731
+    rows, det = [], []
+    for base, (bal, form) in _base_frames(ctx).items():
+        cells = {}
+        for lvl, name in _LVL.items():
+            y = dy[dy["level id"].eq(lvl) & dy["base"].eq(_BASE_DY[base])]
+            b = y[y["read"].astype(bool)]
+            yrs = sorted(dd.condition1_years(y))
+            sh = dict(zip(b["priority year"].astype(int), b["its share"].astype(float)))
+            nn = dict(zip(b["priority year"].astype(int), b["aircraft"].astype(int)))
+            top = b.loc[b["its share"].astype(float).idxmax()]
+            c1 = ("✓ met in " + " and ".join(map(str, yrs)) + " (" + ", ".join(pc(sh[x]) for x in yrs) + ")") if yrs else \
+                 f"✗ not met, at most {pc(float(top['its share']))} ({int(top['priority year'])})"
+            bl = bal[bal["level"].eq(lvl) & bal["window"].isin(complete)]
+            below2 = bl[bl["below band"].astype(str).eq("True")]["window"].tolist()
+            fm = form[form["level"].eq(lvl) & form["weighting"].eq(main) & form["window"].isin(complete)]
+            below3 = fm[fm["below band"].astype(str).eq("True")]["window"].tolist()
+            inside = dd.all_three_windows(set(yrs), set(below2), set(below3), wof)
+            cells[name] = {"1": c1, "2": ("✓ met in " + ", ".join(below2)) if below2 else "✗ not met",
+                           "3": ("✓ met in " + ", ".join(below3)) if below3 else "✗ not met",
+                           "all": ("✓ met in " + ", ".join(inside)) if inside else "✗ not met"}
+            r = {"base": base, "level": name, "condition 1: largest share": pc(float(top["its share"])),
+                 "condition 1: its year": int(top["priority year"]), "condition 1: years met": ", ".join(map(str, yrs)) or "none",
+                 "condition 1: share 2020 (n of N)": (f"{pc(sh[2020])} ({int(round(sh[2020] * nn[2020]))} of {nn[2020]})" if 2020 in sh else "not read"),
+                 "condition 1: share 2021 (n of N)": (f"{pc(sh[2021])} ({int(round(sh[2021] * nn[2021]))} of {nn[2021]})" if 2021 in sh else "not read")}
+            for w in complete:
+                q = bl[bl["window"].eq(w)]
+                r[f"²D {w}"] = float(q["D2"].iloc[0]) if len(q) else np.nan
+                r[f"²D lower band edge {w}"] = float(q["D2 permutation low"].iloc[0]) if len(q) else np.nan
+            q = fm[fm["window"].eq("2020-23")]
+            r["ΔQ 2020-23"] = float(q["ΔQ"].iloc[0])
+            r["ΔQ lower band edge 2020-23"] = float(q["ΔQ permutation low"].iloc[0])
+            det.append(r)
+        for cond, label in (("1", "1, counts: one architecture above 50 % of the designs, two consecutive priority years"),
+                            ("2", "2, balance: ²D below the permutation band"),
+                            ("3", "3, form: Q below the two earliest cohorts by more than the band"),
+                            ("all", "all three in the same period")):
+            rows.append({"base": base, "condition": label, **{n: cells[n][cond] for n in _LVL.values()}})
+    return pd.DataFrame(rows), pd.DataFrame(det)
 
 
 # ---- item 4: three consecutive years on the in-force base

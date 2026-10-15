@@ -1,0 +1,14 @@
+{
+ "name": "q2_largest_filers_share",
+ "section": "V1",
+ "slot": "results",
+ "kind": "figure",
+ "title": "Cumulative share held by the largest assignees",
+ "caption": "The named assignees ranked by unique aircraft, largest first, and the cumulative share of the aircraft they hold, cut into four bands.",
+ "source_item": "Figure 16 (i)",
+ "source": "PatSeer (assignee) · human labelling",
+ "propulsor": "unique aircraft",
+ "read": "The curve climbs by one assignee at a time; the bands A to D cut it where assignees hold 10 or more, 5-9, 2-4 and 1 designs each; the dashed line is the share all named assignees hold.",
+ "width_in": 6.3,
+ "height_in": 3.1
+}

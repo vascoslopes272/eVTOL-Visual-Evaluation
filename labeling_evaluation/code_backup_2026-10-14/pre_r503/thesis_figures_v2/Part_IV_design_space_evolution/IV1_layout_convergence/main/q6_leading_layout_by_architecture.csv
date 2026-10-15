@@ -1,0 +1,96 @@
+rule set,architecture,code,cohort,configuration,aircraft,architecture aircraft,share
+proposed,Combined Vectored Thrust,CVT,2012-15,a wing tilts · fixed propulsors elsewhere,3,10,0.3
+proposed,Combined Vectored Thrust,CVT,2012-15,a wing tilts · fixed propulsors on booms,1,10,0.1
+proposed,Combined Vectored Thrust,CVT,2012-15,rotors and a wing tilt · no fixed propulsor,1,10,0.1
+proposed,Combined Vectored Thrust,CVT,2012-15,rotors tilt · fixed propulsors elsewhere,5,10,0.5
+proposed,Combined Vectored Thrust,CVT,2016-19,a wing tilts · fixed propulsors elsewhere,1,28,0.036
+proposed,Combined Vectored Thrust,CVT,2016-19,rotors and a wing tilt · no fixed propulsor,1,28,0.036
+proposed,Combined Vectored Thrust,CVT,2016-19,rotors tilt · fixed propulsors elsewhere,13,28,0.464
+proposed,Combined Vectored Thrust,CVT,2016-19,rotors tilt · fixed propulsors on booms,11,28,0.393
+proposed,Combined Vectored Thrust,CVT,2016-19,tilt not recorded · fixed propulsors elsewhere,2,28,0.071
+proposed,Combined Vectored Thrust,CVT,2020-23,a wing tilts · fixed propulsors elsewhere,4,53,0.075
+proposed,Combined Vectored Thrust,CVT,2020-23,a wing tilts · fixed propulsors on booms,2,53,0.038
+proposed,Combined Vectored Thrust,CVT,2020-23,rotors and a wing tilt · fixed propulsors on booms,1,53,0.019
+proposed,Combined Vectored Thrust,CVT,2020-23,rotors and a wing tilt · no fixed propulsor,2,53,0.038
+proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · fixed propulsors elsewhere,15,53,0.283
+proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · fixed propulsors on booms,28,53,0.528
+proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · no fixed propulsor,1,53,0.019
+proposed,Combined Vectored Thrust,CVT,<= 2011,rotors tilt · fixed propulsors elsewhere,4,5,0.8
+proposed,Combined Vectored Thrust,CVT,<= 2011,rotors tilt · fixed propulsors on booms,1,5,0.2
+proposed,Multicopter,MR,2012-15,booms · 0-3,1,4,0.25
+proposed,Multicopter,MR,2012-15,booms · 4,1,4,0.25
+proposed,Multicopter,MR,2012-15,no booms · 0-3,1,4,0.25
+proposed,Multicopter,MR,2012-15,no booms · 4,1,4,0.25
+proposed,Multicopter,MR,2016-19,booms · 4,5,16,0.312
+proposed,Multicopter,MR,2016-19,booms · 5-6,3,16,0.188
+proposed,Multicopter,MR,2016-19,booms · 7-8,1,16,0.062
+proposed,Multicopter,MR,2016-19,booms · 9+,4,16,0.25
+proposed,Multicopter,MR,2016-19,no booms · 0-3,1,16,0.062
+proposed,Multicopter,MR,2016-19,no booms · 4,1,16,0.062
+proposed,Multicopter,MR,2016-19,no booms · 5-6,1,16,0.062
+proposed,Multicopter,MR,2020-23,booms · 0-3,1,15,0.067
+proposed,Multicopter,MR,2020-23,booms · 4,5,15,0.333
+proposed,Multicopter,MR,2020-23,booms · 5-6,2,15,0.133
+proposed,Multicopter,MR,2020-23,booms · 9+,1,15,0.067
+proposed,Multicopter,MR,2020-23,no booms · 5-6,2,15,0.133
+proposed,Multicopter,MR,2020-23,no booms · 7-8,1,15,0.067
+proposed,Multicopter,MR,2020-23,no booms · 9+,3,15,0.2
+proposed,Multicopter,MR,<= 2011,booms · 7-8,1,9,0.111
+proposed,Multicopter,MR,<= 2011,no booms · 0-3,2,9,0.222
+proposed,Multicopter,MR,<= 2011,no booms · 4,4,9,0.444
+proposed,Multicopter,MR,<= 2011,no booms · 7-8,1,9,0.111
+proposed,Multicopter,MR,<= 2011,no booms · 9+,1,9,0.111
+proposed,Lift + Cruise,SLC,2012-15,lift propulsors on booms,5,9,0.556
+proposed,Lift + Cruise,SLC,2012-15,lift propulsors on the body,1,9,0.111
+proposed,Lift + Cruise,SLC,2012-15,"lift propulsors on the body, stowed in cruise",1,9,0.111
+proposed,Lift + Cruise,SLC,2012-15,lift propulsors on the wing,2,9,0.222
+proposed,Lift + Cruise,SLC,2016-19,lift propulsors on booms,21,48,0.438
+proposed,Lift + Cruise,SLC,2016-19,"lift propulsors on booms, stowed in cruise",3,48,0.062
+proposed,Lift + Cruise,SLC,2016-19,lift propulsors on the body,10,48,0.208
+proposed,Lift + Cruise,SLC,2016-19,"lift propulsors on the body, stowed in cruise",1,48,0.021
+proposed,Lift + Cruise,SLC,2016-19,lift propulsors on the wing,11,48,0.229
+proposed,Lift + Cruise,SLC,2016-19,"lift propulsors on the wing, stowed in cruise",2,48,0.042
+proposed,Lift + Cruise,SLC,2020-23,lift propulsors on booms,36,75,0.48
+proposed,Lift + Cruise,SLC,2020-23,"lift propulsors on booms, stowed in cruise",3,75,0.04
+proposed,Lift + Cruise,SLC,2020-23,lift propulsors on the body,15,75,0.2
+proposed,Lift + Cruise,SLC,2020-23,"lift propulsors on the body, stowed in cruise",1,75,0.013
+proposed,Lift + Cruise,SLC,2020-23,lift propulsors on the wing,19,75,0.253
+proposed,Lift + Cruise,SLC,2020-23,"lift propulsors on the wing, stowed in cruise",1,75,0.013
+proposed,Lift + Cruise,SLC,<= 2011,lift propulsors on booms,8,17,0.471
+proposed,Lift + Cruise,SLC,<= 2011,lift propulsors on the body,4,17,0.235
+proposed,Lift + Cruise,SLC,<= 2011,lift propulsors on the wing,5,17,0.294
+proposed,Tilt Propulsor,TR,2012-15,one tilting set,10,20,0.5
+proposed,Tilt Propulsor,TR,2012-15,"two or more tilting sets, on one station",4,20,0.2
+proposed,Tilt Propulsor,TR,2012-15,"two or more tilting sets, on two or more stations",6,20,0.3
+proposed,Tilt Propulsor,TR,2016-19,one tilting set,17,50,0.34
+proposed,Tilt Propulsor,TR,2016-19,"two or more tilting sets, on one station",18,50,0.36
+proposed,Tilt Propulsor,TR,2016-19,"two or more tilting sets, on two or more stations",15,50,0.3
+proposed,Tilt Propulsor,TR,2020-23,no tilting set recorded,1,49,0.02
+proposed,Tilt Propulsor,TR,2020-23,one tilting set,15,49,0.306
+proposed,Tilt Propulsor,TR,2020-23,"two or more tilting sets, on one station",14,49,0.286
+proposed,Tilt Propulsor,TR,2020-23,"two or more tilting sets, on two or more stations",19,49,0.388
+proposed,Tilt Propulsor,TR,<= 2011,one tilting set,15,20,0.75
+proposed,Tilt Propulsor,TR,<= 2011,"two or more tilting sets, on one station",1,20,0.05
+proposed,Tilt Propulsor,TR,<= 2011,"two or more tilting sets, on two or more stations",4,20,0.2
+proposed,Tilt Wing,TW,2012-15,1 wing · 0-3,2,6,0.333
+proposed,Tilt Wing,TW,2012-15,1 wing · 4,2,6,0.333
+proposed,Tilt Wing,TW,2012-15,2+ wings · 4,2,6,0.333
+proposed,Tilt Wing,TW,2016-19,1 wing · 0-3,1,23,0.043
+proposed,Tilt Wing,TW,2016-19,1 wing · 4,2,23,0.087
+proposed,Tilt Wing,TW,2016-19,1 wing · 5-6,4,23,0.174
+proposed,Tilt Wing,TW,2016-19,1 wing · 7-8,2,23,0.087
+proposed,Tilt Wing,TW,2016-19,1 wing · 9+,1,23,0.043
+proposed,Tilt Wing,TW,2016-19,2+ wings · 4,4,23,0.174
+proposed,Tilt Wing,TW,2016-19,2+ wings · 7-8,5,23,0.217
+proposed,Tilt Wing,TW,2016-19,2+ wings · 9+,4,23,0.174
+proposed,Tilt Wing,TW,2020-23,1 wing · 0-3,4,19,0.211
+proposed,Tilt Wing,TW,2020-23,1 wing · 4,3,19,0.158
+proposed,Tilt Wing,TW,2020-23,1 wing · 5-6,4,19,0.211
+proposed,Tilt Wing,TW,2020-23,1 wing · 7-8,1,19,0.053
+proposed,Tilt Wing,TW,2020-23,2+ wings · 0-3,1,19,0.053
+proposed,Tilt Wing,TW,2020-23,2+ wings · 4,2,19,0.105
+proposed,Tilt Wing,TW,2020-23,2+ wings · 7-8,2,19,0.105
+proposed,Tilt Wing,TW,2020-23,2+ wings · 9+,2,19,0.105
+proposed,Tilt Wing,TW,<= 2011,1 wing · 0-3,2,4,0.5
+proposed,Tilt Wing,TW,<= 2011,2+ wings · 4,1,4,0.25
+proposed,Tilt Wing,TW,<= 2011,2+ wings · 5-6,1,4,0.25

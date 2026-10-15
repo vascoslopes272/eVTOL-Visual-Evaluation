@@ -1,0 +1,15 @@
+company,designs,first flight in the index (earliest year),counts as flown before the snapshot,reason if not
+Joby Aviation,8,2018,True,
+Guangzhou Ehang Intelligent Technology,1,2018,True,
+Embraer / Eve,4,2025,True,
+Honda,9,2024,True,
+AutoFlight,2,2022,True,
+Volocopter,4,2021,True,
+Wisk Aero,4,2025,True,
+Archer Aviation,4,2023,True,
+Beta Technologies,1,2020,True,
+Wollant Aviation,2,2023,True,
+Supernal,4,,False,no first flight in the index
+Ascendance Flight Technologies,1,2027,False,a planned first flight (after the index release of 2026)
+Vertical Aerospace,1,2023,True,
+Wofei / Geely Aviation,2,2023,True,

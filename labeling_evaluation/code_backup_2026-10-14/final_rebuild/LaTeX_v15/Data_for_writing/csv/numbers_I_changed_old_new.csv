@@ -1,0 +1,33 @@
+question,key,old,new,sentence
+Q1,fa_cvt,53 %,29 %,"The classes appear to differ, CVT and Lift + Cruise at {fa_cvt} against Multirotor at {fa_mr}, but the differe…"
+Q1,fa_mr,31 %,33 %,"The classes appear to differ, CVT and Lift + Cruise at {fa_cvt} against Multirotor at {fa_mr}, but the differe…"
+Q1,fa_mr_first,41 %,(no longer quoted),"Counting a patent that names several aircraft for its first aircraft only, Multirotor rises to {fa_mr_first} a…"
+Q1,fa_p,0.043,0.105,The class difference (p {fa_p}) does not survive the filing office.
+Q1,fa_p_first,0.079,(no longer quoted),"Counting a patent that names several aircraft for its first aircraft only, Multirotor rises to {fa_mr_first} a…"
+Q1,fa_share,43 %,31 %,"Of the aircraft with a priority year of 2019 or earlier, {fa_share} have no patent left in force ()."
+Q1,fo_else,69 %,42 %,"Aircraft filed at the US office are out of force {fo_us} of the time, against {fo_else} elsewhere."
+Q1,fo_n_us,209,364,"Within the US office no class difference is detected (p {fo_p_us}, {fo_n_us} aircraft)."
+Q1,fo_p_us,0.43,(no longer quoted),"Within the US office no class difference is detected (p {fo_p_us}, {fo_n_us} aircraft)."
+Q1,fo_us,31 %,23 %,"Aircraft filed at the US office are out of force {fo_us} of the time, against {fo_else} elsewhere."
+Q4,ari_class_p,0.15,(no longer quoted),Neither group differs detectably in architecture class (p {trl_class_p} and {ari_class_p}).
+Q4,ari_n,147,152,"The {ari_n} aircraft of the index firms differ on four of the six attributes (): region, priority window, file…"
+Q4,ff_before,8,9,{ff_before} of the {ff_flown} firms with a first flight on record filed their first patent in this corpus befo…
+Q4,ff_flown,11,12,{ff_before} of the {ff_flown} firms with a first flight on record filed their first patent in this corpus befo…
+Q4,ff_lead,4,3,"The lead is a median of {ff_lead} years, and planned entry into service sits a median of {eis_lead} years afte…"
+Q4,lc_dir_first,13 %,9 %,In the directory it goes from {lc_dir_first} to {lc_dir_last}.
+Q4,trl_class_p,0.11,(no longer quoted),Neither group differs detectably in architecture class (p {trl_class_p} and {ari_class_p}).
+Q4,trl_n,63,68,"The aircraft that got built, {trl_n} of {unique}, differ from the rest on filer type and propulsor units and o…"
+Q4,trl_share,10 %,11 %,"Only {trl_share} of the aircraft, {trl_n}, got past the paper stage of NASA TRL, and they come from the classe…"
+Q5,ari_timeline_n,13,14,"Of the {ari_timeline_n} index firms that file here, {ff_record_n} have a first flight on record up to the rele…"
+Q5,eis_n,9,10,Planned entry into service sits a median of {eis_lead} years after the first patent on the {eis_n} firms that …
+Q5,ff_before_n,8,9,"Of those, {ff_before_n} filed their first patent in this corpus before flying, a median of {ff_lead} years ear…"
+Q5,ff_lead,4,3,"Of those, {ff_before_n} filed their first patent in this corpus before flying, a median of {ff_lead} years ear…"
+Q5,ff_record_n,11,12,"Of the {ari_timeline_n} index firms that file here, {ff_record_n} have a first flight on record up to the rele…"
+Q5,ff_visible,1,0,"Once that lag is paid, about {ff_visible} year of the median lead is left."
+Q5,p_air,0.11,0.08,"sets the disclosed funding of the firms with an amount against their unique aircraft in the corpus, ρ {rho_air…"
+Q5,p_fp,0.031,0.13,"Money does go with filing early, ρ {rho_fp} against the priority year of the first patent with p {p_fp}, and t…"
+Q5,p_lead,0.23,0.29,"The lead from first patent to first flight does not shorten with money either, ρ {rho_lead} with p {p_lead} on…"
+Q5,rho_air,+0.56,+0.58,"sets the disclosed funding of the firms with an amount against their unique aircraft in the corpus, ρ {rho_air…"
+Q5,rho_fp,−0.71,−0.51,"Money does go with filing early, ρ {rho_fp} against the priority year of the first patent with p {p_fp}, and t…"
+Q5,rho_lead,+0.48,+0.40,"The lead from first patent to first flight does not shorten with money either, ρ {rho_lead} with p {p_lead} on…"
+Q5,top2_fundshare,57 %,56 %,These two firms hold {top2_fundshare} of the funding the index firms disclose and {top2_airshare} of the aircr…

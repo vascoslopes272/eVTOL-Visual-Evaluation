@@ -139,17 +139,22 @@ def fig_condition3_form(ctx):
 
 
 def tab_levels_verdict(ctx):
-    t, _ = q7.tab_verdict(ctx)
+    """The verdict on each base, never mixed: all designs (main) and actively protected (sensitivity)."""
+    t, _ = analysis3.verdict_two_bases(ctx)
+    return t, None
+
+
+def tab_verdict_detail(ctx):
+    _, t = analysis3.verdict_two_bases(ctx)
     return t, None
 
 
 def tab_condition3_weights(ctx):
-    r = analysis3.weights_report(ctx)
-    g = r["table"].rename(columns={"dimensions": "dimensions", "weight_per_dimension": "weight of each dimension",
-                                   "subsystem_weight": "weight of the subsystem"})
-    g["weight of each dimension"] = g["weight of each dimension"].round(3)
-    g.loc[len(g)] = ["total", int(g["dimensions"].sum()), np.nan, float(g["weight of the subsystem"].sum())]
-    return g, None
+    return analysis3.weights_report(ctx)["table"], None
+
+
+def tab_condition3_family(ctx):
+    return analysis3.form_family(ctx), None
 
 
 def tab_three_year_check(ctx):
@@ -203,8 +208,12 @@ ITEMS = [
          title="Condition 3: ΔQ against its band", source_item="v2 of q7_condition3_cohesion (Figure 12 (ii))"),
     dict(name="q7_verdict_table", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_levels_verdict,
          title="The dominant-design verdict, levels A, A·W·T, A·U and F", source_item="v2 of q7_verdict_table (Table 8)"),
+    dict(name="q7_verdict_detail", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_verdict_detail,
+         title="The numbers behind the verdict, each base", source_item="new (results freeze 2026-10-14)"),
     dict(name="q7_condition3_weights", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_condition3_weights,
          title="Weights of the form distance", source_item="new (Analysis III item 2)"),
+    dict(name="q7_condition3_family", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_condition3_family,
+         title="Condition 3 on F: actively protected, all designs, granted and live", source_item="new (weights of 2026-10-14)"),
     dict(name="q7_three_year_check", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_three_year_check,
          title="Condition 1 with three consecutive years", source_item="new (Analysis III item 4)"),
     dict(name="q7_granted_live_condition1", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_granted_live_condition1,

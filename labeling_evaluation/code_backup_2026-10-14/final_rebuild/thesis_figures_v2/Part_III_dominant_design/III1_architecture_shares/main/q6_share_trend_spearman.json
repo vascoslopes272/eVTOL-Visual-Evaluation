@@ -1,0 +1,8 @@
+{
+ "name": "q6_share_trend_spearman",
+ "group": "III1_architecture_shares",
+ "role": "main",
+ "kind": "table",
+ "title": "Spearman rho of each architecture's share on priority year",
+ "source_item": "new (Analysis III item 1)"
+}

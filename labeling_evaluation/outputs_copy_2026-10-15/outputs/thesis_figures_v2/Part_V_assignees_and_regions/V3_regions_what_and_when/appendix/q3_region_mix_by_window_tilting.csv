@@ -1,0 +1,16 @@
+True,False,region,variable,cohort,n
+20,12,North America,tilting propulsor,<= 2011,32
+21,8,North America,tilting propulsor,2012-15,29
+62,37,North America,tilting propulsor,2016-19,99
+55,20,North America,tilting propulsor,2020-23,75
+0,0,North America,tilting propulsor,2024-26 (partial),4
+7,8,Europe,tilting propulsor,<= 2011,15
+14,7,Europe,tilting propulsor,2012-15,21
+24,34,Europe,tilting propulsor,2016-19,58
+26,34,Europe,tilting propulsor,2020-23,60
+6,6,Europe,tilting propulsor,2024-26 (partial),12
+3,7,Asia-Pacific,tilting propulsor,<= 2011,10
+0,0,Asia-Pacific,tilting propulsor,2012-15,4
+19,16,Asia-Pacific,tilting propulsor,2016-19,35
+42,49,Asia-Pacific,tilting propulsor,2020-23,91
+20,17,Asia-Pacific,tilting propulsor,2024-26 (partial),37

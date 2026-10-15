@@ -1,0 +1,21 @@
+architecture,code,cohort,aircraft,share with a ducted unit
+Lift + Cruise,SLC,<= 2011,17,0.529
+Lift + Cruise,SLC,2012-15,9,0.222
+Lift + Cruise,SLC,2016-19,48,0.292
+Lift + Cruise,SLC,2020-23,75,0.48
+Tilt Propulsor,TR,<= 2011,20,0.15
+Tilt Propulsor,TR,2012-15,20,0.45
+Tilt Propulsor,TR,2016-19,50,0.42
+Tilt Propulsor,TR,2020-23,49,0.306
+Combined Vectored Thrust,CVT,<= 2011,5,0.8
+Combined Vectored Thrust,CVT,2012-15,10,0.4
+Combined Vectored Thrust,CVT,2016-19,28,0.464
+Combined Vectored Thrust,CVT,2020-23,53,0.321
+Tilt Wing,TW,<= 2011,4,
+Tilt Wing,TW,2012-15,6,0.0
+Tilt Wing,TW,2016-19,23,0.348
+Tilt Wing,TW,2020-23,19,0.158
+Multirotor,MR,<= 2011,9,0.778
+Multirotor,MR,2012-15,4,
+Multirotor,MR,2016-19,16,0.438
+Multirotor,MR,2020-23,15,0.733

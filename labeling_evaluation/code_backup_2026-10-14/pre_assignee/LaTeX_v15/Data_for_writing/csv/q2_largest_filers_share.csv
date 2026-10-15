@@ -1,0 +1,200 @@
+rank,assignee,unique aircraft,cumulative share
+1,Bell / Textron,60,0.0957
+2,Airbus,21,0.1292
+3,Kitty Hawk,11,0.1467
+4,Shenfeng Aviation,10,0.1627
+5,Honda,9,0.177
+6,Leonardo,9,0.1914
+7,Joby Aviation,8,0.2041
+8,Porsche,8,0.2169
+9,Aurora Flight Sciences,7,0.2281
+10,Lilium,7,0.2392
+11,Boeing,7,0.2504
+12,Rolls-Royce,5,0.2584
+13,KARI,5,0.2663
+14,DeLorean Aerospace,5,0.2743
+15,Uber Elevate,5,0.2823
+16,Zuri,5,0.2903
+17,Hyundai,4,0.2967
+18,Embraer / Eve,4,0.303
+19,Supernal,4,0.3094
+20,Volocopter,4,0.3158
+21,Wisk Aero,4,0.3222
+22,Mitsubishi,4,0.3285
+23,Archer Aviation,4,0.3349
+24,Zakrytoe Aktsionernoe Obshchestvo Innovatsionnyj Tsentr Biryuch,4,0.3413
+25,Agency Defense Development,3,0.3461
+26,Xi'an Inno Aviation,3,0.3509
+27,Whisper Aero,3,0.3557
+28,Safran,3,0.3604
+29,Sikorsky,3,0.3652
+30,EMT,3,0.37
+31,Siniger,3,0.3748
+32,Sunlight Photonics,2,0.378
+33,Subaru,2,0.3812
+34,Shanghai Shangshi Energy,2,0.3844
+35,Northwestern Polytechnic University,2,0.3876
+36,JAXA,2,0.3907
+37,Fujing Aircraft,2,0.3939
+38,NASA,2,0.3971
+39,Aeronext,2,0.4003
+40,Overair,2,0.4035
+41,Jiangxi Handun Duoyu,2,0.4067
+42,Karem Aircraft,2,0.4099
+43,NUAA,2,0.4131
+44,Wollant Aviation,2,0.4163
+45,Prades Imasd,2,0.4195
+46,Obshchestvo S Ogranichennoj Ot,2,0.4226
+47,Kawasaki Heavy Industries,2,0.4258
+48,Shinmaywa Industries,2,0.429
+49,Office National Detudes Research Aerospatiales,2,0.4322
+50,E Kite,2,0.4354
+51,Beaupreau Aero Solutions,2,0.4386
+52,Mullins,2,0.4418
+53,Topaero,2,0.445
+54,Geola Technology,2,0.4482
+55,Volkswagen,2,0.4514
+56,Tetra Aviation,2,0.4545
+57,Tianjin Air Technology,2,0.4577
+58,Polarity Mobility Av,2,0.4609
+59,Zhejiang University,2,0.4641
+60,CASIC,2,0.4673
+61,Denso,2,0.4705
+62,Wofei / Geely Aviation,2,0.4737
+63,AutoFlight,2,0.4769
+64,Doroni Aerospace,2,0.4801
+65,Hop Flyt,2,0.4833
+66,Hi-Lite Aircraft,2,0.4864
+67,GKN Aerospace,2,0.4896
+68,COMAC Research Institute,2,0.4928
+69,Beihang University,2,0.496
+70,Ascendance Flight Technologies,1,0.4976
+71,AMSL Innovations,1,0.4992
+72,Sun Yat-sen University,1,0.5008
+73,Shanghai Shidi Technology,1,0.5024
+74,P3X,1,0.504
+75,Phoenix Aircraft,1,0.5056
+76,NUDT,1,0.5072
+77,Method Aeronautics,1,0.5088
+78,Neoptera,1,0.5104
+79,NTN Corporation,1,0.512
+80,Nanchang Hangkong University,1,0.5136
+81,Lockheed Martin,1,0.5152
+82,Kymatics,1,0.5167
+83,Horizon Aircraft,1,0.5183
+84,Hubei Aerospace Institute,1,0.5199
+85,Hoversurf,1,0.5215
+86,IAI,1,0.5231
+87,IHI,1,0.5247
+88,Daimler,1,0.5263
+89,GreenSky,1,0.5279
+90,Collins Aerospace,1,0.5295
+91,CHRDI,1,0.5311
+92,BAE Systems,1,0.5327
+93,BAAZ,1,0.5343
+94,Beta Technologies,1,0.5359
+95,CycloTech,1,0.5375
+96,Honeywell,1,0.5391
+97,Aerhart,1,0.5407
+98,Vertical Aerospace,1,0.5423
+99,Defensya Ingenieria International,1,0.5439
+100,Raytheon,1,0.5455
+101,Dewalch Diversified,1,0.547
+102,Roze Mobility,1,0.5486
+103,ZIPAIR,1,0.5502
+104,Airspace Experience Technology,1,0.5518
+105,Flowcopter,1,0.5534
+106,Alakai Technology,1,0.555
+107,Sora Aviation,1,0.5566
+108,Transcend Air,1,0.5582
+109,Beijing Tianyu New Super Aviation Technology,1,0.5598
+110,Xiangtan Xiangdan Road Traffic Facilities Construction Maintenance,1,0.5614
+111,Nanjing Zhifei Aviation Technology,1,0.563
+112,Zhongshan Fukun Aviation Technology,1,0.5646
+113,Luoyang Luo Depp Blue Rotor Technology,1,0.5662
+114,Changzhou Huachuang Aviation Technology,1,0.5678
+115,Sichuan Tengdun Technology,1,0.5694
+116,Jiangxi Hongdu Aviation Industries,1,0.571
+117,Cetc Wuhu Diamond Aircraft Manufacturing,1,0.5726
+118,University Dalian Technology,1,0.5742
+119,Huzhou Tianji Zhihang Technology,1,0.5758
+120,Dalian Chongtian Technology,1,0.5774
+121,Fuzhou Tianze Yonghui Environmental Technology,1,0.5789
+122,Aecc Hunan Aviation Powerplant Research Institute,1,0.5805
+123,Beijing Xinqiao Technology,1,0.5821
+124,Guangzhou Yunfei Aviation Technology,1,0.5837
+125,Shenzhen Shenke Chuang Industry Development,1,0.5853
+126,China Academy Of Aerospace Aerodynamics,1,0.5869
+127,Stichting Nationaal Luchten,1,0.5885
+128,Agusta,1,0.5901
+129,Noraero,1,0.5917
+130,Cool Century Guangzhou Intelligent Equipment Center,1,0.5933
+131,Guangzhou Ehang Intelligent Technology,1,0.5949
+132,Changsha Huayu Xianxiang Aviation Technology,1,0.5965
+133,Katla Aero,1,0.5981
+134,Carter Aviation Technology,1,0.5997
+135,Приватне Акціонерне Товариство Фед,1,0.6013
+136,Vyzk A Zkusebni Letecky Ustav,1,0.6029
+137,Xinyu Taicang Power Technology,1,0.6045
+138,Zhixing Botong Beijing Technology,1,0.6061
+139,Shanghai Aircraft Manufacturing,1,0.6077
+140,Nanjing Ningxuan Aviation Technology,1,0.6093
+141,Tianlingke Aviation Technology Shanghai,1,0.6108
+142,Dezhou Luhang Aviation Technology,1,0.6124
+143,South China Normal University,1,0.614
+144,Chery Automobile,1,0.6156
+145,Nfelec,1,0.6172
+146,Fleasy,1,0.6188
+147,Volare,1,0.6204
+148,Airbility,1,0.622
+149,Pterodynamics,1,0.6236
+150,Pb Group,1,0.6252
+151,Xflight,1,0.6268
+152,Federalnoe Gosudarstvennoe Unitarnoe Predpriyatie Tsentralnyj Aerogidrodinamicheskij Institute Imeni Prof,1,0.6284
+153,Mgi Engineering,1,0.63
+154,Skem,1,0.6316
+155,Zeeaero,1,0.6332
+156,Propulsor 1Srl,1,0.6348
+157,Xti Aircraft,1,0.6364
+158,Neva Aerospace,1,0.638
+159,Malloy Aeronautics,1,0.6396
+160,Bio Cellular Design Aeronautics,1,0.6411
+161,Afs Dv Vtol Technology,1,0.6427
+162,University Toledo,1,0.6443
+163,Moog,1,0.6459
+164,Fuvex Systems 95,1,0.6475
+165,Samco,1,0.6491
+166,Krd Luftfahrttechnik,1,0.6507
+167,Flynow Aviation,1,0.6523
+168,Vb Hi Technology Ventures,1,0.6539
+169,Bombardier,1,0.6555
+170,Electric Aviation Group,1,0.6571
+171,Lentola Logistics,1,0.6587
+172,Ali Technology,1,0.6603
+173,Autonomous Flight System,1,0.6619
+174,Innotec Lightweight Engineering Polymer Technology,1,0.6635
+175,Lift Air,1,0.6651
+176,Georgia Technology Research Institute,1,0.6667
+177,University Arizona,1,0.6683
+178,Leviation Technology,1,0.6699
+179,Wind Craft Aviation,1,0.6715
+180,Efix Aviation,1,0.673
+181,Hitachi,1,0.6746
+182,Zhejiang Tianji Botte Intelligent Technology,1,0.6762
+183,Quintuple Air,1,0.6778
+184,Zipline International,1,0.6794
+185,Spydar Sensors,1,0.681
+186,Dufour Aerospace,1,0.6826
+187,Hpg,1,0.6842
+188,Texas A M University,1,0.6858
+189,Gadfin,1,0.6874
+190,Oliver Vtol,1,0.689
+191,Texas Technology University System,1,0.6906
+192,Detroit Aircraft,1,0.6922
+193,University Tsinghua,1,0.6938
+194,Industries Network,1,0.6954
+195,Obshchestvo S Ogranichennoy Otvetstvennostyu Nauchno Proizvodstvennoe Obedinenie Imeni Petrova Va,1,0.697
+196,Emagic Aircraft,1,0.6986
+197,Alauda Aeronautics,1,0.7002
+198,Bae System Australia,1,0.7018
+199,Avol,1,0.7033

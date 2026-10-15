@@ -1,0 +1,11 @@
+{
+ "name": "q6_centroid_dispersion",
+ "group": "IV3_centre_and_disparity",
+ "role": "main",
+ "kind": "figure",
+ "title": "Distance between cohorts and dispersion within them",
+ "source_item": "new (Analysis IV)",
+ "old": "new",
+ "width_in": 6.3,
+ "height_in": 3.4
+}

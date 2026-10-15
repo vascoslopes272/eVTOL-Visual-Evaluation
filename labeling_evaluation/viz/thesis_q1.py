@@ -72,7 +72,18 @@ def _calc(ctx):
     wo["office"] = np.where(wo["pub_office"].eq("US"), "US office", "other offices")
     p_office = association.chi2_test(pd.crosstab(wo["office"], wo["out"]).values)["p"]
     cohort = wo.groupby("window").agg(n=("aircraft_id", "size"), not_protected=("out", "mean"))
-    c.update(fpy=fpy, ser=ser, names=names, rates=rates, ratios=ratios, tp=tp, fits=fits, lag=lag, ry=ry, ll=ll, off=off,
+    # segment slopes (2026-10-14): the eVTOL patent families and the B64 series, each with its own turning point (same method, breaks and
+    # bootstrap draws as ``tp``, a fresh generator seeded like the shared one: for the eVTOL families, its first series, the result is ``tp``'s)
+    seg = {}
+    for key, label in (("evtol_families", "eVTOL architecture patents"), ("b64", "aeronautics (CPC B64)")):
+        y06 = ser[key].reindex(range(2006, 2024), fill_value=0).astype(float)
+        t_ = growth.turning_point(y06.index.to_numpy(float), np.log(y06.to_numpy()), np.random.default_rng(ctx.SEED))
+        b = int(t_["break"])
+        lines = {"2005–23": (2005, 2023), f"2005–{b - 1}": (2005, b - 1), f"{b}–23": (b, 2023)}      # the break year opens the second regime (t >= b)
+        seg[key] = {"label": label, "turn": t_, "lines": {k: (lo, hi, growth.loglinear_fit(*growth.window_frame(ser[key], lo, hi)))
+                                                           for k, (lo, hi) in lines.items()}}
+    assert seg["evtol_families"]["turn"]["break"] == tp["representative patents"]["break"]
+    c.update(seg=seg, fpy=fpy, ser=ser, names=names, rates=rates, ratios=ratios, tp=tp, fits=fits, lag=lag, ry=ry, ll=ll, off=off,
              w=w, force=force, p_all=p_all, k_tested=k_tested, wo=wo, p_office=p_office, cohort=cohort)
     _CACHE[key] = c
     return c

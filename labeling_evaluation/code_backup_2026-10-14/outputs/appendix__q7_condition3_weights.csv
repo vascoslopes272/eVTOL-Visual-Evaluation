@@ -1,0 +1,8 @@
+subsystem,dimensions,weight of each dimension,weight of the subsystem
+architecture,1,1.0,1.0
+booms,1,1.0,1.0
+empennage,1,1.0,1.0
+fuselage,3,0.333,1.0
+propulsion,9,0.111,1.0
+wings,5,0.2,1.0
+total,20,,6.0

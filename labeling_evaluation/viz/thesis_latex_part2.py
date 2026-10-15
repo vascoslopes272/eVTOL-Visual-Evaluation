@@ -17,11 +17,13 @@ from viz.thesis_latex_common import MAX_H, TEXT_CM, root, tables_md
 
 #: name -> (final width as a share of the text block, in the dissertation)
 FIGS = {"q6_configuration_core": (0.9, True), "q6_discovery_curve": (1.0, True),
+        "q6_half_of_cohort_heatmap": (1.0, False),
         "q6_half_of_cohort": (0.8, False),                 # width not given: 0.8; leaves the text
         "q6_propulsor_units_per_class": (0.8, True)}       # appendix
 TABLES = {"q6_selected_fields": True, "q7_levels_of_description": True, "q7_hill_numbers_by_level": True}
 SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core and rim",
          "q6_discovery_curve": "distinct configurations seen as the designs accumulate, at A, A·W·T and A·U, against random order; 2024–26 not yet all published",
+         "q6_half_of_cohort_heatmap": "designs per A·U configuration and cohort; orange bar where each complete cohort reaches half (ranked within the cohort)",
          "q6_half_of_cohort": "cumulative share of each cohort's designs held by its largest A·U configurations; where each crosses 50 %",
          "q6_propulsor_units_per_class": "propulsor units per design, by architecture (appendix)",
          "q6_selected_fields": "dimensions that vary: designs answering, options, top share, most common options",
@@ -135,8 +137,10 @@ def _numbers(cfg, ctx, R: Path):
          "## Table: levels of description\n", "Source: `q7_levels_of_description.csv` (notebook 50, group II2). The family F row is in Analysis III.\n", tables_md(t7), "",
          "## Table: Hill numbers of each level\n", "Source: `q7_hill_numbers_by_level.csv`; all years, 627 designs less those the level cannot name.\n", tables_md(hill), "",
          "## Discovery (`q6_discovery_curve`): complete years (to 2023)\n", "Source: `q6_discovery_estimators.csv`; the figure's last-100 window and these numbers are on the complete years.\n", tables_md(est_t), "",
-         f"## Core (`q6_configuration_core`)\n\nSource: `q6_configuration_core.csv`. Core: {len(core)} A·U configurations holding {100 * core['share 2016-23'].sum():.1f} % of the 2016–23 designs; "
-         f"rim: {len(d6['rim'])} configurations holding {100 * d6['rim']['share 2016-23'].sum():.1f} %. 2024–26 is not drawn.\n",
+         f"## Core (`q6_configuration_core`)\n\nSource: `q6_configuration_core.csv`. Core: the A·U configurations taken in order of their share of the 2016–23 designs until the cumulative share reaches 50 % "
+         f"(the one that crosses 50 % is included, and any tied with it, on the unrounded shares): {len(core)} configurations holding {100 * d6['core_share_exact']:.1f} % of the 2016–23 designs; "
+         f"rim: {len(d6['rim'])} configurations holding {100 * d6['rim']['share 2016-23'].sum():.1f} %. 2024–26 is not drawn. "
+         "Judgement call on labels: the figure names the core and the 3 largest non-core configurations by their 2016–23 share (unrounded; ties kept); every other point is grey and unnamed.\n",
          "## Numbers quoted by the Results text, Analysis II (sub-question A)\n", "Source: `viz/thesis_q6.py` numbers(ctx), notebook cells of groups II1–II3.\n",
          "\n".join(f"- `{k_}` = {n6[k_]}" for k_ in keys6 if k_ in n6), ""]
     (R / "Data_for_writing" / "NUMBERS_II.md").write_text("\n".join(L), encoding="utf-8")

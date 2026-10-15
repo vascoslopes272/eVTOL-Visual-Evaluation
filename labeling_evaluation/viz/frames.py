@@ -12,6 +12,7 @@ Wrangling only (no statistics). Ported from the archive (archive/labeling_evalua
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -491,6 +492,84 @@ def firm_from_assignee(raw) -> str:
 
 
 
+# ----------------------------------------------- which assignee a design is given to (rule of 2026-10-15) ---
+_TOOLS_SRC = Path(__file__).resolve().parents[3] / "Patent-Labelling-Tools" / "src"
+
+
+def _load_tool(name: str):
+    """grouper.py / patent_geography.py of the labelling tools, loaded by path (the existing grouper, unchanged)."""
+    import importlib.util
+    import warnings
+    spec = importlib.util.spec_from_file_location(f"_tools_{name}", _TOOLS_SRC / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    import sys
+    root = str(_TOOLS_SRC.parent)
+    added = root not in sys.path
+    if added:
+        sys.path.insert(0, root)              # patent_geography.py imports ``src.grouper``
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            spec.loader.exec_module(mod)
+    finally:
+        if added:
+            sys.path.remove(root)
+    return mod
+
+
+def co_assignees(raw) -> List[str]:
+    """Every assignee of a PatSeer string (joined by ``;``), in the order listed."""
+    s = "" if raw is None else str(raw).strip()
+    if s.lower() in ("", "nan", "none"):
+        return []
+    return [x.strip() for x in s.split(";") if x.strip()]
+
+
+def design_assignees(identity: pd.DataFrame) -> pd.DataFrame:
+    """Per patent, the assignee its design goes to (author's rule 2026-10-15; before it was the first one listed).
+
+    Every co-assignee is resolved to its canonical name with grouper.py (an organisation it does not list gets the name
+    :func:`firm_from_assignee` derives). The design goes to the co-assignee that files the most patent FAMILIES in the whole
+    dataset (``identity``, every patent); a tie keeps the first listed. An individual inventor counts only when no organisation
+    is on the patent. Columns: patent_id, assignee_chosen (the co-assignee's own string), firm (canonical name, None for an
+    individual), canon (grouper's name), country (the chosen co-assignee's country code, if it prints one), n_co, changed.
+
+    Ported from: new (Analysis V, 2026-10-15)"""
+    g = _load_tool("grouper")
+    geo = _load_tool("patent_geography")
+    rows = []
+    for pid, raw, fam in zip(identity["patent_id"], identity["assignee_raw"], identity["family_id"]):
+        cos = []
+        for sraw in co_assignees(raw):
+            canon = g._normalise_company(sraw)
+            typ = filer_from_assignee(sraw)
+            resolved = canon not in CATCH_ALL
+            org = resolved or typ in ("Named company", "University / institute")
+            name = canon if resolved else (firm_from_assignee(sraw) or None) if org else None
+            key = name if name else "person:" + first_assignee(sraw).lower()
+            cos.append(dict(raw=sraw, canon=canon, org=org, name=name, key=key))
+        rows.append((pid, fam, cos))
+    fams: Dict[str, set] = {}
+    for pid, fam, cos in rows:
+        for c in cos:
+            fams.setdefault(c["key"], set()).add(fam if pd.notna(fam) else pid)
+    out = []
+    for pid, fam, cos in rows:
+        pool = [c for c in cos if c["org"]] or cos
+        best = None
+        for c in pool:                                  # strictly greater: a tie keeps the first listed
+            if best is None or len(fams[c["key"]]) > len(fams[best["key"]]):
+                best = c
+        if best is None:
+            out.append(dict(patent_id=pid, assignee_chosen="", firm=None, canon=None, country=None, n_co=0, changed=False))
+            continue
+        m = geo._ASSIGNEE_CC_RE.search(best["raw"])
+        out.append(dict(patent_id=pid, assignee_chosen=best["raw"], firm=best["name"], canon=best["canon"],
+                        country=m.group(1) if m else None, n_co=len(cos), changed=best is not cos[0],
+                        region_by_country=geo.REGION_BY_COUNTRY.get(m.group(1)) if m else None))
+    return pd.DataFrame(out)
+
+
 # ------------------------------------------------------------------ frames --
 def base(ds, cfg, fold: Optional[Dict[str, str]] = None) -> pd.DataFrame:
     """One row per unique aircraft with year, window, region, filer, firm, class and the derived
@@ -515,6 +594,14 @@ def base(ds, cfg, fold: Optional[Dict[str, str]] = None) -> pd.DataFrame:
                      "kind_code"]],
         on="patent_id", how="left", suffixes=("", "_id"))
     v = v.merge(af, on="aircraft_id", how="left")
+    # the design goes to the co-assignee that files the most families (rule of 2026-10-15); the PatSeer string stays as assignee_raw_all
+    da = design_assignees(ds.identity).set_index("patent_id")
+    v["assignee_raw_all"] = v["assignee_raw"]
+    v["assignee_raw"] = v["patent_id"].map(da["assignee_chosen"])
+    v["company_canonical"] = v["patent_id"].map(da["canon"])
+    own = v["patent_id"].map(da["country"])
+    v["assignee_country"] = own.where(own.notna(), v["assignee_country"])
+    v["region"] = v["patent_id"].map(da["region_by_country"]).where(own.notna() & v["patent_id"].map(da["region_by_country"]).notna(), v["region"])
     ps = propulsion_states(ds.variants)
     for c in ("any_tilting", "any_ducted", "any_fixed"):
         v[c] = ps[c].to_numpy()
@@ -744,13 +831,17 @@ def evtolnews_years(cfg, windows) -> pd.DataFrame:
     return d
 
 
-def evtolnews_long(v: pd.DataFrame, cfg, windows) -> pd.DataFrame:
+def evtolnews_long(v: pd.DataFrame, cfg, windows, in_domain_only: bool = False) -> pd.DataFrame:
     """Both sources stacked, one row per dated, classed aircraft: ``source`` (patent / directory),
     ``window``, ``class5``. The patent side is every unique aircraft with a class and a priority window.
+    ``in_domain_only``: the directory side keeps only the pages of ``directory_frame()['in_domain']``.
 
     Ported from: sm_open.py:_evn_long"""
     p = v.dropna(subset=["window", "class5"])[["window", "class5"]].assign(source="patent")
-    d = evtolnews_years(cfg, windows).dropna(subset=["window"])
+    d = evtolnews_years(cfg, windows)
+    if in_domain_only:                      # 2026-10-15: only the pages the corrected domain rules keep (electric, crewed)
+        d = d[d["slug_key"].isin(set(directory_frame(cfg).query("in_domain")["slug_key"]))]
+    d = d.dropna(subset=["window"])
     d = d[["window", "evtol_class"]].rename(columns={"evtol_class": "class5"}).assign(source="directory")
     return pd.concat([p, d], ignore_index=True)
 
@@ -1770,18 +1861,8 @@ def family_yearly(ds, v: pd.DataFrame, last_year: int) -> pd.DataFrame:
 
 
 # ---- the Gower distance inputs (condition 3)
-#: Ported from: a3.py:WING_BORNE, BOOM_WING_FIELDS, POOLED_FIELDS, DERIVED_FIELDS, NOT_DESIGN, NUMERIC, SUBSYSTEM_OF
+#: Ported from: a3.py:WING_BORNE
 WING_BORNE = ("wing", "wing_boom", "both")
-BOOM_WING_FIELDS = ["boomsPresent", "boom1_count", "boom1_attach", "boom1_orient", "boom_count", "boom_ntypes", "wing1_count",
-                    "wing1_zoneSpan", "wing1_zoneChord", "wing1_orient", "wing1_propKin", "wing1_bmech", "wing1_chord"]
-POOLED_FIELDS = ["wing_borne_thrust", "wing_borne_units"]
-DERIVED_FIELDS = ["propulsor_units", "any_tilting_unit", "mixes_fixed_and_tilting", "any_ducted_unit", "all_units_ducted"]
-NOT_DESIGN = ["dinoUnderstanding"]
-NUMERIC_FIELDS = {"propulsor_units", "wing_borne_units"}
-SUBSYSTEM_OF = {"topType": "architecture", "fusShape": "fuselage", "fusKin": "fuselage", "gearArch": "fuselage",
-                "latSym": "fuselage", "wCount": "wings", "wingConf": "wings", "wing1_posV": "wings", "wing1_posL": "wings",
-                "wing1_plan": "wings", "empType": "empennage", "boomsPresent": "booms", "boom1_count": "booms",
-                "boom1_attach": "booms", "boom1_orient": "booms", "wing_borne_thrust": "booms"}
 _LABEL_SECTIONS = ("G1", "M1", "M2", "M3")
 _PROCESS_PATTERNS = ("humanUncertain", "quickOverride", "quickCount")
 
@@ -1836,23 +1917,147 @@ def informative_fields(ds, min_answered: int = 300, min_effk: float = 1.5) -> Li
     return list(inv["field"])
 
 
-def gower_inputs(ds) -> tuple:
-    """The inputs of the distance of condition 3: the typed aircraft with the wizard fields and the derived propulsion
-    variables, the field shortlist (informative fields, the boom-or-wing fields replaced by the wing-borne pair, then the
-    derived variables) and the set of fields compared by range.
+#: Weighting of the form distance (author's ruling 2026-10-14): the 34 dimensions of the codebook (Appendix A) follow its four
+#: systems and each system weighs 1; inside a system the weight is shared equally by its dimensions, except in M2, where the wings
+#: weigh twice the empennage. THE ONLY PLACE the weights are defined: (system, dimensions, weight of the group, numeric dimensions).
+_PROP_DIMS = ["Propulsor count", "Thrust Kinematics", "Propulsor Articulation", "Tractor/Pusher Arrangement", "Propulsor Enclosure",
+              "Retraction Kinematics", "Airframe Mounting Zone", "Empennage Mounting Zone", "Wing Chordwise Zone", "Wing Spanwise Zone"]
+_BOOM_DIMS = ["Booms present", "Boom count", "Boom Attachment", "Boom-Wing Panel Index", "Boom Longitudinal Position",
+              "Boom Spanwise Position", "Boom Orientation", "Boom-Wing Relationship", "Boom articulation", "Booms retract/stow"]
+FORM_GROUPS = [
+    ("G1 architecture", ["Architecture"], 1.0),
+    ("M1 structure", ["Fuselage Shape", "Fuselage Kinematics", "Ground Contact Interface", "Airframe Lateral Symmetry"] + _BOOM_DIMS, 1.0),
+    ("M2 wings", ["Wing Architecture", "Wing count", "Vertical Position", "Longitudinal Position", "Planform", "Tip-joined", "Tilt", "Role"], 2 / 3),
+    ("M2 empennage", ["Empennage Type"], 1 / 3),
+    ("M3 propulsion", _PROP_DIMS, 1.0),
+]
+FORM_NUMERIC = {"Wing count", "Boom count", "Propulsor count"}
+#: dimension -> column of the data export (per-wing dimensions read the primary wing, :func:`primary_wing`; per-boom dimensions read boom group 1;
+#: the propulsor dimensions are read by :func:`_propulsor_set`)
+_FORM_COLUMN = {"Architecture": "topType", "Fuselage Shape": "fusShape", "Fuselage Kinematics": "fusKin", "Ground Contact Interface": "gearArch",
+                "Airframe Lateral Symmetry": "latSym", "Booms present": "boomsPresent", "Boom count": "boom1_count", "Boom Attachment": "boom1_attach",
+                "Boom-Wing Panel Index": "boom1_wingIdx", "Boom Longitudinal Position": "boom1_long", "Boom Spanwise Position": "boom1_span",
+                "Boom Orientation": "boom1_orient", "Boom-Wing Relationship": "boom1_wingRel", "Boom articulation": "boom1_tilts",
+                "Booms retract/stow": "boom1_retracts", "Wing Architecture": "wingConf", "Wing count": "wCount", "Vertical Position": "wing1_posV",
+                "Longitudinal Position": "wing1_posL", "Planform": "wing1_plan", "Tip-joined": "wing1_tipJoin", "Tilt": "wing1_tilt",
+                "Role": "wing1_role", "Empennage Type": "empType"}
+#: propulsor dimension -> suffix of the column of the selected set (``<card>_`` or ``<card>_t<N>_`` + suffix)
+_PROP_SUFFIX = {"Thrust Kinematics": "orient", "Propulsor Articulation": "propKin", "Tractor/Pusher Arrangement": "chord",
+                "Propulsor Enclosure": "bmech", "Retraction Kinematics": "rmech"}
+#: the "N/A" option of the boom position fields: the dimension does not apply, so it is left blank (delta = 0)
+_NOT_APPLICABLE = {"Boom Longitudinal Position", "Boom Spanwise Position", "Boom-Wing Relationship"}
+FORM_FIELDS = [d for _, dims, _ in FORM_GROUPS for d in dims]
 
-    Ported from: a3.py:gower_frame, gower_fields (pooled=True), _is_numeric"""
-    f = ds.variants.copy()
-    d = derived_layer(ds.variants)
-    for c in DERIVED_FIELDS + POOLED_FIELDS:
-        f[c] = d[c]
-    frame = f[f["topType"].notna()]
-    inf = [x for x in informative_fields(ds) if x not in NOT_DESIGN]
-    fields = [x for x in inf if x not in BOOM_WING_FIELDS] + POOLED_FIELDS + DERIVED_FIELDS
-    kind = dict(zip(ds.data_dictionary["column"], ds.data_dictionary["kind"]))
-    numeric = {x for x in fields if x in NUMERIC_FIELDS or kind.get(x) == "int" or x.endswith("_count")
-               or x.endswith("_ntypes") or x == "wCount"}
-    return frame, fields, numeric
+
+#: per-wing dimensions of the form distance (read on the primary wing)
+_WING_DIMS = {"Vertical Position", "Longitudinal Position", "Planform", "Tip-joined", "Tilt", "Role"}
+_POSL_ORDER = {"Fwd": 0, "Cent": 1, "Aft": 2}
+
+
+#: the author's check of R5-03 on the drawings (2026-10-16): in these designs the role reading gave wing 2, but wing 1 is the largest as drawn
+PRIMARY_WING_RULED = {"US2019144107A1_ua1": 1, "US2019144109A1_ua1": 1, "US2018290736A1_ua1": 1, "GB201903200D0_ua1": 1}
+
+
+def primary_wing(r) -> int:
+    """Number (1-4) of the primary wing of a design, codebook rule R5-03: the wing with the largest area as drawn; with equal areas, the
+    forward-most. The record holds no drawn area, only each wing's role: wing 1 is always the Main wing (the largest), and a wing whose
+    role is Tandem (equal size) or Main ties with it, so among those the forward-most wing (``posL`` Fwd < Cent < Aft) is primary and a
+    tie in position keeps the lower number. Canard, Aft stabiliser, Stacked (same position) and Other are not larger than wing 1.
+    Where the author checked the drawing (:data:`PRIMARY_WING_RULED`), the ruling decides."""
+    ruled = PRIMARY_WING_RULED.get(_s(r.get("aircraft_id")))
+    if ruled:
+        return ruled
+    best = 1
+    for k in (2, 3, 4):
+        if _s(r.get(f"wing{k}_role")) in ("Tandem", "Main"):
+            a, b = _s(r.get(f"wing{best}_posL")), _s(r.get(f"wing{k}_posL"))
+            if a in _POSL_ORDER and b in _POSL_ORDER and _POSL_ORDER[b] < _POSL_ORDER[a]:
+                best = k
+    return best
+
+
+def form_weights(fields=None) -> Dict[str, float]:
+    """Weight of each of the 34 dimensions in the form distance: w = (weight of its group) / (number of dimensions of the group)."""
+    w = {d: g / len(dims) for _, dims, g in FORM_GROUPS for d in dims}
+    return {f: w[f] for f in (FORM_FIELDS if fields is None else fields)}
+
+
+def form_weights_table() -> pd.DataFrame:
+    """The weights table: system, dimensions, count, weight of each, weight in all (a total row last)."""
+    rows = [{"system": s, "dimensions": "; ".join(dims), "count": len(dims), "weight of each": round(g / len(dims), 3), "weight in all": round(g, 3)}
+            for s, dims, g in FORM_GROUPS]
+    rows.append({"system": "total", "dimensions": "", "count": sum(r["count"] for r in rows), "weight of each": np.nan,
+                 "weight in all": round(sum(g for _, _, g in FORM_GROUPS), 3)})
+    return pd.DataFrame(rows)
+
+
+def _propulsor_set(r: pd.Series):
+    """The propulsor set a design is read by: among the sets with propulsors (a card, or each of its types when it has several; a control-only set is
+    not a propulsor set), the one with the most propulsors, a tie going to the first listed (card order of ``M3_STATIONS``, then type number).
+    Returns (card, column prefix, count) or None.  A set of an overridden card has its quick count and no detail."""
+    best = None
+    for card in M3_STATIONS:
+        nt = _n(r.get(f"{card}_ntypes")) or 1
+        for pre in ([f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]):
+            cnt = _n(r.get(pre + "count"))
+            if cnt > 0 and _s(r.get(pre + "ctrlOnly")) != "True" and (best is None or cnt > best[2]):
+                best = (card, pre, cnt)
+    return best
+
+
+def form_frame(ds) -> pd.DataFrame:
+    """The designs with an architecture and their 34 dimensions (one column each, named as the codebook). A dimension that does not apply
+    (no boom, no second wing, no propulsor of that kind, an N/A answer) or that an override hides is blank, and the distance leaves a blank out
+    of the average (delta = 0), never counts it as a mismatch.  Per-wing dimensions read the primary wing (R5-03), per-boom dimensions boom group 1, the
+    propulsor dimensions the set with the most propulsors (:func:`_propulsor_set`); the zone dimensions are blank unless that set sits on
+    the fuselage (Airframe), the empennage or a wing (Chordwise, Spanwise)."""
+    v = ds.variants
+    v = v[v["topType"].notna()]
+    out = pd.DataFrame({"aircraft_id": v["aircraft_id"].to_numpy()}, index=v.index)
+    prim = v.apply(primary_wing, axis=1)                    # codebook R5-03: the wing the per-wing dimensions are read on
+    for d, c in _FORM_COLUMN.items():
+        if d in _WING_DIMS and c in v.columns:
+            x = pd.Series([r_.get(f"wing{k}_{c.split('_', 1)[1]}") if k != 1 else r_.get(c) for (_, r_), k in zip(v.iterrows(), prim)],
+                          index=v.index, dtype=object)
+            if d == "Role":
+                x = x.where(prim.eq(1), "Main")            # the primary wing is the main wing, whichever number it carries
+        else:
+            x = v[c].astype(object) if c in v.columns else pd.Series(pd.NA, index=v.index, dtype=object)
+        x = x.where(x.notna(), np.nan)
+        if d in _NOT_APPLICABLE:
+            x = x.where(x.ne("NA"), np.nan)
+        out[d] = x
+    for d in FORM_NUMERIC:
+        out[d] = pd.to_numeric(out[d], errors="coerce") if d in out else np.nan
+    cols = {d: [] for d in _PROP_DIMS}
+    for _, r in v.iterrows():
+        sel = None if _s(r.get("topType")) in NO_UNITS_TYPES else _propulsor_set(r)
+        card, pre, cnt = sel if sel else (None, None, np.nan)
+        row = {d: np.nan for d in _PROP_DIMS}
+        row["Propulsor count"] = cnt
+        if sel:
+            for d, suf in _PROP_SUFFIX.items():
+                row[d] = _s(r.get(pre + suf)) or np.nan
+            if card in ("fuselage", "hull_array", "core_layout"):
+                row["Airframe Mounting Zone"] = _s(r.get(pre + "zone")) or np.nan
+            elif card == "emp":
+                row["Empennage Mounting Zone"] = _s(r.get(pre + "zone")) or np.nan
+            elif card.startswith("wing"):
+                row["Wing Chordwise Zone"] = _s(r.get(pre + "zoneChord")) or np.nan
+                row["Wing Spanwise Zone"] = _s(r.get(pre + "zoneSpan")) or np.nan
+        for d in _PROP_DIMS:
+            cols[d].append(row[d])
+    for d in _PROP_DIMS:
+        out[d] = cols[d]
+    for d in FORM_NUMERIC:
+        out[d] = pd.to_numeric(out[d], errors="coerce").astype(float)
+    return out
+
+
+def gower_inputs(ds) -> tuple:
+    """The inputs of the distance of condition 3: the designs with an architecture, their 34 dimensions (:func:`form_frame`), the list of
+    dimensions and the set of those compared by range (the three counts)."""
+    return form_frame(ds), list(FORM_FIELDS), set(FORM_NUMERIC)
 
 
 def dd_balance_table(ds, v: pd.DataFrame, window_names: List[str], n: int, perms: int, seed: int) -> pd.DataFrame:
@@ -1891,7 +2096,7 @@ def dd_form_table(ds, v: pd.DataFrame, window_names: List[str], perms: int, seed
     at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
     parts = []
     for weighting in Q_WEIGHTINGS:
-        w = (_dist.subsystem_weights(fields, SUBSYSTEM_OF) if weighting == "subsystem" else _dist.uniform_weights(fields))
+        w = (form_weights(fields) if weighting == "subsystem" else _dist.uniform_weights(fields))
         D = _dist.gower_distance(frame, fields, numeric, w)
         for level in ("A0", "A1t", "A0c"):                 # order of dominant_design_q(levels=("A0", "A1t", "A0c"))
             key = archetype_key(v, level)
@@ -2313,8 +2518,8 @@ def filer_mix_representative(ds) -> pd.DataFrame:
 
     Ported from: sm_open.py:filer_mix_representative"""
     p = ds.patents.loc[ds.patents["is_representative"], ["patent_id"]]
-    p = p.merge(ds.identity[["patent_id", "assignee_raw"]].drop_duplicates("patent_id"), on="patent_id", how="left")
-    ft = p["assignee_raw"].map(filer_from_assignee)
+    p = p.merge(design_assignees(ds.identity)[["patent_id", "assignee_chosen"]].drop_duplicates("patent_id"), on="patent_id", how="left")
+    ft = p["assignee_chosen"].map(filer_from_assignee)
     names = {"Named company": "Named companies", "University / institute": "Universities and institutes",
              "Individual inventor": "Individual inventors", NO_ASSIGNEE: "No assignee named"}
     rows = [{"filer": names[k], "representative patents": int(ft.eq(k).sum()), "share per representative patent": round(int(ft.eq(k).sum()) / len(p), 3)}

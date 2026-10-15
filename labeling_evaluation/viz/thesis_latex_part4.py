@@ -189,7 +189,7 @@ def _numbers(ctx, R: Path):
          "## IV.2 Tilt mechanisms per propulsor unit, per architecture and cohort\n", "Source: `q6_tilt_mechanisms_per_propulsor.csv` (tilting sets / propulsor units, mean per cohort, cohorts of 5 designs or more).\n",
          tables_md(tm), "", "Pooled over Tilt Propulsor, CVT and Tilt Wing (mean per cohort): " + ", ".join(f"{k} {v:.3f}" for k, v in pooled.items()), "",
          f"## Future work: distance of each cohort from the first, and Rao's Q (`q6_centroid_dispersion`; leaves the dissertation)\n",
-         f"Source: `q6_centroid_dispersion.csv`. Gower distance over {nf} fields (subsystem weights), {na} designs; 200 permutations, seed 42, cohort sizes kept; "
+         f"Source: `q6_centroid_dispersion.csv`. Gower distance over {nf} dimensions (four systems, each weighing 1), {na} designs; 200 permutations, seed 42, cohort sizes kept; "
          "band = 2.5th to 97.5th percentile. Distance of a cohort = mean Gower distance between its designs and those of ≤2011 minus the mean of the two Rao's Q.\n",
          tables_md(dist), "",
          "## Numbers quoted by the Results text, IV.1 (sub-question C)\n", "Source: `viz/thesis_q6.py` numbers(ctx).\n", "\n".join(f"- `{k}` = {n6[k]}" for k in keys["C"] if k in n6), "",

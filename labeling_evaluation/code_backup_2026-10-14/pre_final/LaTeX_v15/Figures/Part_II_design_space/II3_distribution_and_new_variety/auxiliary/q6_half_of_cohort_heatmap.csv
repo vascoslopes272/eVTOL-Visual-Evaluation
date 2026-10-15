@@ -1,0 +1,166 @@
+cohort,configuration,designs,configurations that hold half (ranked within the cohort),in the cohort's top k (outlined)
+≤2011,TP 0–3,13.0,5,True
+2012–15,TP 0–3,14.0,5,True
+2016–19,TP 0–3,21.0,9,True
+2020–23,TP 0–3,13.0,7,True
+2024-26 (incomplete),TP 0–3,0.0,6,False
+≤2011,SLC 9+,9.0,5,True
+2012–15,SLC 9+,2.0,5,False
+2016–19,SLC 9+,16.0,9,True
+2020–23,SLC 9+,25.0,7,True
+2024-26 (incomplete),SLC 9+,5.0,6,False
+≤2011,SLC 5–6,4.0,5,True
+2012–15,SLC 5–6,4.0,5,True
+2016–19,SLC 5–6,11.0,9,True
+2020–23,SLC 5–6,18.0,7,True
+2024-26 (incomplete),SLC 5–6,5.0,6,False
+≤2011,TP 4,3.0,5,True
+2012–15,TP 4,3.0,5,False
+2016–19,TP 4,16.0,9,True
+2020–23,TP 4,15.0,7,True
+2024-26 (incomplete),TP 4,1.0,6,False
+≤2011,SLC 7–8,2.0,5,False
+2012–15,SLC 7–8,2.0,5,False
+2016–19,SLC 7–8,8.0,9,True
+2020–23,SLC 7–8,17.0,7,True
+2024-26 (incomplete),SLC 7–8,3.0,6,False
+≤2011,CVT 5–6,1.0,5,False
+2012–15,CVT 5–6,2.0,5,False
+2016–19,CVT 5–6,6.0,9,False
+2020–23,CVT 5–6,18.0,7,True
+2024-26 (incomplete),CVT 5–6,2.0,6,False
+≤2011,CVT 7–8,0.0,5,False
+2012–15,CVT 7–8,1.0,5,False
+2016–19,CVT 7–8,7.0,9,True
+2020–23,CVT 7–8,12.0,7,True
+2024-26 (incomplete),CVT 7–8,4.0,6,False
+≤2011,CVT 4,1.0,5,False
+2012–15,CVT 4,2.0,5,False
+2016–19,CVT 4,8.0,9,True
+2020–23,CVT 4,7.0,7,False
+2024-26 (incomplete),CVT 4,4.0,6,False
+≤2011,SLC 0–3,2.0,5,False
+2012–15,SLC 0–3,1.0,5,False
+2016–19,SLC 0–3,7.0,9,True
+2020–23,SLC 0–3,8.0,7,False
+2024-26 (incomplete),SLC 0–3,3.0,6,False
+≤2011,TP 5–6,3.0,5,False
+2012–15,TP 5–6,3.0,5,False
+2016–19,TP 5–6,4.0,9,False
+2020–23,TP 5–6,5.0,7,False
+2024-26 (incomplete),TP 5–6,5.0,6,False
+≤2011,TP 9+,0.0,5,False
+2012–15,TP 9+,0.0,5,False
+2016–19,TP 9+,6.0,9,False
+2020–23,TP 9+,12.0,7,False
+2024-26 (incomplete),TP 9+,2.0,6,False
+≤2011,MR 4,4.0,5,True
+2012–15,MR 4,2.0,5,False
+2016–19,MR 4,6.0,9,False
+2020–23,MR 4,5.0,7,False
+2024-26 (incomplete),MR 4,2.0,6,False
+≤2011,HB,1.0,5,False
+2012–15,HB,4.0,5,True
+2016–19,HB,12.0,9,True
+2020–23,HB,1.0,7,False
+2024-26 (incomplete),HB,1.0,6,False
+≤2011,TW 4,1.0,5,False
+2012–15,TW 4,4.0,5,True
+2016–19,TW 4,6.0,9,False
+2020–23,TW 4,5.0,7,False
+2024-26 (incomplete),TW 4,1.0,6,False
+≤2011,CVT 9+,1.0,5,False
+2012–15,CVT 9+,1.0,5,False
+2016–19,CVT 9+,2.0,9,False
+2020–23,CVT 9+,12.0,7,False
+2024-26 (incomplete),CVT 9+,0.0,6,False
+≤2011,CVT 0–3,2.0,5,False
+2012–15,CVT 0–3,4.0,5,True
+2016–19,CVT 0–3,5.0,9,False
+2020–23,CVT 0–3,4.0,7,False
+2024-26 (incomplete),CVT 0–3,0.0,6,False
+≤2011,SLC 4,0.0,5,False
+2012–15,SLC 4,0.0,5,False
+2016–19,SLC 4,6.0,9,False
+2020–23,SLC 4,7.0,7,False
+2024-26 (incomplete),SLC 4,0.0,6,False
+≤2011,TP 7–8,1.0,5,False
+2012–15,TP 7–8,0.0,5,False
+2016–19,TP 7–8,3.0,9,False
+2020–23,TP 7–8,4.0,7,False
+2024-26 (incomplete),TP 7–8,4.0,6,False
+≤2011,TW 0–3,2.0,5,False
+2012–15,TW 0–3,2.0,5,False
+2016–19,TW 0–3,1.0,9,False
+2020–23,TW 0–3,5.0,7,False
+2024-26 (incomplete),TW 0–3,1.0,6,False
+≤2011,PTC 7–8,0.0,5,False
+2012–15,PTC 7–8,0.0,5,False
+2016–19,PTC 7–8,4.0,9,False
+2020–23,PTC 7–8,3.0,7,False
+2024-26 (incomplete),PTC 7–8,3.0,6,False
+≤2011,TW 7–8,0.0,5,False
+2012–15,TW 7–8,0.0,5,False
+2016–19,TW 7–8,7.0,9,False
+2020–23,TW 7–8,3.0,7,False
+2024-26 (incomplete),TW 7–8,0.0,6,False
+≤2011,MR 9+,1.0,5,False
+2012–15,MR 9+,0.0,5,False
+2016–19,MR 9+,4.0,9,False
+2020–23,MR 9+,4.0,7,False
+2024-26 (incomplete),MR 9+,1.0,6,False
+≤2011,PFV,3.0,5,False
+2012–15,PFV,0.0,5,False
+2016–19,PFV,2.0,9,False
+2020–23,PFV,4.0,7,False
+2024-26 (incomplete),PFV,1.0,6,False
+≤2011,TW 5–6,1.0,5,False
+2012–15,TW 5–6,0.0,5,False
+2016–19,TW 5–6,4.0,9,False
+2020–23,TW 5–6,4.0,7,False
+2024-26 (incomplete),TW 5–6,0.0,6,False
+≤2011,RC 0–3,2.0,5,False
+2012–15,RC 0–3,1.0,5,False
+2016–19,RC 0–3,4.0,9,False
+2020–23,RC 0–3,1.0,7,False
+2024-26 (incomplete),RC 0–3,1.0,6,False
+≤2011,TW 9+,0.0,5,False
+2012–15,TW 9+,0.0,5,False
+2016–19,TW 9+,5.0,9,False
+2020–23,TW 9+,2.0,7,False
+2024-26 (incomplete),TW 9+,2.0,6,False
+≤2011,TF 4,1.0,5,False
+2012–15,TF 4,2.0,5,False
+2016–19,TF 4,2.0,9,False
+2020–23,TF 4,3.0,7,False
+2024-26 (incomplete),TF 4,0.0,6,False
+≤2011,MR 5–6,0.0,5,False
+2012–15,MR 5–6,0.0,5,False
+2016–19,MR 5–6,4.0,9,False
+2020–23,MR 5–6,4.0,7,False
+2024-26 (incomplete),MR 5–6,0.0,6,False
+≤2011,MR 0–3,2.0,5,False
+2012–15,MR 0–3,2.0,5,False
+2016–19,MR 0–3,1.0,9,False
+2020–23,MR 0–3,1.0,7,False
+2024-26 (incomplete),MR 0–3,1.0,6,False
+≤2011,TF 7–8,0.0,5,False
+2012–15,TF 7–8,0.0,5,False
+2016–19,TF 7–8,6.0,9,False
+2020–23,TF 7–8,0.0,7,False
+2024-26 (incomplete),TF 7–8,1.0,6,False
+≤2011,PTC 4,0.0,5,False
+2012–15,PTC 4,1.0,5,False
+2016–19,PTC 4,4.0,9,False
+2020–23,PTC 4,1.0,7,False
+2024-26 (incomplete),PTC 4,0.0,6,False
+≤2011,TF 0–3,1.0,5,False
+2012–15,TF 0–3,0.0,5,False
+2016–19,TF 0–3,3.0,9,False
+2020–23,TF 0–3,1.0,7,False
+2024-26 (incomplete),TF 0–3,1.0,6,False
+≤2011,SRW 0–3,0.0,5,False
+2012–15,SRW 0–3,0.0,5,False
+2016–19,SRW 0–3,2.0,9,False
+2020–23,SRW 0–3,3.0,7,False
+2024-26 (incomplete),SRW 0–3,0.0,6,False

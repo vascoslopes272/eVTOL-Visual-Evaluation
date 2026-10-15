@@ -17,12 +17,12 @@ from viz.thesis_latex_common import MAX_H, TEXT_CM, root, tables_md
 #: name -> (final width as a share of the text block, in the dissertation)
 FIGS = {"q6_architecture_shares_by_cohort": (1.0, True), "q7_condition2_balance": (0.9, True), "q7_condition3_cohesion": (0.85, True),
         "q7_condition1_family": (1.0, True), "q6_largest_architectures_over_time": (1.0, False), "q7_iii4_directory_categories": (1.0, False)}
-TABLES = {"q7_verdict_table": True, "q7_condition3_weights": True, "q6_share_trend_spearman": True, "q7_three_year_check": True,
+TABLES = {"q7_verdict_table": True, "q7_verdict_detail": True, "q7_condition3_weights": True, "q7_condition3_family": True, "q6_share_trend_spearman": True, "q7_three_year_check": True,
           "q7_granted_live_condition1": True, "q7_granted_live_condition2": True, "q7_iii4_directory_fold": True}
 SHOWS = {"q6_architecture_shares_by_cohort": "share of each cohort's designs by architecture", "q7_condition2_balance": "condition 2: ²D against its permutation band, per level",
-         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, subsystem weighting only", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
+         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, system weighting only", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
          "q6_largest_architectures_over_time": "five largest architectures' share per cohort", "q7_iii4_directory_categories": "III.4: largest directory category per year and its ²D against the band",
-         "q7_verdict_table": "verdict per condition and level", "q7_condition3_weights": "subsystem weights of the form distance",
+         "q7_verdict_table": "verdict per condition and level, all designs (main) and actively protected (sensitivity), each base read alone", "q7_verdict_detail": "the numbers behind the verdict on each base", "q7_condition3_weights": "weights of the form distance: four systems, each weighing 1", "q7_condition3_family": "condition 3 on F: actively protected, all designs, granted and live",
          "q6_share_trend_spearman": "Spearman rho of architecture share on priority year", "q7_three_year_check": "condition 1 with three consecutive years",
          "q7_granted_live_condition1": "F's share per year, granted and live patents", "q7_granted_live_condition2": "²D of F, granted and live patents",
          "q7_iii4_directory_fold": "architectures folded to the directory categories"}
@@ -114,6 +114,7 @@ def _numbers(cfg, ctx, R: Path):
     wts, _ = v3.tab_condition3_weights(ctx)
     rho, _ = v3.tab_share_trend(ctx)
     t3, _ = v3.tab_three_year_check(ctx)
+    fam, _ = v3.tab_condition3_family(ctx)
     gl1, _ = v3.tab_granted_live_condition1(ctx)
     gl2, _ = v3.tab_granted_live_condition2(ctx)
     form = d["form"]
@@ -138,8 +139,10 @@ def _numbers(cfg, ctx, R: Path):
          "VT share per cohort:\n", tables_md(vt), "", "VT share per priority year (read years, 20 designs or more, 2016–2023); condition 1 met in "
          + ", ".join(map(str, di["met"])) + " (all designs: " + ", ".join(map(str, di["met_all"])) + "):\n", tables_md(vy), "",
          "Balance (²D rarefied to 40, all designs, 200 permutations) with the band, per cohort; 2024–26* is incomplete and not read:\n", tables_md(bal), "",
-         "## Verdict table\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
-         "## Weights table (condition 3, subsystem weighting, the only one)\n", "Source: `q7_condition3_weights.csv`; 20 dimensions, 625 designs (two designs have no architecture recorded).\n", tables_md(wts), "",
+         "## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity)\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
+         "## The numbers behind the verdict\n", "Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 and the lower edge of its band (200 permutations, seed 42).\n", tables_md(analysis3.verdict_two_bases(ctx)[1]), "",
+         "## Weights table (condition 3, the only weighting: the 34 dimensions of the codebook, each of the four systems weighing 1)\n", "Source: `q7_condition3_weights.csv`; 34 dimensions, 625 designs (two designs have no architecture recorded). Per-wing dimensions read the primary wing (codebook R5-03: the largest wing, the forward-most when equal; the role reading pointed to wing 2 in 4 designs, but the author checked their drawings on 2026-10-16 and wing 1 is the largest as drawn in each, so every design reads wing 1); per-boom dimensions boom group 1; propulsor dimensions the set with the most propulsors (first listed on a tie); a dimension that does not apply is blank and left out of the average.\n", tables_md(wts), "",
+         "## Condition 3 on F (same weights; Q on the designs of F's base, per cohort)\n", "Source: `q7_condition3_family.csv`. Q uses no architecture, so F on all designs is the same set as A.\n", tables_md(fam), "",
          "## Three-year check (condition 1, three consecutive years, actively protected designs)\n", "Source: `q7_three_year_check.csv`.\n", tables_md(t3), "",
          "## F on granted and live patents alone\n", "Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.\n", tables_md(gl1), "", tables_md(gl2), "",
          "## III.4, which VT share the figure draws\n",

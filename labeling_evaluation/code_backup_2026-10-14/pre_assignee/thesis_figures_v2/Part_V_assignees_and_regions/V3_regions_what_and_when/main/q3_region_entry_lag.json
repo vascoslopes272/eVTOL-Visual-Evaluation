@@ -1,0 +1,14 @@
+{
+ "name": "q3_region_entry_lag",
+ "section": "V3",
+ "slot": "results",
+ "kind": "figure",
+ "title": "Years after North America, per architecture",
+ "caption": "The years by which Europe and Asia-Pacific file each architecture after North America, as the median priority-year difference with its 95 % bootstrap interval.",
+ "source_item": "Figure 23 (ii)",
+ "source": "PatSeer (applicant country, priority date) · human labelling",
+ "propulsor": "unique aircraft of priority year 2023 or earlier; the five architectures with 10 designs or more in every region",
+ "read": "Dot: the region's median priority year minus North America's (+ = later); bar: its 95 % interval, one that excludes 0 is a difference detected; under the architecture, North America's median year.",
+ "width_in": 4.536,
+ "height_in": 3.1
+}

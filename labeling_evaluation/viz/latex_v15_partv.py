@@ -196,7 +196,7 @@ def append_two_decimals(cfg, ctx) -> str:
     cols = ["architecture", "region", "designs", "offset", "low", "high", "lower bound above zero", "marker"]
     parts = ["\n## Entry lag with two decimals (follow-up)\n",
              "Source: `viz/latex_v15_partv.py:lag_two_decimals`, the bootstrap of `lib/regional.lag_offsets` without the rounding (same frames, same seed 42, same draw order; "
-             "**2000 draws**: the entry above, which says 200, is wrong). Asserted equal, after rounding to 1 decimal, to `viz.thesis_q3._frames(ctx)['off']` and `['off16']`, so no result moves. "
+             "2000 draws). Asserted equal, after rounding to 1 decimal, to `viz.thesis_q3._frames(ctx)['off']` and `['off16']`, so no result moves. "
              "Offset = median priority year of the region minus that of North America; lower and upper bound = 2.5 and 97.5 percentiles of the bootstrap offsets; "
              "'lower bound above zero' tests the two-decimal value; the marker flags every lower bound whose 1-decimal value is 0.0. CSV: `q3_region_entry_lag_two_decimals.csv`.\n"]
     for period in ("2016 to 2023", "all years to 2023"):
@@ -225,8 +225,8 @@ def export_part_v(cfg=None, ctx=None) -> list:
     root = latex_root(cfg)
     dfw = root / "Data_for_writing"
     nf = dfw / "NUMBERS_V.md"
-    follow = nf.read_text(encoding="utf-8").split("\n## Entry lag with two decimals (follow-up)")[1:] if nf.exists() else []
-    nf.write_text(numbers_md(cfg, ctx) + ("\n## Entry lag with two decimals (follow-up)" + follow[0] if follow else ""), encoding="utf-8")
+    nf.write_text(numbers_md(cfg, ctx), encoding="utf-8")
+    append_two_decimals(cfg, ctx)                     # the follow-up section and its CSV, recomputed every run (never carried over)
     yn = lambda u: "yes" if u else "no (leaves the text)"                                           # noqa: E731
     lines = [(f"LaTeX_v15/{i['pdf'].relative_to(root)}", yn(i["used"]), i["shows"]) for i in infos]
     lines += [(f"LaTeX_v15/{i['csv'].relative_to(root)}", yn(i["used"]), f"data behind {i['name']}") for i in infos]

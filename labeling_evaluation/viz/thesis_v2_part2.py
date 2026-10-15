@@ -116,37 +116,57 @@ def _place_point_labels(ax, xy, labels, r_pt, avoid, all_xy, fs=FS, max_r_pt=30.
     axbb = ax.get_window_extent(rend)
     sizes = [_label_size(ax, t, fs) for t in labels]
     near = [(np.hypot(*(P - p).T) < 45 * k).sum() for p in P]
-    angles = np.deg2rad([0, 180, 30, 150, 330, 210, 90, 270, 60, 120, 300, 240])
-    placed, fails = [], []
-    for q in sorted(range(len(P)), key=lambda i: -near[i]):
-        w, h = sizes[q]
-        others = [a for a in A if np.hypot(*(a - P[q])) > 1e-6]
-        done = False
-        for r in np.arange(r_pt + 2.0, max_r_pt, 2.0):
-            for th in angles:
-                px, py = P[q][0] + r * k * np.cos(th), P[q][1] + r * k * np.sin(th)
-                x0 = px if np.cos(th) > 0.3 else px - w if np.cos(th) < -0.3 else px - w / 2
-                y0 = py if np.sin(th) > 0.3 else py - h if np.sin(th) < -0.3 else py - h / 2
-                bb = Bbox([[x0, y0], [x0 + w, y0 + h]])
-                if not (axbb.x0 + 1 <= bb.x0 and bb.x1 <= axbb.x1 - 1 and axbb.y0 + 1 <= bb.y0 and bb.y1 <= axbb.y1 - 1):
-                    continue
-                if any(bb.overlaps(b) for b in marks + list(avoid) + placed):
-                    continue
-                own = _box_gap(bb, P[q])
-                if any(_box_gap(bb, o) <= own + 3 * k for o in others):
-                    continue
-                placed.append(bb)
-                ha = "left" if np.cos(th) > 0.3 else "right" if np.cos(th) < -0.3 else "center"
-                va = "bottom" if np.sin(th) > 0.3 else "top" if np.sin(th) < -0.3 else "center"
-                ax.annotate(labels[q], xy=tuple(xy[q]), xytext=(r * np.cos(th), r * np.sin(th)), textcoords="offset points", ha=ha,
-                            va=va, fontsize=fs, color=style.INK, zorder=8,
-                            arrowprops=dict(arrowstyle="-", linewidth=0.5, color=style.INK, shrinkA=0, shrinkB=r_pt) if r > r_pt + 4 else None)
-                done = True
-                break
-            if done:
-                break
-        if not done:
-            fails.append(labels[q])
+    angles = np.deg2rad([0, 180, 30, 150, 330, 210, 90, 270, 60, 120, 300, 240, 15, 165, 345, 195, 45, 135, 315, 225, 75, 105, 285, 255])
+    base = sorted(range(len(P)), key=lambda i: -near[i])
+    rng = np.random.default_rng(0)
+    best = None
+    for trial in range(300):                 # the crowded-first order first, then shuffled orders until every label has a place
+        order = base if trial == 0 else list(rng.permutation(len(P)))
+        placed, fails, plan = [], [], []
+        for q in order:
+            w, h = sizes[q]
+            others = [a for a in A if np.hypot(*(a - P[q])) > 1e-6]
+            done = False
+            for r in np.arange(r_pt + 2.0, max_r_pt, 2.0):
+                for th in angles:
+                    px, py = P[q][0] + r * k * np.cos(th), P[q][1] + r * k * np.sin(th)
+                    x0 = px if np.cos(th) > 0.3 else px - w if np.cos(th) < -0.3 else px - w / 2
+                    y0 = py if np.sin(th) > 0.3 else py - h if np.sin(th) < -0.3 else py - h / 2
+                    bb = Bbox([[x0, y0], [x0 + w, y0 + h]])
+                    if not (axbb.x0 + 1 <= bb.x0 and bb.x1 <= axbb.x1 - 1 and axbb.y0 + 1 <= bb.y0 and bb.y1 <= axbb.y1 - 1):
+                        continue
+                    if any(bb.overlaps(b) for b in marks + list(avoid) + placed):
+                        continue
+                    own = _box_gap(bb, P[q])
+                    if r <= r_pt + 4 and any(_box_gap(bb, o) <= own + 3 * k for o in others):      # a label with a leader is tied to its point by the line
+                        continue
+                    if r > r_pt + 4:                    # a leader never runs through another mark
+                        end = np.array([min(max(P[q][0], bb.x0), bb.x1), min(max(P[q][1], bb.y0), bb.y1)])
+                        seg = P[q] + (end - P[q]) * np.linspace(0, 1, 40)[:, None]
+                        if any(np.hypot(*(seg - o).T).min() < rad + 1 for o in others):
+                            continue
+                        bb = Bbox.union([bb, Bbox([seg.min(axis=0) - 1, seg.max(axis=0) + 1])])      # the label's extent counts its leader
+                        if any(bb.overlaps(b) for b in placed):
+                            continue
+                    placed.append(bb)
+                    plan.append((q, r, th))
+                    done = True
+                    break
+                if done:
+                    break
+            if not done:
+                fails.append(labels[q])
+        if best is None or len(fails) < len(best[0]):
+            best = (fails, plan)
+        if not fails:
+            break
+    fails, plan = best
+    for q, r, th in plan:
+        ha = "left" if np.cos(th) > 0.3 else "right" if np.cos(th) < -0.3 else "center"
+        va = "bottom" if np.sin(th) > 0.3 else "top" if np.sin(th) < -0.3 else "center"
+        ax.annotate(labels[q], xy=tuple(xy[q]), xytext=(r * np.cos(th), r * np.sin(th)), textcoords="offset points", ha=ha,
+                    va=va, fontsize=fs, color=style.INK, zorder=8,
+                    arrowprops=dict(arrowstyle="-", linewidth=0.5, color=style.INK, shrinkA=0, shrinkB=r_pt) if r > r_pt + 4 else None)
     return fails
 
 
@@ -320,11 +340,11 @@ def tab_levels_of_description_v2(ctx):
 # ================================================================================== II3. distribution and new variety
 def fig_configuration_core_v2(ctx):
     """II3 main: the A·U configurations of five designs or more by share of the 2016–23 designs and distinct assignees per
-    design. Label only the 7 core configurations and the 3 non-core ones with the largest 2016–23 share; every other
+    design. Label only the core configurations and the 3 non-core ones with the largest 2016–23 share; every other
     point grey and unlabelled; the core outlined solid, the rim dashed, each named once."""
     d = q6._data(ctx)
     zz, core, rim = d["zz"], d["core"], d["rim"]
-    extra = zz[~zz.index.isin(core.index)].sort_values("share 2016-23", ascending=False).head(3)
+    extra = zz[~zz.index.isin(core.index)].assign(_x=d["share_exact"]).sort_values("_x", ascending=False, kind="stable").head(3).drop(columns="_x")
     lab = pd.concat([core, extra])
     s_pt2 = 46.0
     r_pt = float(np.sqrt(s_pt2 / np.pi))
@@ -346,7 +366,7 @@ def fig_configuration_core_v2(ctx):
                                linestyle=(0, (4, 2)), edgecolor=style.MUTED)
     obstacles = _ring_boxes(ring_core) + _ring_boxes(ring_rim)
     failed = _place_point_labels(ax, lab[["share 2016-23", "filers per aircraft"]].to_numpy(), [cfg_label(a) for a in lab["archetype"]], r_pt,
-                                 obstacles, zz[["share 2016-23", "filers per aircraft"]].to_numpy())
+                                 obstacles, zz[["share 2016-23", "filers per aircraft"]].to_numpy(), max_r_pt=140.0)
     assert not failed, failed
     for t in ax.texts:                       # a point label never shows a ring line through it
         t.set_bbox(dict(fc="white", ec="none", pad=0.3, alpha=0.9))
@@ -415,8 +435,9 @@ def fig_discovery_curve_v2(ctx):
         n_c, n_max = int(n_done[lvl]), int(x.max())
         ax.axvspan(n_c - tail, n_c, color=TAIL_FILL, zorder=0, linewidth=0)
         ax.axvspan(n_c, n_max, facecolor="white", edgecolor=GREY, hatch="////", linewidth=0, alpha=0.9, zorder=0)
-        ax.plot(x, rnd, color="#8c8c8c", linewidth=0.8, linestyle=(0, (3, 2)), zorder=2)
-        ax.plot(x, real, color=style.INK, linewidth=1.7, zorder=4)
+        for sel, al in ((x <= n_c, 1.0), (x >= n_c, 0.4)):          # 2024-26 faded; every number as before
+            ax.plot(x[sel], rnd[sel], color="#8c8c8c", linewidth=0.8, linestyle=(0, (3, 2)), alpha=al, zorder=2)
+            ax.plot(x[sel], real[sel], color=style.INK, linewidth=1.7, alpha=al, zorder=4)
         ax.set_xlim(0, n_max + 3)
         ax.set_ylim(0, max(real.max(), rnd.max()) * 1.1)
         ax.xaxis.set_major_locator(mticker.MultipleLocator(200))
@@ -434,7 +455,7 @@ def fig_discovery_curve_v2(ctx):
     fig.legend(handles=[Line2D([], [], color=style.INK, linewidth=1.7, label="real order (priority year)"),
                         Line2D([], [], color="#8c8c8c", linewidth=0.8, linestyle=(0, (3, 2)), label="same designs in random order"),
                         Patch(facecolor=TAIL_FILL, label=f"last {tail} designs to 2023"),
-                        Patch(facecolor="white", edgecolor=GREY, hatch="////", label="2024–26: not yet all published")],
+                        Patch(facecolor="white", edgecolor=GREY, hatch="////", label="2024-26 (incomplete)")],
                loc="outside upper center", ncol=2, fontsize=FS)
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
@@ -467,8 +488,8 @@ def fig_half_of_cohort_v2(ctx):
         ax.plot(ranks, cs[:K], color=col, linestyle=ls, linewidth=1.3 if part else 1.6, zorder=3)
         nudge = {"<= 2011": -0.18, "2012-15": 0.18}.get(w, 0.0)      # ≤2011 and 2012-15 both cross at 5: keep both visible
         ax.plot(k + nudge, cs[k - 1], marker=mk, markersize=8, markerfacecolor="white" if part else col, markeredgecolor=col, markeredgewidth=1.8, linestyle="none", zorder=5)
-        ends.append((cs[K - 1], f"2024–26 (incomplete): half in {k}" if part else f"{plots.WINDOW_TICKS[w]}: half in {k}", col))
-        rows += [{"cohort": "2024–26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
+        ends.append((cs[K - 1], f"2024-26 (incomplete): half in {k}" if part else f"{plots.WINDOW_TICKS[w]}: half in {k}", col))
+        rows += [{"cohort": "2024-26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
                   "cumulative share": round(float(cs[r - 1]), 4), "crosses 50 % here": bool(r == k)} for r in ranks]
     ax.set_xlim(0.5, K + 11)
     ax.set_ylim(0, 1.12)
@@ -494,6 +515,43 @@ def fig_half_of_cohort_v2(ctx):
     return fig, pd.DataFrame(rows)
 
 
+def fig_half_of_cohort_heatmap_v2(ctx):
+    """II3 auxiliary: designs per A·U configuration (columns, largest first over all cohorts) and cohort (rows); the orange bar of each of the two
+    complete cohorts sits after the k configurations that hold half of its designs, k read on the ranking WITHIN the cohort (as q6_half_of_cohort),
+    so k reads 5, 5, 9 and 7. 2024-26 is drawn faded (incomplete)."""
+    d = q6._data(ctx)
+    z = d["zones"]
+    cohorts = list(ctx.WIN_NAMES)
+    lab = {w: ("2024-26 (incomplete)" if "partial" in w else plots.WINDOW_TICKS[w]) for w in cohorts}
+    mat = z.set_index("archetype")[cohorts].astype(float).T
+    mat.columns = [cfg_label(a) for a in mat.columns]
+    k = {w: int(np.searchsorted(np.cumsum(np.sort(z[w].astype(float).to_numpy())[::-1]) / z[w].astype(float).sum(), 0.5)) + 1 for w in cohorts}
+    m2 = mat.rename(index=lab)
+    fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, "fig_h", 3.0)), constrained_layout=True)
+    plots.window_heat(ax, m2, {})
+    top = {}                                                  # each complete cohort's own top-k cells (ranking within the cohort, columns in overall order)
+    for i, w in enumerate(cohorts):
+        if "partial" in w:
+            continue
+        c = z[w].astype(float).to_numpy()
+        cols = np.argsort(-c, kind="stable")[:k[w]]
+        top[w] = sorted(int(j) for j in cols)
+        for j in cols:
+            ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, edgecolor="#ff5a1f", linewidth=2.2, zorder=6))
+    ax.add_patch(plt.Rectangle((-0.5, len(cohorts) - 1.5), m2.shape[1], 1, facecolor="white", alpha=0.55, linewidth=0, zorder=5))
+    ax.tick_params(axis="x", labelsize=FS)
+    ax.tick_params(axis="y", labelsize=FS)
+    ax.set_xlabel("A·U configuration, largest first over all cohorts", fontsize=FS)
+    ax.set_ylabel("cohort", fontsize=FS)
+    fig.legend(handles=[Patch(facecolor="none", edgecolor="#ff5a1f", linewidth=2.2, label="the cohort's own largest configurations that together hold half of its designs (k = 5, 5, 9, 7)")],
+               loc="outside lower center", ncol=1, fontsize=FS)
+    data = (mat.rename(index=lab).rename_axis("cohort").reset_index().melt(id_vars="cohort", var_name="configuration", value_name="designs"))
+    data["configurations that hold half (ranked within the cohort)"] = data["cohort"].map({lab[w]: k[w] for w in cohorts})
+    cfgs = list(mat.columns)
+    data["in the cohort's top k (outlined)"] = [bool(cfgs.index(cf) in top.get(w0, [])) for cf, w0 in zip(data["configuration"], data["cohort"].map({lab[w]: w for w in cohorts}))]
+    return fig, data
+
+
 # ================================================================================== items + writer
 ITEMS = [
     dict(name="q6_selected_fields", group="II1_varying_attributes", role="main", kind="table", builder=tab_selected_fields_v2,
@@ -512,6 +570,8 @@ ITEMS = [
          title="Crowded core and empty rim", source_item="v2 of q6_archetype_core (Figure 8 (i))"),
     dict(name="q6_discovery_curve", group="II3_distribution_and_new_variety", role="main", kind="figure", builder=fig_discovery_curve_v2,
          title="Is the design space still opening", source_item="v2 of q6_discovery_curve (Figure 9)"),
+    dict(name="q6_half_of_cohort_heatmap", group="II3_distribution_and_new_variety", role="auxiliary", kind="figure", builder=fig_half_of_cohort_heatmap_v2,
+         title="Designs per configuration and cohort; where each cohort reaches half", source_item="replaces q6_archetype_windows (Figure 8 (ii))"),
     dict(name="q6_half_of_cohort", group="II3_distribution_and_new_variety", role="auxiliary", kind="figure", builder=fig_half_of_cohort_v2,
          title="Configurations that hold half of a cohort's designs", source_item="replaces q6_archetype_windows (Figure 8 (ii))"),
 ]

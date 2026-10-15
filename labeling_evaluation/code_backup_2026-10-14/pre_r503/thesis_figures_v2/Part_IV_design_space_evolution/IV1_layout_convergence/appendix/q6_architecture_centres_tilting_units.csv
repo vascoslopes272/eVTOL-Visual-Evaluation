@@ -1,0 +1,13 @@
+architecture,cohort,aircraft,tilting sets (mean),propulsors (median)
+Lift + Cruise,<= 2011,17,0.0,10.0
+Lift + Cruise,2012-15,9,0.0,5.0
+Lift + Cruise,2016-19,48,0.0,6.5
+Lift + Cruise,2020-23,75,0.0,7.0
+Tilt Propulsor,<= 2011,20,1.35,2.0
+Tilt Propulsor,2012-15,20,1.65,2.0
+Tilt Propulsor,2016-19,50,1.8,4.0
+Tilt Propulsor,2020-23,49,1.755,4.0
+Combined Vectored Thrust,<= 2011,5,1.0,4.0
+Combined Vectored Thrust,2012-15,10,1.1,4.0
+Combined Vectored Thrust,2016-19,28,1.357,5.0
+Combined Vectored Thrust,2020-23,53,1.434,6.0

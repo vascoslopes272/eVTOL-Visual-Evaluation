@@ -1,0 +1,12 @@
+{
+ "name": "q1_filings_per_year",
+ "group": "I1_patenting_rate",
+ "role": "main",
+ "kind": "figure",
+ "title": "Designs filed per priority year",
+ "source_item": "v2 of Figure 1 (i)",
+ "width_in": 6.299,
+ "height_in": 3.401,
+ "final_width_fraction": 1.0,
+ "text_block_cm": 16
+}

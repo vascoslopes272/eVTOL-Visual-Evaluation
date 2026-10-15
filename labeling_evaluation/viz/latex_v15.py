@@ -22,19 +22,21 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from lib import association
+from lib import association, growth
 from viz import frames
 from viz.thesis_latex_common import root
 
 #: figures of the remake prompt that stay in the dissertation text (yes) and those that leave it (no, still delivered)
 USED = {"q1_filings_per_year": True, "q4_patent_vs_market_clock": True, "q4_class_mix": True,
-        "q1_growth_rates": False, "q1_in_force_status": False, "q5_funding_vs_aircraft": False, "q5_patenting_vs_investment": False}
+        "q1_growth_rates": False, "q4_dataset_vs_directory_classes": False, "q4_dataset_vs_directory_subsets": False, "q1_in_force_status": False, "q5_funding_vs_aircraft": False, "q5_patenting_vs_investment": False}
 SHOWS = {
-    "q1_filings_per_year": "Designs filed per priority year, stacked by architecture group, 2024-26 faded; patent families as a line; five dated sector events",
+    "q1_filings_per_year": "Designs filed per priority year, stacked by architecture group, 2024-26 faded; patent families as a line; six dated sector events",
+    "q4_dataset_vs_directory_classes": "Designs per architecture group in the patent dataset and the pages of the VFS eVTOL directory inside the domain, all years (appendix)",
+    "q4_dataset_vs_directory_subsets": "Designs of each architecture group in the dataset and in four parts of the in-domain directory (appendix)",
     "q1_growth_rates": "Growth of eVTOL architecture patents against aeronautics, transport and all patenting, relative to 2005-09, log scale (width not given: 1.0, as in the dissertation before)",
     "q4_patent_vs_market_clock": "One row per AAM Reality Index firm that files here: first to last patent, peak year, first flight, entry into service",
     "q1_in_force_status": "Share of designs not actively protected, by architecture and by filing office (US against the other offices), the nine architectures of ten designs or more, 604 designs (width not given: 1.0; appendix at most)",
-    "q4_class_mix": "Architecture mix per priority-year cohort, patent dataset next to the VFS eVTOL directory",
+    "q4_class_mix": "Architecture distribution per priority-year cohort, patent dataset next to the VFS eVTOL directory",
     "q5_funding_vs_aircraft": "Disclosed funding of the index firms against their designs in the patent dataset (width not given: 0.6, as in the dissertation before)",
     "q5_patenting_vs_investment": "Designs per priority year against disclosed sector investment per year, one dot per published period (width not given: 0.6, as in the dissertation before)",
 }
@@ -295,12 +297,181 @@ def write_numbers_I(cfg, ctx) -> Path:
     out.append("`thesis_figures/Q1_growth/numbers.json`, `Q4_representativeness/numbers.json` and `Q5_money/numbers.json` were rewritten on 2026-10-13 from the current inputs (the corrected company map with EHang, the script TRL, the script years); "
                "the previous Q4 and Q5 files are kept beside them as `numbers.PRE_20261013.json`, and the values of the old Results text are in `review/numbers_old/`.\n")
     out += _changes_section(cfg, ctx, c, n1, n4, n5, OLD, CSV)
+    out += _segment_slopes(c, CSV)
+    out += _in_domain_directory(ctx, CSV)
+    out += _office_by_cohort(ctx, c, CSV)
     out += _funnel_table(cfg, ctx, ds, v, dirf, matched, cmap, firms22, script_map, cnt)
     p = D / "NUMBERS_I.md"
     p.write_text("\n".join(out) + "\n", encoding="utf-8")
     _append_manifest(base, [("Data_for_writing/NUMBERS_I.md", "yes", "numbers of Analysis I with their sources")]
                      + [(f"Data_for_writing/csv/{f.name}", "no", "table behind NUMBERS_I.md (not printed)") for f in sorted(CSV.glob("numbers_I_*.csv"))])
     return p
+
+
+def _segment_slopes(c, CSV) -> list:
+    """Section "I.1 segment slopes" of NUMBERS_I.md (2026-10-14): the turning point of the eVTOL patent families and of the B64 series
+    (``lib/growth.py:turning_point``, same breaks and bootstrap draws and seed as in ``thesis_q1._calc``) and, for each series, the slope b of
+    ln c_t = a + b t with its 95 % interval and the doubling time ln 2 / b over 2005-23 and over the two segments (the break year opens the
+    second one; each line is a separate least-squares fit, years with a zero count dropped)."""
+    from scipy import stats
+    ser = c["ser"]
+    tp_rows, rows = [], []
+    for key, sg in c["seg"].items():
+        t = sg["turn"]
+        tp_rows.append((sg["label"], int(t["break"]), f"{t['share']:.1%}", f"{t['lo']} to {t['hi']}"))
+        for name, (lo, hi, f) in sg["lines"].items():
+            yrs, cnt = growth.window_frame(ser[key], lo, hi)
+            ok = cnt > 0
+            r = stats.linregress(yrs[ok].astype(float), np.log(cnt[ok].astype(float)))
+            h = float(stats.t.ppf(0.975, ok.sum() - 2)) * r.stderr
+            dt = lambda b_: f"{np.log(2) / b_:.1f}" if b_ > 0 else "no doubling"
+            rows.append((sg["label"], f"{lo}–{hi}", int(ok.sum()), round(r.slope, 3), round(r.slope - h, 3), round(r.slope + h, 3),
+                         dt(r.slope), dt(r.slope + h) if r.slope + h > 0 else "no doubling", dt(r.slope - h)))
+    cols = ["series", "years fitted", "n years", "b", "b, 95 % low", "b, 95 % high", "doubling time (years)",
+            "doubling, low end (from b high)", "doubling, high end (from b low)"]
+    tbl = pd.DataFrame(rows, columns=cols)
+    tbl.to_csv(CSV / "numbers_I_segment_slopes.csv", index=False)
+    tpt = pd.DataFrame(tp_rows, columns=["series", "turning point (year)", "share of resampled fits choosing it", "95 % range of resampled turning points"])
+    return ["## I.1 segment slopes (added 2026-10-14)\n",
+            "Figure `q1_growth_rates`. Turning point = break year of the two-segment fit of ln count on year over 2006–2023 (`lib/growth.py:turning_point`, "
+            f"breaks {growth.TURNING_BREAKS[0]}–{growth.TURNING_BREAKS[-1]}, {growth.TURNING_DRAWS} residual-bootstrap draws, generator seeded as for the eVTOL turning point of section 1); "
+            "the B64 series is run alone with the same settings. The break year opens the second segment. Slope b of ln c_t = a + b t, "
+            "t-interval with n − 2 df; doubling time = ln 2 / b. Source: `viz/latex_v15.py:_segment_slopes`, `csv/numbers_I_segment_slopes.csv`; "
+            "turning points in `viz/thesis_q1.py:_calc` (`seg`).\n",
+            _md_table(tpt), "", _md_table(tbl), ""]
+
+
+def _in_domain_directory(ctx, CSV) -> list:
+    """Section "I.2 on the in-domain directory (2026-10-15)": the directory side of q4_class_mix, q4_dataset_vs_directory_classes and
+    q4_dataset_vs_directory_subsets restricted to the pages of frames.directory_frame()['in_domain'], every changed number old (all pages)
+    against new (in-domain pages). Both readings are computed here from the same functions (viz/thesis_q4.py: class_mix, directory_mix,
+    directory_keys with in_domain False / True)."""
+    from viz import thesis_q4 as q4
+    dirf = frames.directory_frame(ctx.cfg)
+    yrs = frames.evtolnews_years(ctx.cfg, ctx.WIN)[["slug_key", "year", "window"]]
+    dom = dirf[dirf["in_domain"]].merge(yrs, on="slug_key", how="left")
+    ye = pd.read_csv(Path(__file__).resolve().parents[1] / "review" / "script_outputs" / "YEAR.csv", keep_default_na=False)
+    nod = dom[dom["window"].isna()].merge(ye[["slug_key", "evidence_sentence", "source"]], on="slug_key", how="left")
+    old, new = q4.directory_keys(ctx, False), q4.directory_keys(ctx, True)
+    mo, mn = q4.class_mix(ctx, False), q4.class_mix(ctx, True)
+    names = {c: q4.NAME5[c].split(" (")[0] for c in q4.O5}
+
+    def per(m):
+        m = m[m["source"] == q4.SRC_DIR]
+        return (m.pivot(index="window", columns="code", values="share").reindex(index=ctx.WIN_NAMES),
+                m.groupby("window")["window total"].first().reindex(ctx.WIN_NAMES))
+    (so, to), (sn, tn) = per(mo), per(mn)
+    rows = [("directory pages used (all years, chi-square and parts)", old["dir_pages"], new["dir_pages"]),
+            ("directory pages with a development year, entering q4_class_mix", int(to.sum()), int(tn.sum()))]
+    rows += [(f"directory pages in {w}", int(to[w]), int(tn[w])) for w in ctx.WIN_NAMES]
+    rows += [("chi-square of the two mixes, all years (4 df)", old["mix_chi2"], new["mix_chi2"]), ("`mix_p`", old["mix_p"], new["mix_p"])]
+    rows += [(f"adjusted residual, {names[c]}", old[f"resid {c}"], new[f"resid {c}"]) for c in q4.O5]
+    rows += [("`resid_low` (category carrying it)", f"{old['resid_low']} ({old['resid_low_class']})", f"{new['resid_low']} ({new['resid_low_class']})"),
+             ("`resid_high` (category carrying it)", f"{old['resid_high']} ({old['resid_high_class']})", f"{new['resid_high']} ({new['resid_high_class']})"),
+             ("`closest_subset`", old["closest_subset"], new["closest_subset"]), ("`closest_chi2`", old["closest_chi2"], new["closest_chi2"]),
+             ("`closest_p`", old["closest_p"], new["closest_p"]), ("`closest_n`", old["closest_n"], new["closest_n"]),
+             ("`wm_dir` (Wingless share of the directory)", old["wm_dir"], new["wm_dir"]),
+             ("`wm_domain` (Wingless share of the in-domain pages)", old["wm_domain"], new["wm_domain"]),
+             ("`wm_flying`", old["wm_flying"], new["wm_flying"]), ("`wm_linked`", old["wm_linked"], new["wm_linked"])]
+    for c in ("LC", "VT"):
+        for w in ctx.WIN_NAMES:
+            rows.append((f"{names[c]} share of the directory, {w}", f"{so.loc[w, c]:.1%}", f"{sn.loc[w, c]:.1%}"))
+    for w in ctx.WIN_NAMES:
+        big = lambda t: names[t.loc[w].astype(float).idxmax()] + (" (tie)" if (t.loc[w].astype(float) == t.loc[w].astype(float).max()).sum() > 1 else "")
+        rows.append((f"largest directory category, {w}", big(so), big(sn)))
+    ch = pd.DataFrame(rows, columns=["number", "old: all pages", "new: in-domain pages"])
+    ch.to_csv(CSV / "numbers_I_in_domain_directory.csv", index=False)
+    do, dn = q4.directory_mix(ctx, False)["why"], q4.directory_mix(ctx, True)["why"]
+    parts = dn[["source", "n", "chi-square vs dataset", "p vs dataset"]].merge(
+        do[["source", "n", "chi-square vs dataset", "p vs dataset"]], on="source", how="left", suffixes=(" new", " old"))
+    parts = parts.dropna(subset=["chi-square vs dataset new"])
+    parts = parts[["source", "n old", "chi-square vs dataset old", "p vs dataset old", "n new", "chi-square vs dataset new", "p vs dataset new"]]
+    parts.to_csv(CSV / "numbers_I_in_domain_directory_parts.csv", index=False)
+    vt_big = lambda t: all(t.loc[w].astype(float).idxmax() == "VT" for w in ctx.COMPLETE)
+    vt_all = lambda t: all(t.loc[w].astype(float).idxmax() == "VT" for w in ctx.WIN_NAMES)
+    return ["## I.2 on the in-domain directory (2026-10-15)\n",
+            f"The directory side of `q4_class_mix`, `q4_dataset_vs_directory_classes` and `q4_dataset_vs_directory_subsets` is now the {new['dir_pages']} pages of "
+            "`frames.directory_frame()['in_domain']` (electric and crewed, rules of Section 3.1.1 and the author's single-page rulings); before, all "
+            f"{old['dir_pages']} pages. The patent dataset is unchanged. Source: `viz/latex_v15.py:_in_domain_directory`, `viz/thesis_q4.py` "
+            "(`class_mix`, `directory_mix`, `directory_keys`); tables in `csv/numbers_I_in_domain_directory.csv` and `csv/numbers_I_in_domain_directory_parts.csv`.\n",
+            f"**Which pages enter `q4_class_mix`.** Of the {len(dom)} in-domain pages, {int(dom['window'].notna().sum())} have a development year and are placed in a cohort "
+            f"(the figure prints each cohort's page count under its bar); {len(nod)} are left out of the figure because they have no year: "
+            f"{int((nod['source'] == 'script').sum())} where the year rule found none and the author did not read the page, {int((nod['source'] == 'author review').sum())} that "
+            f"the author read and left without a year; {int((nod['evidence_sentence'] == '').sum())} of the {len(nod)} have no dated statement on the page at all. "
+            f"The {len(nod)} stay in the all-years comparison (chi-square, `q4_dataset_vs_directory_classes`, the parts), which does not need a year. "
+            "The year file is `review/script_outputs/YEAR.csv`.\n",
+            _md_table(ch), "",
+            "**Parts of the directory against the dataset** (chi-square of the dataset's mix against the part's mix, 4 df; the in-domain part of the old figure is now the directory itself, "
+            "and the parts are subsets of the in-domain pages):\n",
+            _md_table(parts.fillna("-")), "",
+            f"Vectored Thrust is the largest directory category in every complete cohort (≤2011 to 2020–23): old {'yes' if vt_big(so) else 'no'}, new {'yes' if vt_big(sn) else 'no'}; "
+            f"in every cohort including 2024–26: old {'yes' if vt_all(so) else 'no'}, new {'yes' if vt_all(sn) else 'no'}.\n",
+            "**Analysis III.4** (`q7_iii4_directory_categories`, `q7_iii4_directory_fold`) does not use directory pages: it folds the patent dataset's own architectures "
+            "to the five directory categories (`analysis3.directory`, `analysis.class_fold`), so its share and ²D values do not change and it was not rerun.\n"]
+
+
+def _office_by_cohort(ctx, c, CSV) -> list:
+    """Section of NUMBERS_I.md (2026-10-14): the 604 designs of q1_in_force_status (nine architectures of ten designs or more) by
+    priority-year cohort: designs and share not actively protected at the US office and at the other offices; Cochran-Mantel-Haenszel
+    test of office x not actively protected stratified by cohort, with the plain chi-square odds ratio for comparison."""
+    from statsmodels.stats.contingency_tables import StratifiedTable
+    force, wo = c["force"], c["wo"]
+    codes = list(force.loc[(force["unique aircraft"] >= frames.FORCE_TEST_MIN) & (force["code"] != "ALL"), "code"])
+    d = wo[wo["topType"].isin(codes)]
+    names = list(ctx.WIN_NAMES)
+    main = names[:4]                                   # the four complete cohorts; the fifth (2024-26) is partial
+
+    def tab(sub):                                      # [[other not prot, other prot], [US not prot, US prot]]: OR = odds(other) / odds(US)
+        o, u = sub[sub["office"] == "other offices"]["out"], sub[sub["office"] == "US office"]["out"]
+        return np.array([[o.sum(), (~o).sum()], [u.sum(), (~u).sum()]], dtype=float)
+
+    rows = []
+    for w in names:
+        sub = d[d["window"] == w]
+        us, ot = sub[sub["office"] == "US office"], sub[sub["office"] == "other offices"]
+        rows.append((w + (" (not in the test)" if w not in main else ""), len(sub), len(us), f"{us['out'].mean():.1%}" if len(us) else "-",
+                     len(ot), f"{ot['out'].mean():.1%}" if len(ot) else "-"))
+    rows.append(("all", len(d), int((d["office"] == "US office").sum()), f"{d[d['office'] == 'US office']['out'].mean():.1%}",
+                 int((d["office"] == "other offices").sum()), f"{d[d['office'] == 'other offices']['out'].mean():.1%}"))
+    cols = ["priority-year cohort", "designs", "US office: designs", "US office: not actively protected",
+            "other offices: designs", "other offices: not actively protected"]
+    tbl = pd.DataFrame(rows, columns=cols)
+    tbl.to_csv(CSV / "numbers_I_office_by_cohort.csv", index=False)
+
+    def cmh(ws):
+        st = StratifiedTable([tab(d[d["window"] == w]) for w in ws])
+        t = st.test_null_odds(correction=False)
+        lo, hi = st.oddsratio_pooled_confint()
+        return st, t, lo, hi
+
+    st, t, lo, hi = cmh(main)
+    bd = st.test_equal_odds(adjust=False)
+    st5, t5, lo5, hi5 = cmh(names)
+    dm = d[d["window"].isin(main)]
+    pooled = tab(dm)
+    chi = association.chi2_test(pooled)
+    or_plain = (pooled[0, 0] * pooled[1, 1]) / (pooled[0, 1] * pooled[1, 0])
+    se = np.sqrt((1 / pooled).sum())
+    plo, phi = np.exp(np.log(or_plain) - 1.96 * se), np.exp(np.log(or_plain) + 1.96 * se)
+    def _or(m):                                        # 16 other-office designs of <= 2011, none protected: the odds ratio has a zero cell
+        return "undefined (a zero cell)" if m.min() == 0 else f"{(m[0, 0] * m[1, 1]) / (m[0, 1] * m[1, 0]):.2f}"
+    ors = ", ".join(f"{w} {_or(tab(d[d['window'] == w]))}" for w in main)
+    out = ["## 7b. Not actively protected by filing office and priority-year cohort (added 2026-10-14)\n",
+           f"The {len(d)} designs of `q1_in_force_status` (the nine architectures of ten designs or more). Not actively protected = no patent that shows the design "
+           "is in force at the snapshot. The four cohorts are the complete ones; the fifth, 2024-26, is partial and has only 2 US-office designs, so it is "
+           f"shown to reconcile the {len(d)} but left out of the test (sensitivity with it below). Source: `viz/latex_v15.py:_office_by_cohort`, table in `csv/numbers_I_office_by_cohort.csv`.\n",
+           _md_table(tbl), "",
+           f"**Cochran-Mantel-Haenszel**, office (other offices against US office) x not actively protected, stratified by the four cohorts ({len(dm)} designs; "
+           "no continuity correction):\n",
+           f"- CMH statistic = {t.statistic:.2f}, 1 df, p = {t.pvalue:.2g}",
+           f"- common odds ratio (Mantel-Haenszel) = {st.oddsratio_pooled:.2f}, 95 % CI {lo:.2f} to {hi:.2f} (other offices against US office; above 1 = other offices more often not actively protected)",
+           f"- odds ratio in each cohort: {ors}",
+           f"- Breslow-Day test that the odds ratio is the same in the four cohorts: statistic {bd.statistic:.2f}, p = {bd.pvalue:.2g}",
+           f"- sensitivity, all five cohorts ({len(d)} designs): CMH = {t5.statistic:.2f}, p = {t5.pvalue:.2g}; common odds ratio {st5.oddsratio_pooled:.2f}, 95 % CI {lo5:.2f} to {hi5:.2f}",
+           "",
+           f"**Plain chi-square**, same four cohorts pooled, ignoring cohort ({len(dm)} designs): chi-square (Yates) = {chi["chi2"]:.2f}, p = {chi['p']:.2g}; "
+           f"odds ratio = {or_plain:.2f}, 95 % CI {plo:.2f} to {phi:.2f} (Wald).\n"]
+    return out
 
 
 def _arch_short(code: str) -> str:

@@ -38,10 +38,11 @@ def _cache(ctx, key, build):
     return store[key]
 
 
-def class_mix(ctx) -> pd.DataFrame:
-    """Figure 2's long table: aircraft and share per source, window and directory class (build_40 `class_mix`)."""
+def class_mix(ctx, in_domain: bool = True) -> pd.DataFrame:
+    """Figure 2's long table: aircraft and share per source, window and directory class (build_40 `class_mix`).
+    2026-10-15: the directory side is the pages inside the technological domain (``in_domain``); False = all pages (the earlier build)."""
     def build():
-        L = frames.evtolnews_long(ctx.v, ctx.cfg, ctx.WIN)
+        L = frames.evtolnews_long(ctx.v, ctx.cfg, ctx.WIN, in_domain_only=in_domain)
         names = {"patent": SRC_PATENT, "directory": SRC_DIR}
         rows = []
         for src in ("patent", "directory"):
@@ -53,7 +54,7 @@ def class_mix(ctx) -> pd.DataFrame:
                                  "aircraft": k, "window total": len(sw),
                                  "share": round(k / len(sw), 3) if len(sw) else np.nan})
         return pd.DataFrame(rows)
-    return _cache(ctx, "mix", build)
+    return _cache(ctx, f"mix{in_domain}", build)
 
 
 def ari_timeline(ctx) -> pd.DataFrame:
@@ -162,25 +163,30 @@ def representativeness(ctx) -> dict:
     return _cache(ctx, "rep", build)
 
 
-def directory_mix(ctx) -> dict:
-    """§1.3.5: the dataset against the directory all years together, the subsets of the directory and the tests."""
+def directory_mix(ctx, in_domain: bool = True) -> dict:
+    """§1.3.5: the dataset against the directory all years together, the parts of the directory and the tests.
+    2026-10-15: the directory is the pages inside the technological domain (electric, crewed: ``directory_frame()['in_domain']``) and
+    the parts are subsets of those pages; ``in_domain=False`` is the earlier build (all pages, plus the in-domain part)."""
     def build():
         v = ctx.v
         dirf = frames.directory_frame(ctx.cfg)
+        if in_domain:
+            dirf = dirf[dirf["in_domain"]].reset_index(drop=True)
         n_set = v["class5"].value_counts().reindex(O5, fill_value=0)
         n_dir = dirf["class5"].value_counts().reindex(O5, fill_value=0)
         ct = np.vstack([n_set.to_numpy(), n_dir.to_numpy()])
         test = association.chi2_test(ct)
         resid = association.adjusted_residuals(ct)[0]
-        subsets = {
-            "labelled dataset (patented aircraft)": None,
-            "directory: all pages": pd.Series(True, index=dirf.index),
-            "(a) in domain: electric, crewed": dirf["in_domain"],
+        subsets = {"labelled dataset (patented aircraft)": None,
+                   "directory: in-domain pages" if in_domain else "directory: all pages": pd.Series(True, index=dirf.index)}
+        if not in_domain:
+            subsets["(a) in domain: electric, crewed"] = dirf["in_domain"]
+        subsets.update({
             "(b) concept designs": dirf["status_group"].eq("concept design"),
             "(b) flying hardware": dirf["status_group"].eq("flying hardware"),
             "(d) linked to a patent of this dataset": dirf["patented"],
             "(d) not linked to a patent": ~dirf["patented"],
-        }
+        })
         counts = {name: (n_set if m is None else dirf.loc[m, "class5"].value_counts().reindex(O5, fill_value=0))
                   for name, m in subsets.items()}
         rows = []
@@ -194,7 +200,30 @@ def directory_mix(ctx) -> dict:
             rows.append(row)
         why = pd.DataFrame(rows)
         return {"n_set": n_set, "n_dir": n_dir, "test": test, "resid": resid, "counts": counts, "why": why}
-    return _cache(ctx, "dir", build)
+    return _cache(ctx, f"dir{in_domain}", build)
+
+
+def directory_keys(ctx, in_domain: bool = True) -> dict:
+    """The numbers of the I.2 class-mix text that depend on which directory pages are used (2026-10-15), for one reading of the directory."""
+    d, mix = directory_mix(ctx, in_domain), class_mix(ctx, in_domain)
+    why = d["why"].set_index("source")
+    dirrow = "directory: in-domain pages" if in_domain else "directory: all pages"
+    res = d["resid"]
+    closest = d["why"].dropna(subset=["chi-square vs dataset"])
+    closest = closest[closest["source"] != dirrow] if in_domain else closest
+    closest = closest.sort_values("chi-square vs dataset").iloc[0]
+    out = {"dir_pages": ctx.thin(d["n_dir"].sum()), "mix_chi2": f"{d['test']['chi2']:.1f}", "mix_p": ctx.pval(d["test"]["p"]),
+           "closest_subset": str(closest["source"]), "closest_chi2": f"{closest['chi-square vs dataset']:.1f}",
+           "closest_p": str(closest["p vs dataset"]), "closest_n": ctx.thin(closest["n"]),
+           "resid_low_class": NAME5[O5[int(np.argmin(res))]].split(" (")[0], "resid_low": minus(f"{res.min():.1f}"),
+           "resid_high_class": NAME5[O5[int(np.argmax(res))]], "resid_high": f"+{res.max():.1f}",
+           "wm_dir": ctx.pct(why.loc[dirrow, "WM"]), "wm_flying": ctx.pct(why.loc["(b) flying hardware", "WM"]),
+           "wm_linked": ctx.pct(why.loc["(d) linked to a patent of this dataset", "WM"]),
+           # "directory: in-domain pages" is itself the in-domain part, so the old "(a) in domain" share is now the directory's own
+           "wm_domain": ctx.pct(why.loc[dirrow if in_domain else "(a) in domain: electric, crewed", "WM"])}
+    for i, code in enumerate(O5):
+        out[f"resid {code}"] = minus(f"{res[i]:+.1f}")
+    return out
 
 
 # ------------------------------------------------------------------------------------------ builders
@@ -272,7 +301,7 @@ def fig_dataset_vs_directory_subsets(ctx):
     d = directory_mix(ctx)
     counts, n_set = d["counts"], d["n_set"]
     order = list(counts)
-    ylab = ["dataset", "directory, all", "(a) in domain", "(b) concept", "(b) flying", "(d) patented", "(d) not patented"]
+    ylab = ["dataset", "directory, in domain", "(b) concept", "(b) flying", "(d) patented", "(d) not patented"]
     fig, axes = plt.subplots(1, len(O5), figsize=(ctx.W, 2.7), constrained_layout=True)
     for i, (c, a) in enumerate(zip(O5, axes)):
         s = style.cls(SPEC5[c][0])
@@ -458,11 +487,11 @@ def numbers(ctx) -> dict:
     eis = tl["years to entry into service"].dropna()
     resid = d["resid"]
     why = d["why"].set_index("source")
-    closest = d["why"].dropna(subset=["chi-square vs dataset"]).sort_values("chi-square vs dataset").iloc[0]
     img_pub, txt_pub, img_txt = (pw.loc["drawing label against the public aircraft"],
                                  pw.loc["patent text against the public aircraft"],
                                  pw.loc["drawing label against the patent text"])
     return {
+        **directory_keys(ctx, True),                  # 2026-10-15: mix_p, residuals, closest part, directory share of WM, pages: the in-domain directory
         "unique": thin(len(v)),
         "nc_named": str(int(cov.loc["carry a real product name", "unique aircraft"])),
         "nc_gen": str(int(cov.loc["carry a generated identifier", "unique aircraft"])),
@@ -475,17 +504,7 @@ def numbers(ctx) -> dict:
         "lc_dir_first": pct(share(SRC_DIR, first, "LC")), "lc_dir_last": pct(share(SRC_DIR, last, "LC")),
         "wm_dir_last": pct(share(SRC_DIR, last, "WM")), "wm_ds_last": f"{100 * share(SRC_PATENT, last, 'WM'):.1f} %",
         "hb_dir_first": pct(share(SRC_DIR, first, "HB")), "hb_ds_first": f"{100 * share(SRC_PATENT, first, 'HB'):.1f} %",
-        "mix_chi2": f"{d['test']['chi2']:.0f}", "mix_p": pval(d["test"]["p"]),
-        "resid_low_class": NAME5[O5[int(np.argmin(resid))]].split(" (")[0], "resid_low": minus(f"{resid.min():.1f}"),
-        "resid_high_class": NAME5[O5[int(np.argmax(resid))]], "resid_high": f"+{resid.max():.1f}",
         "wm_set": pct(why.loc["labelled dataset (patented aircraft)", "WM"]),
-        "wm_dir": pct(why.loc["directory: all pages", "WM"]),
-        "wm_domain": pct(why.loc["(a) in domain: electric, crewed", "WM"]),
-        "wm_flying": pct(why.loc["(b) flying hardware", "WM"]),
-        "wm_linked": pct(why.loc["(d) linked to a patent of this dataset", "WM"]),
-        "closest_subset": str(closest["source"]), "closest_chi2": f"{closest['chi-square vs dataset']:.1f}",
-        "closest_p": str(closest["p vs dataset"]), "closest_n": thin(closest["n"]),
-        "dir_pages": thin(d["n_dir"].sum()),
         "ff_flown": str(len(flown)), "ff_before": str(int((gap > 0).sum())), "ff_after": str(int((gap <= 0).sum())),
         "ff_lead": f"{gap[gap > 0].median():.0f}", "eis_lead": f"{eis.median():.0f}", "ari_timeline_n": str(len(tl)),
         "trl_n": str(rep["n_above"]), "trl_rest": thin(len(v) - rep["n_above"]),

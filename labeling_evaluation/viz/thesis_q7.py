@@ -92,46 +92,44 @@ def tab_archetype_sets(ctx):
 
 # ------------------------------------------------------------------------------------------ B — the test
 def fig_condition1_family(ctx):
-    """Figure 11: F's share of the year's aircraft on the two bases against the 50 % line."""
+    """Figure 11: F's share of the year's designs against the 50 % line; ALL designs is the main curve (rings on its years above 50 %),
+    the actively protected designs a thin second curve (results freeze 2026-10-14: Analysis III reads all designs)."""
     d = _data(ctx)
     fy, cfg = d["fy"], ctx.cfg
     yrs = fy["priority year"].to_numpy()
-    met = sorted(dominant_design.condition1_years(pd.DataFrame({"priority year": yrs, "read": fy["read, in force"],
-                                                                "above 50 %": fy["F share in force"] > 0.5})))
-    first_read = int(yrs[fy["read, in force"].to_numpy()][0])
+    rd_all = fy["read, all"].to_numpy(bool)
+    above = [int(y) for y, s_, r_ in zip(yrs, fy["F share"], rd_all) if r_ and s_ > 0.5]
+    met = sorted(dominant_design.condition1_years(pd.DataFrame({"priority year": yrs, "read": fy["read, all"], "above 50 %": fy["F share"] > 0.5})))
+    first_read = int(yrs[rd_all][0])
     fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
-    plots.condition1_years(ax, yrs, fy["F share in force"], fy["F share"], fy["read, in force"], fy["read, all"], met, first_read,
-                           f"few aircraft in force\n(under {cfg.analysis['trend_min_n']} a year): not read")
-    fi, fa = fy.set_index("priority year")["F share in force"], fy.set_index("priority year")["F share"]
-    for k, y in enumerate(met):
-        side = -1 if k == 0 else 1
-        ax.annotate(pct1(fi[y]), (y, fi[y]), textcoords="offset points", xytext=(side * 9, 10), ha="right" if side < 0 else "left",
-                    va="bottom", fontsize=7.5, fontweight="bold", color=style.INK)
-        ax.annotate(f"all: {pct1(fa[y])}", (y, fa[y]), xytext=(y + 0.15, 0.33 if k == 0 else 0.24), textcoords="data", ha="center",
-                    va="top", fontsize=7.5, color=style.MUTED,
-                    arrowprops=dict(arrowstyle="-", color=style.MUTED, linewidth=0.5, shrinkA=1, shrinkB=4))
+    plots.condition1_years(ax, yrs, fy["F share"], fy["F share in force"], fy["read, all"], fy["read, in force"], [], first_read,
+                           f"few designs\n(under {cfg.analysis['trend_min_n']} a year): not read")
+    fa = fy.set_index("priority year")["F share"]
+    for y in above:
+        ax.plot(y, fa[y], "o", markersize=10.5, markerfacecolor="none", markeredgecolor=plots.MET, markeredgewidth=1.7, zorder=5)
+        ax.annotate(pct1(fa[y]), (y, fa[y]), textcoords="offset points", xytext=(0, 10), ha="center", va="bottom", fontsize=7.5,
+                    fontweight="bold", color=style.INK)
     if met:
-        ax.text((met[0] + met[-1]) / 2, 0.975, f"condition 1 met,\nin force: {met[0]}–{str(met[-1])[-2:]}", ha="center", va="top",
+        ax.text((met[0] + met[-1]) / 2, 0.975, f"condition 1 met: {met[0]}–{str(met[-1])[-2:]}", ha="center", va="top",
                 fontsize=7.5, color=plots.MET, fontweight="bold", transform=ax.get_xaxis_transform())
     ax.text(yrs[-1] + 0.5, 0.505, "50 %", ha="right", va="bottom", fontsize=7.5)
-    ax.set_ylabel("share of the year's aircraft\nin F (Lift + Cruise + CVT*)")
+    ax.set_ylabel("share of the year's designs\nin F (Lift + Cruise + CVT*)")
     ax.set_xticks(yrs, [str(y) for y in yrs], fontsize=7)
-    rows3 = [("aircraft in force", fy["aircraft in force"]), ("all aircraft", fy["aircraft"]),
-             ("in force with a grant", fy["in force with a granted patent"].map(lambda g: "–" if not np.isfinite(g) else f"{100 * g:.0f}%"))]
+    rows3 = [("all designs", fy["aircraft"]), ("actively protected", fy["aircraft in force"])]
     for r, (name, vals) in enumerate(rows3):
         tr_ = offset_copy(ax.get_xaxis_transform(), fig=fig, y=-(20 + 10 * r), units="points")
         ax.text(-0.012, 0, name, transform=offset_copy(ax.transAxes, fig=fig, y=-(20 + 10 * r), units="points"), ha="right", va="top",
                 fontsize=7, color=style.MUTED)
-        for y_, t_, rd in zip(yrs, vals, fy["read, in force"]):
+        for y_, t_, rd in zip(yrs, vals, rd_all):
             ax.text(y_, 0, str(t_), transform=tr_, ha="center", va="top", fontsize=7, color=style.INK if rd else style.MUTED)
-    for lab, rd in zip(ax.get_xticklabels(), fy["read, in force"]):
+    for lab, rd in zip(ax.get_xticklabels(), rd_all):
         if not rd:
             lab.set_color(style.MUTED)
-    ax.set_xlabel("priority year", labelpad=43)
-    h = [Line2D([], [], color=style.INK, linewidth=1.7, marker="o", markersize=4.4, label="aircraft with a patent in force (main)"),
-         Line2D([], [], color=style.MUTED, linewidth=1.2, linestyle="--", marker="s", markersize=4.2, markerfacecolor="white", label="all aircraft of the year"),
+    ax.set_xlabel("priority year", labelpad=33)
+    h = [Line2D([], [], color=style.INK, linewidth=1.7, marker="o", markersize=4.4, label="all designs of the year (main)"),
+         Line2D([], [], color=style.MUTED, linewidth=1.2, linestyle="--", marker="s", markersize=4.2, markerfacecolor="white", label="actively protected designs"),
          Line2D([], [], marker="o", markersize=10, markerfacecolor="none", markeredgecolor=plots.MET, markeredgewidth=1.7, linestyle="none",
-                label="two consecutive years above 50 %: met")]
+                label="year above 50 %")]
     fig.legend(handles=h, loc="outside lower center", ncol=3, fontsize=7.5, handlelength=2.2, columnspacing=1.2)
     return fig, fy
 
@@ -159,7 +157,7 @@ def fig_condition2_balance(ctx):
 
 
 def fig_condition3_cohesion(ctx):
-    """Figure 12 (ii): ΔQ against its permutation band under the one weighting (every subsystem weighs the same)."""
+    """Figure 12 (ii): ΔQ against its permutation band under the one weighting (the four systems of the codebook weigh 1 each, the wings twice the empennage inside M2)."""
     d = _data(ctx)
     form, win = d["form"], ctx.WIN_NAMES
     partial = [("partial" in w) for w in win]
@@ -360,11 +358,11 @@ ITEMS = [
          unit="unique aircraft per four-year priority window; 200 permutations, seed 42; ²D rarefied to 40 aircraft (300 draws); the partial window 2024-26 is hatched and not read",
          read="Dot: the window's ²D (how many large designs are in play) averaged over the rarefaction draws, whisker: the middle 95 % of the draws. Grey band: the middle 95 % of the ²D of the same archetypes shuffled among the windows at random, window sizes kept. A red dot is below the band: fewer designs in play than chance gives, condition 2 met."),
     dict(name="q7_condition3_cohesion", slot="results", kind="figure", sub="B", title="Condition 3: ΔQ against its band",
-         caption="Condition 3 per window. ΔQ is the change in the average Gower distance between two aircraft against the two earliest windows, drawn under the main weighting (solid, grey band) and the check (dashed, dotted edges).",
+         caption="Condition 3 per window. ΔQ is the change in the average Gower distance between two aircraft against the two earliest windows, drawn under the one weighting of the form distance: the 34 dimensions of the codebook, each of its four systems weighing 1 (inside M2 the wings weigh twice the empennage).",
          source_item="Figure 12 (ii)", flag=None, flag_note="", builder=fig_condition3_cohesion,
          source="human labelling (every field of the distance) · PatSeer (priority date)",
-         unit="unique aircraft per four-year priority window; 200 permutations, seed 42; C, C·U and F read the same aircraft, C·W·T leaves out the aircraft whose wings or tilt are not recorded",
-         read="Q is the average Gower distance between two aircraft of the window (0 = alike on every design field, 1 = no field shared); ΔQ is the window's Q minus the average Q of the two earliest windows. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the windows; a red dot is below it (condition 3 met). Solid line and band: every subsystem weighs the same (the main weighting); dashed line and dotted edges: every field weighs the same (the check)."),
+         unit="unique aircraft per four-year priority window; 200 permutations, seed 42; A, A·U and F read the same aircraft, A·W·T leaves out the aircraft whose wings or tilt are not recorded",
+         read="Q is the average Gower distance between two aircraft of the window (0 = alike on every design field, 1 = no field shared); ΔQ is the window's Q minus the average Q of the two earliest windows. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the windows; a red dot is below it (condition 3 met). Weights: the 34 dimensions of the codebook, each of its four systems (G1, M1, M2, M3) weighing 1; inside M2 the wings weigh twice the empennage."),
     dict(name="q7_verdict_table", slot="appendix", kind="table", sub="B", title="The dominant-design verdict",
          caption="The verdict per condition and archetype set, naming the priority years (condition 1) or windows (conditions 2 and 3) where each condition is met (✓) or not (✗); condition 1 on both bases, condition 3 under the main weighting.",
          source_item="Table 8", flag=None, flag_note="", builder=tab_verdict,
@@ -477,4 +475,16 @@ def numbers(ctx) -> dict:
         # Limitations — Table 10
         "pub_n": str(d["pub_n"]), "trl_above": str(d["trl_above"]),
     }
+    # the actively protected base read alone (sensitivity), and the all-designs maxima (results freeze 2026-10-14)
+    from viz import analysis3                                   # late import: analysis3 imports this module
+    det = analysis3.verdict_two_bases(ctx)[1].set_index(["base", "level"])
+    ap, al = ("actively protected", "F"), ("all designs", "F")
+    top_all = lambda lvl: float(dy[(dy["level id"] == lvl) & (dy["base"] == "all") & dy["read"]]["its share"].max())      # noqa: E731
+    k20, n20 = int(fyi.loc[2020, "F aircraft"]), int(fyi.loc[2020, "aircraft"])
+    n.update({
+        "f_ap_d2": f"{det.loc[ap, '²D 2020-23']:.2f}", "f_ap_d2_edge": f"{det.loc[ap, '²D lower band edge 2020-23']:.2f}",
+        "dq_ap": _signed(det.loc[ap, "ΔQ 2020-23"]), "dq_ap_edge": _signed(det.loc[ap, "ΔQ lower band edge 2020-23"]),
+        "f_all_short": str(n20 // 2 + 1 - k20), "max_c_all": pct1(top_all("A0")),
+        "dq_f_all": _signed(det.loc[al, "ΔQ 2020-23"]), "dq_f_all_edge": _signed(det.loc[al, "ΔQ lower band edge 2020-23"]),
+    })
     return n

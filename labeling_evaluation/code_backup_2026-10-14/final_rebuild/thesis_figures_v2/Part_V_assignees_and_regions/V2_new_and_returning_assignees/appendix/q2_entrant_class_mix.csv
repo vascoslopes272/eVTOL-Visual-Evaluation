@@ -1,0 +1,13 @@
+cohort,group,aircraft,assignees,Lift + Cruise,Tilt Propulsor,CVT,Tilt Wing,Multicopter,other architectures,panel,first-time aircraft,returning aircraft,returning assignees,p,largest returning assignee,its aircraft,p without it
+<= 2011,first-time assignees,19.0,14.0,0.158,0.632,0.053,0.053,0.053,0.053,mix,,,,,,,
+<= 2011,returning assignees,0.0,0.0,,,,,,,mix,,,,,,,
+2012-15,first-time assignees,30.0,19.0,0.2,0.267,0.2,0.133,0.1,0.1,mix,,,,,,,
+2012-15,returning assignees,6.0,3.0,0.167,0.5,0.333,0.0,0.0,0.0,mix,,,,,,,
+2016-19,first-time assignees,98.0,57.0,0.316,0.133,0.122,0.112,0.082,0.235,mix,,,,,,,
+2016-19,returning assignees,57.0,7.0,0.14,0.351,0.14,0.105,0.105,0.158,mix,,,,,,,
+2020-23,first-time assignees,120.0,82.0,0.342,0.217,0.15,0.092,0.067,0.133,mix,,,,,,,
+2020-23,returning assignees,61.0,19.0,0.311,0.23,0.295,0.098,0.0,0.066,mix,,,,,,,
+<= 2011,,,,,,,,,,test,19.0,0.0,0.0,,,,
+2012-15,,,,,,,,,,test,30.0,6.0,3.0,,,,
+2016-19,,,,,,,,,,test,98.0,57.0,7.0,0.016560733008724814,Bell / Textron,33.0,0.5871527706008085
+2020-23,,,,,,,,,,test,120.0,61.0,19.0,0.07008826800245227,Bell / Textron,22.0,0.38036398187951415

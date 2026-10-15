@@ -1,0 +1,14 @@
+{
+ "name": "q3_region_design_all_years",
+ "section": "V3",
+ "slot": "results",
+ "kind": "figure",
+ "title": "What each region files, all years",
+ "caption": "The architecture, the propulsor band and the tilting share of each region's aircraft, all years together; each bar is 100 % of the region's aircraft with the field recorded.",
+ "source_item": "Figure 22 (all years bars)",
+ "source": "PatSeer (applicant country, priority date) · human labelling",
+ "propulsor": "unique aircraft of the three regions (n beside the region)",
+ "read": "A bar is a share of one region's aircraft, not a count; a segment of 10 % or more prints its share.",
+ "width_in": 6.3,
+ "height_in": 4.3
+}

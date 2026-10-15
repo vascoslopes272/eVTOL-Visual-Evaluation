@@ -69,7 +69,24 @@ def relabel_fig(fig):
     for t in fig.findobj(Text):
         if t.get_text():
             t.set_text(relabel(t.get_text()))
+    _still_filling(fig)
     return fig
+
+
+def _still_filling(fig):
+    """A figure that draws the cohort 2024-26 (faded by its builder) says why: the tick reads 24–26*, and one line under the figure
+    explains the star. Nothing is drawn or changed in the data."""
+    drawn = None
+    for ax in fig.axes:
+        labs = [t.get_text() for t in ax.get_xticklabels()]
+        if any(re.match(r"24[–-]26", x) for x in labs) and isinstance(ax.xaxis.get_major_locator(), FixedLocator):
+            drawn = ax
+            new = [re.sub(r"^(24[–-]26)(?!\*)", r"\1*", x) for x in labs]
+            if new != labs:
+                ax.xaxis.set_ticklabels(new, fontsize=ax.get_xticklabels()[0].get_fontsize())
+    if drawn is not None and not any("still filling" in t.get_text() for t in fig.findobj(Text)):
+        old = drawn.get_xlabel()
+        drawn.set_xlabel((old + "\n" if old else "") + "* 2024-26 is still filling (faded)", fontsize=8, color="#555555")
 
 
 def relabel_df(df):
@@ -216,9 +233,11 @@ def numbers_for_text(ctx) -> dict:
         columns={"cohort": "cohort", "named assignees active": "assignees active", "new assignees": "entrants", "continuing assignees": "incumbents"})
     out["entrant_rule"] = ("An entrant is an assignee whose earliest cohort in the dataset is this cohort: the cohort of its first design "
                            "(by the priority year of the design's representative patent), not of its first patent. The assignee of a design is the "
-                           "FIRST assignee of its representative patent's PatSeer string (co-assignees after ';' are ignored), resolved to a "
-                           "canonical name by the grouper where it has one, else read from the string; not the assignee with the most patents. "
-                           "Individual inventors are not assignees here (they are not counted as entrants).")
+                           "co-assignee that files the most patent families in the whole dataset: every assignee of its representative patent's PatSeer string "
+                           "(split at ';') is resolved to a canonical name by the grouper, else read from the string, and a tie keeps the first listed; "
+                           "the design's region is that of the chosen assignee's country where the string prints one. "
+                           "An individual inventor is the assignee only when no organisation is on the patent. "
+"Individual inventors are not counted as entrants.")
     # 4. NA tilting without the largest assignee
     d7 = q7._data(ctx)
     big = d7["ts"].attrs["left_out"]

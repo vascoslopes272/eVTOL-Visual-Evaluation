@@ -1,0 +1,7 @@
+system,dimensions,count,weight of each,weight in all
+G1 architecture,Architecture,1,1.0,1.0
+M1 structure,Fuselage Shape; Fuselage Kinematics; Ground Contact Interface; Airframe Lateral Symmetry; Booms present; Boom count; Boom Attachment; Boom-Wing Panel Index; Boom Longitudinal Position; Boom Spanwise Position; Boom Orientation; Boom-Wing Relationship; Boom articulation; Booms retract/stow,14,0.071,1.0
+M2 wings,Wing Architecture; Wing count; Vertical Position; Longitudinal Position; Planform; Tip-joined; Tilt; Role,8,0.083,0.667
+M2 empennage,Empennage Type,1,0.333,0.333
+M3 propulsion,Propulsor count; Thrust Kinematics; Propulsor Articulation; Tractor/Pusher Arrangement; Propulsor Enclosure; Retraction Kinematics; Airframe Mounting Zone; Empennage Mounting Zone; Wing Chordwise Zone; Wing Spanwise Zone,10,0.1,1.0
+total,,34,,4.0

@@ -1,0 +1,7 @@
+propulsive units,aircraft,with any ducted unit,share with any,share of units ducted,share ducting every unit,median ducted units (ducted aircraft),aircraft in the band,"of them, duct at least one unit",share that duct every unit,median ducted share,mean ducted share,under a quarter,a quarter to half,half to three quarters,"three quarters, not all",every unit,unit counts that disagree
+1-3,136,55,0.404,0.359,0.235,2.0,136,55,0.582,1.0,0.812,0,6,17,0,32,1
+4,125,47,0.376,0.314,0.256,4.0,125,47,0.681,1.0,0.835,0,1,14,0,32,0
+5-6,117,34,0.291,0.221,0.137,4.0,117,34,0.471,0.8,0.757,3,4,6,5,16,0
+7-8,100,23,0.23,0.166,0.09,6.0,100,23,0.391,0.75,0.724,0,4,5,5,9,0
+9+,117,61,0.521,0.629,0.342,13.0,117,61,0.656,1.0,0.824,11,1,1,8,40,0
+all bands,595,220,0.37,0.438,0.217,4.0,595,220,0.586,1.0,0.802,14,16,43,18,129,1

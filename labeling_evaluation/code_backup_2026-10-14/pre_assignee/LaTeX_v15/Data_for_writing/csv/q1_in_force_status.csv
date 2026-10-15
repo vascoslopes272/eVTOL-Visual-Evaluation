@@ -1,0 +1,19 @@
+code,architecture,office_group,n,share not actively protected
+CVT,Combined Vectored Thrust,US-filed,56,0.25
+CVT,Combined Vectored Thrust,other offices,50,0.34
+HB,Hoverbike,US-filed,13,0.38461538461538464
+HB,Hoverbike,other offices,6,0.5
+MR,Multicopter,US-filed,27,0.18518518518518517
+MR,Multicopter,other offices,21,0.5238095238095238
+PFV,Personal Flying Vehicle,US-filed,9,0.3333333333333333
+PFV,Personal Flying Vehicle,other offices,1,0.0
+PTC,Pitch-to-Cruise,US-filed,15,0.06666666666666667
+PTC,Pitch-to-Cruise,other offices,10,0.2
+SLC,Lift + Cruise,US-filed,90,0.2
+SLC,Lift + Cruise,other offices,75,0.4666666666666667
+TB,Tilt Frame,US-filed,10,0.4
+TB,Tilt Frame,other offices,14,0.6428571428571429
+TR,Tilt Propulsor,US-filed,96,0.20833333333333334
+TR,Tilt Propulsor,other offices,55,0.36363636363636365
+TW,Tilt Wing,US-filed,37,0.2972972972972973
+TW,Tilt Wing,other offices,19,0.3157894736842105

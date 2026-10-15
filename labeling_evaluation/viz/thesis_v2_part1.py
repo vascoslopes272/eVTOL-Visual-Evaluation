@@ -49,14 +49,14 @@ def final_size(frac: float, height_frac: float = 0.55):
     return w, math.floor(height_frac * w * 1000) / 1000
 
 
-#: at most 5 dated sector events shown on the main-slot figure (assets/external/sector_events has 14; this is a
+#: the dated sector events shown on the main-slot figure (assets/external/sector_events has 15; this is a
 #: curated subset spanning the series: China's founding moment, the market-framing white paper, the first
-#: certification basis, the SPAC financing wave, the first type certificate)
-EVENTS_MAIN = ["2016-01-06", "2016-10-27", "2019-07-02", "2021-08-11", "2023-10-13"]
+#: certification basis, the pandemic, the SPAC financing wave, the first type certificate)
+EVENTS_MAIN = ["2016-01-06", "2016-10-27", "2019-07-02", "2020-03-11", "2021-08-11", "2023-10-13"]
 
 
 def _events_above(ax, events: pd.DataFrame, years: list, dates=EVENTS_MAIN, top: float = None, side_step: float = 0.6):
-    """At most 5 dated sector events, drawn as small numbered markers along the top of the plot, each with a faint
+    """The dated sector events of ``dates``, drawn as small numbered markers along the top of the plot, each with a faint
     dotted line down to its year; the event names go in a numbered key under the figure (no rotated text).
     Events on the same year stand side by side. ``top``: the data y-value of the markers (defaults to 92 % of
     the y-limit). Returns the key text."""
@@ -165,6 +165,7 @@ def fig_growth_rates_v2(ctx):
             fontsize=MIN_PT, color=style.MUTED)
     top = 1.0
     ends = []
+    legend_h, legend_l = [], []                                        # the six lines of the two series with segment fits
     for key in shown:
         col, ls, mk, lw = colours[key]
         cnt = c["ser"][key].reindex(yrs, fill_value=0).astype(float)
@@ -173,7 +174,25 @@ def fig_growth_rates_v2(ctx):
         b, a = np.polyfit(yrs[ok], np.log(cnt.to_numpy()[ok]), 1)
         ax.plot(yrs[ok], cnt.to_numpy()[ok] / base, ls="none", marker=mk, ms=3, color=col, alpha=0.55)
         line = np.exp(a + b * yrs) / base
-        ax.plot(yrs, line, ls=ls, lw=lw, color=col)
+        seg = c["seg"].get(key)                                        # eVTOL and B64: whole-period line thin, one thick line per segment
+        hw, = ax.plot(yrs, line, ls=ls, lw=0.8 if seg else lw, color=col)
+        if seg:
+            tb = int(seg["turn"]["break"])
+            short = "eVTOL" if key == "evtol_families" else "aeronautics (B64)"
+            parts, ends_ = [], []
+            for (name, (lo, hi, f)) in list(seg["lines"].items())[1:]:
+                m = (yrs >= lo) & (yrs <= hi) & ok
+                bb, aa = np.polyfit(yrs[m], np.log(cnt.to_numpy()[m]), 1)
+                xs = np.arange(lo, hi + 1)
+                h, = ax.plot(xs, np.exp(aa + bb * xs) / base, ls="-", lw=3.0 if key == "evtol_families" else 1.8, color=col, solid_capstyle="butt",
+                             zorder=4 if key == "evtol_families" else 5)       # the two series share a slope before the break: eVTOL wide underneath, B64 narrow on top
+                parts.append(h)
+                ends_.append((xs[0], xs[-1], aa, bb))
+            (_, x_end, a1, b1), (x_start, _, a2, b2) = ends_                         # the jump at the turning point: last fitted point of the first
+            ax.plot([x_end, x_start], [np.exp(a1 + b1 * x_end) / base, np.exp(a2 + b2 * x_start) / base],      # segment to the first of the second, in black
+                    ls="-", lw=1.3, color="black", zorder=7)
+            legend_h += parts + [hw]
+            legend_l += [f"{short}, before {tb}", f"{short}, after {tb}", f"{short}, 2005–23"]
         late = c["ser"][key].reindex(late_yrs).astype(float)          # 2024-26: drawn faded, never fitted or read
         okl = (late > 0).to_numpy()
         ax.plot(late_yrs[okl], late.to_numpy()[okl] / base, ls="none", marker=mk, ms=3, markerfacecolor="white", markeredgecolor=col, alpha=0.5)
@@ -191,6 +210,10 @@ def fig_growth_rates_v2(ctx):
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"×{x:g}"))
     ax.set_ylim(min(ticks) * 0.8, top * 1.5)
     ax.axhline(1, color=style.MUTED, linewidth=0.7, linestyle=":")
+    legend_h.append(Line2D([], [], ls="-", lw=1.3, color="black"))
+    legend_l.append("jump at the turning point")
+    ax.legend(legend_h, legend_l, loc="upper left", fontsize=MIN_PT, ncol=2, frameon=False, handlelength=2.2, columnspacing=1.2, labelspacing=0.3,
+              borderaxespad=0.2)
     ax.set_xlim(first - 0.6, last_drawn + 6.2)                      # room for the end-of-line names
     ax.set_xticks(range(2005, 2027, 3))
     ax.set_xlabel("priority year")
@@ -480,13 +503,13 @@ GROUP_SPEC = {"LC": ("SLC", "SLC"), "VT": ("TR", "VT"), "WM": ("MR", "WM"), "ER"
 
 
 def fig_class_mix_combined_v2(ctx):
-    """I4 main (final size, width 1.0): the architecture mix of the patent dataset and of the VFS eVTOL directory, as two panels side
+    """I4 main (final size, width 1.0): the architecture distribution of the patent dataset and of the VFS eVTOL directory, as two panels side
     by side (same cohort order, same colours), one shared legend."""
     from viz import plots
     mix = q4.class_mix(ctx)
     W, H = final_size(1.0, 0.54)
     fig, axes = plt.subplots(1, 2, figsize=(W, H), constrained_layout=True, sharey=True)
-    for src, label, ax in [(q4.SRC_PATENT, "patent dataset", axes[0]), (q4.SRC_DIR, "VFS eVTOL directory", axes[1])]:
+    for src, label, ax in [(q4.SRC_PATENT, "patent dataset", axes[0]), (q4.SRC_DIR, "VFS eVTOL directory, in domain", axes[1])]:
         s = mix[(mix["source"] == src) & mix["window"].isin(ctx.WIN_NAMES)]
         share = s.pivot(index="window", columns="code", values="share").reindex(index=ctx.WIN_NAMES, columns=frames.CLASS5_ORDER)
         total = s.groupby("window")["window total"].first().reindex(ctx.WIN_NAMES)
@@ -504,7 +527,7 @@ def fig_class_mix_combined_v2(ctx):
     fig.legend(handles, [f"{GROUP_SPEC[c][1]}  {GROUP_NAME[c]}" for c in frames.CLASS5_ORDER], loc="outside lower center",
               ncol=3, handlelength=1.2, columnspacing=1.0, fontsize=MIN_PT)
     data = mix[mix["source"].isin([q4.SRC_PATENT, q4.SRC_DIR]) & mix["window"].isin(ctx.WIN_NAMES)].copy()
-    data["source"] = data["source"].replace({q4.SRC_DIR: "VFS eVTOL directory (pages, development year)", q4.SRC_PATENT: "patent dataset (designs, priority year)"})
+    data["source"] = data["source"].replace({q4.SRC_DIR: "VFS eVTOL directory, pages in the domain (development year)", q4.SRC_PATENT: "patent dataset (designs, priority year)"})
     data = data.rename(columns={"window": "cohort", "window total": "cohort total", "aircraft": "designs"})
     return fig, data
 
@@ -516,7 +539,7 @@ def fig_dataset_vs_directory_classes_v2(ctx):
     d = q4.directory_mix(ctx)
     n_set, n_dir = d["n_set"], d["n_dir"]
     O5 = q4.O5
-    fig, ax = plt.subplots(figsize=(ctx.W, 3.1), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=final_size(1.0, 0.54), constrained_layout=True)        # final width since 2026-10-15
     x = np.arange(len(O5))
     bw = 0.38
     small = mpl.rcParams["xtick.labelsize"] - 1
@@ -532,10 +555,10 @@ def fig_dataset_vs_directory_classes_v2(ctx):
     ax.set_ylim(0, max(n_set.max(), n_dir.max()) * 1.55)
     ax.set_ylabel("designs")
     ax.legend(handles=[Patch(facecolor=style.INK, label=f"patent dataset ({ctx.thin(n_set.sum())} designs; filled)"),
-                       Patch(facecolor="white", edgecolor=style.INK, label=f"VFS eVTOL directory ({ctx.thin(n_dir.sum())} pages; outline)")],
+                       Patch(facecolor="white", edgecolor=style.INK, label=f"VFS eVTOL directory, in domain ({ctx.thin(n_dir.sum())} pages; outline)")],
               loc="upper right")
     data = pd.DataFrame({"architecture group": [GROUP_NAME[c] for c in O5], "code": O5, "patent dataset": n_set.to_numpy(),
-                         "VFS eVTOL directory": n_dir.to_numpy(), "adjusted residual": d["resid"].round(1)})
+                         "VFS eVTOL directory, in domain": n_dir.to_numpy(), "adjusted residual": d["resid"].round(1)})
     return fig, data
 
 
@@ -547,9 +570,9 @@ def fig_dataset_vs_directory_subsets_v2(ctx):
     d = q4.directory_mix(ctx)
     counts, n_set, O5 = d["counts"], d["n_set"], q4.O5
     order = list(counts)
-    ylab = ["patent dataset", "directory, all", "in domain", "concept designs", "flying hardware",
-            "linked to a patent", "not linked to a patent"]
-    fig, axes = plt.subplots(1, len(O5), figsize=(ctx.W, 2.9), constrained_layout=True)
+    ylab = ["patent dataset", "directory, in domain", "concept designs", "flying hardware",
+            "linked to a patent", "not linked to a patent"]       # the parts are subsets of the in-domain pages (2026-10-15)
+    fig, axes = plt.subplots(1, len(O5), figsize=final_size(1.0, 0.54), constrained_layout=True)
     for i, (c, a) in enumerate(zip(O5, axes)):
         s = arch(GROUP_SPEC[c][0])
         for r, name in enumerate(order):
@@ -571,8 +594,8 @@ def fig_dataset_vs_directory_subsets_v2(ctx):
         a.set_title(c, fontsize=mpl.rcParams["font.size"])
         a.tick_params(axis="x", labelsize=mpl.rcParams["xtick.labelsize"] - 1)
         a.xaxis.set_major_locator(mpl.ticker.MaxNLocator(3, integer=True))
-    fig.supxlabel("designs of the architecture group in each source (95 % Wilson interval); dotted line: the patent "
-                  "dataset; each panel has its own x scale", fontsize=mpl.rcParams["xtick.labelsize"])
+    fig.supxlabel("designs of the group in each source (95 % Wilson interval); parts are subsets of the in-domain pages;\n"
+                  "dotted line: the patent dataset; own x scale per panel", fontsize=mpl.rcParams["xtick.labelsize"])
     return fig, d["why"]
 
 
@@ -606,10 +629,10 @@ ITEMS = [
     dict(name="q4_flown_index_firm_representativeness", group="I3_construct_validity", role="auxiliary", kind="table", builder=tab_index_firm_representativeness_v2,
          title="Flown index-firm designs against the rest", source_item="v2 of Table 5 (index firms flown before the snapshot, 2026-10-12)"),
     dict(name="q4_class_mix", width=1.0, group="I4_external_validity", role="main", kind="figure", builder=fig_class_mix_combined_v2,
-         title="Architecture mix per window, dataset and directory side by side", source_item="v2 merging Figure 2 (i) and (ii)"),
-    dict(name="q4_dataset_vs_directory_classes", group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_classes_v2,
+         title="Architecture distribution per window, dataset and directory side by side", source_item="v2 merging Figure 2 (i) and (ii)"),
+    dict(name="q4_dataset_vs_directory_classes", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_classes_v2,
          title="Dataset against directory, all years", source_item="v2 of Figure 5b (i)"),
-    dict(name="q4_dataset_vs_directory_subsets", group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_subsets_v2,
+    dict(name="q4_dataset_vs_directory_subsets", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_subsets_v2,
          title="Designs of each architecture group per part of the directory", source_item="v2 of Figure 5b (ii)"),
 ]
 
