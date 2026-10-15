@@ -52,11 +52,31 @@ def _levels(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ===================================================================================== III1 shares
-def fig_architecture_shares_by_cohort(ctx):
-    """III1 main: the architectures' share of each cohort's designs (100 % bars; a segment of 5 % or more prints its share)."""
+#: the smallest categories joined into "Other" (handoff 2026-10-15): the JOIN_N smallest by designs over the four complete cohorts, the
+#: existing "Other" (no architecture recorded) among them; HB (18) stays apart, nearer TF and PTC (22 each) than PFV (9)
+JOIN_N = 5
+
+
+def joined_shares(ctx):
+    """The cohort shares with the JOIN_N smallest categories summed into "Other"; returns (share, codes joined, totals over the complete cohorts)."""
     d = q6._data(ctx)
-    cnt, share, n_win = d["cnt"], d["share"], d["n_win"]
-    codes = [c for c in style.CLASS_ORDER if c in cnt.columns] + ["Other"]
+    cnt, share = d["cnt"], d["share"]
+    complete = [w for w in ctx.WIN_NAMES if "partial" not in w]
+    total = cnt.loc[complete].sum().sort_values(kind="stable")
+    joined = list(total.index[:JOIN_N])
+    keep = [c for c in style.CLASS_ORDER if c in cnt.columns and c not in joined]
+    out = share[keep].copy()
+    out["Other"] = share[joined].sum(axis=1)
+    return out, joined, total
+
+
+def fig_architecture_shares_by_cohort(ctx):
+    """III1 main: the architectures' share of each cohort's designs (100 % bars; a segment of 5 % or more prints its share); the five
+    smallest categories joined into "Other" (neutral grey)."""
+    d = q6._data(ctx)
+    n_win = d["n_win"]
+    share, joined, _ = joined_shares(ctx)
+    codes = list(share.columns)
     ticks = [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(ctx.WIN_NAMES, n_win)]
     fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
     sh = share[codes].copy()
@@ -67,8 +87,8 @@ def fig_architecture_shares_by_cohort(ctx):
     ax.set_xlabel("priority cohort (* still filling)")
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
     fig.legend(handles=[Patch(facecolor=arch(c).color if c != "Other" else style.cls(c).color, hatch=style.cls(c).hatch, edgecolor="white",
-                              label=f"{arch(c).short} {arch(c).name}" if c != "Other" else "no architecture recorded") for c in codes],
-               loc="outside lower center", ncol=4, fontsize=FS, handlelength=1.2, columnspacing=1.0)
+                              label=arch(c).name if c != "Other" else "Other") for c in codes],
+               loc="outside lower center", ncol=3, fontsize=FS, handlelength=1.2, columnspacing=1.0)       # 3 columns: 4 ran past 16 cm
     return _bump(fig), share.round(4).assign(designs=n_win)
 
 
@@ -99,15 +119,15 @@ def fig_largest_architectures_over_time(ctx):
 
 
 def tab_share_trend(ctx):
-    """III1 main: Spearman rho of each architecture's yearly share on the priority year (architectures of 20 designs or more)."""
+    """III1 main: Spearman rho of each architecture's yearly share on the priority year (architectures of 20 designs or more), over
+    2008-2023 and over 2016-2023 alone (the same yearly shares, one point per year)."""
     t = analysis3.rho_table(ctx)
     t["architecture"] = [arch(c).name for c in t["code"]]
     t["code"] = [arch(c).short for c in t["code"]]
-    t = t.rename(columns={"code": "architecture code", "aircraft": "designs", "years": "years",
-                          "rho, years with 20+ aircraft": "rho, years of 20+ designs", "p, years with 20+ aircraft": "p, years of 20+ designs",
-                          "years with 20+ aircraft": "years of 20+ designs"})
+    t = t.rename(columns={"code": "architecture code", "aircraft": "designs", "years": "years"})
+    t = t.drop(columns=["rho, years with 20+ aircraft", "p, years with 20+ aircraft", "years with 20+ aircraft"])   # handoff 2026-10-15: 2016-23 instead
     t["p"] = t["p"].map(q7.pval5)
-    t["p, years of 20+ designs"] = t["p, years of 20+ designs"].map(q7.pval5)
+    t["p, 2016-23"] = t["p, 2016-23"].map(q7.pval5)
     return t, None
 
 
@@ -124,7 +144,7 @@ def fig_condition1_f(ctx):
 
 def fig_condition2_balance(ctx):
     keep = dict(q7.SET_TITLE)                           # shorter panel titles: at 8 pt the long ones run into each other
-    q7.SET_TITLE.update({"A0": "A\narchitecture", "A1t": "A·W·T\n+ wings, tilt", "A0c": "A·U\n+ propulsor units", "family_b": "F\nLift + Cruise and CVT\non a fixed wing"})
+    q7.SET_TITLE.update({"A0": "A\narchitecture", "A1t": "A·W·T\n+ wings, tilt", "A0c": "A·U\n+ propulsor units", "family_b": "F (exploratory, III.3)\nLift + Cruise and CVT\non a fixed wing"})
     try:
         fig, d = q7.fig_condition2_balance(ctx)
     finally:

@@ -27,7 +27,7 @@ PERMS = 200                                   # permutations behind the bands of
 SET_LABEL = {"A0": "A (architecture)", "A1t": "A·W·T (architecture + wings + tilt)", "A0c": "A·U (architecture + propulsor units)",
              "family_b": "F (Lift + Cruise + CVT* family)"}
 SET_TITLE = {"A0": "A\narchitecture", "A1t": "A·W·T\narchitecture + wings + tilt", "A0c": "A·U\narchitecture + propulsor units",
-             "family_b": "F\nLift + Cruise + CVT*"}
+             "family_b": "F (exploratory, III.3)\nLift + Cruise + CVT*"}
 ABBR = {"North America": "NA", "Europe": "EU", "Asia-Pacific": "AP"}
 NA, EU, AP = frames.REGIONS
 REG_COL = {r: style.REGIONS[r][0] for r in frames.REGIONS}
@@ -113,7 +113,7 @@ def fig_condition1_family(ctx):
         ax.text((met[0] + met[-1]) / 2, 0.975, f"condition 1 met: {met[0]}–{str(met[-1])[-2:]}", ha="center", va="top",
                 fontsize=7.5, color=plots.MET, fontweight="bold", transform=ax.get_xaxis_transform())
     ax.text(yrs[-1] + 0.5, 0.505, "50 %", ha="right", va="bottom", fontsize=7.5)
-    ax.set_ylabel("share of the year's designs\nin F (Lift + Cruise + CVT*)")
+    ax.set_ylabel("share of the year's designs in F\n(Separate Lift + Cruise +\nCombined Vectored Thrust*)")
     ax.set_xticks(yrs, [str(y) for y in yrs], fontsize=7)
     rows3 = [("all designs", fy["aircraft"]), ("actively protected", fy["aircraft in force"])]
     for r, (name, vals) in enumerate(rows3):
@@ -144,15 +144,16 @@ def fig_condition2_balance(ctx):
     for ax, lvl in zip(axs, frames.DD_LEVELS):
         s = bal[bal["level"] == lvl].set_index("window").reindex(win)
         metw = [bool(s.loc[w, "below band"]) and "partial" not in w for w in win]
-        plots.balance_panel(ax, s.reset_index(), partial, metw, tk)
+        plots.balance_panel(ax, s.reset_index(), partial, metw, tk, exploratory=(lvl == "family_b"))   # F last (DD_LEVELS), set apart
         ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axs[0].set_ylabel("²D: large designs in play")
     for ax in axs:
         ax.set_xlabel("priority cohort", fontsize=7.5)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.3, label=f"²D rarefied to {ctx.cfg.analysis['rarefy_n']} (95 % of the draws)"),
-                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
-               loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.6, columnspacing=1.2)
+                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met"),
+                        Line2D([], [], marker="o", markersize=3.6, linewidth=1.3, **plots.EXPLORE, label="F (exploratory, III.3)")],
+               loc="outside lower center", ncol=2, fontsize=7.5, handlelength=1.6, columnspacing=1.2)
     return fig, bal
 
 
@@ -162,19 +163,23 @@ def fig_condition3_cohesion(ctx):
     form, win = d["form"], ctx.WIN_NAMES
     partial = [("partial" in w) for w in win]
     main = frames.Q_WEIGHTINGS[0]
-    fig, axb = plt.subplots(1, 2, figsize=(ctx.W, 3.4), constrained_layout=True, sharey=True)
-    for ax, lvl, ttl in zip(axb, ("A0", "A1t"), ("A, A·U and F (the same aircraft)", "A·W·T")):
+    fig, axb = plt.subplots(1, 3, figsize=(ctx.W, 3.4), constrained_layout=True, sharey=True)
+    # F drawn last in its own panel, set apart as exploratory (handoff 2026-10-15); its values are its own rows of the form table
+    for ax, lvl, ttl in zip(axb, ("A0", "A1t", "family_b"), ("A and A·U\n(the same aircraft)", "A·W·T", "F (exploratory, III.3)")):
         s = form[form["level"] == lvl]
         sm = s[s["weighting"] == main].set_index("window").reindex(win).reset_index()
-        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(win, sm["aircraft"])])
+        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])],
+                             exploratory=(lvl == "family_b"))
+        ax.tick_params(axis="x", labelrotation=90)          # three panels: upright ticks ran into each other (as condition 2)
         ax.set_title(ttl, fontsize=7.5, loc="left")
     axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest cohorts")
     for ax in axb:
         ax.set_xlabel("priority cohort", fontsize=7.5)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="ΔQ"),
-                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
-               loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
+                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met"),
+                        Line2D([], [], marker="o", markersize=3.6, linewidth=1.5, **plots.EXPLORE, label="F (exploratory, III.3)")],
+               loc="outside lower center", ncol=2, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
     return fig, form[form["weighting"] == main]
 
 

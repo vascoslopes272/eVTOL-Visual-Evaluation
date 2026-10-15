@@ -31,6 +31,10 @@ def runs(years, k: int) -> list:
 
 
 # ---- III.1
+#: first year of the late-years Spearman test (handoff 2026-10-15): 2016 to the last complete year, one point per year
+RHO_LATE_FIRST = 2016
+
+
 def rho_table(ctx) -> pd.DataFrame:
     """Spearman rho and p of each architecture's share of the year's aircraft on the priority year (2008 to the last complete
     year), architectures with 20 aircraft or more over those years; all unique aircraft with an architecture recorded."""
@@ -47,9 +51,11 @@ def rho_table(ctx) -> pd.DataFrame:
         r, p = stats.spearmanr(share.index, share[c])
         ok = cnt.sum(axis=1) >= frames.DD_YEAR_MIN
         r2, p2 = stats.spearmanr(share.index[ok], share.loc[ok, c]) if ok.sum() > 3 else (np.nan, np.nan)
+        late = (share.index >= RHO_LATE_FIRST) & (share.index <= last)      # the same yearly shares, 2016 to the last complete year only
+        r3, p3 = stats.spearmanr(share.index[late], share.loc[late, c])
         rows.append({"code": c, "architecture": style.cls(c).name, "aircraft": n, "years": len(share), "rho": round(float(r), 3),
                      "p": float(p), "rho, years with 20+ aircraft": round(float(r2), 3), "p, years with 20+ aircraft": float(p2),
-                     "years with 20+ aircraft": int(ok.sum())})
+                     "years with 20+ aircraft": int(ok.sum()), "rho, 2016-23": round(float(r3), 3), "p, 2016-23": float(p3)})
     t = pd.DataFrame(rows)
     first = {"SLC": 0, "TR": 1}
     t = t.assign(_o=t["code"].map(first).fillna(2)).sort_values(["_o", "aircraft"], ascending=[True, False]).drop(columns="_o")

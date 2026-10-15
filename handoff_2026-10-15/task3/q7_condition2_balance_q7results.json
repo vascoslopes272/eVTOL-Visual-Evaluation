@@ -1,0 +1,16 @@
+{
+ "name": "q7_condition2_balance",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "B",
+ "title": "Condition 2: ²D against its band",
+ "caption": "Condition 2 per cohort in the four configuration sets, ²D rarefied to 40 designs against the band of the same configurations shuffled among the cohorts. A red point is below the band.",
+ "source_item": "Figure 12 (i)",
+ "flag": null,
+ "flag_note": "",
+ "source": "human labelling (architecture, wings, tilt, propulsors) · PatSeer (priority date)",
+ "propulsor": "unique aircraft per four-year priority cohort; 200 permutations, seed 42; ²D rarefied to 40 designs (300 draws); the partial cohort 2024-26 is hatched and not read",
+ "read": "Dot: the cohort's ²D (how many large designs are in play) averaged over the rarefaction draws, whisker: the middle 95 % of the draws. Grey band: the middle 95 % of the ²D of the same configurations shuffled among the cohorts at random, cohort sizes kept. A red dot is below the band: fewer designs in play than chance gives, condition 2 met.",
+ "width_in": 6.3,
+ "height_in": 3.0
+}

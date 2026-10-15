@@ -752,17 +752,28 @@ def condition1_years(ax, years: Sequence[int], in_force: Sequence[float], every:
     return ax
 
 
-def balance_panel(ax, s: pd.DataFrame, partial: Sequence[bool], met: Sequence[bool], ticks: Sequence[str]):
+#: the exploratory level F (handoff 2026-10-15): neutral grey, dashed, hollow markers, outside the scheme of the pre-specified levels
+EXPLORE = dict(color="#8c8c8c", linestyle="--", markerfacecolor="white")
+
+
+def balance_panel(ax, s: pd.DataFrame, partial: Sequence[bool], met: Sequence[bool], ticks: Sequence[str], exploratory: bool = False):
     """Condition 2 for one archetype set: ²D per window (a dot with its 95 % whisker over the rarefaction draws) against the
     grey permutation band (``D2 permutation low`` / ``high``); a window below its band (``met``) is a MET-coloured dot; a
     partial window is hatched and not read. ``s`` has columns D2, D2 low, D2 high, D2 permutation low, D2 permutation high."""
     x = np.arange(len(s))
     ax.fill_between(x, s["D2 permutation low"], s["D2 permutation high"], color="#dedcd8", zorder=1, linewidth=0)
-    ax.errorbar(x, s["D2"], yerr=[s["D2"] - s["D2 low"], s["D2 high"] - s["D2"]], marker="o", markersize=3.6, linewidth=1.3, capsize=1.8,
-                color=INK, zorder=3)
+    look = dict(EXPLORE) if exploratory else dict(color=INK)
+    eb = ax.errorbar(x, s["D2"], yerr=[s["D2"] - s["D2 low"], s["D2 high"] - s["D2"]], marker="o", markersize=3.6, linewidth=1.3, capsize=1.8,
+                     zorder=3, **look)
+    if exploratory:
+        for b in eb[2]:
+            b.set_linestyle("-")                    # the whiskers stay solid; the line between the cohorts is dashed
     hit = [i for i, m in enumerate(met) if m]
     if hit:
-        ax.plot(x[hit], s["D2"].to_numpy()[hit], "o", markersize=7.2, color=MET, markeredgecolor=INK, markeredgewidth=0.8, zorder=5)
+        if exploratory:                             # a hollow red ring: met, but on an exploratory level
+            ax.plot(x[hit], s["D2"].to_numpy()[hit], "o", markersize=7.2, markerfacecolor="none", markeredgecolor=MET, markeredgewidth=1.4, zorder=5)
+        else:
+            ax.plot(x[hit], s["D2"].to_numpy()[hit], "o", markersize=7.2, color=MET, markeredgecolor=INK, markeredgewidth=0.8, zorder=5)
     for i, p in enumerate(partial):
         if p:
             ax.axvspan(i - 0.5, i + 0.5, facecolor=FEW_FILL, zorder=0, linewidth=0, hatch=PARTIAL_HATCH, edgecolor=GRID)
@@ -774,7 +785,7 @@ def balance_panel(ax, s: pd.DataFrame, partial: Sequence[bool], met: Sequence[bo
     return ax
 
 
-def cohesion_panel(ax, main: pd.DataFrame, alt: pd.DataFrame, partial: Sequence[bool], ticks: Sequence[str]):
+def cohesion_panel(ax, main: pd.DataFrame, alt: pd.DataFrame, partial: Sequence[bool], ticks: Sequence[str], exploratory: bool = False):
     """Condition 3: ΔQ per window against its permutation band under the main weighting (solid line, grey band) and under the
     check (dashed line, dotted band edges); a window below the main band is a MET-coloured dot; partial windows hatched."""
     x = np.arange(len(main))
@@ -783,11 +794,13 @@ def cohesion_panel(ax, main: pd.DataFrame, alt: pd.DataFrame, partial: Sequence[
         ax.plot(x, alt["ΔQ permutation low"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
         ax.plot(x, alt["ΔQ permutation high"], color=MUTED, linewidth=0.9, linestyle=":", zorder=2)
     ax.axhline(0, color=MUTED, linewidth=0.8, zorder=2)
-    ax.plot(x, main["ΔQ"], marker="o", markersize=3.6, linewidth=1.5, color=INK, zorder=4)
+    ax.plot(x, main["ΔQ"], marker="o", markersize=3.6, linewidth=1.5, zorder=4, **(dict(EXPLORE) if exploratory else dict(color=INK)))
     if alt is not None:
         ax.plot(x, alt["ΔQ"], marker="^", markersize=3.8, linewidth=1.2, color=MUTED, linestyle="--", zorder=4)
     hit = [i for i, (q, lo) in enumerate(zip(main["ΔQ"], main["ΔQ permutation low"])) if q < lo and not partial[i]]
-    if hit:
+    if hit and exploratory:                         # a hollow red ring: met, but on an exploratory level
+        ax.plot(x[hit], main["ΔQ"].to_numpy()[hit], "o", markersize=7.2, markerfacecolor="none", markeredgecolor=MET, markeredgewidth=1.4, zorder=5)
+    elif hit:
         ax.plot(x[hit], main["ΔQ"].to_numpy()[hit], "o", markersize=7.2, color=MET, markeredgecolor=INK, markeredgewidth=0.8, zorder=5)
     for i, p in enumerate(partial):
         if p:
