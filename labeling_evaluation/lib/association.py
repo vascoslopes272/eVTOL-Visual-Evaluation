@@ -49,6 +49,67 @@ def cramers_v_bc(x: pd.Series, y: pd.Series, min_n: int = COUPLING_MIN_N) -> Tup
     return (float(np.sqrt(phi2 / den)) if den > 0 else np.nan), n
 
 
+def cramers_v_bc_table(ct) -> float:
+    """Bias-corrected Cramér's V (Bergsma 2013) of a contingency table of counts (rows x columns), the same
+    formula as :func:`cramers_v_bc` without the frame handling: empty rows and columns are dropped first;
+    chi2 is Pearson's without continuity correction, computed here (no scipy); NaN if the table is under
+    2 x 2 after the drop or the denominator is not positive.
+
+    Formula: phi2 = max(0, chi2/n - (k-1)(r-1)/(n-1)); k~ = k - (k-1)^2/(n-1); r~ = r - (r-1)^2/(n-1);
+             V = sqrt(phi2 / min(k~ - 1, r~ - 1)).
+    Used in: q6_fixed_by_architecture (dimension x architecture, observed and permuted)
+    """
+    ct = np.asarray(ct, dtype=float)
+    ct = ct[ct.sum(axis=1) > 0][:, ct.sum(axis=0) > 0]
+    r, k = ct.shape
+    n = ct.sum()
+    if r < 2 or k < 2 or n < 2:
+        return np.nan
+    expected = np.outer(ct.sum(axis=1), ct.sum(axis=0)) / n
+    chi2 = float(((ct - expected) ** 2 / expected).sum())
+    phi2 = max(0.0, chi2 / n - (k - 1) * (r - 1) / (n - 1))
+    kc, rc = k - (k - 1) ** 2 / (n - 1), r - (r - 1) ** 2 / (n - 1)
+    den = min(kc - 1, rc - 1)
+    return float(np.sqrt(phi2 / den)) if den > 0 else np.nan
+
+
+def cramers_v_permutation(x_codes, y_codes, perms: int = 1000, rng=None, seed: int = SEED) -> Dict[str, float]:
+    """Bias-corrected Cramér's V of two integer-coded label vectors (same length, no missing) and a permutation p:
+    ``y`` is shuffled ``perms`` times with ``rng`` (a numpy Generator; one is made from ``seed`` if none is given)
+    and p = share of the shuffles whose bias-corrected V is at or above the observed one.
+
+    Returns {v, p, n, perms}; v and p are NaN if the observed table is under 2 x 2.
+    Used in: q6_fixed_by_architecture
+    """
+    x = np.asarray(x_codes, dtype=np.intp)
+    y = np.asarray(y_codes, dtype=np.intp)
+    n = len(x)
+    rng = np.random.default_rng(seed) if rng is None else rng
+    nx, ny = int(x.max()) + 1, int(y.max()) + 1
+    table = lambda yy: np.bincount(x * ny + yy, minlength=nx * ny).reshape(nx, ny)        # noqa: E731
+    v = cramers_v_bc_table(table(y))
+    if not np.isfinite(v):
+        return {"v": np.nan, "p": np.nan, "n": n, "perms": perms}
+    hits = 0
+    for _ in range(perms):
+        vp = cramers_v_bc_table(table(rng.permutation(y)))
+        if np.isfinite(vp) and vp >= v:
+            hits += 1
+    return {"v": float(v), "p": hits / perms, "n": n, "perms": perms}
+
+
+def leading_share(counts) -> Tuple[int, float]:
+    """Index and share of the largest entry of a count vector (ties: the first); (−1, NaN) if the sum is 0.
+
+    Used in: q6_fixed_by_architecture (leading option per architecture)
+    """
+    c = np.asarray(counts, dtype=float)
+    if c.sum() <= 0:
+        return -1, np.nan
+    i = int(np.argmax(c))
+    return i, float(c[i] / c.sum())
+
+
 # ------------------------------------------------------------------ chi-square
 def chi2_test(table) -> Dict[str, float]:
     """Pearson chi-square test of independence on a contingency table (scipy defaults, so Yates

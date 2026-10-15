@@ -1,0 +1,45 @@
+,panel,base,year / cohort,value,band low,band high,whisker low,whisker high,drawn,met,n,F designs
+0,(a) condition 1,all designs,2016,0.2353,,,,,True,False,34,8
+1,(a) condition 1,all designs,2017,0.2308,,,,,True,False,52,12
+2,(a) condition 1,all designs,2018,0.3939,,,,,True,False,66,26
+3,(a) condition 1,all designs,2019,0.4068,,,,,True,False,59,24
+4,(a) condition 1,all designs,2020,0.4928,,,,,True,False,69,34
+5,(a) condition 1,all designs,2021,0.5694,,,,,True,True,72,41
+6,(a) condition 1,all designs,2022,0.4792,,,,,True,False,48,23
+7,(a) condition 1,all designs,2023,0.3958,,,,,True,False,48,19
+8,(a) condition 1,actively protected,2016,0.25,,,,,True,False,24,6
+9,(a) condition 1,actively protected,2017,0.1818,,,,,True,False,33,6
+10,(a) condition 1,actively protected,2018,0.2973,,,,,True,False,37,11
+11,(a) condition 1,actively protected,2019,0.3636,,,,,True,False,44,16
+12,(a) condition 1,actively protected,2020,0.5185,,,,,True,False,54,28
+13,(a) condition 1,actively protected,2021,0.5932,,,,,True,False,59,35
+14,(a) condition 1,actively protected,2022,0.4286,,,,,True,False,35,15
+15,(a) condition 1,actively protected,2023,0.4318,,,,,True,False,44,19
+16,(a) condition 1,granted and live,2016,0.25,,,,,True,False,24,6
+17,(a) condition 1,granted and live,2017,0.1562,,,,,True,False,32,5
+18,(a) condition 1,granted and live,2018,0.3143,,,,,True,False,35,11
+19,(a) condition 1,granted and live,2019,0.3636,,,,,True,False,44,16
+20,(a) condition 1,granted and live,2020,0.5294,,,,,True,False,51,27
+21,(a) condition 1,granted and live,2021,0.5926,,,,,True,False,54,32
+22,(a) condition 1,granted and live,2022,0.3929,,,,,True,False,28,11
+23,(a) condition 1,granted and live,2023,0.6,,,,,False,False,15,9
+24,(b) condition 2,all designs,<= 2011,3.9,3.14,5.38,3.24,4.62,True,False,63,
+25,(b) condition 2,all designs,2012-15,4.82,3.03,5.28,3.99,5.82,True,False,58,
+26,(b) condition 2,all designs,2016-19,4.84,3.65,4.66,3.52,6.45,True,False,211,
+27,(b) condition 2,all designs,2020-23,3.22,3.65,4.68,2.19,4.48,True,True,237,
+28,(b) condition 2,all designs,2024-26 (partial),4.0,3.05,5.42,3.22,4.81,True,False,56,
+29,(b) condition 2,actively protected,<= 2011,2.84,2.42,5.8,2.84,2.84,True,False,18,
+30,(b) condition 2,actively protected,2012-15,3.93,2.73,5.31,3.93,3.93,True,False,33,
+31,(b) condition 2,actively protected,2016-19,5.17,3.3,4.62,3.97,6.61,True,False,138,
+32,(b) condition 2,actively protected,2020-23,3.14,3.58,4.59,2.23,4.21,True,True,192,
+33,(b) condition 2,actively protected,2024-26 (partial),3.86,2.92,5.16,3.14,4.81,True,False,52,
+34,(c) condition 3,all designs,<= 2011,0.012,-0.0184,0.018,,,True,False,63,
+35,(c) condition 3,all designs,2012-15,-0.012,-0.018,0.0184,,,True,False,58,
+36,(c) condition 3,all designs,2016-19,0.0215,-0.0168,0.0407,,,True,False,211,
+37,(c) condition 3,all designs,2020-23,-0.0279,-0.019,0.039,,,True,True,237,
+38,(c) condition 3,all designs,2024-26 (partial),0.0027,-0.0451,0.0431,,,True,False,56,
+39,(c) condition 3,actively protected,<= 2011,0.0043,-0.0462,0.0378,,,True,False,18,
+40,(c) condition 3,actively protected,2012-15,-0.0043,-0.0378,0.0462,,,True,False,33,
+41,(c) condition 3,actively protected,2016-19,0.0663,-0.0257,0.0641,,,True,False,138,
+42,(c) condition 3,actively protected,2020-23,0.0091,-0.0221,0.0655,,,True,False,192,
+43,(c) condition 3,actively protected,2024-26 (partial),0.0349,-0.0324,0.0693,,,True,False,52,

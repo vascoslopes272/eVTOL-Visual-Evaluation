@@ -1,0 +1,16 @@
+{
+ "name": "q2_filer_types",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "A",
+ "title": "Assignee types, all years and per cohort",
+ "caption": "The share of each assignee type over all years, in representative patents and in aircraft, then per priority cohort in aircraft; the cohort 2024-26 is still filling (faded).",
+ "source_item": "Figure 16 (ii)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer (assignee, priority date) · human labelling",
+ "propulsor": "unique aircraft; the first bar the representative patents",
+ "read": "Each bar is 100 %; a segment of 6 % or more prints its share.",
+ "width_in": 4.158,
+ "height_in": 2.9
+}

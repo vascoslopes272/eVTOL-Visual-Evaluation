@@ -1,0 +1,16 @@
+level,level name,cohort,aircraft,Q,Q of the earliest cohorts,ΔQ,ΔQ permutation low,ΔQ permutation high,below band,partial
+A,A — architecture,<= 2011,63,0.5583,0.5463,0.012,-0.0184,0.018,False,False
+A,A — architecture,2012-15,58,0.5343,0.5463,-0.012,-0.018,0.0184,False,False
+A,A — architecture,2016-19,211,0.5679,0.5463,0.0215,-0.0168,0.0407,False,False
+A,A — architecture,2020-23,237,0.5185,0.5463,-0.0279,-0.019,0.039,True,False
+A,A — architecture,2024-26 (partial),56,0.549,0.5463,0.0027,-0.0451,0.0431,False,True
+A·W·T,"A·W·T — architecture, wings, tilt",<= 2011,63,0.5583,0.5463,0.012,-0.0208,0.024,False,False
+A·W·T,"A·W·T — architecture, wings, tilt",2012-15,58,0.5343,0.5463,-0.012,-0.024,0.0208,False,False
+A·W·T,"A·W·T — architecture, wings, tilt",2016-19,211,0.5679,0.5463,0.0215,-0.0224,0.0304,False,False
+A·W·T,"A·W·T — architecture, wings, tilt",2020-23,236,0.5165,0.5463,-0.0299,-0.0204,0.034,True,False
+A·W·T,"A·W·T — architecture, wings, tilt",2024-26 (partial),55,0.5468,0.5463,0.0005,-0.0391,0.0354,False,True
+A·U,"A·U — architecture, propulsors",<= 2011,63,0.5583,0.5463,0.012,-0.0245,0.0221,False,False
+A·U,"A·U — architecture, propulsors",2012-15,58,0.5343,0.5463,-0.012,-0.0221,0.0245,False,False
+A·U,"A·U — architecture, propulsors",2016-19,211,0.5679,0.5463,0.0215,-0.0173,0.0362,False,False
+A·U,"A·U — architecture, propulsors",2020-23,236,0.5165,0.5463,-0.0299,-0.0168,0.0374,True,False
+A·U,"A·U — architecture, propulsors",2024-26 (partial),56,0.549,0.5463,0.0027,-0.0417,0.0408,False,True

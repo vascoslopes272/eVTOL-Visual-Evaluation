@@ -18,17 +18,27 @@ from viz.thesis_latex_common import MAX_H, TEXT_CM, root, tables_md
 #: name -> (final width as a share of the text block, in the dissertation)
 FIGS = {"q6_configuration_core": (0.9, True), "q6_discovery_curve": (1.0, True),
         "q6_half_of_cohort_heatmap": (1.0, False),
-        "q6_half_of_cohort": (0.8, False),                 # width not given: 0.8; leaves the text
+        "q6_half_of_cohort": (1.0, False),                 # printed at text width (redrawn wide 2026-10-15); leaves the text
         "q6_propulsor_units_per_class": (0.8, True)}       # appendix
-TABLES = {"q6_selected_fields": True, "q7_levels_of_description": True, "q7_hill_numbers_by_level": True}
-SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core and rim",
+#: figures drawn at a size given in pt (width, height) instead of a share of the text block (author, rerun of 2026-10-15). q6_discovery_curve:
+#: 450 pt wide; its three panels are about twice as wide as tall, which at that width needs about 128 pt of height (150 pt asked "about")
+SIZE_PT = {"q6_discovery_curve": (450.0, 128.0)}
+#: name -> height as a share of the width, where a figure is drawn flatter than ``MAX_H`` (q6_half_of_cohort: 7 in × 2.6 in in the notebook)
+HEIGHT = {"q6_half_of_cohort": 2.6 / 7.0}
+TABLES = {"q6_selected_fields": True, "q7_levels_of_description": True, "q7_hill_numbers_by_level": True,
+          "q6_fixed_by_architecture": True, "q6_fixed_by_architecture_detail": True}
+#: tables whose csv is ALSO copied next to the figures of their group/role (Figures/Part_II_design_space/<group>/<role>/), besides Data_for_writing/csv/
+ALSO_TO = {"q6_fixed_by_architecture": ["figures"], "q6_fixed_by_architecture_detail": ["figures"]}
+SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core and rim; hollow where the largest assignee holds more than 40 %",
          "q6_discovery_curve": "distinct configurations seen as the designs accumulate, at A, A·W·T and A·U, against random order; 2024–26 not yet all published",
-         "q6_half_of_cohort_heatmap": "designs per A·U configuration and cohort; orange bar where each complete cohort reaches half (ranked within the cohort)",
+         "q6_half_of_cohort_heatmap": "designs per A·U configuration and cohort; outlined: the configurations that hold half of each complete cohort (ranked within the cohort)",
          "q6_half_of_cohort": "cumulative share of each cohort's designs held by its largest A·U configurations; where each crosses 50 %",
          "q6_propulsor_units_per_class": "propulsor units per design, by architecture (appendix)",
          "q6_selected_fields": "dimensions that vary: designs answering, options, top share, most common options",
-         "q7_levels_of_description": "the three levels of description A, A·W·T, A·U: configurations, single-design configurations, ¹D, largest configuration",
-         "q7_hill_numbers_by_level": "Hill numbers of each level: ⁰D (configurations), ¹D, ²D"}
+         "q7_levels_of_description": "the three levels of description A, A·W·T, A·U: configurations, singletons, ¹D, largest configuration",
+         "q7_hill_numbers_by_level": "Hill numbers of each level: ⁰D (configurations), ¹D, ²D",
+         "q6_fixed_by_architecture": "per dimension of q6_selected_fields: designs answering with an architecture, bias-corrected Cramér's V against the architecture, permutation p, architectures where the leading option holds 80 % or more (of those with 10 or more designs), architectures too few to read (appendix)",
+         "q6_fixed_by_architecture_detail": "per dimension and architecture: designs answering, leading option and its share (appendix, behind q6_fixed_by_architecture)"}
 
 
 def _item(name):
@@ -47,9 +57,12 @@ def tab_hill_numbers_by_level(ctx):
 
 
 def draw(item, ctx, frac: float):
-    """Build ``item`` AT its final size (label placement is done in that size): width frac × text block, height capped at 55 % of the width."""
+    """Build ``item`` AT its final size (label placement is done in that size): width frac × text block, height capped at 55 % of the width;
+    (``HEIGHT`` gives a flatter height for some); or the size in pt of ``SIZE_PT``."""
     w_in = TEXT_CM / 2.54 * frac
-    ctx.W, ctx.fig_h = w_in, MAX_H * w_in
+    ctx.W, ctx.fig_h = w_in, HEIGHT.get(item["name"], MAX_H) * w_in
+    if item["name"] in SIZE_PT:
+        ctx.W, ctx.fig_h = SIZE_PT[item["name"]][0] / 72, SIZE_PT[item["name"]][1] / 72
     try:
         with plt.style.context(str(Path(v2.__file__).with_name("part1.mplstyle"))):
             fig, data = item["builder"](ctx)
@@ -83,6 +96,12 @@ def export(cfg, ctx):
         t = tab_hill_numbers_by_level(ctx) if name == "q7_hill_numbers_by_level" else _item(name)["builder"](ctx)[0]
         t.to_csv(csvd / f"{name}.csv", index=False)
         manifest.append((f"Data_for_writing/csv/{name}.csv", used, SHOWS[name]))
+        if "figures" in ALSO_TO.get(name, []):                      # a copy beside the figures of its group / role
+            it = _item(name)
+            out = R / "Figures" / "Part_II_design_space" / it["group"] / it["role"]
+            out.mkdir(parents=True, exist_ok=True)
+            t.to_csv(out / f"{name}.csv", index=False)
+            manifest.append((f"Figures/Part_II_design_space/{it['group']}/{it['role']}/{name}.csv", used, "copy of " + name))
     est = q6._data(ctx)["est"].reset_index()
     est["level"] = est["level"].map(v2.LEVEL)
     est.to_csv(csvd / "q6_discovery_estimators.csv", index=False)
@@ -109,12 +128,13 @@ def _numbers(cfg, ctx, R: Path):
         cs = np.cumsum(c) / c.sum()
         k = int(np.searchsorted(cs, 0.5)) + 1
         k_all = int(np.searchsorted(np.cumsum(z[w].astype(float).to_numpy()) / c.sum(), 0.5)) + 1
-        rows.append({"cohort": cohort(w), "designs": int(n_win[w]), "designs in the 33 A·U configurations of five or more": int(c.sum()),
+        rows.append({"cohort": cohort(w), "designs": int(n_win[w]), f"designs in the {len(z)} A·U configurations of five or more": int(c.sum()),
                      "configurations that hold half (ranked by size within the cohort)": k,
                      "same, columns in overall-size order (the old heatmap)": k_all})
     half = pd.DataFrame(rows)
     t6, _ = _item("q6_selected_fields")["builder"](ctx)
     t7, _ = _item("q7_levels_of_description")["builder"](ctx)
+    tfix, _ = _item("q6_fixed_by_architecture")["builder"](ctx)
     hill = tab_hill_numbers_by_level(ctx)
     est = d6["est"]
     est_t = pd.DataFrame({"level": [v2.LEVEL[k] for k in ("A0", "A1t", "A0c")],
@@ -129,11 +149,19 @@ def _numbers(cfg, ctx, R: Path):
     core = d6["core"]
     L = ["# NUMBERS_II — Analysis II (design space)\n",
          "Written by notebook 50 (`viz/thesis_latex_part2.py`); every value is recomputed when the notebook runs. CSVs are in `Data_for_writing/csv/`. "
-         "Levels are A (architecture), A·W·T (architecture, wings, tilt), A·U (architecture, propulsor units); the lowest propulsor-unit band is named 0–3.\n",
+         "Levels are A (architecture), A·W·T (architecture, wings, tilt), A·U (architecture, propulsor units); the propulsor bands are 1–3, 4, 5–6, 7–8 and 9+. "
+         "The one design recorded with 0 propulsors (GB202302720D0_ua1, its count never entered under an M2 override) is left out of U (rerun of 2026-10-15).\n",
          "## Configurations that hold half of each cohort's designs, at A·U (`q6_half_of_cohort`, which leaves the text)\n",
          "Source: `q6_half_of_cohort.csv`. The figure ranks the configurations by size within the cohort (first column); the old heatmap used the overall-size order (second), "
          "which gives 10 for 2016–19 where the text says 10. 2024–26 is incomplete and not read.\n", tables_md(half), "",
          "## Table: dimensions that vary\n", "Source: `q6_selected_fields.csv` (notebook 50, group II1).\n", tables_md(t6), "",
+         "## Which dimensions the architecture fixes (`q6_fixed_by_architecture`)\n",
+         "Source: `q6_fixed_by_architecture.csv` and `q6_fixed_by_architecture_detail.csv` (notebook 50, group II1, appendix; `viz/thesis_q6.py` fixed_by_architecture).\n",
+         f"For each dimension of the table above, on the designs that answer it and have an architecture, the bias-corrected Cramér's V (Bergsma 2013) of dimension × architecture "
+         f"is read with a permutation p ({q6.FIXED_PERMS} shuffles of the architecture column, one generator seeded {ctx.SEED}, dimensions in the table's order; "
+         f"p = share of shuffles at or above the observed V). Per architecture the leading option of the dimension and its share of that architecture's answering designs are read "
+         f"(the detail csv); an architecture with fewer than {q6.FIXED_MIN_DESIGNS} answering designs is too few to read, and the dimension is fixed in an architecture when the "
+         f"leading option holds {100 * q6.FIXED_SHARE:.0f} % or more of them.\n", tables_md(tfix), "",
          "## Table: levels of description\n", "Source: `q7_levels_of_description.csv` (notebook 50, group II2). The family F row is in Analysis III.\n", tables_md(t7), "",
          "## Table: Hill numbers of each level\n", "Source: `q7_hill_numbers_by_level.csv`; all years, 627 designs less those the level cannot name.\n", tables_md(hill), "",
          "## Discovery (`q6_discovery_curve`): complete years (to 2023)\n", "Source: `q6_discovery_estimators.csv`; the figure's last-100 window and these numbers are on the complete years.\n", tables_md(est_t), "",

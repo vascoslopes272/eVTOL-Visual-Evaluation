@@ -83,7 +83,7 @@ changed = ["- **No number changes.** The checks below are the same before and af
            "the 362 designs without a new architecture stay on the complete years, and the panel label says \"to 2023\". The configurations seen at the end of the "
            "curve (table above) equal the all-years counts of the levels table (12 / 39 / 43), so nothing in the text moves.",
            "- `q6_configuration_core`: 2024–26 not drawn, to keep every number (see judgement calls).",
-           "- Random-order curve: thin dashed grey line, no fill. `q6_propulsor_units_per_class`: no title. Lowest band named 0–3 everywhere."]
+           "- Random-order curve: thin dashed grey line, no fill. `q6_propulsor_units_per_class`: no title. Lowest band named 1–3 everywhere."]
 why40 = ["## Why the rarefaction size is 40 (and the 300 draws)\n",
          "**40 is a default with no stated reason.** It first appears as `n: int = 40` in `hill_numbers` / `hill_by_window` of `archive/.../dataset_facts/la_tables.py` "
          "(already there in the 2026-09-22 backups), was carried into `dominant_design` / `dd_balance` and then into `analysis.rarefy_n` of `labelling_analysis.yaml`, "
@@ -106,8 +106,8 @@ lines = ["# Part II (Design space) figures, v2\n",
          "- **Multicopter** (never Multirotor; the data code stays MR); **Tilt Frame TF** (never Tilt Body TB); **Tilt Propulsor TP**; **SLC** is "
          "the code of Lift + Cruise",
          "- levels of description: **C**, **C·W·T**, **C·U** (C = architecture; C·W·T = architecture · number of wings · whether any propulsor "
-         "tilts; C·U = architecture · propulsor-unit band 0–3 / 4 / 5–6 / 7–8 / 9+)",
-         "- a C·U configuration is printed as architecture code + propulsor-unit band, e.g. `SLC 9+`, `TP 0–3`, `TF 4`\n",
+         "tilts; C·U = architecture · propulsor-unit band 1–3 / 4 / 5–6 / 7–8 / 9+)",
+         "- a C·U configuration is printed as architecture code + propulsor-unit band, e.g. `SLC 9+`, `TP 1–3`, `TF 4`\n",
          "## Style\n",
          "Part I v2 style; 6.3 in wide; smallest text 8 pt at print size; no in-plot text boxes; no label overlapping a mark or another label "
          "(checked on the rendered figures); a legend only for what is drawn; at most six colours, the rest grey.\n",
@@ -144,13 +144,12 @@ lines += [
     "The first design of 2016 and of 2020 are design numbers 122 and 333 at every level.",
     "- **Core figure**: markers are one size and one shape (the original's bubble area = designs and triangle = first seen 2016 or later "
     "are dropped, since the legend is limited to architectures). The 3 labelled non-core configurations are the three with the largest "
-    "2016–23 share outside the core (TP 9+, CVT 4, SLC 0–3). The median guide lines are dropped; the rim is the configurations at or "
+    "2016–23 share outside the core (TP 9+, CVT 4, SLC 1–3). The median guide lines are dropped; the rim is the configurations at or "
     "under the median share.",
     "- **Core figure, 2024–26**: not added. The y axis (assignees per design) is computed on 2016–23 only, so a hollow 2024–26 marker would need "
     "either a new y or a different y on the same row; the 54 designs of 2024–26 also spread over 33 configurations (1–5 each). Left out.",
-    "- **One name for the lowest propulsor-unit band: 0–3**, in every table and figure label (Table 6, the levels table, the core figure's point labels, "
-    "the ducting ticks). The data's own bin is 0–3 (`frames.ROTOR_BINS`); `frames.UNIT_BANDS` prints 1–3 for display, which is why the figures and the levels "
-    "table said 1–3. One design is recorded with 0 units and sits in this band.",
+    "- **One name for the lowest propulsor band: 1–3** (rerun of 2026-10-15), in every table and figure label. The one design recorded with 0 "
+    "propulsors (GB202302720D0_ua1, its count never entered under an M2 override) is left out of U by `frames.propulsor_units`; there is no 0 band.",
     "- **`q6_half_of_cohort`**: the denominator is the cohort's designs in the 33 C·U configurations of five or more designs (as the original "
     "heatmap); ranks 1–20 of 33 are drawn. All four complete cohorts are drawn, and 2024–26 (dashed, faded, hollow marker, labelled incomplete) (≤2011 and 2012–15 hold 61 and 57 designs there). The "
     "≤2011 and 2012–15 lines cross 50 % at the same rank (5), so their two markers sit on top of each other.",

@@ -25,7 +25,7 @@ from viz import thesis_q6 as q6
 
 FS = 8.0
 ARCH = ["TR", "CVT", "TW"]
-NAME = {"TR": "Tilt Propulsor", "CVT": "CVT", "TW": "Tilt Wing"}
+NAME = {"TR": "Tilt Propulsor", "CVT": "Combined Vectored Thrust", "TW": "Tilt Wing"}
 
 
 def fig_tilt_mechanisms_per_propulsor(ctx):
@@ -66,13 +66,12 @@ def _between(D, a, b) -> float:
 
 
 def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
-    """Condition 3 at A (every aircraft with an architecture), subsystem weighting: Q per cohort (cohesion_band) and the Rao
+    """Condition 3 at A (every aircraft with an architecture), the main weighting (w15): Q per cohort (cohesion_band) and the Rao
     between-group distance of each cohort to the first, with the band of the same shuffles of aircraft across cohorts."""
     v, ds = ctx.v, ctx.ds
-    frame, fields, numeric = frames.gower_inputs(ds)
+    D, frame = frames.form_distance(ds)                     # the condition-3 distance under the main weighting (w15)
+    fields = frames.gower_inputs(ds).fields
     at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
-    w = frames.form_weights(fields)
-    D = frames._dist.gower_distance(frame, fields, numeric, w)
     sub = v[frames.archetype_key(v, "A0").notna()].dropna(subset=["window"]).copy()
     sub["row"] = sub["aircraft_id"].map(at)
     sub = sub[sub["row"].notna()]

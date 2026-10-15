@@ -16,6 +16,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.text import Text
 
+from viz.relabel import directory_builder           # the VFS directory's own category (rerun of 2026-10-15)
 from viz import analysis3, frames, plots, style
 from viz import thesis_q6 as q6
 from viz import thesis_q7 as q7
@@ -40,7 +41,7 @@ def _cohort(df: pd.DataFrame) -> pd.DataFrame:
 #: the levels of description as the CSV/JSON beside Figure 12 print them (author's ruling 2026-10-13); F is Lift + Cruise and CVT on a fixed wing
 LEVEL_CODE = {"A0": "A", "A1t": "A·W·T", "A0c": "A·U", "family_b": "F"}
 LEVEL_NAME = {"A": "A — architecture", "A·W·T": "A·W·T — architecture, wings, tilt", "A·U": "A·U — architecture, propulsor units",
-              "F": "F — Lift + Cruise and CVT on a fixed wing"}
+              "F": "F — Separate Lift + Cruise and Combined Vectored Thrust on a fixed wing"}
 
 
 def _levels(df: pd.DataFrame) -> pd.DataFrame:
@@ -142,20 +143,35 @@ def fig_condition1_f(ctx):
     return _bump(fig), d
 
 
-def fig_condition2_balance(ctx):
-    keep = dict(q7.SET_TITLE)                           # shorter panel titles: at 8 pt the long ones run into each other
-    q7.SET_TITLE.update({"A0": "A\narchitecture", "A1t": "A·W·T\n+ wings, tilt", "A0c": "A·U\n+ propulsor units", "family_b": "F (exploratory, III.3)\nLift + Cruise and CVT\non a fixed wing"})
+#: shorter panel titles for Figure 12 (i) and (ii): at 8 pt the long ones run into each other (F has its own figure since 2026-10-15)
+SHORT_TITLES = {"A0": "A\narchitecture", "A1t": "A·W·T\n+ wings, tilt", "A0c": "A·U\n+ propulsor units"}
+
+
+def _with_short_titles(builder, ctx):
+    keep = dict(q7.SET_TITLE)
+    q7.SET_TITLE.update(SHORT_TITLES)
     try:
-        fig, d = q7.fig_condition2_balance(ctx)
+        return builder(ctx)
     finally:
         q7.SET_TITLE.update(keep)
+
+
+def fig_condition2_balance(ctx):
+    fig, d = _with_short_titles(q7.fig_condition2_balance, ctx)
     return _bump(fig), _levels(_cohort(d))
 
 
 def fig_condition3_form(ctx):
-    fig, d = q7.fig_condition3_cohesion(ctx)
+    fig, d = _with_short_titles(q7.fig_condition3_cohesion, ctx)
     fig.axes[0].set_ylabel("ΔQ against the two\nearliest cohorts")
     return _bump(fig), _levels(_cohort(d).drop(columns=["weighting"]))
+
+
+def fig_family_conditions(ctx):
+    """III2/III3 main: the three conditions on F alone, each on all designs (main) and the actively protected designs (condition 1 also on
+    granted and live); the data is the tidy table of every value drawn (thesis_q7.fig_family_conditions)."""
+    fig, d = q7.fig_family_conditions(ctx)
+    return _bump(fig), d
 
 
 def tab_levels_verdict(ctx):
@@ -226,6 +242,8 @@ ITEMS = [
          title="Condition 2: ²D against its band", source_item="v2 of q7_condition2_balance (Figure 12 (i))"),
     dict(name="q7_condition3_cohesion", group="III2_III3_dominant_design", role="main", kind="figure", builder=fig_condition3_form,
          title="Condition 3: ΔQ against its band", source_item="v2 of q7_condition3_cohesion (Figure 12 (ii))"),
+    dict(name="q7_family_conditions", group="III2_III3_dominant_design", role="main", kind="figure", builder=fig_family_conditions,
+         title="The three conditions on F: all designs and actively protected", source_item="new (handoff 2026-10-15, Task 3)"),
     dict(name="q7_verdict_table", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_levels_verdict,
          title="The dominant-design verdict, levels A, A·W·T, A·U and F", source_item="v2 of q7_verdict_table (Table 8)"),
     dict(name="q7_verdict_detail", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_verdict_detail,
@@ -240,7 +258,7 @@ ITEMS = [
          title="F's share on granted and live patents alone", source_item="new (Analysis III item 5)"),
     dict(name="q7_granted_live_condition2", group="III2_III3_dominant_design", role="appendix", kind="table", builder=tab_granted_live_condition2,
          title="²D of F on granted and live patents alone", source_item="new (Analysis III item 5)"),
-    dict(name="q7_iii4_directory_categories", group="III4_directory_categories", role="main", kind="figure", builder=fig_directory_categories,
+    dict(name="q7_iii4_directory_categories", group="III4_directory_categories", role="main", kind="figure", builder=directory_builder(fig_directory_categories),
          title="Conditions 1 and 2 on the five directory categories", source_item="new (Analysis III item 6)"),
     dict(name="q7_iii4_directory_fold", group="III4_directory_categories", role="appendix", kind="table", builder=tab_directory_fold,
          title="Architectures folded to the directory categories", source_item="analysis.class_fold"),

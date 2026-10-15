@@ -153,6 +153,59 @@ def tab_selected_fields(ctx):
     return tab, None
 
 
+#: q6_fixed_by_architecture: an architecture is read when at least this many of its designs answer the dimension; the dimension is
+#: "fixed" in it when its leading option holds at least this share of them; permutations of the architecture column
+FIXED_MIN_DESIGNS = 10
+FIXED_SHARE = 0.80
+FIXED_PERMS = 1000
+
+
+def fixed_by_architecture(ctx):
+    """Which of the dimensions of Table 6 the architecture (topType) fixes: per dimension, on the designs that answer it AND have an
+    architecture, the bias-corrected Cramér's V (Bergsma 2013) of dimension x architecture, a permutation p (the architecture column
+    shuffled FIXED_PERMS times with one numpy Generator seeded ctx.SEED, dimensions in the order of Table 6 as the v2 table prints it:
+    top share ascending), and per architecture the leading option and its share of the architecture's answering designs
+    (tie: the option more common over all answering designs). Architectures with fewer than FIXED_MIN_DESIGNS answering designs are
+    "too few to read"; the dimension is fixed in an architecture when the leading share is >= FIXED_SHARE.
+
+    The series are those of :func:`viz.frames.selected_field_series` (the same options dropped as Table 6), so "designs answering"
+    equals Table 6's column less the designs without an architecture.
+    An architecture with no answering design (HB / PFV on the propulsor rows) counts among the too few. The Cramér's V table drops it.
+    Returns (summary, detail): summary one row per dimension with the architecture CODES in the two list columns
+    (``fixed codes``, ``too few codes``); detail one row per dimension x architecture (code), designs, leading option, share."""
+    from lib import association
+    d = _data(ctx)
+    t6, cut = d["t6"], d["cut"]
+    kept = t6[t6["top_share"] < cut]
+    kept = kept.iloc[np.argsort(kept["top_share"].to_numpy(), kind="stable")]
+    series = frames.selected_field_series(ctx.ds)
+    arch = pd.Series(ctx.v["topType"].to_numpy(), index=ctx.ds.variants.index)       # ctx.v = frames.base(ds), one row per variant, same order
+    assert (ctx.v["aircraft_id"].to_numpy() == ctx.ds.variants["aircraft_id"].to_numpy()).all()
+    codes = [c for c in style.CLASS_ORDER if c in set(arch.dropna())]
+    rng = np.random.default_rng(ctx.SEED)
+    rows, detail = [], []
+    for name in kept["name"]:
+        s = series[name]
+        m = s.notna() & arch.notna()
+        x, a = s[m].astype(str), arch[m].astype(str)
+        order = list(x.value_counts().index)                       # the option order: most common first (Table 6's order)
+        ct = pd.crosstab(x, a).reindex(index=order, columns=codes, fill_value=0)      # every architecture: one with no answering design is "too few"
+        xi = pd.Categorical(x, categories=ct.index).codes
+        ai = pd.Categorical(a, categories=ct.columns).codes
+        res = association.cramers_v_permutation(xi, ai, perms=FIXED_PERMS, rng=rng)
+        fixed, few = [], []
+        for c in ct.columns:
+            i, share = association.leading_share(ct[c].to_numpy())
+            n_c = int(ct[c].sum())
+            detail.append({"dimension": name, "code": c, "designs": n_c, "leading option": ct.index[i] if i >= 0 else "", "share": share,
+                           "read": n_c >= FIXED_MIN_DESIGNS})
+            (few if n_c < FIXED_MIN_DESIGNS else (fixed if share >= FIXED_SHARE else [])).append(c)
+        n_read = sum(int(ct[c].sum()) >= FIXED_MIN_DESIGNS for c in ct.columns)
+        rows.append({"dimension": name, "designs answering": int(res["n"]), "options": int(ct.shape[0]), "architectures": int(ct.shape[1]),
+                     "cramers_v": res["v"], "p": res["p"], "fixed": len(fixed), "read": n_read, "fixed codes": fixed, "too few codes": few})
+    return pd.DataFrame(rows), pd.DataFrame(detail)
+
+
 def fig_propulsor_units_per_class(ctx):
     d = _data(ctx)
     fig, ax = plt.subplots(figsize=(ctx.W, 2.7), constrained_layout=True)
@@ -598,7 +651,7 @@ def numbers(ctx) -> dict:
         "field_cut": pct(d["cut"]), "fields_kept": str(int((d["t6"]["top_share"] < d["cut"]).sum())),
         "fields_dropped": ", ".join(d["t6"].loc[d["t6"]["top_share"] >= d["cut"], "name"]),
         "tail_top": pct(t6i.loc["tail type", "top_share"]), "units_top": pct(t6i.loc[frames.D3_UNITS_ROW, "top_share"]),
-        "fus_top": pct(t6i.loc["fuselage motion hover to cruise", "top_share"]), "wings_top": pct(t6i.loc["number of wings", "top_share"]),
+        "fus_top": pct(t6i.loc["fuselage motion hover to cruise", "top_share"]), "wings_top": pct(t6i.loc[frames.D3_FIELD_NAMES["wCount"], "top_share"]),
         "places_top": pct(t6i.loc[frames.D3_PLACES_ROW, "top_share"]), "gear_top": pct(t6i.loc["landing-gear type", "top_share"]),
         "units_n": str(len(d["unit"])), "units_median": g(d["unit"].median()),
         "slc_more8": pct(d["feat"].loc["more than 8 propulsors", "SLC"]), "mr_more8": pct(d["feat"].loc["more than 8 propulsors", "MR"]),

@@ -64,19 +64,20 @@ def rho_table(ctx) -> pd.DataFrame:
 
 # ---- condition 3 weights
 def weights_report(ctx) -> dict:
-    frame, fields, numeric = frames.gower_inputs(ctx.ds)
-    return {"table": frames.form_weights_table(), "n_fields": len(fields), "n_aircraft": len(frame), "numeric": sorted(numeric)}
+    """The weights table of the main weighting (w15: 15 dimensions, each of the four systems weighing 1) and the frame it reads."""
+    fi = frames.gower_inputs(ctx.ds)
+    return {"table": frames.form_weights_table(fi.weighting), "n_fields": len(fi.fields), "n_aircraft": len(fi.frame),
+            "numeric": sorted(fi.numeric), "sets": sorted(fi.sets), "weighting": fi.weighting}
 
 
 # ---- condition 3 on F, three bases
 def form_family(ctx) -> pd.DataFrame:
     """Condition 3 on F: Q of the form distance per cohort against the two earliest cohorts and its permutation band, on the designs of F's
     base (an architecture recorded, as at A: Q uses no architecture, F only regroups the designs), for the actively protected designs, all
-    designs and the granted-and-live designs. A fresh generator (seed) per base; the same weights as :func:`weights_report`."""
+    designs and the granted-and-live designs. A fresh generator (seed) per base; the same weights as :func:`weights_report` (w15)."""
     ds, v = ctx.ds, ctx.v
-    frame, fields, numeric = frames.gower_inputs(ds)
+    D, frame = frames.form_distance(ds)
     at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
-    D = frames._dist.gower_distance(frame, fields, numeric, frames.form_weights(fields))
     state = frames.patent_state(ds, v)
     f = frames.dd_level_keys(ds, v)["family_b"]
     out = []

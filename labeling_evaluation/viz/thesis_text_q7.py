@@ -5,7 +5,7 @@ Numbers are never typed: every ``{key}`` is resolved from ``viz.thesis_q7.number
 
 METHOD = """- **Objective:** Whether a dominant design exists, one layout most new designs copy after competing alternatives (Abernathy and Utterback, 1978).
 - **Data and unit:** Unique designs by priority year or four-year cohort, in four configuration sets, A, A·W·T, A·U and F. The main base is all designs; the actively protected designs are a sensitivity base, read alone and never mixed with the main one.
-- **Procedure:** Three conditions asked in the same period on one base, the largest configuration's share, the balance ²D and the form ΔQ. ΔQ uses one declared weighting: the 34 dimensions of the codebook, each of its four systems weighing 1, inside M2 the wings 0.667 against the empennage 0.333.
+- **Procedure:** Three conditions asked in the same period on one base, the largest configuration's share, the balance ²D and the form ΔQ. ΔQ uses one declared weighting (w15): 15 dimensions of the codebook, each of its four systems weighing 1 (the table of method III.2).
 - **Test:** Share above half in two consecutive read years; ²D and ΔQ below their {perms}-permutation bands.
 - **Limit:** Patent records have no sales, so renewal fees stand in; the latest years are still filling."""
 
@@ -15,7 +15,7 @@ RESULTS = [
 The configuration set, not the corpus, sets how many designs there are, so every claim below names its set. F was defined after the architecture and configuration readings had been seen, and no result on it is a pre-registered test."""),
     dict(sub="B", title="The test", text="""On all designs, the main base, F meets two of the three conditions in {w_last} and misses the third by one design. [fig:q7_condition2_balance] shows the balance condition met, F's ²D {f_d2_last} against a band edge of {f_d2_edge}. [fig:q7_condition3_cohesion] shows the form condition met, ΔQ {dq_f_all} against a band edge of {dq_f_all_edge}. [fig:q7_condition1_family] shows the counts condition missed: F holds {f_all_2021} of the designs of {met_last} but {f_all_2020} of {met_first} ({f_all_2020_k}), {f_all_short} design short of half, so no two consecutive years are above half.
 
-The form condition uses one weighting only, the 34 dimensions of the codebook with each of its four systems weighing 1 and, inside M2, the wings 0.667 against the empennage 0.333. For A, A·U and F, which read the same designs, ΔQ is {dq_main} against a band edge of {dq_main_edge}.
+The form condition uses one weighting only, w15: 15 dimensions of the codebook with each of its four systems weighing 1 (the table of method III.2). For A, A·U and F, which read the same designs, ΔQ is {dq_main} against a band edge of {dq_main_edge}.
 
 No set meets the three conditions in the same period on all designs ([tab:q7_verdict_table]). A, A·W·T and A·U fail the counts condition, their largest configuration reaching at most {max_c_all} of a year's designs."""),
     dict(sub="C", title="Robustness", text="""Read alone on the actively protected designs, the sensitivity base, the result moves rather than holds. F meets the counts condition there, {f_in_2020} and {f_in_2021} in {met_first} and {met_last} ({f_in_2020_k} and {f_in_2021_k}), and the balance condition, ²D {f_ap_d2} against {f_ap_d2_edge}. It misses the form condition, ΔQ {dq_ap} against a band edge of {dq_ap_edge}. The two bases are never combined, so neither gives F the three conditions in one period.

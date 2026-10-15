@@ -48,8 +48,7 @@ def _poly_centroid(P: np.ndarray) -> tuple:
 # ============================================================================================== Gower distance CVT to Lift + Cruise
 def _form_distance(ctx):
     from viz import frames
-    frame, fields, numeric = frames.gower_inputs(ctx.ds)
-    D = frames._dist.gower_distance(frame, fields, numeric, frames.form_weights(fields))
+    D, frame = frames.form_distance(ctx.ds)                  # the condition-3 distance under the main weighting (w15)
     return D, {a: i for i, a in enumerate(frame["aircraft_id"])}
 
 
@@ -71,7 +70,8 @@ def _between(D, a, b) -> float:
 
 
 def cvt_lc_distance(ctx, perms: int = 200) -> pd.DataFrame:
-    """Between-group Gower distance (34 dimensions, the condition-3 weights) of Lift + Cruise to CVT* and to all CVT, per cohort; the change from
+    """Between-group Gower distance (the condition-3 distance: the 15 dimensions of w15, each of the four systems weighing 1) of Lift + Cruise
+    to CVT* and to all CVT, per cohort; the change from
     2012-15 to 2020-23 with a permutation band: the cohort labels of the 2012-15 and 2020-23 designs are shuffled WITHIN each architecture
     (CVT*, CVT and Lift + Cruise keep their sizes), 200 permutations, seed 42, band = 2.5 and 97.5 percentiles of the change."""
     D, at = _form_distance(ctx)

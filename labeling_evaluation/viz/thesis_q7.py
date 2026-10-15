@@ -28,6 +28,8 @@ SET_LABEL = {"A0": "A (architecture)", "A1t": "A·W·T (architecture + wings + t
              "family_b": "F (Lift + Cruise + CVT* family)"}
 SET_TITLE = {"A0": "A\narchitecture", "A1t": "A·W·T\narchitecture + wings + tilt", "A0c": "A·U\narchitecture + propulsor units",
              "family_b": "F (exploratory, III.3)\nLift + Cruise + CVT*"}
+MAIN_LEVELS = ("A0", "A1t", "A0c")                # the pre-specified sets drawn in Figure 12 (i) and (ii); F has its own figure
+C1_FIRST_YEAR = 2016                              # the first priority year of the F conditions figure (condition 1 panel)
 ABBR = {"North America": "NA", "Europe": "EU", "Asia-Pacific": "AP"}
 NA, EU, AP = frames.REGIONS
 REG_COL = {r: style.REGIONS[r][0] for r in frames.REGIONS}
@@ -135,52 +137,155 @@ def fig_condition1_family(ctx):
 
 
 def fig_condition2_balance(ctx):
-    """Figure 12 (i): ²D against its permutation band, one small multiple per archetype set (one variable)."""
+    """Figure 12 (i): ²D against its permutation band, one small multiple per pre-specified archetype set (A, A·W·T, A·U); F has its
+    own figure (:func:`fig_family_conditions`, handoff 2026-10-15 Task 3)."""
     d = _data(ctx)
     bal, win = d["bal"], ctx.WIN_NAMES
     partial = [("partial" in w) for w in win]
     tk = [plots.WINDOW_TICKS[w] for w in win]
-    fig, axs = plt.subplots(1, 4, figsize=(ctx.W, 3.0), constrained_layout=True)
-    for ax, lvl in zip(axs, frames.DD_LEVELS):
+    fig, axs = plt.subplots(1, 3, figsize=(ctx.W, 3.0), constrained_layout=True)
+    for ax, lvl in zip(axs, MAIN_LEVELS):
         s = bal[bal["level"] == lvl].set_index("window").reindex(win)
         metw = [bool(s.loc[w, "below band"]) and "partial" not in w for w in win]
-        plots.balance_panel(ax, s.reset_index(), partial, metw, tk, exploratory=(lvl == "family_b"))   # F last (DD_LEVELS), set apart
+        plots.balance_panel(ax, s.reset_index(), partial, metw, tk)
         ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axs[0].set_ylabel("²D: large designs in play")
     for ax in axs:
         ax.set_xlabel("priority cohort", fontsize=7.5)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.3, label=f"²D rarefied to {ctx.cfg.analysis['rarefy_n']} (95 % of the draws)"),
-                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met"),
-                        Line2D([], [], marker="o", markersize=3.6, linewidth=1.3, **plots.EXPLORE, label="F (exploratory, III.3)")],
+                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
                loc="outside lower center", ncol=2, fontsize=7.5, handlelength=1.6, columnspacing=1.2)
-    return fig, bal
+    return fig, bal[bal["level"].isin(MAIN_LEVELS)].reset_index(drop=True)
 
 
 def fig_condition3_cohesion(ctx):
-    """Figure 12 (ii): ΔQ against its permutation band under the one weighting (the four systems of the codebook weigh 1 each, the wings twice the empennage inside M2)."""
+    """Figure 12 (ii): ΔQ against its permutation band under the main weighting (``frames.Q_WEIGHTINGS[0]``), one panel per pre-specified
+    archetype set in the order of condition 2 (A, A·W·T, A·U; each drawn from its own rows of the form table); F has its own figure
+    (:func:`fig_family_conditions`, handoff 2026-10-15 Task 3)."""
     d = _data(ctx)
     form, win = d["form"], ctx.WIN_NAMES
     partial = [("partial" in w) for w in win]
     main = frames.Q_WEIGHTINGS[0]
     fig, axb = plt.subplots(1, 3, figsize=(ctx.W, 3.4), constrained_layout=True, sharey=True)
-    # F drawn last in its own panel, set apart as exploratory (handoff 2026-10-15); its values are its own rows of the form table
-    for ax, lvl, ttl in zip(axb, ("A0", "A1t", "family_b"), ("A and A·U\n(the same aircraft)", "A·W·T", "F (exploratory, III.3)")):
+    for ax, lvl in zip(axb, MAIN_LEVELS):
         s = form[form["level"] == lvl]
         sm = s[s["weighting"] == main].set_index("window").reindex(win).reset_index()
-        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])],
-                             exploratory=(lvl == "family_b"))
+        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])])
         ax.tick_params(axis="x", labelrotation=90)          # three panels: upright ticks ran into each other (as condition 2)
-        ax.set_title(ttl, fontsize=7.5, loc="left")
+        ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest cohorts")
     for ax in axb:
         ax.set_xlabel("priority cohort", fontsize=7.5)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="ΔQ"),
-                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met"),
-                        Line2D([], [], marker="o", markersize=3.6, linewidth=1.5, **plots.EXPLORE, label="F (exploratory, III.3)")],
-               loc="outside lower center", ncol=2, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
-    return fig, form[form["weighting"] == main]
+                        Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="below the band: condition met")],
+               loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.8, columnspacing=1.2)
+    return fig, form[form["weighting"].eq(main) & form["level"].isin(MAIN_LEVELS)].reset_index(drop=True)
+
+
+def _family_bases(ctx) -> dict:
+    """The frames behind :func:`fig_family_conditions`: condition 2 of F on the actively protected designs (analysis3._base_frames, the
+    numbers the verdict tables print), condition 3 of F on its three bases (analysis3.form_family, the table q7_condition3_family) and
+    condition 1 on the granted-and-live designs (analysis3.granted_live). Cached on the context: the bands take a while."""
+    if getattr(ctx, "_q7_family_bases", None) is not None:
+        return ctx._q7_family_bases
+    from viz import analysis3                                   # late import: analysis3 imports this module
+    d = _data(ctx)
+    out = {"bal_ap": analysis3._base_frames(ctx)["actively protected"][0], "ff": analysis3.form_family(ctx),
+           "gl": analysis3.granted_live(ctx, d)["yearly"]}
+    ctx._q7_family_bases = out
+    return out
+
+
+def fig_family_conditions(ctx):
+    """The three conditions on F alone (handoff 2026-10-15 Task 3), one panel each: (a) condition 1, F's share per priority year from 2016
+    on three bases (all designs solid, actively protected dashed, granted and live dotted; only the read years, 20 designs or more) against
+    the 50 % line, the years above 50 % ringed on the main base; (b) condition 2, ²D of F per cohort on all designs against its
+    permutation band (red where met) with the actively protected series in grey dashed (a hollow ring where met on that base);
+    (c) condition 3, ΔQ of F under the main weighting, the same way. Returns the figure and a tidy table of every value drawn."""
+    d, fb = _data(ctx), _family_bases(ctx)
+    fy, bal, form, win = d["fy"], d["bal"], d["form"], ctx.WIN_NAMES
+    main = frames.Q_WEIGHTINGS[0]
+    partial = [("partial" in w) for w in win]
+    tk = [plots.WINDOW_TICKS[w] for w in win]
+    rows = []
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(ctx.W, 3.4), constrained_layout=True)
+    # (a) condition 1: three bases, read years only
+    f1 = fy[fy["priority year"] >= C1_FIRST_YEAR].reset_index(drop=True)
+    gl = fb["gl"].set_index("priority year").reindex(f1["priority year"])
+    yrs = f1["priority year"].astype(int).to_numpy()
+    bases = [dict(base="all designs", share=f1["F share"], read=f1["read, all"], n=f1["aircraft"], k=f1["F aircraft"],
+                  look=dict(color=style.INK, linestyle="-", markerfacecolor=style.INK), marker="o"),
+             dict(base="actively protected", share=f1["F share in force"], read=f1["read, in force"], n=f1["aircraft in force"], k=f1["F aircraft in force"],
+                  look=dict(plots.EXPLORE), marker="s"),
+             dict(base="granted and live", share=gl["F share"].to_numpy(), read=gl["read"].to_numpy(bool), n=gl["aircraft"].to_numpy(), k=gl["F aircraft"].to_numpy(),
+                  look=dict(plots.GRANTED), marker="^")]
+    ring = [int(y) for y, sh, rd in zip(yrs, bases[0]["share"], bases[0]["read"]) if rd and sh > 0.5]
+    plots.condition1_bases(ax1, yrs, bases, ring)
+    fa = dict(zip(yrs, np.asarray(bases[0]["share"], dtype=float)))
+    for y in ring:
+        ax1.annotate(pct1(fa[y]), (y, fa[y]), textcoords="offset points", xytext=(0, 9), ha="center", va="bottom", fontsize=7.5,
+                     fontweight="bold", color=style.INK)
+    ax1.text(yrs[0] - 0.5, 0.505, "50 %", ha="left", va="bottom", fontsize=7.5)        # left end: the series are far below 50 % there
+    ax1.set_xticks(yrs, [str(y) for y in yrs], rotation=90)
+    ax1.set_ylabel("share of the year's designs in F")
+    ax1.set_xlabel("priority year", fontsize=7.5)
+    for b in bases:
+        for y, sh, rd, n, k in zip(yrs, b["share"], b["read"], b["n"], b["k"]):
+            rows.append(dict(panel="(a) condition 1", base=b["base"], x=str(int(y)), value=round(float(sh), 4), low=np.nan, high=np.nan,
+                             whisker_low=np.nan, whisker_high=np.nan, drawn=bool(rd), met=bool(rd and sh > 0.5 and b["base"] == "all designs"),
+                             n=int(n), F=int(k)))
+    # (b) condition 2: all designs with its band, the actively protected designs dashed
+    b_all = bal[bal["level"] == "family_b"].set_index("window").reindex(win).reset_index()
+    b_ap = fb["bal_ap"][fb["bal_ap"]["level"] == "family_b"].set_index("window").reindex(win).reset_index()
+    met_all = [bool(m) and not p for m, p in zip(b_all["below band"], partial)]
+    met_ap = [bool(m) and not p for m, p in zip(b_ap["below band"], partial)]
+    plots.band_series_panel(ax2, b_all, b_ap, partial, tk, "D2", "D2 permutation low", "D2 permutation high", whisk=("D2 low", "D2 high"),
+                            main_met=met_all, alt_met=met_ap)
+    ax2.set_ylim(0, float(np.nanmax(b_all[["D2 high", "D2 permutation high"]].to_numpy())) * 1.15)
+    ax2.set_ylabel(f"²D of F, rarefied to {ctx.cfg.analysis['rarefy_n']}")
+    ax2.set_xlabel("priority cohort", fontsize=7.5)
+    for name, t, met in (("all designs", b_all, met_all), ("actively protected", b_ap, met_ap)):
+        for i, w in enumerate(win):
+            r = t.iloc[i]
+            rows.append(dict(panel="(b) condition 2", base=name, x=w, value=round(float(r["D2"]), 4), low=round(float(r["D2 permutation low"]), 4),
+                             high=round(float(r["D2 permutation high"]), 4), whisker_low=round(float(r["D2 low"]), 4), whisker_high=round(float(r["D2 high"]), 4),
+                             drawn=True, met=met[i], n=int(r["aircraft"]), F=np.nan))
+    # (c) condition 3: all designs (the F rows of the form table, main weighting) with its band, the actively protected designs dashed
+    q_all = form[form["level"].eq("family_b") & form["weighting"].eq(main)].set_index("window").reindex(win).reset_index()
+    ff = fb["ff"]
+    q_ap = ff[ff["base"] == "actively protected"].set_index("cohort").reindex(win).reset_index()
+    q_chk = ff[ff["base"] == "all designs"].set_index("cohort").reindex(win)
+    if not np.allclose(q_chk["ΔQ"].to_numpy(float), q_all["ΔQ"].to_numpy(float), atol=5e-4):
+        import warnings
+        warnings.warn("fig_family_conditions: ΔQ of F on all designs differs between the form table and analysis3.form_family")
+    met3_all = [bool(q < lo) and not p for q, lo, p in zip(q_all["ΔQ"], q_all["ΔQ permutation low"], partial)]
+    met3_ap = [bool(q < lo) and not p for q, lo, p in zip(q_ap["ΔQ"], q_ap["ΔQ permutation low"], partial)]
+    plots.band_series_panel(ax3, q_all, q_ap, partial, tk, "ΔQ", "ΔQ permutation low", "ΔQ permutation high", main_met=met3_all, alt_met=met3_ap,
+                            zero_line=True)
+    ax3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
+    ax3.set_xlabel("priority cohort", fontsize=7.5)
+    for name, t, met, ncol in (("all designs", q_all, met3_all, "aircraft"), ("actively protected", q_ap, met3_ap, "designs")):
+        for i, w in enumerate(win):
+            r = t.iloc[i]
+            rows.append(dict(panel="(c) condition 3", base=name, x=w, value=round(float(r["ΔQ"]), 4), low=round(float(r["ΔQ permutation low"]), 4),
+                             high=round(float(r["ΔQ permutation high"]), 4), whisker_low=np.nan, whisker_high=np.nan, drawn=True, met=met[i],
+                             n=int(r[ncol]), F=np.nan))
+    for ax, ttl in zip((ax1, ax2, ax3), ("F, condition 1 (share)", "F, condition 2 (balance)", "F, condition 3 (disparity)")):
+        ax.set_title(ttl, fontsize=7.5, loc="left")
+    h = [Line2D([], [], color=style.INK, linewidth=1.7, marker="o", markersize=4.4, label="all designs (main base)"),
+         Line2D([], [], linewidth=1.2, marker="s", markersize=4.2, **plots.EXPLORE, label="actively protected designs"),
+         Line2D([], [], linewidth=1.2, marker="^", markersize=4.2, **plots.GRANTED, label="granted and live designs (condition 1)"),
+         Patch(facecolor="#dedcd8", label="permutation band (95 %), all designs"),
+         Line2D([], [], marker="o", markersize=7, color=plots.MET, markeredgecolor=style.INK, linestyle="none", label="condition met on all designs"),
+         Line2D([], [], marker="o", markersize=8.5, markerfacecolor="none", markeredgecolor=plots.MET, markeredgewidth=1.4, linestyle="none",
+                label="met on the actively protected designs")]
+    fig.legend(handles=h, loc="outside lower center", ncol=3, fontsize=7.5, handlelength=2.0, columnspacing=1.2)
+    data = pd.DataFrame(rows).rename(columns={"low": "band low", "high": "band high", "whisker_low": "whisker low", "whisker_high": "whisker high",
+                                              "x": "year / cohort", "F": "F designs"})
+    data["F designs"] = data["F designs"].astype("Int64")
+    return fig, data
 
 
 def _printed(cell: str) -> str:
@@ -357,17 +462,23 @@ ITEMS = [
          unit="unique aircraft by priority year, 2008-2023; F = every Lift + Cruise aircraft plus every CVT aircraft whose tilting propulsor set sits on a wing that does not tilt (CVT*); a year is read when its base holds 20 aircraft or more",
          read="Solid line, dots: F's share of the aircraft with at least one patent in force, the main base; dashed line, squares: F's share of every aircraft of the year. Condition 1 is met when the share is above 50 % in two consecutive read years (ringed, red band). Faded years hold fewer than 20 in-force aircraft and are not read. Under each year: the aircraft in force, all aircraft, and the share of the in-force aircraft whose patent is granted."),
     dict(name="q7_condition2_balance", slot="results", kind="figure", sub="B", title="Condition 2: ²D against its band",
-         caption="Condition 2 per window in the four archetype sets, ²D rarefied to 40 aircraft against the band of the same archetypes shuffled among the windows. A red point is below the band.",
+         caption="Condition 2 per window in the three pre-specified archetype sets A, A·W·T and A·U (F is drawn in q7_family_conditions), ²D rarefied to 40 aircraft against the band of the same archetypes shuffled among the windows. A red point is below the band.",
          source_item="Figure 12 (i)", flag=None, flag_note="", builder=fig_condition2_balance,
          source="human labelling (class, wings, tilt, propulsor units) · PatSeer (priority date)",
          unit="unique aircraft per four-year priority window; 200 permutations, seed 42; ²D rarefied to 40 aircraft (300 draws); the partial window 2024-26 is hatched and not read",
          read="Dot: the window's ²D (how many large designs are in play) averaged over the rarefaction draws, whisker: the middle 95 % of the draws. Grey band: the middle 95 % of the ²D of the same archetypes shuffled among the windows at random, window sizes kept. A red dot is below the band: fewer designs in play than chance gives, condition 2 met."),
     dict(name="q7_condition3_cohesion", slot="results", kind="figure", sub="B", title="Condition 3: ΔQ against its band",
-         caption="Condition 3 per window. ΔQ is the change in the average Gower distance between two aircraft against the two earliest windows, drawn under the one weighting of the form distance: the 34 dimensions of the codebook, each of its four systems weighing 1 (inside M2 the wings weigh twice the empennage).",
+         caption="Condition 3 per window. ΔQ is the change in the average Gower distance between two aircraft against the two earliest windows, drawn under the one weighting of the form distance (w15): 15 dimensions of the codebook, each of its four systems weighing 1.",
          source_item="Figure 12 (ii)", flag=None, flag_note="", builder=fig_condition3_cohesion,
          source="human labelling (every field of the distance) · PatSeer (priority date)",
          unit="unique aircraft per four-year priority window; 200 permutations, seed 42; A, A·U and F read the same aircraft, A·W·T leaves out the aircraft whose wings or tilt are not recorded",
-         read="Q is the average Gower distance between two aircraft of the window (0 = alike on every design field, 1 = no field shared); ΔQ is the window's Q minus the average Q of the two earliest windows. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the windows; a red dot is below it (condition 3 met). Weights: the 34 dimensions of the codebook, each of its four systems (G1, M1, M2, M3) weighing 1; inside M2 the wings weigh twice the empennage."),
+         read="Q is the average Gower distance between two aircraft of the window (0 = alike on every design field, 1 = no field shared); ΔQ is the window's Q minus the average Q of the two earliest windows. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the windows; a red dot is below it (condition 3 met). Weights (w15): 15 dimensions of the codebook, each of its four systems (G1, M1, M2, M3) weighing 1."),
+    dict(name="q7_family_conditions", slot="results", kind="figure", sub="B", title="The three conditions on F",
+         caption="The three conditions on F alone. (a) Condition 1: F's share of the year's designs from 2016 on all designs, the actively protected designs and the granted-and-live designs, read years only, against the 50 % line; the ringed years are above it on all designs. (b) Condition 2: ²D of F per cohort on all designs against its permutation band, the actively protected designs dashed. (c) Condition 3: ΔQ of F per cohort under the main weighting, the same way. A red point is below the band; a red ring marks the actively protected designs below their own band.",
+         source_item="new (handoff 2026-10-15, Task 3)", flag=None, flag_note="", builder=fig_family_conditions,
+         source="human labelling (class; the family F; every field of the form distance) · PatSeer (priority date; legal status at the snapshot, 2026-06-08)",
+         unit="unique aircraft by priority year 2016-2023 (condition 1; a base is read when it holds 20 aircraft or more) and per four-year priority cohort (conditions 2 and 3; 200 permutations, seed 42; the partial cohort 2024-26 is hatched and not read)",
+         read="(a) Solid line, dots: F's share of all designs of the year; dashed, squares: of the actively protected designs; dotted, triangles: of the granted-and-live designs; a ring marks a year above 50 % on all designs. (b) Dot and whisker: ²D of F rarefied to 40 (middle 95 % of the draws) on all designs, grey band: the middle 95 % of ²D with the designs shuffled among the cohorts; dashed: the same on the actively protected designs (its band in the appendix table). (c) ΔQ: the cohort's mean form distance minus that of the two earliest cohorts, all designs with its band, the actively protected designs dashed. A red point is below the band (condition met); a red ring marks the actively protected designs below their own band."),
     dict(name="q7_verdict_table", slot="appendix", kind="table", sub="B", title="The dominant-design verdict",
          caption="The verdict per condition and archetype set, naming the priority years (condition 1) or windows (conditions 2 and 3) where each condition is met (✓) or not (✗); condition 1 on both bases, condition 3 under the main weighting.",
          source_item="Table 8", flag=None, flag_note="", builder=tab_verdict,

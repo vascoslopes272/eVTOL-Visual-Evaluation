@@ -1,0 +1,16 @@
+{
+ "name": "q2_largest_filers_share",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "A",
+ "title": "Cumulative share held by the largest assignees",
+ "caption": "The named organisations ranked by unique aircraft, largest first, and the cumulative share of the aircraft they hold, cut into four bands; hollow diamonds are the assignees the AAM Reality Index rates.",
+ "source_item": "Figure 16 (i)",
+ "flag": null,
+ "flag_note": "",
+ "source": "PatSeer (assignee) · human labelling · AAM Reality Index (the assignees it has rated)",
+ "propulsor": "unique aircraft",
+ "read": "The curve climbs by one assignee at a time; the bands A to D cut it where assignees hold 10 or more, 5-9, 2-4 and 1 designs each; the dashed line is the share all named organisations hold.",
+ "width_in": 6.3,
+ "height_in": 3.1
+}

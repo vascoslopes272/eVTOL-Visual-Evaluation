@@ -53,13 +53,13 @@ def fig_layout_rows(ctx):
         nwin = m.groupby("window")["aircraft"].sum().reindex(ctx.COMPLETE)
         ax.set_xticks(range(len(ctx.COMPLETE)), [f"{ctx.WSHORT[x]}  n {int(n)}" for x, n in zip(ctx.COMPLETE, nwin)])
         ax.set_yticks([0, 0.5, 1.0])
-        ax.set_ylabel({"SLC": "Lift + Cruise", "TR": "Tilt Propulsor", "CVT": "CVT"}[c])
+        ax.set_ylabel({"SLC": "Separate\nLift + Cruise", "TR": "Tilt\nPropulsor", "CVT": "Combined\nVectored Thrust"}[c])
         h, lab = ax.get_legend_handles_labels()
         kx.axis("off")
         kx.legend(h[::-1], [p4._relabel(t) for t in lab[::-1]], loc="center left", fontsize=MIN_PT, handlelength=1.1, labelspacing=0.3, frameon=False,
                   title={"SLC": "where the lift units sit", "TR": "how the tilting thrust is split", "CVT": "what tilts · where the fixed units sit"}[c],
                   title_fontsize=MIN_PT, alignment="left")
-    fig.subplots_adjust(left=0.1, right=0.995, top=0.985, bottom=0.07)
+    fig.subplots_adjust(left=0.125, right=0.995, top=0.985, bottom=0.07)      # room for the two-line architecture names (rerun 2026-10-15)
     return fig, pmix.reset_index(drop=True)
 
 
@@ -152,7 +152,7 @@ def _numbers(ctx, R: Path):
     w = ctx.COMPLETE
     cohort = lambda x: x                                                                      # noqa: E731
     lay = []
-    for c, nm in (("SLC", "Lift + Cruise"), ("TR", "Tilt Propulsor"), ("CVT", "CVT")):
+    for c, nm in (("SLC", "Lift + Cruise"), ("TR", "Tilt Propulsor"), ("CVT", "Combined Vectored Thrust")):
         m = pm[pm["code"] == c]
         for k in m["configuration"].unique():
             row = {"architecture": nm, "layout": q6.DISPLAY[c](k)}
@@ -201,7 +201,7 @@ def _medians(ctx) -> pd.DataFrame:
     cf = q6._data(ctx)["cf"]
     x = cf[cf["topType"].isin(["TR", "CVT", "SLC"]) & cf["units"].gt(0) & cf["window"].notna()]
     rows = []
-    for c, nm in (("TR", "Tilt Propulsor"), ("CVT", "CVT"), ("SLC", "Lift + Cruise")):
+    for c, nm in (("TR", "Tilt Propulsor"), ("CVT", "Combined Vectored Thrust"), ("SLC", "Lift + Cruise")):
         r = {"architecture": nm}
         for w in ctx.WIN_NAMES:
             u = x[(x.topType == c) & (x.window == w)]["units"]
@@ -209,7 +209,7 @@ def _medians(ctx) -> pd.DataFrame:
         rows.append(r)
     out = pd.DataFrame(rows)
     dw = q6._data(ctx)["dw"].set_index(["code", "window"])["propulsive units (median)"]
-    for c, nm in (("TR", "Tilt Propulsor"), ("CVT", "CVT"), ("SLC", "Lift + Cruise")):
+    for c, nm in (("TR", "Tilt Propulsor"), ("CVT", "Combined Vectored Thrust"), ("SLC", "Lift + Cruise")):
         for w in ctx.COMPLETE:
             assert f"{dw[(c, w)]:g}" == out.loc[out.architecture == nm, w].iloc[0].split(" ")[0], (c, w)       # the same medians as the traces frame
     return out
@@ -259,7 +259,9 @@ WORDS = {("SLC", "<= 2011"): "lift units on booms", ("SLC", "2020-23"): "lift un
 LEADING = {("SLC", "<= 2011"): "lift units on booms", ("SLC", "2020-23"): "lift units on booms",
            ("TR", "<= 2011"): "one tilting set", ("TR", "2020-23"): "two or more tilting sets, on two or more stations",
            ("CVT", "<= 2011"): "rotors tilt · fixed units elsewhere", ("CVT", "2020-23"): "rotors tilt · fixed units on booms"}
-ARCH_NAME = {"CVT": "CVT", "TR": "Tilt Propulsor", "SLC": "Lift + Cruise"}
+ARCH_NAME = {"CVT": "Combined Vectored Thrust", "TR": "Tilt Propulsor", "SLC": "Lift + Cruise"}
+#: the rotated row names of the representative-aircraft figure, on two lines so they stay beside their drawing (rerun of 2026-10-15)
+ROW_NAME = {"CVT": "Combined\nVectored Thrust", "TR": "Tilt\nPropulsor", "SLC": "Separate\nLift + Cruise"}
 
 
 def _crop(path, rotation=0.0, pad=6):
@@ -298,7 +300,7 @@ def fig_representative(ctx, picks=None):
     t = representative(ctx, picks)
     w_in = 0.9 * TEXT_CM / 2.54
     fig = plt.figure(figsize=(w_in, 0.70 * w_in))
-    gs = fig.add_gridspec(6, 2, height_ratios=[1, 0.14] * 3, left=0.09, right=0.995, top=0.995, bottom=0.005, hspace=0.05, wspace=0.04)
+    gs = fig.add_gridspec(6, 2, height_ratios=[1, 0.14] * 3, left=0.105, right=0.995, top=0.995, bottom=0.005, hspace=0.05, wspace=0.04)
     order = [("CVT", "<= 2011"), ("CVT", "2020-23"), ("TR", "<= 2011"), ("TR", "2020-23"), ("SLC", "<= 2011"), ("SLC", "2020-23")]
     for i, (c, w) in enumerate(order):
         r = t[(t["architecture"] == ARCH_NAME[c]) & (t["cohort"] == w)].iloc[0]
@@ -312,7 +314,7 @@ def fig_representative(ctx, picks=None):
         tx.axis("off")
         tx.text(0.5, 0.5, f"{ctx.WSHORT[w].replace('–', '-')} · {r['layout']} · {100 * r['share of the architecture']:.0f} %", ha="center", va="center", fontsize=MIN_PT)
         if i % 2 == 0:
-            ax.text(-0.03, 0.5, ARCH_NAME[c], transform=ax.transAxes, rotation=90, ha="right", va="center", fontsize=MIN_PT + 1)
+            ax.text(-0.03, 0.5, ROW_NAME[c], transform=ax.transAxes, rotation=90, ha="right", va="center", fontsize=MIN_PT + 1, linespacing=1.0)
     return fig, t
 
 

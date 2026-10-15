@@ -27,6 +27,7 @@ from viz import thesis_q4 as q4
 from viz import thesis_q5 as q5
 
 # --------------------------------------------------------------------------------------- terminology layer
+from viz.relabel import directory_builder as _keep_dir          # the VFS directory's own category "Lift + Cruise" (rerun of 2026-10-15)
 ARCH_NAME_OVERRIDE = {"TB": "Tilt Frame", "MR": "Multicopter"}            # style.py has TB = "Tilt Body"; this document calls it Tilt Frame
 ARCH_SHORT_OVERRIDE = {"TB": "TF", "SLC": "SLC"}      # style.py's SLC short code is "L+C"; never used here
 
@@ -499,7 +500,8 @@ def tab_index_firm_representativeness_v2(ctx):
 GROUP_NAME = {"VT": "Vectored Thrust", "LC": "Lift + Cruise", "WM": "Wingless (Multicopter)",
              "ER": "Electric Rotorcraft", "HB": "Hover Bikes / Personal Flying Devices"}
 #: folded group -> (style.cls code it borrows, printed short code); SLC replaces the old "L+C" short code everywhere
-GROUP_SPEC = {"LC": ("SLC", "SLC"), "VT": ("TR", "VT"), "WM": ("MR", "WM"), "ER": ("RC", "ER"), "HB": ("HB", "HB")}
+GROUP_SPEC = {"LC": ("SLC", "SLC"), "VT": ("TR", "VT"), "WM": ("MR", "WM"), "ER": ("SRW", "ER"), "HB": ("HB", "HB")}
+#   ER borrows SRW's look (rerun of 2026-10-15): with RC's plain dark grey it printed the same grey as SLC in greyscale
 
 
 def fig_class_mix_combined_v2(ctx):
@@ -628,11 +630,11 @@ ITEMS = [
          title="Flown designs against the rest", source_item="v2 of Table 4 (flown = TRL 5 or more, 2026-10-12)"),
     dict(name="q4_flown_index_firm_representativeness", group="I3_construct_validity", role="auxiliary", kind="table", builder=tab_index_firm_representativeness_v2,
          title="Flown index-firm designs against the rest", source_item="v2 of Table 5 (index firms flown before the snapshot, 2026-10-12)"),
-    dict(name="q4_class_mix", width=1.0, group="I4_external_validity", role="main", kind="figure", builder=fig_class_mix_combined_v2,
+    dict(name="q4_class_mix", width=1.0, group="I4_external_validity", role="main", kind="figure", builder=_keep_dir(fig_class_mix_combined_v2),
          title="Architecture distribution per window, dataset and directory side by side", source_item="v2 merging Figure 2 (i) and (ii)"),
-    dict(name="q4_dataset_vs_directory_classes", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_classes_v2,
+    dict(name="q4_dataset_vs_directory_classes", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=_keep_dir(fig_dataset_vs_directory_classes_v2),
          title="Dataset against directory, all years", source_item="v2 of Figure 5b (i)"),
-    dict(name="q4_dataset_vs_directory_subsets", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=fig_dataset_vs_directory_subsets_v2,
+    dict(name="q4_dataset_vs_directory_subsets", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=_keep_dir(fig_dataset_vs_directory_subsets_v2),
          title="Designs of each architecture group per part of the directory", source_item="v2 of Figure 5b (ii)"),
 ]
 

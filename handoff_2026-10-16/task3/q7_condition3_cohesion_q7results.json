@@ -1,0 +1,16 @@
+{
+ "name": "q7_condition3_cohesion",
+ "slot": "results",
+ "kind": "figure",
+ "sub": "B",
+ "title": "Condition 3: ΔQ against its band",
+ "caption": "Condition 3 per cohort. ΔQ is the change in the average Gower distance between two aircraft against the two earliest cohorts, drawn under the one weighting of the form distance (w15): 15 dimensions of the codebook, each of its four systems weighing 1.",
+ "source_item": "Figure 12 (ii)",
+ "flag": null,
+ "flag_note": "",
+ "source": "human labelling (every field of the distance) · PatSeer (priority date)",
+ "propulsor": "unique aircraft per four-year priority cohort; 200 permutations, seed 42; A, A·U and F read the same aircraft, A·W·T leaves out the aircraft whose wings or tilt are not recorded",
+ "read": "Q is the average Gower distance between two aircraft of the cohort (0 = alike on every design field, 1 = no field shared); ΔQ is the cohort's Q minus the average Q of the two earliest cohorts. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the cohorts; a red dot is below it (condition 3 met). Weights (w15): 15 dimensions of the codebook, each of its four systems (G1, M1, M2, M3) weighing 1.",
+ "width_in": 6.3,
+ "height_in": 3.4
+}

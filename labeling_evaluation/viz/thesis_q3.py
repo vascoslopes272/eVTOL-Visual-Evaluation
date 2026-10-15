@@ -20,7 +20,7 @@ NA, EU, AP = REGIONS
 ABBR = {"North America": "NA", "Europe": "EU", "Asia-Pacific": "AP"}
 WSH = {"<= 2011": "≤11", "2012-15": "12–15", "2016-19": "16–19", "2020-23": "20–23", "2024-26 (partial)": "24–26"}
 CLASSES5 = list(frames.CH5_VARS["class"][1])                                    # SLC TR CVT TW MR other
-CLS_WORD = {c: ("other classes" if c == "other" else "CVT" if c == "CVT" else style.cls(c).name) for c in CLASSES5}
+CLS_WORD = {c: ("other classes" if c == "other" else style.cls(c).name) for c in CLASSES5}       # CVT by its full name (rerun of 2026-10-15)
 CLS_STYLE = {c: (style.cls(c) if c != "other" else ("#e3e3e3", "||||")) for c in CLASSES5}
 UNIT_ANS = list(frames.CH5_VARS["propulsive units"][1])
 UNIT_STYLE = dict(zip(UNIT_ANS, [("#eeeeee", ""), ("#cfcfcf", "////"), ("#a8a8a8", "xxxx"), ("#7d7d7d", "\\\\\\\\"), ("#4a4a4a", "----")]))
@@ -234,7 +234,7 @@ def fig_firm_successions(ctx):
     """Where a named firm's next aircraft lands, by the class of the one before; the boxed cell is the share that stays."""
     f = _frames(ctx)
     succ = f["succ"]
-    dest = [("SLC", "Lift +\nCruise"), ("TR", "Tilt\nPropulsor"), ("CVT", "CVT"), ("TW", "Tilt\nWing"), ("MR", "Multi-\nrotor"),
+    dest = [("SLC", "Lift +\nCruise"), ("TR", "Tilt\nPropulsor"), ("CVT", "Combined\nVectored\nThrust"), ("TW", "Tilt\nWing"), ("MR", "Multi-\nrotor"),
             ("PTC", "Pitch-to-\nCruise"), ("other", "other")]
     M = succ[[f"→ {c}" for c, _ in dest]].to_numpy(dtype=float)
     fig, ax = plt.subplots(figsize=(ctx.W, 3.4), constrained_layout=True)
@@ -248,7 +248,7 @@ def fig_firm_successions(ctx):
                 ax.add_patch(matplotlib.patches.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, edgecolor=style.INK, linewidth=1.8, zorder=5,
                                                           clip_on=False))
     ax.set_xticks(range(len(dest)), [d[1] for d in dest], fontsize=7.5); ax.xaxis.tick_top()
-    ax.set_yticks(range(len(succ)), [f"{'CVT' if c == 'CVT' else style.cls(c).name}\n{int(n)} successions · {int(k)} firms"
+    ax.set_yticks(range(len(succ)), [f"{style.cls(c).name}\n{int(n)} successions · {int(k)} firms"
                                      for c, n, k in zip(succ["code"], succ["successions"], succ["firms"])], fontsize=7.5)
     ax.tick_params(length=0)
     for sp in ax.spines.values():

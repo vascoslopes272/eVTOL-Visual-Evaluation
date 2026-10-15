@@ -35,31 +35,61 @@ def uniform_weights(fields: Iterable[str]) -> Dict[str, float]:
     return {f: 1.0 for f in fields}
 
 
+def jaccard_distance(col: pd.Series) -> np.ndarray:
+    """Jaccard distance matrix between the rows of a set-valued column: |A Δ B| / |A ∪ B| (0 when both sets are empty).
+
+    A blank (None/NaN) is not a set; the caller masks it out (``gower_distance`` leaves it out of the pair's average).
+    Used in: the w15 form distance of condition 3 (the mount-location dimension).
+    """
+    vals = [v if isinstance(v, (set, frozenset)) else frozenset() for v in col]
+    items = sorted({e for v in vals for e in v})
+    bit = {e: 1 << i for i, e in enumerate(items)}
+    code = np.array([sum(bit[e] for e in v) for v in vals], dtype=np.int64)
+    pop = np.vectorize(lambda z: bin(int(z)).count("1"))
+    inter = pop(code[:, None] & code[None, :]).astype(float)
+    union = pop(code[:, None] | code[None, :]).astype(float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(union > 0, 1.0 - inter / union, 0.0)
+
+
 def gower_distance(frame: pd.DataFrame, fields: List[str], numeric: Iterable[str],
-                   weights: Mapping[str, float]) -> np.ndarray:
+                   weights: Mapping[str, float], ranges: Optional[Mapping[str, float]] = None,
+                   sets: Iterable[str] = ()) -> np.ndarray:
     """Gower (1971) distance matrix between the rows of `frame`, with blanks left out of the average.
 
     d(i,j) = Σ_k w_k δ_ijk (1 − s_ijk) / Σ_k w_k δ_ijk
     δ_ijk = 1 if both rows carry a value for field k, else 0 (a pair with Σ w δ = 0 gives NaN);
-    s_ijk = 1 − |x_ik − x_jk| / range_k for a numeric field (range over the frame; 0 difference if
-            range = 0), and 1 if the categories match else 0 for a categorical field.
+    s_ijk = 1 − |x_ik − x_jk| / range_k for a numeric field (range over the frame, or the fixed
+            range given in `ranges`; 0 difference if range = 0), 1 − Jaccard distance of the two
+            sets for a set-valued field (`sets`), and 1 if the categories match else 0 for a
+            categorical field.
 
-    Parameters: `fields`; `numeric` = names compared by range (all others by match);
-    `weights` = field -> w_k (see subsystem_weights / uniform_weights).
-    Ported from: archive/.../dataset_facts/a3.py:gower_distance
+    Parameters: `fields`; `numeric` = names compared by range (all others by match, unless in
+    `sets`); `weights` = field -> w_k (see subsystem_weights / uniform_weights); `ranges` = numeric
+    field -> fixed range (an ordered dimension whose rank runs 0..r gives r, so the difference is
+    exact whatever the frame holds; a field not listed uses the observed range); `sets` = names of
+    set-valued columns (each cell a frozenset, or blank) compared by Jaccard distance.
+    Ported from: archive/.../dataset_facts/a3.py:gower_distance (ranges and sets added 2026-10-15 for the w15 weighting)
     Used in: la_dd_q (condition 3), nearest-neighbour checks (rule 4 sensitivity).
     """
     numeric = set(numeric)
+    sets = set(sets)
+    ranges = dict(ranges or {})
     n = len(frame)
     num = np.zeros((n, n))
     den = np.zeros((n, n))
     for f in fields:
         x = frame[f]
-        present = x.notna().to_numpy()
+        if f in sets:
+            present = np.array([isinstance(v, (set, frozenset)) for v in x])
+        else:
+            present = x.notna().to_numpy()
         both = present[:, None] & present[None, :]
-        if f in numeric:
+        if f in sets:
+            diff = jaccard_distance(x)
+        elif f in numeric:
             a = pd.to_numeric(x, errors="coerce").to_numpy(dtype=float)
-            rng = np.nanmax(a) - np.nanmin(a) if present.any() else 0.0
+            rng = float(ranges[f]) if f in ranges else (np.nanmax(a) - np.nanmin(a) if present.any() else 0.0)
             diff = np.abs(a[:, None] - a[None, :]) / rng if rng > 0 else np.zeros((n, n))
         else:
             codes = pd.factorize(x.astype(object).where(x.notna(), None), use_na_sentinel=True)[0]

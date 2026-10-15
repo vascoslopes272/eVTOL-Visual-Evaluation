@@ -16,13 +16,15 @@ from viz.thesis_latex_common import MAX_H, TEXT_CM, root, tables_md
 
 #: name -> (final width as a share of the text block, in the dissertation)
 FIGS = {"q6_architecture_shares_by_cohort": (1.0, True), "q7_condition2_balance": (0.9, True), "q7_condition3_cohesion": (0.85, True),
-        "q7_condition1_family": (1.0, True), "q6_largest_architectures_over_time": (1.0, False), "q7_iii4_directory_categories": (1.0, False)}
+        "q7_family_conditions": (1.0, True), "q7_condition1_family": (1.0, False), "q6_largest_architectures_over_time": (1.0, False),
+        "q7_iii4_directory_categories": (1.0, False)}
 TABLES = {"q7_verdict_table": True, "q7_verdict_detail": True, "q7_condition3_weights": True, "q7_condition3_family": True, "q6_share_trend_spearman": True, "q7_three_year_check": True,
           "q7_granted_live_condition1": True, "q7_granted_live_condition2": True, "q7_iii4_directory_fold": True}
 SHOWS = {"q6_architecture_shares_by_cohort": "share of each cohort's designs by architecture", "q7_condition2_balance": "condition 2: ²D against its permutation band, per level",
-         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, system weighting only", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
+         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, main weighting, levels A, A·W·T, A·U", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
+         "q7_family_conditions": "the three conditions on F: all designs (band) and actively protected (dashed); condition 1 also granted and live",
          "q6_largest_architectures_over_time": "five largest architectures' share per cohort", "q7_iii4_directory_categories": "III.4: largest directory category per year and its ²D against the band",
-         "q7_verdict_table": "verdict per condition and level, all designs (main) and actively protected (sensitivity), each base read alone", "q7_verdict_detail": "the numbers behind the verdict on each base", "q7_condition3_weights": "weights of the form distance: four systems, each weighing 1", "q7_condition3_family": "condition 3 on F: actively protected, all designs, granted and live",
+         "q7_verdict_table": "verdict per condition and level, all designs (main) and actively protected (sensitivity), each base read alone", "q7_verdict_detail": "the numbers behind the verdict on each base", "q7_condition3_weights": "weights of the form distance (w15): 15 dimensions, four systems each weighing 1", "q7_condition3_family": "condition 3 on F: actively protected, all designs, granted and live",
          "q6_share_trend_spearman": "Spearman rho of architecture share on priority year", "q7_three_year_check": "condition 1 with three consecutive years",
          "q7_granted_live_condition1": "F's share per year, granted and live patents", "q7_granted_live_condition2": "²D of F, granted and live patents",
          "q7_iii4_directory_fold": "architectures folded to the directory categories"}
@@ -118,13 +120,14 @@ def _numbers(cfg, ctx, R: Path):
     gl1, _ = v3.tab_granted_live_condition1(ctx)
     gl2, _ = v3.tab_granted_live_condition2(ctx)
     form = d["form"]
-    fm = form[form["weighting"].eq("subsystem")]
+    fm = form[form["weighting"].eq(frames.Q_WEIGHTINGS[0])]
     dist = pd.DataFrame({"cohort": [cohort(w) for w in ctx.WIN_NAMES]})
-    for lvl, nm in (("A0", "A, A·U and F"), ("A1t", "A·W·T")):
+    # A·U has its own column: it leaves out GB202302720D0_ua1 (2020-23), whose recorded 0 propulsors is not a count (frames.propulsor_units)
+    for lvl, nm in (("A0", "A and F"), ("A0c", "A·U"), ("A1t", "A·W·T")):
         c = fm[fm["level"].eq(lvl)].set_index("window")["aircraft"]
         dist[f"designs in the form distance, {nm}"] = [int(c.get(w, 0)) for w in ctx.WIN_NAMES]
     dist.insert(1, "designs in III.1 (denominator of the shares)", n_win.to_numpy())
-    dist["difference to A"] = dist["designs in III.1 (denominator of the shares)"] - dist["designs in the form distance, A, A·U and F"]
+    dist["difference to A"] = dist["designs in III.1 (denominator of the shares)"] - dist["designs in the form distance, A and F"]
     n7 = q7.numbers(ctx)
     n7 = {k_: x for k_, x in n7.items() if not k_.startswith(("r_", "px_", "pub_", "trl_", "ext_"))}
     import viz.thesis_text_q6 as tx6
@@ -139,17 +142,21 @@ def _numbers(cfg, ctx, R: Path):
          "VT share per cohort:\n", tables_md(vt), "", "VT share per priority year (read years, 20 designs or more, 2016–2023); condition 1 met in "
          + ", ".join(map(str, di["met"])) + " (all designs: " + ", ".join(map(str, di["met_all"])) + "):\n", tables_md(vy), "",
          "Balance (²D rarefied to 40, all designs, 200 permutations) with the band, per cohort; 2024–26* is incomplete and not read:\n", tables_md(bal), "",
-         "## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity)\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
-         "## The numbers behind the verdict\n", "Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 and the lower edge of its band (200 permutations, seed 42).\n", tables_md(analysis3.verdict_two_bases(ctx)[1]), "",
-         "## Weights table (condition 3, the only weighting: the 34 dimensions of the codebook, each of the four systems weighing 1)\n", "Source: `q7_condition3_weights.csv`; 34 dimensions, 625 designs (two designs have no architecture recorded). Per-wing dimensions read the primary wing (codebook R5-03: the largest wing, the forward-most when equal; the role reading pointed to wing 2 in 4 designs, but the author checked their drawings on 2026-10-16 and wing 1 is the largest as drawn in each, so every design reads wing 1); per-boom dimensions boom group 1; propulsor dimensions the set with the most propulsors (first listed on a tie); a dimension that does not apply is blank and left out of the average.\n", tables_md(wts), "",
-         "## Condition 3 on F (same weights; Q on the designs of F's base, per cohort)\n", "Source: `q7_condition3_family.csv`. Q uses no architecture, so F on all designs is the same set as A.\n", tables_md(fam), "",
+         "## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity; condition 3 under the w15 weighting)\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
+         "## The numbers behind the verdict\n", "Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 of the form distance under w15 (15 dimensions, each of the four systems weighing 1) and the lower edge of its band (200 permutations, seed 42).\n", tables_md(analysis3.verdict_two_bases(ctx)[1]), "",
+         "## Weights table (condition 3, the reported weighting w15: 15 dimensions of the codebook, each of the four systems weighing 1, 4 in all)\n", "Source: `q7_condition3_weights.csv`; 15 dimensions, 625 designs (two designs have no architecture recorded). "
+         "Eleven dimensions are compared as options (0 same, 1 different); three are ordered and compared by rank difference over a fixed range: boom count (0 when no boom, 1, 2, 3 to 4, 5 or more; / 4), wing count (0 when no wing, 1, 2, 3; / 3) and the band of propulsors (1 to 3, 4, 5 to 6, 7 to 8, 9 or more; / 4, the bands of A·U); "
+         "the tilt share is the share 0 to 1 of the design's propulsors whose thrust turns between hover and cruise (a propulsor that pivots on its mount, sits on a tilting wing, a tilting empennage or a tilting boom, or a Tilt Body design, which turns whole), compared by absolute difference; "
+         "the mount locations are the set of stations carrying propulsors among fuselage, wing, boom and empennage, compared by Jaccard distance (the share of the stations used by either design that only one of them uses). "
+         "The three wing dimensions read wing 1 (the primary wing of codebook R5-03, which is wing 1 in every design: the author checked the 4 designs whose role reading pointed to wing 2 on 2026-10-16); enclosure and tractor/pusher arrangement read the set with the most propulsors (first listed on a tie); a dimension that does not apply or that an override hides is blank and left out of the pair's average, and the propulsion dimensions are blank for designs with no propulsor card (Hoverbike, Personal Flying Vehicle). The 34-dimension weighting of 2026-10-14 (w34) stays in the code for the record and is no longer reported.\n", tables_md(wts), "",
+         "## Condition 3 on F (the same w15 weights; Q on the designs of F's base, per cohort)\n", "Source: `q7_condition3_family.csv`. Q uses no architecture, so F on all designs is the same set as A.\n", tables_md(fam), "",
          "## Three-year check (condition 1, three consecutive years, actively protected designs)\n", "Source: `q7_three_year_check.csv`.\n", tables_md(t3), "",
          "## F on granted and live patents alone\n", "Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.\n", tables_md(gl1), "", tables_md(gl2), "",
          "## III.4, which VT share the figure draws\n",
          "`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: two actively protected curves, ringed years above 50 %), "
          "and ²D per COHORT against its band (right panel, condition 2, all designs). The per-cohort VT share above is not drawn; it is listed here for the text. "
          "Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`.\n",
-         "## Designs per cohort: III.1 against the form distance of condition 3\n", "Source: `q6_architecture_shares_by_cohort.csv` (`designs`), `q7_condition3_cohesion.csv` (`aircraft`, subsystem weighting).\n", tables_md(dist), "",
+         "## Designs per cohort: III.1 against the form distance of condition 3\n", "Source: `q6_architecture_shares_by_cohort.csv` (`designs`), `q7_condition3_cohesion.csv` (`aircraft`, w15 weighting).\n", tables_md(dist), "",
          "Why they differ: the shares of III.1 divide by every design of the cohort, including the designs with no architecture recorded (a bar segment 'no architecture recorded'), "
          "while the form distance needs an architecture to place a design in a level, so those designs are left out. The two designs without an architecture "
          "(`CN109263914A_ua1`, `CN109263949A_ua1`) have priority year 2018, so only 2016–19 differs (213 against 211). A·W·T drops further designs whose wings or tilt are not recorded.\n",

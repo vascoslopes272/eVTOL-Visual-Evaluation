@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, NamedTuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,10 +28,10 @@ REGIONS = ["North America", "Europe", "Asia-Pacific"]
 #: Ported from: a2.py:CATCH_ALL
 CATCH_ALL = ("Individual Inventor", "Unknown / Independent")
 
-#: propulsor units per aircraft -> bins of the archetype level A0c. The bottom band is "0-3" here;
-#: base() renames it to UNIT_BANDS[1][0] for display (see there).
-#: Ported from: a2.py:ROTOR_BINS
-ROTOR_BINS = ([-1, 3, 4, 6, 8, 10 ** 6], ["0-3", "4", "5-6", "7-8", "9+"])
+#: propulsor units per aircraft -> bins of the archetype level A0c. The bottom band is "1-3": a recorded 0 is not an answer
+#: (propulsor_units, rerun of 2026-10-15), so no design reaches the bin with fewer than one propulsor.
+#: Ported from: a2.py:ROTOR_BINS (whose bottom label was "0-3")
+ROTOR_BINS = ([-1, 3, 4, 6, 8, 10 ** 6], ["1-3", "4", "5-6", "7-8", "9+"])
 
 #: display bands of the propulsor-unit count (the bottom band is written "1-3": no aircraft flies on nothing).
 #: Ported from: la_tables.py:UNIT_BANDS
@@ -77,7 +77,7 @@ def window_of(year: float, windows) -> Optional[str]:
 
 
 def rotor_bin(units: pd.Series) -> pd.Series:
-    """Propulsor units -> 0-3 / 4 / 5-6 / 7-8 / 9+ (strings; NaN stays NaN, never 0).
+    """Propulsor units -> 1-3 / 4 / 5-6 / 7-8 / 9+ (strings; NaN stays NaN, never 0).
 
     Ported from: a2.py:rotor_bin"""
     u = pd.to_numeric(units, errors="coerce")
@@ -125,6 +125,10 @@ def propulsor_units(v: pd.DataFrame) -> pd.DataFrame:
     (overridden) station; blank for HB/PFV (the codebook gives them no propulsor record),
     after a G1 override, and when an overridden station has no quick count. A blank is
     never read as 0. Columns ``units`` (float, NaN = left out) and ``left_out`` (reason).
+
+    A recorded 0 is not a count either (rerun of 2026-10-15, author's ruling): the one design so recorded (GB202302720D0_ua1,
+    Stopped/Slowed Rotor Wing) carries an M2 override that hid its wing-borne propulsors, which were never counted. It is left out
+    (NaN, ``left_out`` = ``LEFT_OUT_ZERO``) of the band U and of everything that reads ``units``; no 0 band exists.
     
 
     Ported from: a2.py:propulsor_units"""
@@ -132,7 +136,7 @@ def propulsor_units(v: pd.DataFrame) -> pd.DataFrame:
         units = pd.to_numeric(v["propulsor_units"], errors="coerce").astype(float)
         note = v.get("propulsor_units_note", pd.Series("", index=v.index)).map(_s)
         reason = [(_reason_of(n) or "not determinable") if pd.isna(u) else "" for u, n in zip(units, note)]
-        return pd.DataFrame({"units": units, "left_out": reason}, index=v.index)
+        return _zero_left_out(pd.DataFrame({"units": units, "left_out": reason}, index=v.index))
     # batch-reader fallback: the loader already put the quick count on an overridden station
     counts = [c for c in PROPULSOR_UNIT_COLUMNS if c in v.columns]
     units = v[counts].apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=len(counts))
@@ -140,9 +144,21 @@ def propulsor_units(v: pd.DataFrame) -> pd.DataFrame:
     reason = [LEFT_OUT_HBPFV if t in NO_UNITS_TYPES else LEFT_OUT_G1 if "G1" in o
               else LEFT_OUT_M3_COUNT if pd.isna(u) else "" for t, o, u in zip(tt, ov, units)]
     units = units.where(pd.Series(reason, index=v.index).eq(""))
-    return pd.DataFrame({"units": units.astype(float), "left_out": reason}, index=v.index)
+    return _zero_left_out(pd.DataFrame({"units": units.astype(float), "left_out": reason}, index=v.index))
 
 
+
+
+#: why a recorded 0 propulsors is left out (rerun of 2026-10-15)
+LEFT_OUT_ZERO = "0 recorded: the count was never entered (M2 override)"
+
+
+def _zero_left_out(pu: pd.DataFrame) -> pd.DataFrame:
+    """A recorded 0 propulsors is a missing answer, never a count: units -> NaN, with its reason."""
+    zero = pu["units"].eq(0)
+    pu.loc[zero, "units"] = np.nan
+    pu.loc[zero, "left_out"] = LEFT_OUT_ZERO
+    return pu
 
 def _boom_categories(r: pd.Series, tilting_wings: set) -> set:
     """Notebook 04's boom classes per (propeller-carrying boom group x boom-card rotor type):
@@ -625,18 +641,12 @@ def base(ds, cfg, fold: Optional[Dict[str, str]] = None) -> pd.DataFrame:
     # a filer id: the firm for an organisation, the patent for everyone else
     v["filer_id"] = np.where(v["named"], v["firm"].fillna(""), "patent:" + v["patent_id"].astype(str))
     v["class5"] = v["topType"].map(fold)
-    # display: the bottom propulsor bin prints "1-3" (no aircraft flies on nothing); a 1:1 category rename
+    # display: the bottom propulsor bin prints "1-3" (ROTOR_BINS and UNIT_BANDS now share the name; kept as a 1:1 rename)
     v["rotorBin"] = v["rotorBin"].replace(ROTOR_BINS[1][0], UNIT_BANDS[1][0])
     v["archetype"] = np.where(v["topType"].notna() & v["rotorBin"].notna(),
                               v["topType"].astype(str) + " · " + v["rotorBin"].astype(str), None)
-    # the one aircraft recorded with 0 propulsive units (a labelling gap) keeps the original "0-3" label
-    # in the printed key of its class: classes holding a 0-unit aircraft get " · 0-3" instead of " · 1-3"
-    zero = set(v.loc[pd.to_numeric(v["units"], errors="coerce").eq(0), "topType"].dropna().astype(str))
-    if zero:
-        tail = " · " + UNIT_BANDS[1][0]
-        mask = v["topType"].astype(str).isin(zero) & v["archetype"].astype(str).str.endswith(tail)
-        v.loc[mask, "archetype"] = (v.loc[mask, "archetype"].astype(str)
-                                    .str.slice(stop=-len(tail)) + " · " + ROTOR_BINS[1][0])
+    # (until 2026-10-15 the one design recorded with 0 propulsors printed its class's bottom key as " · 0-3"; that 0 is now left out
+    # by propulsor_units, so every bottom key reads " · 1-3")
     status = v["legal_status_raw"].fillna("").astype(str)
     v["lapsed"] = status.str.startswith("INACTIVE")
     v["granted"] = status.str.contains("GRANTED")
@@ -1153,9 +1163,13 @@ from .data import hidden_by_override as _hidden          # noqa: E402
 D3_FIELDS = ["wCount", "empType", "fusKin", "wingConf", "gearArch", "latSym"]
 
 #: printed name of each Table 6 field. Ported from: a2.py:FIELD_NAMES (the six used here)
-D3_FIELD_NAMES = {"empType": "tail type", "wCount": "number of wings", "gearArch": "landing-gear type",
+D3_FIELD_NAMES = {"empType": "tail type", "wCount": "number of wings (winged designs)", "gearArch": "landing-gear type",
                   "fusKin": "fuselage motion hover to cruise", "wingConf": "wing configuration",
                   "latSym": "left-right symmetry"}
+
+#: options Table 6 leaves out (author's ruling, rerun of 2026-10-15): 0 wings (the table reads the winged designs) and 0 places
+#: carrying propulsors (the one design recorded with 0 propulsors, already left out by propulsor_units)
+D3_DROP_OPTIONS = {"wCount": ["0"], "places carrying propulsor units per aircraft": ["0"]}
 
 #: the two derived rows of Table 6, as the thesis prints them (display rename 2026-09-28 / 2026-09-29: "propulsor
 #: units", "places"); the document's CSV calls them "propulsor units per aircraft" and "propulsor groups per aircraft".
@@ -1207,6 +1221,8 @@ def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
     rows = []
     for f in fields or D3_FIELDS:
         s = ds.variants[f]
+        if f in D3_DROP_OPTIONS:                    # an option left out of the table (rerun of 2026-10-15)
+            s = s.where(~s.astype(str).str.replace(r"\.0$", "", regex=True).isin(D3_DROP_OPTIONS[f]))
         names = option_names(ds.data_dictionary, f)
         top = s.dropna().value_counts().head(4)
         rows.append({"name": D3_FIELD_NAMES.get(f, f), "field": f, "answered": int(s.notna().sum()),
@@ -1217,7 +1233,8 @@ def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
         for name, field, s in [
             (D3_UNITS_ROW, "(derived) propulsor units, binned", rotor_bin(units)),
             (D3_PLACES_ROW, "(derived) M3 stations carrying units",
-             propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g))).where(units.notna())),
+             propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g))).where(units.notna())
+             .where(lambda x: ~x.isin(D3_DROP_OPTIONS[D3_PLACES_ROW]))),
         ]:
             s = s.where(s.ne("nan")).dropna()
             top = s.value_counts().head(5)
@@ -1227,8 +1244,30 @@ def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def selected_field_series(ds) -> Dict[str, pd.Series]:
+    """The series behind every row of :func:`selected_fields` (same options dropped, same blanks), keyed by the row's printed
+    name, indexed like ``ds.variants`` and carrying the printed option names (data_dictionary names for a coded field, the
+    band / place strings for the two derived rows). NaN = the aircraft does not answer the row.
+
+    Used in: q6_fixed_by_architecture (dimension x architecture)"""
+    out = {}
+    for f in D3_FIELDS:
+        s = ds.variants[f]
+        if f in D3_DROP_OPTIONS:
+            s = s.where(~s.astype(str).str.replace(r"\.0$", "", regex=True).isin(D3_DROP_OPTIONS[f]))
+        names = option_names(ds.data_dictionary, f)
+        ids = [str(k).replace(".0", "") if pd.notna(k) else None for k in s]        # option ids as strings ("2", not "2.0"; True/False as is)
+        out[D3_FIELD_NAMES.get(f, f)] = pd.Series([names.get(k, k) if k is not None else np.nan for k in ids], index=s.index, dtype=object)
+    units = propulsor_units(ds.variants)["units"]
+    places = (propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g))).where(units.notna())
+              .where(lambda x: ~x.isin(D3_DROP_OPTIONS[D3_PLACES_ROW])))
+    for name, s in [(D3_UNITS_ROW, rotor_bin(units)), (D3_PLACES_ROW, places)]:
+        out[name] = s.where(s.ne("nan")).astype(object).where(s.notna())
+    return out
+
+
 def unit_band(v: pd.DataFrame) -> pd.Series:
-    """Propulsor units per aircraft -> 1-3 / 4 / 5-6 / 7-8 / 9+, the one aircraft with 0 units kept as "0 recorded" and
+    """Propulsor units per aircraft -> 1-3 / 4 / 5-6 / 7-8 / 9+ (a recorded 0 is no answer since 2026-10-15; kept as "0 recorded" if one reappears) and
     HB / PFV as "no propulsor card".
 
     Ported from: la_tables.py:unit_band"""
@@ -1760,8 +1799,9 @@ DD_LEVELS = ("A0", "A1t", "A0c", "family_b")
 DD_YEAR_FIRST = 2008
 DD_YEAR_MIN = 20
 DD_BASES = (("in force", "aircraft with a patent in force"), ("all", "all aircraft of the year"))
-#: the two weightings of condition 3, main first. Ported from: la_tables.py:Q_WEIGHTINGS
-Q_WEIGHTINGS = ("subsystem", "uniform")
+#: the two weightings of condition 3, main first: ``w15`` (the 15 dimensions the dissertation declares, 2026-10-15) and ``w34`` (the
+#: 34-dimension weighting of 2026-10-14, kept for the record). Ported from: la_tables.py:Q_WEIGHTINGS (then "subsystem", "uniform")
+Q_WEIGHTINGS = ("w15", "w34")
 #: level id -> "C — Class" as the verdict table heads its columns. Ported from: sm_text_methods.py:LEVEL_CODES
 DD_LEVEL_WORDS = {"A0": "C — Class", "A1t": "C·W·T — Class + wings + tilt", "A0c": "C·U — Class + units",
                   "family_b": "F — Lift + Cruise + CVT* family"}
@@ -1917,7 +1957,7 @@ def informative_fields(ds, min_answered: int = 300, min_effk: float = 1.5) -> Li
     return list(inv["field"])
 
 
-#: Weighting of the form distance (author's ruling 2026-10-14): the 34 dimensions of the codebook (Appendix A) follow its four
+#: The w34 weighting of the form distance (author's ruling 2026-10-14, kept for the record; the reported weighting is :data:`FORM15`): the 34 dimensions of the codebook (Appendix A) follow its four
 #: systems and each system weighs 1; inside a system the weight is shared equally by its dimensions, except in M2, where the wings
 #: weigh twice the empennage. THE ONLY PLACE the weights are defined: (system, dimensions, weight of the group, numeric dimensions).
 _PROP_DIMS = ["Propulsor count", "Thrust Kinematics", "Propulsor Articulation", "Tractor/Pusher Arrangement", "Propulsor Enclosure",
@@ -1976,14 +2016,60 @@ def primary_wing(r) -> int:
     return best
 
 
-def form_weights(fields=None) -> Dict[str, float]:
-    """Weight of each of the 34 dimensions in the form distance: w = (weight of its group) / (number of dimensions of the group)."""
+# ---- the w15 weighting (the dissertation's declaration, 2026-10-15): 15 dimensions, each of the four systems weighing 1, 4 in all.
+#: (system, dimension, codebook field, compared as, kind, weight). kind = "categorical" (0 same option, 1 different), ("ordered", r)
+#: (a rank 0..r held in a numeric column; d = rank difference / r, the range fixed at r), ("number", r) (a number; d = difference / r),
+#: or "set" (a frozenset of stations; d = Jaccard distance). THE ONLY PLACE the w15 weights are defined.
+FORM15 = [
+    ("G1 architecture", "Architecture", "topType", "0 same option, 1 different", "categorical", 1.0),
+    ("M1 structure", "Fuselage Shape", "fusShape", "0 same option, 1 different", "categorical", 0.5),
+    ("M1 structure", "Boom count", "boomsPresent, boom1..6_count", "ordered 0, 1, 2, 3 to 4, 5 or more; rank difference / 4", ("ordered", 4), 0.3),
+    ("M1 structure", "Fuselage Kinematics", "fusKin", "0 same option, 1 different", "categorical", 0.2),
+    ("M2 aerodynamics", "Wing count", "wCount", "ordered 0, 1, 2, 3; difference / 3", ("ordered", 3), 0.3),
+    ("M2 aerodynamics", "Wing Architecture", "wingConf", "0 same option, 1 different", "categorical", 0.3),
+    ("M2 aerodynamics", "Vertical Position", "wing1_posV", "0 same option, 1 different", "categorical", 1 / 45),
+    ("M2 aerodynamics", "Longitudinal Position", "wing1_posL", "0 same option, 1 different", "categorical", 1 / 45),
+    ("M2 aerodynamics", "Planform", "wing1_plan", "0 same option, 1 different", "categorical", 1 / 45),
+    ("M2 aerodynamics", "Empennage Type", "empType", "0 same option, 1 different", "categorical", 1 / 3),
+    ("M3 propulsion", "Propulsor band", "propulsor_units", "ordered 1 to 3, 4, 5 to 6, 7 to 8, 9 or more; rank difference / 4", ("ordered", 4), 0.35),
+    ("M3 propulsion", "Tilt share", "<station>_count, propKin, wing tilt, empTilts, boom_thrust_state, fusKin",
+     "share 0 to 1 of the propulsors whose thrust turns between hover and cruise; absolute difference", ("number", 1), 0.3),
+    ("M3 propulsion", "Propulsor Enclosure", "<set>_bmech", "0 same option, 1 different (the set with the most propulsors)", "categorical", 0.15),
+    ("M3 propulsion", "Tractor/Pusher Arrangement", "<set>_chord", "0 same option, 1 different (the set with the most propulsors)", "categorical", 0.1),
+    ("M3 propulsion", "Mount locations", "<station>_count", "stations carrying propulsors among fuselage, wing, boom, empennage; Jaccard distance", "set", 0.1),
+]
+FORM15_FIELDS = [d for _, d, _, _, _, _ in FORM15]
+FORM15_NUMERIC = {d for _, d, _, _, k, _ in FORM15 if isinstance(k, tuple)}
+FORM15_RANGES = {d: float(k[1]) for _, d, _, _, k, _ in FORM15 if isinstance(k, tuple)}
+FORM15_SETS = {d for _, d, _, _, k, _ in FORM15 if k == "set"}
+#: boom count -> rank (0, 1, 2, 3-4, 5+) and the stations of the mount-location set
+_BOOM_RANK = lambda n: 0 if n <= 0 else 1 if n == 1 else 2 if n == 2 else 3 if n <= 4 else 4          # noqa: E731
+_MOUNT_STATION = {"fuselage": "fuselage", "core_layout": "fuselage", "hull_array": "fuselage", "wing1": "wing", "wing2": "wing",
+                  "wing3": "wing", "wing4": "wing", "boom": "boom", "emp": "empennage"}
+
+
+def form_weights(fields=None, weighting: str = None) -> Dict[str, float]:
+    """Weight of each dimension in the form distance under ``weighting`` (default the main one, :data:`Q_WEIGHTINGS`):
+    w15 reads :data:`FORM15`; w34 gives w = (weight of its group) / (number of dimensions of the group)."""
+    weighting = weighting or Q_WEIGHTINGS[0]
+    if weighting == "w15":
+        w = {d: wt for _, d, _, _, _, wt in FORM15}
+        return {f: w[f] for f in (FORM15_FIELDS if fields is None else fields)}
+    if weighting != "w34":
+        raise ValueError(f"unknown weighting {weighting!r}; one of {Q_WEIGHTINGS}")
     w = {d: g / len(dims) for _, dims, g in FORM_GROUPS for d in dims}
     return {f: w[f] for f in (FORM_FIELDS if fields is None else fields)}
 
 
-def form_weights_table() -> pd.DataFrame:
-    """The weights table: system, dimensions, count, weight of each, weight in all (a total row last)."""
+def form_weights_table(weighting: str = None) -> pd.DataFrame:
+    """The weights table. w15: one row per dimension (system, dimension, codebook field, compared as, weight) and a total row;
+    w34: system, dimensions, count, weight of each, weight in all (a total row last)."""
+    weighting = weighting or Q_WEIGHTINGS[0]
+    if weighting == "w15":
+        rows = [{"system": s, "dimension": d, "codebook field": c, "compared as": how, "weight": round(wt, 3)} for s, d, c, how, _, wt in FORM15]
+        rows.append({"system": "total", "dimension": f"{len(FORM15)} dimensions", "codebook field": "", "compared as": "",
+                     "weight": round(sum(wt for *_, wt in FORM15), 3)})
+        return pd.DataFrame(rows)
     rows = [{"system": s, "dimensions": "; ".join(dims), "count": len(dims), "weight of each": round(g / len(dims), 3), "weight in all": round(g, 3)}
             for s, dims, g in FORM_GROUPS]
     rows.append({"system": "total", "dimensions": "", "count": sum(r["count"] for r in rows), "weight of each": np.nan,
@@ -2005,8 +2091,8 @@ def _propulsor_set(r: pd.Series):
     return best
 
 
-def form_frame(ds) -> pd.DataFrame:
-    """The designs with an architecture and their 34 dimensions (one column each, named as the codebook). A dimension that does not apply
+def form_frame34(ds) -> pd.DataFrame:
+    """The w34 frame: the designs with an architecture and their 34 dimensions (one column each, named as the codebook). A dimension that does not apply
     (no boom, no second wing, no propulsor of that kind, an N/A answer) or that an override hides is blank, and the distance leaves a blank out
     of the average (delta = 0), never counts it as a mismatch.  Per-wing dimensions read the primary wing (R5-03), per-boom dimensions boom group 1, the
     propulsor dimensions the set with the most propulsors (:func:`_propulsor_set`); the zone dimensions are blank unless that set sits on
@@ -2054,10 +2140,166 @@ def form_frame(ds) -> pd.DataFrame:
     return out
 
 
-def gower_inputs(ds) -> tuple:
-    """The inputs of the distance of condition 3: the designs with an architecture, their 34 dimensions (:func:`form_frame`), the list of
-    dimensions and the set of those compared by range (the three counts)."""
-    return form_frame(ds), list(FORM_FIELDS), set(FORM_NUMERIC)
+def _tilt_share(r: pd.Series, ov: frozenset) -> float:
+    """Share of a design's propulsors whose thrust turns between hover and cruise (the w15 tilt-share dimension).
+
+    Propulsors are counted per station and type as :func:`propulsion_states` reads them (``<station>_count`` or ``<station>_t<N>_count``
+    when ``<station>_ntypes`` > 1, control-only sets left out). A propulsor tilts when its own ``propKin`` is Tilt; or it sits on wing k with
+    ``wing{k}_tilt`` Tilt; or on the empennage with ``empTilts`` True; or on the boom card and notebook 04's ``boom_thrust_state`` is ``tilting``
+    or ``on_tilting_wing`` (``mixed``: the boom types with propKin Tilt count; when no type says Tilt the tick sits on the boom groups, and the
+    boom propulsors are prorated by the share of the propeller-carrying booms whose group is ticked ``tilts``); or the whole airframe
+    reorients (``fusKin`` TiltBody, or a Tilt Body design): share 1. NaN when the design has no propulsor card (HB/PFV), when an override
+    hides a station or the wing/boom tilt a propulsor would read, or when no propulsor is recorded."""
+    g = lambda c: r[c] if c in r.index else None                                 # noqa: E731
+    if _s(g("topType")) in NO_UNITS_TYPES:
+        return np.nan
+    if _s(g("fusKin")) == "TiltBody" or _s(g("topType")) == "TB":
+        return 1.0
+    if any(t.startswith("M3:") for t in ov):
+        return np.nan
+    tw = {k for k in range(1, 5) if _s(g(f"wing{k}_tilt")) == "Tilt"}
+    total = tilting = 0.0
+    for card in M3_STATIONS:
+        nt = _n(g(f"{card}_ntypes")) or 1
+        pres = [f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]
+        kinds = [(_n(g(pre + "count")), _s(g(pre + "propKin"))) for pre in pres
+                 if _n(g(pre + "count")) > 0 and _s(g(pre + "ctrlOnly")) != "True"]
+        if not kinds:
+            continue
+        cnt = sum(c for c, _ in kinds)
+        own = sum(c for c, pk in kinds if pk == "Tilt")
+        total += cnt
+        if card == "boom":
+            state = _s(g("boom_thrust_state")) or ("" if "M1" in ov else _boom_state(_boom_categories(r, tw)))
+            if state in ("tilting", "on_tilting_wing"):
+                tilting += cnt
+            elif state == "mixed":
+                if own > 0:
+                    tilting += own
+                else:                                       # the tick sits on the boom groups: prorate by the ticked propeller booms
+                    grp = [(_n(g(f"boom{k}_count")), _s(g(f"boom{k}_tilts")) == "True") for k in range(1, 7)
+                           if (_s(g(f"boom{k}_attach")) or _n(g(f"boom{k}_count"))) and _s(g(f"boom{k}_hasProps")) != "False"]
+                    nb = sum(c for c, _ in grp)
+                    tilting += cnt * (sum(c for c, t in grp if t) / nb) if nb else 0.0
+            elif state == "":                               # an M1 override hides the groups: only a propKin Tilt is sure
+                if own < cnt:
+                    return np.nan
+                tilting += own
+            else:                                           # fixed
+                tilting += own
+        elif card.startswith("wing"):
+            if "M2" in ov and own < cnt:
+                return np.nan
+            tilting += cnt if int(card[4:]) in tw else own
+        elif card == "emp":
+            if "M2" in ov and own < cnt:
+                return np.nan
+            tilting += cnt if _s(g("empTilts")) == "True" else own
+        else:
+            tilting += own
+    return tilting / total if total > 0 else np.nan
+
+
+def _mount_locations(r: pd.Series, ov: frozenset):
+    """The set of stations (fuselage, wing, boom, empennage) carrying non-control-only propulsors; None when the design has no propulsor
+    card (HB/PFV), when an M3 override hides a station, or when no propulsor is recorded. M3 cards map: fuselage, core_layout and hull_array
+    -> fuselage; wing1..4 -> wing; boom -> boom; emp -> empennage."""
+    g = lambda c: r[c] if c in r.index else None                                 # noqa: E731
+    if _s(g("topType")) in NO_UNITS_TYPES or any(t.startswith("M3:") for t in ov):
+        return None
+    where = set()
+    for card in M3_STATIONS:
+        nt = _n(g(f"{card}_ntypes")) or 1
+        for pre in ([f"{card}_t{t}_" for t in range(1, nt + 1)] if nt > 1 else [f"{card}_"]):
+            if _n(g(pre + "count")) > 0 and _s(g(pre + "ctrlOnly")) != "True":
+                where.add(_MOUNT_STATION.get(card, card))
+    return frozenset(where) if where else None
+
+
+def form_frame15(ds) -> pd.DataFrame:
+    """The w15 frame: the designs with an architecture and the 15 dimensions of :data:`FORM15` (one column each), plus ``aircraft_id``.
+    Categorical dimensions hold the option; ordered dimensions the rank (Boom count: 0 when ``boomsPresent`` is not True, else the design's
+    number of booms = boom1..6_count summed as :func:`archetype_columns` does, ranked 0, 1, 2, 3-4, 5+; Wing count: ``wCount``, 0 when blank
+    or no wing, blank under an M2 override; Propulsor band: :func:`propulsor_units` in :data:`ROTOR_BINS`, rank 0..4, blank where the count is
+    not determinable); Tilt share a number 0..1 (:func:`_tilt_share`); Mount locations a frozenset (:func:`_mount_locations`). The three
+    wing-1 dimensions read the primary wing (:func:`primary_wing`, codebook R5-03), which is wing 1 in every design of the corpus (author's
+    check of 2026-10-16), and are blank when the design has no wing. A blank is left out of the pair's average (delta = 0), never a mismatch;
+    the propulsion dimensions are blank for designs with no propulsor card."""
+    v = ds.variants
+    v = v[v["topType"].notna()]
+    ovs = override_sets(v)
+    out = pd.DataFrame({"aircraft_id": v["aircraft_id"].to_numpy()}, index=v.index)
+    cat = lambda c: (v[c].astype(object) if c in v.columns else pd.Series(pd.NA, index=v.index, dtype=object)).map(lambda x: _s(x) or np.nan)  # noqa: E731
+    out["Architecture"] = cat("topType")
+    out["Fuselage Shape"] = cat("fusShape")
+    boom_cols = [c for c in v.columns if re.match(r"boom\d_count$", c)]
+    nbooms = v[boom_cols].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
+    nbooms = nbooms.where(v["boomsPresent"].map(_s).eq("True"), 0)
+    out["Boom count"] = nbooms.map(_BOOM_RANK).astype(float)
+    out["Fuselage Kinematics"] = cat("fusKin")
+    wc = pd.to_numeric(v["wCount"], errors="coerce").fillna(0).clip(lower=0)
+    out["Wing count"] = wc.where(~ovs.map(lambda o: "M2" in o), np.nan).astype(float)
+    out["Wing Architecture"] = cat("wingConf")
+    prim = v.apply(primary_wing, axis=1)
+    for d, suf in (("Vertical Position", "posV"), ("Longitudinal Position", "posL"), ("Planform", "plan")):
+        out[d] = pd.Series([_s(r_.get(f"wing{k}_{suf}")) or np.nan for (_, r_), k in zip(v.iterrows(), prim)], index=v.index, dtype=object)
+    out["Empennage Type"] = cat("empType")
+    units = propulsor_units(v)["units"]
+    band = pd.cut(units, bins=ROTOR_BINS[0], labels=False).astype(float)
+    out["Propulsor band"] = band.where(units.notna(), np.nan)
+    out["Tilt share"] = [_tilt_share(r_, ov) for (_, r_), ov in zip(v.iterrows(), ovs)]
+    enc, arr, mount = [], [], []
+    for (_, r_), ov in zip(v.iterrows(), ovs):
+        sel = None if _s(r_.get("topType")) in NO_UNITS_TYPES else _propulsor_set(r_)
+        enc.append((_s(r_.get(sel[1] + "bmech")) or np.nan) if sel else np.nan)
+        arr.append((_s(r_.get(sel[1] + "chord")) or np.nan) if sel else np.nan)
+        mount.append(_mount_locations(r_, ov))
+    out["Propulsor Enclosure"] = pd.Series(enc, index=v.index, dtype=object)
+    out["Tractor/Pusher Arrangement"] = pd.Series(arr, index=v.index, dtype=object)
+    out["Mount locations"] = pd.Series(mount, index=v.index, dtype=object)
+    for d in FORM15_NUMERIC:
+        out[d] = pd.to_numeric(out[d], errors="coerce").astype(float)
+    return out[["aircraft_id"] + FORM15_FIELDS]
+
+
+def form_frame(ds, weighting: str = None) -> pd.DataFrame:
+    """The frame of the form distance under ``weighting`` (default the main one): :func:`form_frame15` or :func:`form_frame34`."""
+    weighting = weighting or Q_WEIGHTINGS[0]
+    if weighting == "w15":
+        return form_frame15(ds)
+    if weighting == "w34":
+        return form_frame34(ds)
+    raise ValueError(f"unknown weighting {weighting!r}; one of {Q_WEIGHTINGS}")
+
+
+class FormInputs(NamedTuple):
+    """Everything :func:`lib.distance.gower_distance` needs for the form distance of condition 3 under one weighting."""
+    frame: pd.DataFrame
+    fields: List[str]
+    numeric: set
+    weights: Dict[str, float]
+    ranges: Dict[str, float]
+    sets: set
+    weighting: str
+
+
+def gower_inputs(ds, weighting: str = None) -> FormInputs:
+    """The inputs of the distance of condition 3 under ``weighting`` (default the main one, w15): the designs with an architecture and their
+    dimensions (:func:`form_frame`), the dimensions, those compared by range (with their fixed range under w15), those compared by Jaccard
+    distance (sets), and the weights (:func:`form_weights`)."""
+    weighting = weighting or Q_WEIGHTINGS[0]
+    frame = form_frame(ds, weighting)
+    if weighting == "w15":
+        return FormInputs(frame, list(FORM15_FIELDS), set(FORM15_NUMERIC), form_weights(None, "w15"), dict(FORM15_RANGES), set(FORM15_SETS), "w15")
+    return FormInputs(frame, list(FORM_FIELDS), set(FORM_NUMERIC), form_weights(None, "w34"), {}, set(), "w34")
+
+
+def form_distance(ds, weighting: str = None) -> tuple:
+    """The Gower distance matrix of condition 3 under ``weighting`` (default w15) and its frame: (D, frame). The one entry point every
+    reader of the form distance goes through (condition 3, condition 3 on F, the CVT to Lift + Cruise distance, the dispersion check)."""
+    fi = gower_inputs(ds, weighting)
+    D = _dist.gower_distance(fi.frame, fi.fields, fi.numeric, fi.weights, ranges=fi.ranges, sets=fi.sets)
+    return D, fi.frame
 
 
 def dd_balance_table(ds, v: pd.DataFrame, window_names: List[str], n: int, perms: int, seed: int) -> pd.DataFrame:
@@ -2088,16 +2330,14 @@ def dd_balance_table(ds, v: pd.DataFrame, window_names: List[str], n: int, perms
 
 def dd_form_table(ds, v: pd.DataFrame, window_names: List[str], perms: int, seed: int) -> pd.DataFrame:
     """Condition 3: Q of the Gower distance per window against the two earliest windows and a permutation band
-    (:func:`lib.dominant_design.cohesion_band`), under both weightings, at C, C·U and C·W·T (F is C's row: Q uses no
-    archetype and F only regroups the same aircraft). Fresh generator per (weighting, level).
+    (:func:`lib.dominant_design.cohesion_band`), under both weightings (w15 reported, w34 for the record; :data:`Q_WEIGHTINGS`),
+    at C, C·U and C·W·T (F is C's row: Q uses no archetype and F only regroups the same aircraft). Fresh generator per (weighting, level).
 
     Ported from: sm_open.py:dd_form, la_tables.py:dominant_design_q"""
-    frame, fields, numeric = gower_inputs(ds)
-    at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
     parts = []
     for weighting in Q_WEIGHTINGS:
-        w = (form_weights(fields) if weighting == "subsystem" else _dist.uniform_weights(fields))
-        D = _dist.gower_distance(frame, fields, numeric, w)
+        D, frame = form_distance(ds, weighting)
+        at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
         for level in ("A0", "A1t", "A0c"):                 # order of dominant_design_q(levels=("A0", "A1t", "A0c"))
             key = archetype_key(v, level)
             sub = v[key.notna()].dropna(subset=["window"]).copy()

@@ -1,0 +1,51 @@
+family,base,cohort,partial,designs in cohort,family designs,rest designs,read,cohesion,cohesion band low,cohesion band high,cohesion below band,separation,separation band low,separation band high,separation above band,premise holds
+P1,all designs,<= 2011,False,63,11,52,True,0.3803,0.4809,0.6206,True,0.595,0.5458,0.5981,False,False
+P1,all designs,2012-15,False,58,7,51,False,,,,,,,,,
+P1,all designs,2016-19,False,211,51,160,True,0.4631,0.5369,0.6023,True,0.5891,0.561,0.5828,True,True
+P1,all designs,2020-23,False,237,82,155,True,0.3986,0.4965,0.5432,True,0.5365,0.5154,0.5274,True,True
+P1,all designs,2024-26 (partial),True,56,23,33,True,0.4321,0.5085,0.6053,True,0.5754,0.5507,0.571,True,True
+P1,actively protected,<= 2011,False,18,4,14,False,,,,,,,,,
+P1,actively protected,2012-15,False,33,2,31,False,,,,,,,,,
+P1,actively protected,2016-19,False,138,35,103,True,0.4355,0.5401,0.6108,True,0.6003,0.5651,0.589,True,True
+P1,actively protected,2020-23,False,192,71,121,True,0.4059,0.4878,0.5444,True,0.5343,0.5123,0.5248,True,True
+P1,actively protected,2024-26 (partial),True,52,23,29,True,0.4321,0.5068,0.5913,True,0.5721,0.5456,0.5615,True,True
+P2,all designs,<= 2011,False,63,19,44,True,0.4242,0.5216,0.6077,True,0.6054,0.555,0.5864,True,True
+P2,all designs,2012-15,False,58,13,45,True,0.4296,0.4562,0.6163,True,0.5765,0.5201,0.5734,True,True
+P2,all designs,2016-19,False,211,73,138,True,0.4707,0.5473,0.5917,True,0.5929,0.5651,0.5766,True,True
+P2,all designs,2020-23,False,237,125,112,True,0.4465,0.5036,0.538,True,0.5534,0.5193,0.5231,True,True
+P2,all designs,2024-26 (partial),True,56,34,22,True,0.4853,0.5263,0.5903,True,0.5993,0.5508,0.5731,True,True
+P2,actively protected,<= 2011,False,18,5,13,False,,,,,,,,,
+P2,actively protected,2012-15,False,33,6,27,False,,,,,,,,,
+P2,actively protected,2016-19,False,138,47,91,True,0.4674,0.5516,0.6062,True,0.6025,0.5708,0.5869,True,True
+P2,actively protected,2020-23,False,192,109,83,True,0.4499,0.4998,0.5344,True,0.5534,0.5151,0.5224,True,True
+P2,actively protected,2024-26 (partial),True,52,32,20,True,0.4803,0.5145,0.5815,True,0.5931,0.5431,0.567,True,True
+P3,all designs,<= 2011,False,63,12,51,True,0.3933,0.4801,0.6261,True,0.5769,0.5467,0.5898,False,False
+P3,all designs,2012-15,False,58,9,49,False,,,,,,,,,
+P3,all designs,2016-19,False,211,56,155,True,0.435,0.5369,0.5967,True,0.5941,0.5621,0.5789,True,True
+P3,all designs,2020-23,False,237,91,146,True,0.4242,0.497,0.5435,True,0.5365,0.5168,0.5253,True,True
+P3,all designs,2024-26 (partial),True,56,24,32,True,0.4401,0.5192,0.5947,True,0.5767,0.552,0.5684,True,True
+P3,actively protected,<= 2011,False,18,5,13,False,,,,,,,,,
+P3,actively protected,2012-15,False,33,4,29,False,,,,,,,,,
+P3,actively protected,2016-19,False,138,37,101,True,0.4136,0.5449,0.6044,True,0.6074,0.5677,0.5878,True,True
+P3,actively protected,2020-23,False,192,78,114,True,0.4272,0.497,0.5425,True,0.5341,0.5145,0.5239,True,True
+P3,actively protected,2024-26 (partial),True,52,24,28,True,0.4401,0.5001,0.5875,True,0.5741,0.5468,0.5606,True,True
+P4,all designs,<= 2011,False,63,1,62,False,,,,,,,,,
+P4,all designs,2012-15,False,58,0,58,False,,,,,,,,,
+P4,all designs,2016-19,False,211,8,203,False,,,,,,,,,
+P4,all designs,2020-23,False,237,5,232,False,,,,,,,,,
+P4,all designs,2024-26 (partial),True,56,0,56,False,,,,,,,,,
+P4,actively protected,<= 2011,False,18,0,18,False,,,,,,,,,
+P4,actively protected,2012-15,False,33,0,33,False,,,,,,,,,
+P4,actively protected,2016-19,False,138,8,130,False,,,,,,,,,
+P4,actively protected,2020-23,False,192,4,188,False,,,,,,,,,
+P4,actively protected,2024-26 (partial),True,52,0,52,False,,,,,,,,,
+P5,all designs,<= 2011,False,63,20,43,True,0.447,0.5079,0.612,True,0.6064,0.5552,0.5882,True,True
+P5,all designs,2012-15,False,58,15,43,True,0.462,0.4611,0.602,False,0.578,0.5237,0.5651,True,False
+P5,all designs,2016-19,False,211,91,120,True,0.485,0.5523,0.5874,True,0.5982,0.568,0.5739,True,True
+P5,all designs,2020-23,False,237,140,97,True,0.4567,0.5099,0.5346,True,0.5592,0.5174,0.5241,True,True
+P5,all designs,2024-26 (partial),True,56,37,19,True,0.5001,0.5328,0.5851,True,0.6045,0.5471,0.5732,True,True
+P5,actively protected,<= 2011,False,18,5,13,False,,,,,,,,,
+P5,actively protected,2012-15,False,33,7,26,False,,,,,,,,,
+P5,actively protected,2016-19,False,138,61,77,True,0.4848,0.556,0.6004,True,0.6092,0.5743,0.5814,True,True
+P5,actively protected,2020-23,False,192,123,69,True,0.4596,0.5039,0.534,True,0.5616,0.5121,0.5242,True,True
+P5,actively protected,2024-26 (partial),True,52,35,17,True,0.4968,0.5218,0.5783,True,0.5971,0.5377,0.5743,True,True

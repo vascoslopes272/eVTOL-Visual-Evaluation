@@ -1,0 +1,85 @@
+dimension,architecture,designs,leading option,share
+propulsors per design (band),Separate Lift + Cruise,165,9+,35 %
+propulsors per design (band),Tilt Propulsor,151,1–3,40 %
+propulsors per design (band),Combined Vectored Thrust,106,5–6,27 %
+propulsors per design (band),Tilt Wing,56,4,30 %
+propulsors per design (band),Multicopter,48,4,40 %
+propulsors per design (band),Tilt Frame,24,4,33 %
+propulsors per design (band),Pitch-to-Cruise,25,7–8,40 %
+propulsors per design (band),Rotorcraft,9,1–3,100 %
+propulsors per design (band),Stopped/Slowed Rotor Wing,7,1–3,57 %
+propulsors per design (band),Deflected Slipstream,4,9+,50 %
+propulsors per design (band),Hoverbike,0,,
+propulsors per design (band),Personal Flying Vehicle,0,,
+tail type,Separate Lift + Cruise,165,Tailless,27 %
+tail type,Tilt Propulsor,151,Tailless,23 %
+tail type,Combined Vectored Thrust,106,Tailless,16 %
+tail type,Tilt Wing,56,Tailless,32 %
+tail type,Multicopter,48,Tailless,71 %
+tail type,Tilt Frame,24,Tailless,50 %
+tail type,Pitch-to-Cruise,25,Tailless,36 %
+tail type,Rotorcraft,9,Tailless,44 %
+tail type,Stopped/Slowed Rotor Wing,7,Conventional,57 %
+tail type,Deflected Slipstream,4,Conventional,50 %
+tail type,Hoverbike,1,V-tail,100 %
+tail type,Personal Flying Vehicle,3,Single fin,67 %
+places carrying propulsors per design,Separate Lift + Cruise,165,2,67 %
+places carrying propulsors per design,Tilt Propulsor,151,1,62 %
+places carrying propulsors per design,Combined Vectored Thrust,106,2,58 %
+places carrying propulsors per design,Tilt Wing,56,2,62 %
+places carrying propulsors per design,Multicopter,48,1,94 %
+places carrying propulsors per design,Tilt Frame,24,2,58 %
+places carrying propulsors per design,Pitch-to-Cruise,25,1,64 %
+places carrying propulsors per design,Rotorcraft,9,2,67 %
+places carrying propulsors per design,Stopped/Slowed Rotor Wing,7,2,71 %
+places carrying propulsors per design,Deflected Slipstream,4,2,50 %
+places carrying propulsors per design,Hoverbike,0,,
+places carrying propulsors per design,Personal Flying Vehicle,0,,
+number of wings (winged designs),Separate Lift + Cruise,158,1,66 %
+number of wings (winged designs),Tilt Propulsor,145,1,67 %
+number of wings (winged designs),Combined Vectored Thrust,103,1,70 %
+number of wings (winged designs),Tilt Wing,56,1,52 %
+number of wings (winged designs),Multicopter,0,,
+number of wings (winged designs),Tilt Frame,23,2,70 %
+number of wings (winged designs),Pitch-to-Cruise,23,1,78 %
+number of wings (winged designs),Rotorcraft,0,,
+number of wings (winged designs),Stopped/Slowed Rotor Wing,7,1,71 %
+number of wings (winged designs),Deflected Slipstream,4,1,75 %
+number of wings (winged designs),Hoverbike,17,1,94 %
+number of wings (winged designs),Personal Flying Vehicle,9,1,89 %
+landing-gear type,Separate Lift + Cruise,165,Unknown,73 %
+landing-gear type,Tilt Propulsor,151,Unknown,67 %
+landing-gear type,Combined Vectored Thrust,106,Unknown,77 %
+landing-gear type,Tilt Wing,56,Unknown,79 %
+landing-gear type,Multicopter,48,Unknown,65 %
+landing-gear type,Tilt Frame,24,Skids,62 %
+landing-gear type,Pitch-to-Cruise,25,Unknown,60 %
+landing-gear type,Rotorcraft,9,Skids,44 %
+landing-gear type,Stopped/Slowed Rotor Wing,8,Unknown,75 %
+landing-gear type,Deflected Slipstream,4,Unknown,50 %
+landing-gear type,Hoverbike,2,Wheeled,100 %
+landing-gear type,Personal Flying Vehicle,3,Wheeled,67 %
+fuselage motion hover to cruise,Separate Lift + Cruise,165,Fixed,98 %
+fuselage motion hover to cruise,Tilt Propulsor,151,Fixed,100 %
+fuselage motion hover to cruise,Combined Vectored Thrust,106,Fixed,100 %
+fuselage motion hover to cruise,Tilt Wing,56,Fixed,98 %
+fuselage motion hover to cruise,Multicopter,48,Whole-body pitch,48 %
+fuselage motion hover to cruise,Tilt Frame,24,Tail-sitter,71 %
+fuselage motion hover to cruise,Pitch-to-Cruise,25,Whole-body pitch,100 %
+fuselage motion hover to cruise,Rotorcraft,9,Whole-body pitch,100 %
+fuselage motion hover to cruise,Stopped/Slowed Rotor Wing,8,Fixed,88 %
+fuselage motion hover to cruise,Deflected Slipstream,4,Fixed,75 %
+fuselage motion hover to cruise,Hoverbike,2,Fixed,100 %
+fuselage motion hover to cruise,Personal Flying Vehicle,3,Fixed,67 %
+wing configuration,Separate Lift + Cruise,165,Standard,87 %
+wing configuration,Tilt Propulsor,151,Standard,92 %
+wing configuration,Combined Vectored Thrust,106,Standard,88 %
+wing configuration,Tilt Wing,56,Standard,80 %
+wing configuration,Multicopter,0,,
+wing configuration,Tilt Frame,24,Standard,79 %
+wing configuration,Pitch-to-Cruise,25,Standard,88 %
+wing configuration,Rotorcraft,0,,
+wing configuration,Stopped/Slowed Rotor Wing,6,Standard,83 %
+wing configuration,Deflected Slipstream,4,Standard,75 %
+wing configuration,Hoverbike,1,Lifting body,100 %
+wing configuration,Personal Flying Vehicle,2,Other,50 %

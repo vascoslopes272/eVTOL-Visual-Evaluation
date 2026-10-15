@@ -752,8 +752,11 @@ def condition1_years(ax, years: Sequence[int], in_force: Sequence[float], every:
     return ax
 
 
-#: the exploratory level F (handoff 2026-10-15): neutral grey, dashed, hollow markers, outside the scheme of the pre-specified levels
+#: the second base of a condition figure (handoff 2026-10-15, Task 3: the actively protected designs beside all designs) and, before
+#: that, the exploratory level F: neutral grey, dashed, hollow markers, outside the scheme of the pre-specified levels
 EXPLORE = dict(color="#8c8c8c", linestyle="--", markerfacecolor="white")
+#: the third base of condition 1 (granted and live): the same grey, dotted, hollow triangles
+GRANTED = dict(color="#8c8c8c", linestyle=":", markerfacecolor="white")
 
 
 def balance_panel(ax, s: pd.DataFrame, partial: Sequence[bool], met: Sequence[bool], ticks: Sequence[str], exploratory: bool = False):
@@ -807,6 +810,67 @@ def cohesion_panel(ax, main: pd.DataFrame, alt: pd.DataFrame, partial: Sequence[
             ax.axvspan(i - 0.5, i + 0.5, facecolor=FEW_FILL, zorder=0, linewidth=0, hatch=PARTIAL_HATCH, edgecolor=GRID)
     ax.set_xticks(x, ticks)
     ax.set_xlim(-0.5, len(main) - 0.5)
+    ax.grid(axis="y", color=GRID, linewidth=0.5)
+    ax.set_axisbelow(True)
+    return ax
+
+
+def band_series_panel(ax, main: pd.DataFrame, alt: Optional[pd.DataFrame], partial: Sequence[bool], ticks: Sequence[str], value: str,
+                      low: str, high: str, whisk: Optional[Sequence[str]] = None, main_met: Optional[Sequence[bool]] = None,
+                      alt_met: Optional[Sequence[bool]] = None, zero_line: bool = False):
+    """One condition (2 or 3) of one archetype set on two bases: the main series (all designs, INK, solid; a whisker per window
+    when ``whisk`` names its low/high columns) against its grey permutation band (``low`` / ``high`` of ``main``), and the second
+    base (``alt``: the actively protected designs) as a grey dashed line with hollow markers and no band. A window where the
+    condition is met is a MET-coloured dot on the main series (``main_met``) and a hollow MET ring on the second (``alt_met``);
+    a partial window is hatched. Rows of ``main`` and ``alt`` are the windows in order (x = 0..k-1)."""
+    x = np.arange(len(main))
+    ax.fill_between(x, main[low], main[high], color="#dedcd8", zorder=1, linewidth=0)
+    if zero_line:
+        ax.axhline(0, color=MUTED, linewidth=0.8, zorder=2)
+    if alt is not None:
+        ax.plot(x, alt[value].to_numpy(dtype=float), marker="o", markersize=3.6, linewidth=1.3, zorder=3, **EXPLORE)
+        hit = [i for i, m in enumerate(alt_met or []) if m]
+        if hit:
+            ax.plot(x[hit], alt[value].to_numpy(dtype=float)[hit], "o", markersize=9.6, markerfacecolor="none", markeredgecolor=MET,
+                    markeredgewidth=1.4, zorder=5)         # wider than the main base's dot: the two bases can meet at nearly the same value
+    y = main[value].to_numpy(dtype=float)
+    if whisk is not None:
+        ax.errorbar(x, y, yerr=[y - main[whisk[0]], main[whisk[1]] - y], marker="o", markersize=3.6, linewidth=1.4, capsize=1.8, color=INK, zorder=4)
+    else:
+        ax.plot(x, y, marker="o", markersize=3.6, linewidth=1.5, color=INK, zorder=4)
+    hit = [i for i, m in enumerate(main_met or []) if m]
+    if hit:
+        ax.plot(x[hit], y[hit], "o", markersize=7.2, color=MET, markeredgecolor=INK, markeredgewidth=0.8, zorder=6)
+    for i, p in enumerate(partial):
+        if p:
+            ax.axvspan(i - 0.5, i + 0.5, facecolor=FEW_FILL, zorder=0, linewidth=0, hatch=PARTIAL_HATCH, edgecolor=GRID)
+    ax.set_xticks(x, ticks, rotation=90, ha="center", va="top")
+    ax.set_xlim(-0.5, len(main) - 0.5)
+    ax.grid(axis="y", color=GRID, linewidth=0.5)
+    ax.set_axisbelow(True)
+    return ax
+
+
+def condition1_bases(ax, years: Sequence[int], bases: Sequence[dict], ring: Optional[Sequence[int]] = None):
+    """Condition 1 on one archetype set per priority year on several bases against the 50 % line. Each base is a dict with
+    ``share`` (per year), ``read`` (per year: drawn only where True), ``look`` (line kwargs: color, linestyle, markerfacecolor) and
+    ``marker``; the first base is the main one. The years in ``ring`` are ringed in the MET colour on the main base."""
+    yrs = np.asarray(years)
+    for k, b in enumerate(bases):
+        sh, rd = np.asarray(b["share"], dtype=float), np.asarray(b["read"], dtype=bool)
+        look = dict(b["look"])
+        col = look.pop("color")
+        ax.plot(yrs[rd], sh[rd], marker=b["marker"], markersize=4.4 if k == 0 else 4.0, linewidth=1.7 if k == 0 else 1.2, color=col,
+                markeredgecolor=col, zorder=4 if k == 0 else 3, **look)
+    ax.axhline(0.5, color=INK, linewidth=1.0, linestyle=(0, (4, 2)), zorder=2)
+    if ring:
+        main = bases[0]
+        idx = [list(yrs).index(y) for y in ring]
+        ax.plot(yrs[idx], np.asarray(main["share"], dtype=float)[idx], "o", markersize=10.5, markerfacecolor="none", markeredgecolor=MET,
+                markeredgewidth=1.7, zorder=5)
+    ax.set_ylim(0, 0.85)
+    ax.set_xlim(yrs[0] - 0.6, yrs[-1] + 0.6)
+    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
     ax.grid(axis="y", color=GRID, linewidth=0.5)
     ax.set_axisbelow(True)
     return ax

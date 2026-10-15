@@ -21,6 +21,12 @@ DOCCLS = {"SLC": "Lift + Cruise", "TR": "Tilt Rotor", "CVT": "CVT", "TW": "Tilt 
 CODES19 = ["SLC", "TR", "CVT", "TW", "MR", "other"]
 BAND = "ABCD"
 BAND_TEXT = ["10 or more aircraft each", "5-9 aircraft each", "2-4 aircraft each", "1 aircraft each"]
+#: the colours of the other Analysis V figures (q3_region_design_all_years, q7_region_family_share): the Okabe-Ito entries of
+#: viz/style.py in their order there (style._CLASSES SLC, TR, CVT, TW = style.REGIONS NA, EU, AP + the fourth), given in that same order to
+#: the assignee types of q2_filer_types and to the bands A-D of q2_largest_filers_share (2026-10-15; the greys of plots.FILER_STYLE
+#: are kept for the other figures). The hatches are the ones of plots.FILER_STYLE, as the q3 figure keeps hatches beside its colours.
+PALETTE = [style.cls(c).color for c in ("SLC", "TR", "CVT", "TW")]       # #0072B2, #E69F00, #009E73, #D55E00
+FILER_STYLE = {"Named company": (PALETTE[0], ""), "University / institute": (PALETTE[1], "////"), "Individual inventor": (PALETTE[2], "....")}
 
 
 # ------------------------------------------------------------------------------------------ shared frames (cached per ctx)
@@ -70,13 +76,13 @@ def fig_largest_filers_share(ctx):
     rated_rank = [i + 1 for i, f in enumerate(sizes.index) if f in d["rated"]]
     edges = [0] + cov["cumulative firms"].astype(int).tolist()
     fig, ax = plt.subplots(figsize=(ctx.W, 3.1), constrained_layout=True)
-    for k in range(1, len(edges) - 1, 2):
-        ax.axvspan(edges[k] + 0.5, edges[k + 1] + 0.5, color=plots.FEW_FILL, linewidth=0, zorder=0)
+    for k in range(len(edges) - 1):                       # one pale band per size band A-D, in the palette order
+        ax.axvspan(edges[k] + 0.5, edges[k + 1] + 0.5, color=plots.tint(PALETTE[k], 0.18), linewidth=0, zorder=0)
     ax.step(rank, cum, where="post", color=style.INK, linewidth=1.5, zorder=3)
     ax.plot(rated_rank, cum[np.array(rated_rank) - 1], linestyle="none", marker="D", markersize=4.6, markerfacecolor="white",
             markeredgecolor=style.INK, markeredgewidth=1.0, zorder=5)
     for k, (x0, x1) in enumerate(zip(edges[:-1], edges[1:])):
-        ax.text((x0 + x1) / 2 + 0.5, 0.025, BAND[k], ha="center", va="bottom", fontsize=8, fontweight="bold")
+        ax.text((x0 + x1) / 2 + 0.5, 0.025, BAND[k], ha="center", va="bottom", fontsize=8, fontweight="bold", color=PALETTE[k])
         y1 = float(cum[x1 - 1])
         dx, dy, ha, va = [(4, -8, "left", "top"), (4, -8, "left", "top"), (-4, 6, "right", "bottom"), (-3, -8, "right", "top")][k]
         ax.annotate(ctx.pct(y1), (x1, y1), textcoords="offset points", xytext=(dx, dy), ha=ha, va=va, fontsize=8, fontweight="bold")
@@ -112,12 +118,12 @@ def fig_filer_types(ctx):
     pos = [0, 1] + [2.4 + k for k in range(len(ctx.WIN_NAMES))]
     parts_n = parts.sum(axis=1).astype(int).to_numpy()
     fig, ax = plt.subplots(figsize=(ctx.W * 0.66, 2.9), constrained_layout=True)
-    plots.stack_bars(ax, parts, plots.FILER_STYLE, positions=pos, width=0.72, partial=[len(parts) - 1], min_label=0.06)
+    plots.stack_bars(ax, parts, FILER_STYLE, positions=pos, width=0.72, partial=[len(parts) - 1], min_label=0.06)
     ax.axvline(1.7, color=style.MUTED, linewidth=0.8, linestyle=":")
     ax.set_xticks(pos, [f"{t}\nn {n}" for t, n in zip(["all, repr.\npatents", "all,\naircraft"] + [ctx.WSHORT[w] for w in ctx.WIN_NAMES], parts_n)], fontsize=7)
     ax.set_ylim(0, 1); ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0)); ax.set_ylabel("share")
     ax.spines[["bottom"]].set_visible(False); ax.tick_params(axis="x", length=0)
-    fig.legend(handles=[Patch(facecolor=plots.FILER_STYLE[k][0], hatch=plots.FILER_STYLE[k][1], edgecolor="white", label=FT_NAME[k]) for k in FT],
+    fig.legend(handles=[Patch(facecolor=FILER_STYLE[k][0], hatch=FILER_STYLE[k][1], edgecolor="white", label=FT_NAME[k]) for k in FT],
                loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.4, columnspacing=1.0)
     data = parts.assign(bar=["all, repr. patents", "all, aircraft"] + ctx.WIN_NAMES, n=parts_n)
     return fig, data

@@ -1,0 +1,230 @@
+family,name,kind,base,designs in base,members,share of base,not members for a blank rule variable,top architecture,top architecture designs,top architecture share,renamed architecture (> 85 %),architectures (code: designs),value,designs,share of family
+P1,"fixed wing, boom-borne distributed propulsion",summary,all designs,625.0,174.0,0.2784,30.0,SLC,90.0,0.5172,False,SLC: 90; CVT: 40; TR: 26; PTC: 11; TB: 6; SRW: 1,,,
+P1,"fixed wing, boom-borne distributed propulsion",summary,actively protected,433.0,135.0,0.3118,19.0,SLC,69.0,0.5111,False,SLC: 69; CVT: 30; TR: 21; PTC: 10; TB: 4; SRW: 1,,,
+P2,"fixed wing, distributed propulsion",summary,all designs,625.0,264.0,0.4224,30.0,SLC,127.0,0.4811,False,SLC: 127; CVT: 56; TR: 50; PTC: 16; TB: 10; DS: 3; SRW: 2,,,
+P2,"fixed wing, distributed propulsion",summary,actively protected,433.0,199.0,0.4596,19.0,SLC,90.0,0.4523,False,SLC: 90; TR: 42; CVT: 41; PTC: 15; TB: 6; DS: 3; SRW: 2,,,
+P3,"fixed wing, open distributed propulsion",summary,all designs,625.0,192.0,0.3072,31.0,SLC,101.0,0.526,False,SLC: 101; CVT: 37; TR: 31; PTC: 11; TB: 10; DS: 1; SRW: 1,,,
+P3,"fixed wing, open distributed propulsion",summary,actively protected,433.0,148.0,0.3418,20.0,SLC,76.0,0.5135,False,SLC: 76; CVT: 28; TR: 25; PTC: 11; TB: 6; DS: 1; SRW: 1,,,
+P4,"wingless multicopter, distributed",summary,all designs,625.0,14.0,0.0224,31.0,MR,10.0,0.7143,False,MR: 10; CVT: 2; PTC: 1; TR: 1,,,
+P4,"wingless multicopter, distributed",summary,actively protected,433.0,12.0,0.0277,20.0,MR,8.0,0.6667,False,MR: 8; CVT: 2; PTC: 1; TR: 1,,,
+P5,"fixed wing with distributed propulsion, any tilt",summary,all designs,625.0,303.0,0.4848,30.0,SLC,127.0,0.4191,False,SLC: 127; CVT: 67; TR: 50; TW: 28; PTC: 16; TB: 10; DS: 3; SRW: 2,,,
+P5,"fixed wing with distributed propulsion, any tilt",summary,actively protected,433.0,231.0,0.5335,19.0,SLC,90.0,0.3896,False,SLC: 90; CVT: 50; TR: 42; TW: 23; PTC: 15; TB: 6; DS: 3; SRW: 2,,,
+P1,,architecture,all designs,,,,,,,,,,SLC,90.0,0.5172
+P1,,architecture,all designs,,,,,,,,,,CVT,40.0,0.2299
+P1,,architecture,all designs,,,,,,,,,,TR,26.0,0.1494
+P1,,architecture,all designs,,,,,,,,,,PTC,11.0,0.0632
+P1,,architecture,all designs,,,,,,,,,,TB,6.0,0.0345
+P1,,architecture,all designs,,,,,,,,,,SRW,1.0,0.0057
+P1,,cohort,all designs,,,,,,,,,,<= 2011,11.0,0.0632
+P1,,cohort,all designs,,,,,,,,,,2012-15,7.0,0.0402
+P1,,cohort,all designs,,,,,,,,,,2016-19,51.0,0.2931
+P1,,cohort,all designs,,,,,,,,,,2020-23,82.0,0.4713
+P1,,cohort,all designs,,,,,,,,,,2024-26 (partial),23.0,0.1322
+P1,,empennage,all designs,,,,,,,,,,Tailless,36.0,0.2069
+P1,,empennage,all designs,,,,,,,,,,V-Tail,31.0,0.1782
+P1,,empennage,all designs,,,,,,,,,,T-Tail,21.0,0.1207
+P1,,empennage,all designs,,,,,,,,,,Conventional,21.0,0.1207
+P1,,empennage,all designs,,,,,,,,,,Fins,17.0,0.0977
+P1,,empennage,all designs,,,,,,,,,,VertFin,13.0,0.0747
+P1,,empennage,all designs,,,,,,,,,,BoxTail,12.0,0.069
+P1,,empennage,all designs,,,,,,,,,,H-Tail,9.0,0.0517
+P1,,empennage,all designs,,,,,,,,,,Oth,6.0,0.0345
+P1,,empennage,all designs,,,,,,,,,,HorizStab,4.0,0.023
+P1,,empennage,all designs,,,,,,,,,,Inv_V-Tail,3.0,0.0172
+P1,,empennage,all designs,,,,,,,,,,Cruciform,1.0,0.0057
+P1,,architecture,actively protected,,,,,,,,,,SLC,69.0,0.5111
+P1,,architecture,actively protected,,,,,,,,,,CVT,30.0,0.2222
+P1,,architecture,actively protected,,,,,,,,,,TR,21.0,0.1556
+P1,,architecture,actively protected,,,,,,,,,,PTC,10.0,0.0741
+P1,,architecture,actively protected,,,,,,,,,,TB,4.0,0.0296
+P1,,architecture,actively protected,,,,,,,,,,SRW,1.0,0.0074
+P1,,cohort,actively protected,,,,,,,,,,<= 2011,4.0,0.0296
+P1,,cohort,actively protected,,,,,,,,,,2012-15,2.0,0.0148
+P1,,cohort,actively protected,,,,,,,,,,2016-19,35.0,0.2593
+P1,,cohort,actively protected,,,,,,,,,,2020-23,71.0,0.5259
+P1,,cohort,actively protected,,,,,,,,,,2024-26 (partial),23.0,0.1704
+P1,,empennage,actively protected,,,,,,,,,,Tailless,29.0,0.2148
+P1,,empennage,actively protected,,,,,,,,,,V-Tail,24.0,0.1778
+P1,,empennage,actively protected,,,,,,,,,,T-Tail,18.0,0.1333
+P1,,empennage,actively protected,,,,,,,,,,Fins,16.0,0.1185
+P1,,empennage,actively protected,,,,,,,,,,Conventional,12.0,0.0889
+P1,,empennage,actively protected,,,,,,,,,,BoxTail,9.0,0.0667
+P1,,empennage,actively protected,,,,,,,,,,VertFin,8.0,0.0593
+P1,,empennage,actively protected,,,,,,,,,,Oth,6.0,0.0444
+P1,,empennage,actively protected,,,,,,,,,,H-Tail,6.0,0.0444
+P1,,empennage,actively protected,,,,,,,,,,HorizStab,4.0,0.0296
+P1,,empennage,actively protected,,,,,,,,,,Inv_V-Tail,2.0,0.0148
+P1,,empennage,actively protected,,,,,,,,,,Cruciform,1.0,0.0074
+P2,,architecture,all designs,,,,,,,,,,SLC,127.0,0.4811
+P2,,architecture,all designs,,,,,,,,,,CVT,56.0,0.2121
+P2,,architecture,all designs,,,,,,,,,,TR,50.0,0.1894
+P2,,architecture,all designs,,,,,,,,,,PTC,16.0,0.0606
+P2,,architecture,all designs,,,,,,,,,,TB,10.0,0.0379
+P2,,architecture,all designs,,,,,,,,,,DS,3.0,0.0114
+P2,,architecture,all designs,,,,,,,,,,SRW,2.0,0.0076
+P2,,cohort,all designs,,,,,,,,,,<= 2011,19.0,0.072
+P2,,cohort,all designs,,,,,,,,,,2012-15,13.0,0.0492
+P2,,cohort,all designs,,,,,,,,,,2016-19,73.0,0.2765
+P2,,cohort,all designs,,,,,,,,,,2020-23,125.0,0.4735
+P2,,cohort,all designs,,,,,,,,,,2024-26 (partial),34.0,0.1288
+P2,,empennage,all designs,,,,,,,,,,Tailless,64.0,0.2424
+P2,,empennage,all designs,,,,,,,,,,V-Tail,39.0,0.1477
+P2,,empennage,all designs,,,,,,,,,,Conventional,36.0,0.1364
+P2,,empennage,all designs,,,,,,,,,,T-Tail,31.0,0.1174
+P2,,empennage,all designs,,,,,,,,,,Fins,27.0,0.1023
+P2,,empennage,all designs,,,,,,,,,,VertFin,23.0,0.0871
+P2,,empennage,all designs,,,,,,,,,,BoxTail,13.0,0.0492
+P2,,empennage,all designs,,,,,,,,,,H-Tail,11.0,0.0417
+P2,,empennage,all designs,,,,,,,,,,Oth,8.0,0.0303
+P2,,empennage,all designs,,,,,,,,,,HorizStab,7.0,0.0265
+P2,,empennage,all designs,,,,,,,,,,Inv_V-Tail,3.0,0.0114
+P2,,empennage,all designs,,,,,,,,,,Cruciform,2.0,0.0076
+P2,,architecture,actively protected,,,,,,,,,,SLC,90.0,0.4523
+P2,,architecture,actively protected,,,,,,,,,,TR,42.0,0.2111
+P2,,architecture,actively protected,,,,,,,,,,CVT,41.0,0.206
+P2,,architecture,actively protected,,,,,,,,,,PTC,15.0,0.0754
+P2,,architecture,actively protected,,,,,,,,,,TB,6.0,0.0302
+P2,,architecture,actively protected,,,,,,,,,,DS,3.0,0.0151
+P2,,architecture,actively protected,,,,,,,,,,SRW,2.0,0.0101
+P2,,cohort,actively protected,,,,,,,,,,<= 2011,5.0,0.0251
+P2,,cohort,actively protected,,,,,,,,,,2012-15,6.0,0.0302
+P2,,cohort,actively protected,,,,,,,,,,2016-19,47.0,0.2362
+P2,,cohort,actively protected,,,,,,,,,,2020-23,109.0,0.5477
+P2,,cohort,actively protected,,,,,,,,,,2024-26 (partial),32.0,0.1608
+P2,,empennage,actively protected,,,,,,,,,,Tailless,48.0,0.2412
+P2,,empennage,actively protected,,,,,,,,,,V-Tail,32.0,0.1608
+P2,,empennage,actively protected,,,,,,,,,,Fins,26.0,0.1307
+P2,,empennage,actively protected,,,,,,,,,,T-Tail,24.0,0.1206
+P2,,empennage,actively protected,,,,,,,,,,Conventional,19.0,0.0955
+P2,,empennage,actively protected,,,,,,,,,,VertFin,16.0,0.0804
+P2,,empennage,actively protected,,,,,,,,,,BoxTail,10.0,0.0503
+P2,,empennage,actively protected,,,,,,,,,,Oth,8.0,0.0402
+P2,,empennage,actively protected,,,,,,,,,,H-Tail,6.0,0.0302
+P2,,empennage,actively protected,,,,,,,,,,HorizStab,6.0,0.0302
+P2,,empennage,actively protected,,,,,,,,,,Inv_V-Tail,2.0,0.0101
+P2,,empennage,actively protected,,,,,,,,,,Cruciform,2.0,0.0101
+P3,,architecture,all designs,,,,,,,,,,SLC,101.0,0.526
+P3,,architecture,all designs,,,,,,,,,,CVT,37.0,0.1927
+P3,,architecture,all designs,,,,,,,,,,TR,31.0,0.1615
+P3,,architecture,all designs,,,,,,,,,,PTC,11.0,0.0573
+P3,,architecture,all designs,,,,,,,,,,TB,10.0,0.0521
+P3,,architecture,all designs,,,,,,,,,,DS,1.0,0.0052
+P3,,architecture,all designs,,,,,,,,,,SRW,1.0,0.0052
+P3,,cohort,all designs,,,,,,,,,,<= 2011,12.0,0.0625
+P3,,cohort,all designs,,,,,,,,,,2012-15,9.0,0.0469
+P3,,cohort,all designs,,,,,,,,,,2016-19,56.0,0.2917
+P3,,cohort,all designs,,,,,,,,,,2020-23,91.0,0.474
+P3,,cohort,all designs,,,,,,,,,,2024-26 (partial),24.0,0.125
+P3,,empennage,all designs,,,,,,,,,,Tailless,41.0,0.2135
+P3,,empennage,all designs,,,,,,,,,,V-Tail,32.0,0.1667
+P3,,empennage,all designs,,,,,,,,,,Conventional,26.0,0.1354
+P3,,empennage,all designs,,,,,,,,,,Fins,21.0,0.1094
+P3,,empennage,all designs,,,,,,,,,,VertFin,19.0,0.099
+P3,,empennage,all designs,,,,,,,,,,T-Tail,18.0,0.0938
+P3,,empennage,all designs,,,,,,,,,,BoxTail,10.0,0.0521
+P3,,empennage,all designs,,,,,,,,,,H-Tail,8.0,0.0417
+P3,,empennage,all designs,,,,,,,,,,Oth,8.0,0.0417
+P3,,empennage,all designs,,,,,,,,,,HorizStab,5.0,0.026
+P3,,empennage,all designs,,,,,,,,,,Inv_V-Tail,3.0,0.0156
+P3,,empennage,all designs,,,,,,,,,,Cruciform,1.0,0.0052
+P3,,architecture,actively protected,,,,,,,,,,SLC,76.0,0.5135
+P3,,architecture,actively protected,,,,,,,,,,CVT,28.0,0.1892
+P3,,architecture,actively protected,,,,,,,,,,TR,25.0,0.1689
+P3,,architecture,actively protected,,,,,,,,,,PTC,11.0,0.0743
+P3,,architecture,actively protected,,,,,,,,,,TB,6.0,0.0405
+P3,,architecture,actively protected,,,,,,,,,,DS,1.0,0.0068
+P3,,architecture,actively protected,,,,,,,,,,SRW,1.0,0.0068
+P3,,cohort,actively protected,,,,,,,,,,<= 2011,5.0,0.0338
+P3,,cohort,actively protected,,,,,,,,,,2012-15,4.0,0.027
+P3,,cohort,actively protected,,,,,,,,,,2016-19,37.0,0.25
+P3,,cohort,actively protected,,,,,,,,,,2020-23,78.0,0.527
+P3,,cohort,actively protected,,,,,,,,,,2024-26 (partial),24.0,0.1622
+P3,,empennage,actively protected,,,,,,,,,,Tailless,33.0,0.223
+P3,,empennage,actively protected,,,,,,,,,,V-Tail,25.0,0.1689
+P3,,empennage,actively protected,,,,,,,,,,Fins,20.0,0.1351
+P3,,empennage,actively protected,,,,,,,,,,T-Tail,15.0,0.1014
+P3,,empennage,actively protected,,,,,,,,,,Conventional,13.0,0.0878
+P3,,empennage,actively protected,,,,,,,,,,VertFin,13.0,0.0878
+P3,,empennage,actively protected,,,,,,,,,,BoxTail,8.0,0.0541
+P3,,empennage,actively protected,,,,,,,,,,Oth,8.0,0.0541
+P3,,empennage,actively protected,,,,,,,,,,H-Tail,5.0,0.0338
+P3,,empennage,actively protected,,,,,,,,,,HorizStab,5.0,0.0338
+P3,,empennage,actively protected,,,,,,,,,,Inv_V-Tail,2.0,0.0135
+P3,,empennage,actively protected,,,,,,,,,,Cruciform,1.0,0.0068
+P4,,architecture,all designs,,,,,,,,,,MR,10.0,0.7143
+P4,,architecture,all designs,,,,,,,,,,CVT,2.0,0.1429
+P4,,architecture,all designs,,,,,,,,,,PTC,1.0,0.0714
+P4,,architecture,all designs,,,,,,,,,,TR,1.0,0.0714
+P4,,cohort,all designs,,,,,,,,,,<= 2011,1.0,0.0714
+P4,,cohort,all designs,,,,,,,,,,2012-15,0.0,0.0
+P4,,cohort,all designs,,,,,,,,,,2016-19,8.0,0.5714
+P4,,cohort,all designs,,,,,,,,,,2020-23,5.0,0.3571
+P4,,cohort,all designs,,,,,,,,,,2024-26 (partial),0.0,0.0
+P4,,empennage,all designs,,,,,,,,,,Tailless,9.0,0.6429
+P4,,empennage,all designs,,,,,,,,,,Conventional,2.0,0.1429
+P4,,empennage,all designs,,,,,,,,,,Fins,1.0,0.0714
+P4,,empennage,all designs,,,,,,,,,,BoxTail,1.0,0.0714
+P4,,empennage,all designs,,,,,,,,,,Inv_V-Tail,1.0,0.0714
+P4,,architecture,actively protected,,,,,,,,,,MR,8.0,0.6667
+P4,,architecture,actively protected,,,,,,,,,,CVT,2.0,0.1667
+P4,,architecture,actively protected,,,,,,,,,,PTC,1.0,0.0833
+P4,,architecture,actively protected,,,,,,,,,,TR,1.0,0.0833
+P4,,cohort,actively protected,,,,,,,,,,<= 2011,0.0,0.0
+P4,,cohort,actively protected,,,,,,,,,,2012-15,0.0,0.0
+P4,,cohort,actively protected,,,,,,,,,,2016-19,8.0,0.6667
+P4,,cohort,actively protected,,,,,,,,,,2020-23,4.0,0.3333
+P4,,cohort,actively protected,,,,,,,,,,2024-26 (partial),0.0,0.0
+P4,,empennage,actively protected,,,,,,,,,,Tailless,8.0,0.6667
+P4,,empennage,actively protected,,,,,,,,,,Conventional,2.0,0.1667
+P4,,empennage,actively protected,,,,,,,,,,Fins,1.0,0.0833
+P4,,empennage,actively protected,,,,,,,,,,Inv_V-Tail,1.0,0.0833
+P5,,architecture,all designs,,,,,,,,,,SLC,127.0,0.4191
+P5,,architecture,all designs,,,,,,,,,,CVT,67.0,0.2211
+P5,,architecture,all designs,,,,,,,,,,TR,50.0,0.165
+P5,,architecture,all designs,,,,,,,,,,TW,28.0,0.0924
+P5,,architecture,all designs,,,,,,,,,,PTC,16.0,0.0528
+P5,,architecture,all designs,,,,,,,,,,TB,10.0,0.033
+P5,,architecture,all designs,,,,,,,,,,DS,3.0,0.0099
+P5,,architecture,all designs,,,,,,,,,,SRW,2.0,0.0066
+P5,,cohort,all designs,,,,,,,,,,<= 2011,20.0,0.066
+P5,,cohort,all designs,,,,,,,,,,2012-15,15.0,0.0495
+P5,,cohort,all designs,,,,,,,,,,2016-19,91.0,0.3003
+P5,,cohort,all designs,,,,,,,,,,2020-23,140.0,0.462
+P5,,cohort,all designs,,,,,,,,,,2024-26 (partial),37.0,0.1221
+P5,,empennage,all designs,,,,,,,,,,Tailless,76.0,0.2508
+P5,,empennage,all designs,,,,,,,,,,V-Tail,42.0,0.1386
+P5,,empennage,all designs,,,,,,,,,,Conventional,41.0,0.1353
+P5,,empennage,all designs,,,,,,,,,,T-Tail,33.0,0.1089
+P5,,empennage,all designs,,,,,,,,,,Fins,28.0,0.0924
+P5,,empennage,all designs,,,,,,,,,,VertFin,26.0,0.0858
+P5,,empennage,all designs,,,,,,,,,,H-Tail,19.0,0.0627
+P5,,empennage,all designs,,,,,,,,,,BoxTail,14.0,0.0462
+P5,,empennage,all designs,,,,,,,,,,HorizStab,9.0,0.0297
+P5,,empennage,all designs,,,,,,,,,,Oth,8.0,0.0264
+P5,,empennage,all designs,,,,,,,,,,Inv_V-Tail,4.0,0.0132
+P5,,empennage,all designs,,,,,,,,,,Cruciform,3.0,0.0099
+P5,,architecture,actively protected,,,,,,,,,,SLC,90.0,0.3896
+P5,,architecture,actively protected,,,,,,,,,,CVT,50.0,0.2165
+P5,,architecture,actively protected,,,,,,,,,,TR,42.0,0.1818
+P5,,architecture,actively protected,,,,,,,,,,TW,23.0,0.0996
+P5,,architecture,actively protected,,,,,,,,,,PTC,15.0,0.0649
+P5,,architecture,actively protected,,,,,,,,,,TB,6.0,0.026
+P5,,architecture,actively protected,,,,,,,,,,DS,3.0,0.013
+P5,,architecture,actively protected,,,,,,,,,,SRW,2.0,0.0087
+P5,,cohort,actively protected,,,,,,,,,,<= 2011,5.0,0.0216
+P5,,cohort,actively protected,,,,,,,,,,2012-15,7.0,0.0303
+P5,,cohort,actively protected,,,,,,,,,,2016-19,61.0,0.2641
+P5,,cohort,actively protected,,,,,,,,,,2020-23,123.0,0.5325
+P5,,cohort,actively protected,,,,,,,,,,2024-26 (partial),35.0,0.1515
+P5,,empennage,actively protected,,,,,,,,,,Tailless,58.0,0.2511
+P5,,empennage,actively protected,,,,,,,,,,V-Tail,34.0,0.1472
+P5,,empennage,actively protected,,,,,,,,,,T-Tail,26.0,0.1126
+P5,,empennage,actively protected,,,,,,,,,,Fins,26.0,0.1126
+P5,,empennage,actively protected,,,,,,,,,,Conventional,24.0,0.1039
+P5,,empennage,actively protected,,,,,,,,,,VertFin,19.0,0.0823
+P5,,empennage,actively protected,,,,,,,,,,H-Tail,12.0,0.0519
+P5,,empennage,actively protected,,,,,,,,,,BoxTail,11.0,0.0476
+P5,,empennage,actively protected,,,,,,,,,,Oth,8.0,0.0346
+P5,,empennage,actively protected,,,,,,,,,,HorizStab,7.0,0.0303
+P5,,empennage,actively protected,,,,,,,,,,Inv_V-Tail,3.0,0.013
+P5,,empennage,actively protected,,,,,,,,,,Cruciform,3.0,0.013
