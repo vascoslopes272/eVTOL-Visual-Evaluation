@@ -1,6 +1,0 @@
-cohort,aircraft,top category,top share,top-2 share,D2,D2 low,D2 high,D2 permutation low,D2 permutation high,below band,condition 1 (> 50 %)
-<= 2011,63,VT,0.492,0.762,2.93,2.45,3.38,1.87,2.91,False,False
-2012-15,58,VT,0.69,0.845,1.97,1.61,2.3,1.85,2.84,False,True
-2016-19,211,VT,0.597,0.839,2.34,1.74,2.94,2.06,2.55,False,True
-2020-23,237,VT,0.582,0.911,2.16,1.7,2.68,2.09,2.52,False,True
-2024-26 (partial),56,VT,0.554,0.875,2.4,2.04,2.71,1.77,2.75,False,True

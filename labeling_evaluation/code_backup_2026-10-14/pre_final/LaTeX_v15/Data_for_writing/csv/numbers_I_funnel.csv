@@ -1,9 +1,0 @@
-step,count,source
-"patent query hits (PatSeer, snapshot 2026-06-08)",1639,ds.counts['patents_acquired']
-"disapproved at labelling (no usable image, pure UAV, out of the domain, other)",530,difference
-after the patent triage T1: patents approved at labelling,1109,ds.counts['patents_wizard_approved']
-"approved patents whose every aircraft is 'but similar' (UAV or not electric), set aside",230,ds.counts['patents_gated_out']
-representative patents (patent families),879,ds.counts['patents_approved']
-aircraft observations (a patent can show several aircraft),963,ds.counts['approved_variants']
-"the 627 designs (unique aircraft), on primary patents",627,len(ctx.v); primary patents 543
-after the image triage T2: whole-aircraft figures approved,1538,ds.counts['approved_figures']; on 578 patents

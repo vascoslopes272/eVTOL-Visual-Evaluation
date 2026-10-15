@@ -1,7 +1,0 @@
-attribute,n flown,n rest,largest gap,test,p,verdict
-architecture group,68,559,HB (-5.2 pp),chi-square,0.17,no difference detected
-applicant region,68,559,Asia-Pacific (-10.2 pp),chi-square,0.35,no difference detected
-priority-year cohort,68,559,2020-23 (+13.7 pp),chi-square,0.028,differs
-assignee type,68,559,Named company (+37.8 pp),chi-square,< 0.001,differs
-priority year,68,559,median +1.0,Mann-Whitney,0.077,no difference detected
-propulsors,68,559,median +3.0,Mann-Whitney,< 0.001,differs

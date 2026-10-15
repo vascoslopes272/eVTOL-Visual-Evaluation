@@ -1,3 +1,0 @@
-group,distance ≤2011,designs ≤2011,distance 2012-15,designs 2012-15,distance 2016-19,designs 2016-19,distance 2020-23,designs 2020-23,change 2012-15 to 2020-23,band low,band high,fall outside the band
-CVT*,0.5893,5 / 17,0.5832,4 / 9,0.6114,22 / 48,0.6067,42 / 75,0.0235,-0.0484,0.0507,False
-CVT,0.5893,5 / 17,0.5853,10 / 9,0.616,28 / 48,0.6113,53 / 75,0.026,-0.0375,0.044,False

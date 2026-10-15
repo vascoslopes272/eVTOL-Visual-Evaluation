@@ -1,5 +1,0 @@
-cohort,aircraft,d_between,d_between_low,d_between_high,Q,Q of the earliest windows,ΔQ,ΔQ permutation low,ΔQ permutation high,below band
-<= 2011,63,0.0,0.0,0.0,0.5756,0.568,0.0076,-0.027,0.0251,False
-2012-15,58,0.013,0.0045,0.0185,0.5605,0.568,-0.0076,-0.0251,0.027,False
-2016-19,211,0.0091,0.0031,0.0097,0.574,0.568,0.0059,-0.0331,0.0503,False
-2020-23,237,0.015,0.0028,0.0096,0.5214,0.568,-0.0466,-0.0266,0.0523,True
