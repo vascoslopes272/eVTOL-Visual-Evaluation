@@ -1,0 +1,25 @@
+architecture,region,designs,offset,low,high,period,drawn in q3_region_entry_lag,marker,lower bound above zero
+Combined vectored thrust,Europe,25,-2.0,-3.0,1.0,all years to 2023,yes,,no
+Combined vectored thrust,Asia-Pacific,24,-1.0,-3.0,1.0,all years to 2023,yes,,no
+Hoverbike,Europe,7,0.0,-2.0,2.0,all years to 2023,no,,no
+Hoverbike,Asia-Pacific,5,-2.0,-6.0,2.0,all years to 2023,no,,no
+Separate Lift + Cruise,Europe,51,1.0,0.0,4.0,all years to 2023,yes,lower bound rounds to +0.0,no
+Separate Lift + Cruise,Asia-Pacific,49,2.0,1.0,4.0,all years to 2023,yes,,yes
+Multicopter,Europe,14,1.5,-1.5,14.5,all years to 2023,yes,,no
+Multicopter,Asia-Pacific,14,4.0,1.5,16.0,all years to 2023,yes,,yes
+Tilt Frame,Europe,8,1.0,-3.0,4.012499999999932,all years to 2023,no,,no
+Tilt Frame,Asia-Pacific,5,2.0,-7.0,6.0,all years to 2023,no,,no
+Tilt Propulsor,Europe,30,0.5,-2.0,2.0,all years to 2023,yes,,no
+Tilt Propulsor,Asia-Pacific,28,3.0,1.0,4.5,all years to 2023,yes,,yes
+Tilt Wing,Europe,11,4.0,-2.5,5.0,all years to 2023,yes,,no
+Tilt Wing,Asia-Pacific,11,4.0,1.0,5.0,all years to 2023,yes,,yes
+Combined vectored thrust,Europe,20,-1.0,-2.0,0.0,2016 to 2023,yes,,no
+Combined vectored thrust,Asia-Pacific,23,-1.0,-3.0,0.0,2016 to 2023,yes,,no
+Separate Lift + Cruise,Europe,42,1.0,-0.5,3.0,2016 to 2023,yes,,no
+Separate Lift + Cruise,Asia-Pacific,44,1.0,0.0,3.0,2016 to 2023,yes,lower bound rounds to +0.0,no
+Multicopter,Europe,10,1.0,-2.0,3.0,2016 to 2023,yes,,no
+Multicopter,Asia-Pacific,12,2.0,-1.0,4.0,2016 to 2023,yes,,no
+Tilt Propulsor,Europe,19,0.0,-1.0,3.0,2016 to 2023,yes,,no
+Tilt Propulsor,Asia-Pacific,24,2.0,0.0,4.0,2016 to 2023,yes,lower bound rounds to +0.0,no
+Tilt Wing,Europe,8,3.5,1.0,5.0,2016 to 2023,yes,,yes
+Tilt Wing,Asia-Pacific,11,3.0,0.0,4.0,2016 to 2023,yes,lower bound rounds to +0.0,no

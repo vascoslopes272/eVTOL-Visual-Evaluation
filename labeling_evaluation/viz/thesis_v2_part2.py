@@ -210,6 +210,9 @@ OPTION_SHORT = {
     "Whole-Body Pitch": "Whole-body pitch", "Variable Incidence": "Variable incidence", "Standard Wings": "Standard",
     "Blended Wing Body": "Blended wing body", "Lifting Body": "Lifting body", "Wheeled Gear": "Wheeled",
     "Skids / Fixed Skids": "Skids", "Tail-sitter": "Tail-sitter",
+    # fuselage shape (2026-10-16): the codebook's base names
+    "Circular / Tubular": "Circular", "Oval / Elliptical": "Oval", "Rectangular / Box": "Rectangular", "Blended / Lifting Body": "Blended",
+    "Pod and Boom (legacy — re-pick the base shape)": "Pod and boom (legacy)",
 }
 
 
@@ -541,8 +544,10 @@ def fig_discovery_curve_v2(ctx):
     n_done = d["curve"].groupby("level")["aircraft"].max()
     levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
     small = 7.0
-    fig, axs = plt.subplots(1, 3, figsize=(ctx.W, getattr(ctx, 'fig_h', 1.8)), constrained_layout=True)
+    fig, axs4 = plt.subplots(1, 4, figsize=(ctx.W, getattr(ctx, 'fig_h', 1.8)), constrained_layout=True,
+                             gridspec_kw=dict(width_ratios=[1, 1, 1, 0.95]))
     fig.get_layout_engine().set(w_pad=0.02, h_pad=0.01, wspace=0.02, hspace=0)
+    axs, axb = axs4[:3], axs4[3]
     starts = {}
     for ax, (lvl, name) in zip(axs, levels):
         g = full[full["level"] == lvl]
@@ -569,13 +574,29 @@ def fig_discovery_curve_v2(ctx):
             ax.axvline(xs, color=style.INK, linewidth=0.6, linestyle=(0, (1, 1.5)), zorder=3)
             ax.text(xs + 6, top * 0.03, str(yr), fontsize=small, ha="left", va="bottom", color=style.INK, zorder=5)
         ax.set_title(name, loc="left", fontsize=FS, fontweight="bold", pad=2)
-        ax.text(0.27, 0.52, f"last {tail} to 2023:\n{est.loc[lvl, 'new in the last 100 aircraft']:.1f} new vs\n"
-                            f"{est.loc[lvl, 'new in the last 100, random order']:.1f} by chance",
-                transform=ax.transAxes, fontsize=small, ha="left", va="top", linespacing=1.1, zorder=6, bbox=dict(fc="white", ec="none", pad=0.6))
+        # the last-100 numbers moved to the fourth panel (2026-10-16): the text box no longer fits the narrower panel without covering the year marks
     axs[0].set_ylabel("distinct configurations seen", fontsize=small)
-    fig.supxlabel("designs, in priority order, to 2026", fontsize=FS)
-    fig.legend(handles=[Line2D([], [], color=style.INK, linewidth=1.5, label="real order"),
-                        Line2D([], [], color="#6b6b6b", linewidth=0.9, linestyle=(0, (3, 2)), label="random order"),
+    # fourth panel (2026-10-16): the two last-100 numbers of each level as bars, real order (ink) against random order (grey), values printed
+    obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
+    rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
+    xb, wb, off = np.arange(len(levels)), 0.38, 0.24
+    axb.bar(xb - off, obs, wb, color=style.INK, zorder=3)
+    axb.bar(xb + off, rnd_, wb, color="#6b6b6b", hatch="////", edgecolor="white", linewidth=0, zorder=3)
+    ymax = max(obs + rnd_) * 1.32
+    for xx, val in list(zip(xb - off, obs)) + list(zip(xb + off, rnd_)):
+        axb.text(xx, val + ymax * 0.02, f"{val:.1f}", ha="center", va="bottom", fontsize=small, zorder=5)
+    axb.set_xticks(xb, [name for _, name in levels])
+    axb.set_xlim(-0.6, len(levels) - 0.4)
+    axb.set_ylim(0, ymax)
+    axb.set_box_aspect(0.5)
+    axb.yaxis.set_major_locator(mticker.MaxNLocator(4, integer=True))
+    axb.tick_params(labelsize=small, length=2.5, pad=1.5)
+    axb.grid(axis="y", color=style.GRID, linewidth=0.5)
+    axb.set_axisbelow(True)
+    axb.set_title(f"new configurations,\nlast {tail} designs to 2023", loc="left", fontsize=small, fontweight="bold", pad=2)
+    fig.supxlabel("designs, in priority order, to 2026 (curves)", fontsize=FS)
+    fig.legend(handles=[Line2D([], [], color=style.INK, linewidth=1.5, label="real order (line, bar)"),
+                        Line2D([], [], color="#6b6b6b", linewidth=0.9, linestyle=(0, (3, 2)), label="random order (line, bar)"),
                         Patch(facecolor=TAIL_BAND, label=f"last {tail} designs to 2023"),
                         Patch(facecolor="white", edgecolor=GREY, hatch="////", label="2024–26 incomplete")],
                loc="outside upper center", ncol=4, fontsize=small, handlelength=1.8, columnspacing=1.2, handletextpad=0.4)
@@ -584,6 +605,8 @@ def fig_discovery_curve_v2(ctx):
     data["level"] = data["level"].map(LEVEL)
     data["complete years"] = [bool(a <= n_done[l]) for l, a in zip(full["level"], full["aircraft"])]
     data["first design of 2016 or 2020"] = [bool(a in (starts[(LEVEL[l], 2016)], starts[(LEVEL[l], 2020)])) for l, a in zip(full["level"], full["aircraft"])]
+    data[f"new in the last {tail} designs to 2023, real order"] = [obs[[k for k, _ in levels].index(l)] for l in full["level"]]
+    data[f"new in the last {tail} designs to 2023, random order"] = [rnd_[[k for k, _ in levels].index(l)] for l in full["level"]]
     return fig, data
 
 

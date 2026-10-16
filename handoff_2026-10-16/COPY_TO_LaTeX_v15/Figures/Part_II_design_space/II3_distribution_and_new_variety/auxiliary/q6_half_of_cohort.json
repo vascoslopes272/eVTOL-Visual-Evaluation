@@ -1,0 +1,12 @@
+{
+ "name": "q6_half_of_cohort",
+ "group": "II3_distribution_and_new_variety",
+ "role": "auxiliary",
+ "kind": "figure",
+ "title": "Configurations that hold half of a cohort's designs",
+ "source_item": "replaces q6_archetype_windows (Figure 8 (ii))",
+ "width_in": 7.0,
+ "height_in": 2.6,
+ "width_cm": 16.0,
+ "height_cm": 5.94
+}

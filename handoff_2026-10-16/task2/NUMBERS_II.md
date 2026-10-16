@@ -18,11 +18,16 @@ Source: `q6_half_of_cohort.csv`. The figure ranks the configurations by size wit
 
 Source: `q6_selected_fields.csv` (notebook 50, group II1).
 
+Change of 2026-10-16: three dimensions added (Table 4.3 of the dissertation): booms present (`boomsPresent`, all 627 designs), propulsor enclosure (any ducted: `any_ducted` of `frames.propulsion_states`, on the designs with a propulsor answer, so the 0-propulsor design and HB / PFV are left out as in the two propulsor rows: 595, not the 596 of ANSWERS_II1.md) and fuselage shape (`fusShape`, codebook base names; the table prints the four most common options, the fifth is Other: 11). The three enter `q6_fixed_by_architecture` in the table's order, before number of wings, so the permutation p of number of wings (0.003 → 0.001) and wing configuration (0.006 → 0.004) moved with the shuffle stream; every V and every other p is unchanged.
+
 | dimension                                  |   designs answering |   options | top share   | most common options                                                          |
 |:-------------------------------------------|--------------------:|----------:|:------------|:-----------------------------------------------------------------------------|
 | propulsors per design (band)          |                 595 |         5 | 23 %        | 1–3: 136 · 4: 125 · 5–6: 117 · 9+: 117 · 7–8: 100                            |
 | tail type                                  |                 600 |        13 | 29 %        | Tailless: 176 · Conventional: 74 · V-tail: 69 · Single fin: 60               |
 | places carrying propulsors per design |                 595 |         4 | 48 %        | 2: 286 · 1: 246 · 3: 60 · 4 or more: 3                                       |
+| booms present                              |                 627 |         2 | 54 %        | No booms: 339 · Booms: 288                                                   |
+| propulsor enclosure (any ducted)           |                 595 |         2 | 63 %        | None ducted: 375 · Any ducted: 220                                           |
+| fuselage shape                             |                 603 |         5 | 64 %        | Oval: 386 · Circular: 117 · Rectangular: 52 · Blended: 37                    |
 | number of wings (winged designs)           |                 547 |         3 | 66 %        | 1: 359 · 2: 172 · 3: 16                                                      |
 | landing-gear type                          |                 602 |         3 | 68 %        | Unknown: 411 · Wheeled: 101 · Skids: 90                                      |
 | fuselage motion hover to cruise            |                 602 |         4 | 85 %        | Fixed: 511 · Whole-body pitch: 62 · Tail-sitter: 17 · Variable incidence: 12 |
@@ -39,10 +44,13 @@ For each dimension of the table above, on the designs that answer it and have an
 | propulsors per design (band)          |                 595 |         0.23 | < 0.001 | 0 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
 | tail type                                  |                 599 |         0.12 | 0.024   | 0 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
 | places carrying propulsors per design |                 595 |         0.27 | < 0.001 | 1 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
-| number of wings (winged designs)           |                 545 |         0.17 | 0.003   | 1 of 7 read                     | Multicopter, Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Personal Flying Vehicle            |
+| booms present                              |                 625 |         0.28 | < 0.001 | 2 of 9 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream                                                  |
+| propulsor enclosure (any ducted)           |                 595 |         0.18 | < 0.001 | 1 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
+| fuselage shape                             |                 602 |         0.19 | < 0.001 | 1 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
+| number of wings (winged designs)           |                 545 |         0.17 | 0.001   | 1 of 7 read                     | Multicopter, Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Personal Flying Vehicle            |
 | landing-gear type                          |                 601 |         0.24 | < 0.001 | 0 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
 | fuselage motion hover to cruise            |                 601 |         0.72 | < 0.001 | 5 of 7 read                     | Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle              |
-| wing configuration                         |                 540 |         0.31 | 0.006   | 5 of 6 read                     | Multicopter, Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle |
+| wing configuration                         |                 540 |         0.31 | 0.004   | 5 of 6 read                     | Multicopter, Rotorcraft, Stopped/Slowed Rotor Wing, Deflected Slipstream, Hoverbike, Personal Flying Vehicle |
 
 ## Table: levels of description
 

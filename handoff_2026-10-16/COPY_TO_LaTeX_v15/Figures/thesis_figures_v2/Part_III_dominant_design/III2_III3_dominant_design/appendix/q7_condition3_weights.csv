@@ -1,0 +1,17 @@
+system,dimension,codebook field,compared as,weight
+G1 architecture,Architecture,topType,"0 same option, 1 different",1.0
+M1 structure,Fuselage Shape,fusShape,"0 same option, 1 different",0.5
+M1 structure,Boom count,"boomsPresent, boom1..6_count","ordered 0, 1, 2, 3 to 4, 5 or more; rank difference / 4",0.3
+M1 structure,Fuselage Kinematics,fusKin,"0 same option, 1 different",0.2
+M2 aerodynamics,Wing count,wCount,"ordered 0, 1, 2, 3; difference / 3",0.3
+M2 aerodynamics,Wing Architecture,wingConf,"0 same option, 1 different",0.3
+M2 aerodynamics,Vertical Position,wing1_posV,"0 same option, 1 different",0.022
+M2 aerodynamics,Longitudinal Position,wing1_posL,"0 same option, 1 different",0.022
+M2 aerodynamics,Planform,wing1_plan,"0 same option, 1 different",0.022
+M2 aerodynamics,Empennage Type,empType,"0 same option, 1 different",0.333
+M3 propulsion,Propulsor band,propulsor_units,"ordered 1 to 3, 4, 5 to 6, 7 to 8, 9 or more; rank difference / 4",0.35
+M3 propulsion,Tilt share,"<station>_count, propKin, wing tilt, empTilts, boom_thrust_state, fusKin",share 0 to 1 of the propulsors whose thrust turns between hover and cruise; absolute difference,0.3
+M3 propulsion,Propulsor Enclosure,<set>_bmech,"0 same option, 1 different (the set with the most propulsors)",0.15
+M3 propulsion,Tractor/Pusher Arrangement,<set>_chord,"0 same option, 1 different (the set with the most propulsors)",0.1
+M3 propulsion,Mount locations,<station>_count,"stations carrying propulsors among fuselage, wing, boom, empennage; Jaccard distance",0.1
+total,15 dimensions,,,4.0

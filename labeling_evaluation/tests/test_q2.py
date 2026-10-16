@@ -32,6 +32,7 @@ def test_selected_fields(archive, ds, dsn):
     from src.dataset_facts import a2
     old = a2.d3_selected_fields(ds)
     new = frames.selected_fields(dsn)
+    new = new[~new["field"].isin(["fusShape", "boomsPresent", "(derived) any propulsor unit ducted"])].reset_index(drop=True)   # rows added 2026-10-16
     new["name"] = new["name"].replace({frames.D3_UNITS_ROW: "propulsor units per aircraft",
                                        frames.D3_PLACES_ROW: "propulsor groups per aircraft"})
     _same(new, old)

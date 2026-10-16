@@ -1,0 +1,33 @@
+configuration,architecture,designs,assignees,assignees per design,share 2016-23,first seen,group,labelled,largest assignee,its designs,its share,largest assignee above 40 %
+TP 1–3,Tilt Propulsor,61,38,0.62,0.076,persistent,core,True,Bell / Textron,15,0.246,False
+SLC 9+,Separate Lift + Cruise,57,40,0.7,0.092,persistent,core,True,Honda,6,0.105,False
+SLC 5–6,Separate Lift + Cruise,42,35,0.83,0.065,persistent,core,True,Airbus,3,0.071,False
+TP 4,Tilt Propulsor,38,33,0.87,0.069,persistent,core,True,Bell / Textron,6,0.158,False
+SLC 7–8,Separate Lift + Cruise,32,24,0.75,0.056,persistent,core,True,Airbus,4,0.125,False
+CVT 5–6,Combined Vectored Thrust,29,15,0.52,0.054,persistent,core,True,Bell / Textron,13,0.448,True
+CVT 7–8,Combined Vectored Thrust,24,15,0.62,0.043,persistent,core,True,Leonardo,4,0.167,False
+CVT 4,Combined Vectored Thrust,22,22,1.0,0.034,persistent,core,True,Airbus,1,0.045,False
+SLC 1–3,Separate Lift + Cruise,21,19,0.9,0.034,persistent,core,True,Airbus,2,0.095,False
+TP 5–6,Tilt Propulsor,20,16,0.8,0.02,persistent,rim,False,Bell / Textron,4,0.2,False
+TP 9+,Tilt Propulsor,20,17,0.85,0.04,new,core,True,Lilium,2,0.1,False
+MR 4,Multicopter,19,15,0.79,0.025,persistent,,False,Airbus,3,0.158,False
+HB,Hoverbike,19,16,0.84,0.029,persistent,,True,one patent's inventor,3,0.158,False
+TW 4,Tilt Wing,17,15,0.88,0.025,persistent,,False,Bell / Textron,2,0.118,False
+CVT 9+,Combined Vectored Thrust,16,14,0.88,0.031,persistent,,True,Archer Aviation,2,0.125,False
+CVT 1–3,Combined Vectored Thrust,15,15,1.0,0.02,persistent,rim,False,BAAZ,1,0.067,False
+SLC 4,Separate Lift + Cruise,13,12,0.92,0.029,new,,True,Shinmaywa Industries,2,0.154,False
+TP 7–8,Tilt Propulsor,12,11,0.92,0.016,persistent,rim,False,Kitty Hawk,2,0.167,False
+TW 1–3,Tilt Wing,11,10,0.91,0.013,persistent,rim,False,Bell / Textron,2,0.182,False
+TW 7–8,Tilt Wing,10,8,0.8,0.022,new,,False,Kitty Hawk,3,0.3,False
+PFV,Personal Flying Vehicle,10,10,1.0,0.013,persistent,rim,False,Boeing,1,0.1,False
+MR 9+,Multicopter,10,8,0.8,0.018,persistent,rim,False,Kitty Hawk,2,0.2,False
+PTC 7–8,Pitch-to-Cruise,10,7,0.7,0.016,new,rim,False,Airbus,3,0.3,False
+RC 1–3,Rotorcraft,9,9,1.0,0.011,persistent,rim,False,CASIC,1,0.111,False
+TW 9+,Tilt Wing,9,6,0.67,0.016,new,rim,False,Bell / Textron,3,0.333,False
+TW 5–6,Tilt Wing,9,8,0.89,0.018,persistent,rim,False,Rolls-Royce,2,0.222,False
+MR 5–6,Multicopter,8,8,1.0,0.018,new,rim,False,Aeronext,1,0.125,False
+TF 4,Tilt Frame,8,7,0.88,0.011,persistent,rim,False,Bell / Textron,2,0.25,False
+TF 7–8,Tilt Frame,7,6,0.86,0.013,new,rim,False,Bell / Textron,2,0.286,False
+MR 1–3,Multicopter,7,6,0.86,0.004,persistent,rim,False,one patent's inventor,2,0.286,False
+PTC 4,Pitch-to-Cruise,6,6,1.0,0.011,persistent,rim,False,Defensya Ingenieria International,1,0.167,False
+TF 1–3,Tilt Frame,6,6,1.0,0.009,persistent,rim,False,Avol,1,0.167,False

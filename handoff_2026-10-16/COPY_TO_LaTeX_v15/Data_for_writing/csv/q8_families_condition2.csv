@@ -1,0 +1,51 @@
+family,base,partition,cohort,designs,top option,top share,top-2 share,D2,D2 low,D2 high,D2 permutation low,D2 permutation high,below band,condition 1 (> 50 %),partial
+P1,all designs,{P1} ∪ {each remaining architecture},<= 2011,63,TR,0.286,0.46,5.82,4.73,6.96,4.49,7.18,False,False,False
+P1,all designs,{P1} ∪ {each remaining architecture},2012-15,58,TR,0.328,0.5,5.52,4.36,6.7,4.44,7.03,False,False,False
+P1,all designs,{P1} ∪ {each remaining architecture},2016-19,211,"P1 fixed wing, boom-borne distributed propulsion",0.242,0.45,6.19,4.61,7.81,5.21,6.33,False,False,False
+P1,all designs,{P1} ∪ {each remaining architecture},2020-23,237,"P1 fixed wing, boom-borne distributed propulsion",0.346,0.506,4.87,3.33,6.54,5.07,6.32,True,False,False
+P1,all designs,{P1} ∪ {each remaining architecture},2024-26 (partial),56,"P1 fixed wing, boom-borne distributed propulsion",0.411,0.518,4.62,3.59,5.84,4.3,7.22,False,False,True
+P1,actively protected,{P1} ∪ {each remaining architecture},<= 2011,18,TR,0.444,0.667,3.31,3.31,3.31,2.79,7.05,False,False,False
+P1,actively protected,{P1} ∪ {each remaining architecture},2012-15,33,TR,0.424,0.606,4.14,4.14,4.14,3.44,6.76,False,False,False
+P1,actively protected,{P1} ∪ {each remaining architecture},2016-19,138,"P1 fixed wing, boom-borne distributed propulsion",0.254,0.486,5.95,4.51,7.66,4.52,6.12,False,False,False
+P1,actively protected,{P1} ∪ {each remaining architecture},2020-23,192,"P1 fixed wing, boom-borne distributed propulsion",0.37,0.531,4.6,3.31,6.02,4.7,5.87,True,False,False
+P1,actively protected,{P1} ∪ {each remaining architecture},2024-26 (partial),52,"P1 fixed wing, boom-borne distributed propulsion",0.442,0.538,4.22,3.25,5.42,3.96,6.75,False,False,True
+P2,all designs,{P2} ∪ {each remaining architecture},<= 2011,63,"P2 fixed wing, distributed propulsion",0.302,0.556,5.08,4.07,6.25,3.21,5.49,False,False,False
+P2,all designs,{P2} ∪ {each remaining architecture},2012-15,58,TR,0.293,0.517,5.44,4.46,6.45,2.83,5.4,False,False,False
+P2,all designs,{P2} ∪ {each remaining architecture},2016-19,211,"P2 fixed wing, distributed propulsion",0.346,0.531,4.99,3.49,6.93,3.58,4.81,False,False,False
+P2,all designs,{P2} ∪ {each remaining architecture},2020-23,237,"P2 fixed wing, distributed propulsion",0.527,0.646,3.13,2.15,4.51,3.7,4.8,True,True,False
+P2,all designs,{P2} ∪ {each remaining architecture},2024-26 (partial),56,"P2 fixed wing, distributed propulsion",0.607,0.696,2.57,2.08,3.03,3.07,5.82,True,True,True
+P2,actively protected,{P2} ∪ {each remaining architecture},<= 2011,18,TR,0.389,0.667,3.52,3.52,3.52,1.86,5.79,False,False,False
+P2,actively protected,{P2} ∪ {each remaining architecture},2012-15,33,TR,0.364,0.545,4.76,4.76,4.76,2.45,5.36,False,False,False
+P2,actively protected,{P2} ∪ {each remaining architecture},2016-19,138,"P2 fixed wing, distributed propulsion",0.341,0.543,5.02,3.7,6.45,3.08,4.49,False,False,False
+P2,actively protected,{P2} ∪ {each remaining architecture},2020-23,192,"P2 fixed wing, distributed propulsion",0.568,0.677,2.81,1.89,3.94,3.23,4.36,True,True,False
+P2,actively protected,{P2} ∪ {each remaining architecture},2024-26 (partial),52,"P2 fixed wing, distributed propulsion",0.615,0.712,2.49,2.02,2.99,2.63,5.06,True,True,True
+P3,all designs,{P3} ∪ {each remaining architecture},<= 2011,63,TR,0.254,0.444,6.14,5.11,7.21,4.16,6.87,False,False,False
+P3,all designs,{P3} ∪ {each remaining architecture},2012-15,58,TR,0.31,0.483,5.58,4.48,6.64,3.9,6.82,False,False,False
+P3,all designs,{P3} ∪ {each remaining architecture},2016-19,211,"P3 fixed wing, open distributed propulsion",0.265,0.479,5.86,4.24,7.41,4.76,6.11,False,False,False
+P3,all designs,{P3} ∪ {each remaining architecture},2020-23,237,"P3 fixed wing, open distributed propulsion",0.384,0.536,4.45,3.14,5.97,4.92,6.05,True,False,False
+P3,all designs,{P3} ∪ {each remaining architecture},2024-26 (partial),56,"P3 fixed wing, open distributed propulsion",0.429,0.536,4.39,3.49,5.65,4.24,6.87,False,False,True
+P3,actively protected,{P3} ∪ {each remaining architecture},<= 2011,18,TR,0.389,0.667,3.52,3.52,3.52,2.57,6.49,False,False,False
+P3,actively protected,{P3} ∪ {each remaining architecture},2012-15,33,TR,0.394,0.576,4.44,4.44,4.44,3.31,6.68,False,False,False
+P3,actively protected,{P3} ∪ {each remaining architecture},2016-19,138,"P3 fixed wing, open distributed propulsion",0.268,0.507,5.66,4.28,7.21,4.22,5.63,False,False,False
+P3,actively protected,{P3} ∪ {each remaining architecture},2020-23,192,"P3 fixed wing, open distributed propulsion",0.406,0.557,4.16,2.87,5.65,4.41,5.46,True,False,False
+P3,actively protected,{P3} ∪ {each remaining architecture},2024-26 (partial),52,"P3 fixed wing, open distributed propulsion",0.462,0.577,3.99,3.19,4.99,3.66,6.25,False,False,True
+P4,all designs,{P4} ∪ {each remaining architecture},<= 2011,63,TR,0.317,0.587,4.74,3.85,5.82,4.15,6.59,False,False,False
+P4,all designs,{P4} ∪ {each remaining architecture},2012-15,58,TR,0.345,0.517,5.0,4.06,6.04,4.11,6.58,False,False,False
+P4,all designs,{P4} ∪ {each remaining architecture},2016-19,211,TR,0.232,0.46,6.15,4.61,7.84,4.82,5.93,False,False,False
+P4,all designs,{P4} ∪ {each remaining architecture},2020-23,237,SLC,0.316,0.536,4.61,3.46,6.28,4.82,5.93,True,False,False
+P4,all designs,{P4} ∪ {each remaining architecture},2024-26 (partial),56,SLC,0.286,0.5,5.56,4.68,6.45,4.14,6.73,False,False,True
+P4,actively protected,{P4} ∪ {each remaining architecture},<= 2011,18,TR,0.5,0.722,3.0,3.0,3.0,2.89,7.04,False,False,False
+P4,actively protected,{P4} ∪ {each remaining architecture},2012-15,33,TR,0.424,0.606,4.02,4.02,4.02,3.74,6.6,False,False,False
+P4,actively protected,{P4} ∪ {each remaining architecture},2016-19,138,TR,0.254,0.457,6.35,4.7,8.12,4.61,5.91,False,False,False
+P4,actively protected,{P4} ∪ {each remaining architecture},2020-23,192,SLC,0.323,0.552,4.49,3.43,5.71,4.78,5.82,True,False,False
+P4,actively protected,{P4} ∪ {each remaining architecture},2024-26 (partial),52,SLC,0.288,0.5,5.41,4.61,6.33,3.96,6.83,False,False,True
+P5,all designs,{P5} ∪ {each remaining architecture},<= 2011,63,"P5 fixed wing with distributed propulsion, any tilt",0.317,0.571,4.88,3.93,6.02,2.51,5.0,False,False,False
+P5,all designs,{P5} ∪ {each remaining architecture},2012-15,58,TR,0.293,0.552,5.22,4.27,6.3,2.44,4.63,False,False,False
+P5,all designs,{P5} ∪ {each remaining architecture},2016-19,211,"P5 fixed wing with distributed propulsion, any tilt",0.431,0.616,4.0,2.73,5.84,3.02,4.03,False,False,False
+P5,all designs,{P5} ∪ {each remaining architecture},2020-23,237,"P5 fixed wing with distributed propulsion, any tilt",0.591,0.709,2.61,1.85,3.69,3.1,4.06,True,True,False
+P5,all designs,{P5} ∪ {each remaining architecture},2024-26 (partial),56,"P5 fixed wing with distributed propulsion, any tilt",0.661,0.732,2.23,1.75,2.63,2.56,4.9,True,True,True
+P5,actively protected,{P5} ∪ {each remaining architecture},<= 2011,18,TR,0.389,0.667,3.52,3.52,3.52,1.62,4.92,False,False,False
+P5,actively protected,{P5} ∪ {each remaining architecture},2012-15,33,TR,0.364,0.576,4.67,4.67,4.67,1.94,4.3,False,False,False
+P5,actively protected,{P5} ∪ {each remaining architecture},2016-19,138,"P5 fixed wing with distributed propulsion, any tilt",0.442,0.645,3.83,2.76,5.08,2.5,3.66,False,False,False
+P5,actively protected,{P5} ∪ {each remaining architecture},2020-23,192,"P5 fixed wing with distributed propulsion, any tilt",0.641,0.75,2.3,1.63,3.21,2.6,3.64,True,True,False
+P5,actively protected,{P5} ∪ {each remaining architecture},2024-26 (partial),52,"P5 fixed wing with distributed propulsion, any tilt",0.673,0.75,2.14,1.74,2.59,2.16,4.23,True,True,True

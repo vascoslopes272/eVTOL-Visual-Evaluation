@@ -1,0 +1,9 @@
+base,condition,A,A·W·T,A·U,F
+all designs,"1, counts: one architecture above 50 % of the designs, two consecutive priority years","✗ not met, at most 36.2 % (2020)","✗ not met, at most 27.3 % (2018)","✗ not met, at most 19.4 % (2021)","✗ not met, at most 56.9 % (2021)"
+all designs,"2, balance: ²D below the permutation band",✓ met in 2020-23,✗ not met,"✓ met in <= 2011, 2012-15",✓ met in 2020-23
+all designs,"3, form: Q below the two earliest cohorts by more than the band",✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23
+all designs,all three in the same period,✗ not met,✗ not met,✗ not met,✗ not met
+actively protected,"1, counts: one architecture above 50 % of the designs, two consecutive priority years","✗ not met, at most 39.0 % (2021)","✗ not met, at most 27.1 % (2021)","✗ not met, at most 23.7 % (2021)","✓ met in 2020 and 2021 (51.8 %, 59.3 %)"
+actively protected,"2, balance: ²D below the permutation band",✓ met in 2020-23,"✓ met in <= 2011, 2020-23","✓ met in <= 2011, 2012-15, 2020-23",✓ met in 2020-23
+actively protected,"3, form: Q below the two earliest cohorts by more than the band",✗ not met,✗ not met,✗ not met,✗ not met
+actively protected,all three in the same period,✗ not met,✗ not met,✗ not met,✗ not met

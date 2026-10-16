@@ -154,7 +154,12 @@ def _numbers(cfg, ctx, R: Path):
          "## Configurations that hold half of each cohort's designs, at A·U (`q6_half_of_cohort`, which leaves the text)\n",
          "Source: `q6_half_of_cohort.csv`. The figure ranks the configurations by size within the cohort (first column); the old heatmap used the overall-size order (second), "
          "which gives 10 for 2016–19 where the text says 10. 2024–26 is incomplete and not read.\n", tables_md(half), "",
-         "## Table: dimensions that vary\n", "Source: `q6_selected_fields.csv` (notebook 50, group II1).\n", tables_md(t6), "",
+         "## Table: dimensions that vary\n", "Source: `q6_selected_fields.csv` (notebook 50, group II1).\n",
+         "Change of 2026-10-16: three dimensions added (Table 4.3 of the dissertation): booms present (`boomsPresent`, all 627 designs), propulsor enclosure "
+         "(any ducted: `any_ducted` of `frames.propulsion_states`, on the designs with a propulsor-unit answer, so the 0-propulsor design and HB / PFV are left out "
+         "as in the two propulsor rows: 595, not the 596 of ANSWERS_II1.md) and fuselage shape (`fusShape`, codebook base names; the table prints the four most common "
+         "options, the fifth is Other: 11). The three enter `q6_fixed_by_architecture` in the table's order, before number of wings, so the permutation p of "
+         "number of wings (0.003 → 0.001) and wing configuration (0.006 → 0.004) moved with the shuffle stream; every V and every other p is unchanged.\n", tables_md(t6), "",
          "## Which dimensions the architecture fixes (`q6_fixed_by_architecture`)\n",
          "Source: `q6_fixed_by_architecture.csv` and `q6_fixed_by_architecture_detail.csv` (notebook 50, group II1, appendix; `viz/thesis_q6.py` fixed_by_architecture).\n",
          f"For each dimension of the table above, on the designs that answer it and have an architecture, the bias-corrected Cramér's V (Bergsma 2013) of dimension × architecture "

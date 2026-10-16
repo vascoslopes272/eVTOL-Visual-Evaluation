@@ -1,0 +1,9 @@
+base,level,weighting,ΔQ 2020-23,ΔQ lower band edge 2020-23,below band 2020-23,cohorts met,family-independent
+all designs,A,w15,-0.0279,-0.019,True,2020-23,True
+all designs,A·W·T,w15,-0.0299,-0.0204,True,2020-23,True
+all designs,A·U,w15,-0.0299,-0.0168,True,2020-23,True
+all designs,F,w15,-0.0279,-0.019,True,2020-23,True
+actively protected,A,w15,0.0091,-0.0221,False,none,True
+actively protected,A·W·T,w15,0.0064,-0.0226,False,none,True
+actively protected,A·U,w15,0.0064,-0.0177,False,none,True
+actively protected,F,w15,0.0091,-0.0221,False,none,True

@@ -35,6 +35,42 @@ places carrying propulsors per design,Stopped/Slowed Rotor Wing,7,2,71 %
 places carrying propulsors per design,Deflected Slipstream,4,2,50 %
 places carrying propulsors per design,Hoverbike,0,,
 places carrying propulsors per design,Personal Flying Vehicle,0,,
+booms present,Separate Lift + Cruise,165,Booms,56 %
+booms present,Tilt Propulsor,151,No booms,62 %
+booms present,Combined Vectored Thrust,106,Booms,58 %
+booms present,Tilt Wing,56,No booms,73 %
+booms present,Multicopter,48,Booms,58 %
+booms present,Tilt Frame,24,No booms,58 %
+booms present,Pitch-to-Cruise,25,Booms,68 %
+booms present,Rotorcraft,9,No booms,67 %
+booms present,Stopped/Slowed Rotor Wing,8,No booms,75 %
+booms present,Deflected Slipstream,4,No booms,100 %
+booms present,Hoverbike,19,No booms,100 %
+booms present,Personal Flying Vehicle,10,No booms,90 %
+propulsor enclosure (any ducted),Separate Lift + Cruise,165,None ducted,61 %
+propulsor enclosure (any ducted),Tilt Propulsor,151,None ducted,66 %
+propulsor enclosure (any ducted),Combined Vectored Thrust,106,None ducted,61 %
+propulsor enclosure (any ducted),Tilt Wing,56,None ducted,77 %
+propulsor enclosure (any ducted),Multicopter,48,Any ducted,62 %
+propulsor enclosure (any ducted),Tilt Frame,24,None ducted,88 %
+propulsor enclosure (any ducted),Pitch-to-Cruise,25,None ducted,64 %
+propulsor enclosure (any ducted),Rotorcraft,9,None ducted,78 %
+propulsor enclosure (any ducted),Stopped/Slowed Rotor Wing,7,None ducted,71 %
+propulsor enclosure (any ducted),Deflected Slipstream,4,Any ducted,75 %
+propulsor enclosure (any ducted),Hoverbike,0,,
+propulsor enclosure (any ducted),Personal Flying Vehicle,0,,
+fuselage shape,Separate Lift + Cruise,165,Oval,64 %
+fuselage shape,Tilt Propulsor,151,Oval,59 %
+fuselage shape,Combined Vectored Thrust,106,Oval,68 %
+fuselage shape,Tilt Wing,56,Oval,73 %
+fuselage shape,Multicopter,48,Oval,50 %
+fuselage shape,Tilt Frame,24,Oval,83 %
+fuselage shape,Pitch-to-Cruise,25,Oval,68 %
+fuselage shape,Rotorcraft,9,Oval,100 %
+fuselage shape,Stopped/Slowed Rotor Wing,8,Oval,50 %
+fuselage shape,Deflected Slipstream,4,Oval,75 %
+fuselage shape,Hoverbike,3,Blended,67 %
+fuselage shape,Personal Flying Vehicle,3,Oval,33 %
 number of wings (winged designs),Separate Lift + Cruise,158,1,66 %
 number of wings (winged designs),Tilt Propulsor,145,1,67 %
 number of wings (winged designs),Combined Vectored Thrust,103,1,70 %

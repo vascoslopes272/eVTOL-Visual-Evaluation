@@ -1160,12 +1160,23 @@ from .data import hidden_by_override as _hidden          # noqa: E402
 
 #: the label fields Table 6 prints in full, in the document's order.
 #: Ported from: a2.py:D3_FIELDS
-D3_FIELDS = ["wCount", "empType", "fusKin", "wingConf", "gearArch", "latSym"]
+#: 2026-10-16: fuselage shape (fusShape) and booms present (boomsPresent) added; with the derived ducting row (D3_DUCT_ROW) they are the
+#: three dimensions the author added to the thesis table (Table 4.3) on 2026-10-16
+D3_FIELDS = ["wCount", "empType", "fusKin", "wingConf", "gearArch", "latSym", "fusShape", "boomsPresent"]
 
 #: printed name of each Table 6 field. Ported from: a2.py:FIELD_NAMES (the six used here)
 D3_FIELD_NAMES = {"empType": "tail type", "wCount": "number of wings (winged designs)", "gearArch": "landing-gear type",
                   "fusKin": "fuselage motion hover to cruise", "wingConf": "wing configuration",
-                  "latSym": "left-right symmetry"}
+                  "latSym": "left-right symmetry", "fusShape": "fuselage shape", "boomsPresent": "booms present"}
+
+#: printed option names of a Table 6 field that has no option list in the data dictionary (a bool column)
+D3_OPTION_NAMES = {"boomsPresent": {"True": "Booms", "False": "No booms"}}
+
+#: the third derived row of Table 6 (2026-10-16): whether any recorded propulsor unit sits in a duct (``any_ducted`` of
+#: :func:`propulsion_states`: True / False, <NA> when an M3 override hides a station or there is no propulsor record), on the
+#: designs with a propulsor-unit answer (the same basis as the two propulsor rows: the 0-propulsor design and HB / PFV left out)
+D3_DUCT_ROW = "propulsor enclosure (any ducted)"
+D3_DUCT_NAMES = {"True": "Any ducted", "False": "None ducted"}
 
 #: options Table 6 leaves out (author's ruling, rerun of 2026-10-15): 0 wings (the table reads the winged designs) and 0 places
 #: carrying propulsors (the one design recorded with 0 propulsors, already left out by propulsor_units)
@@ -1209,6 +1220,14 @@ def propulsor_groups(v: pd.DataFrame) -> pd.Series:
     return (v[cols].apply(pd.to_numeric, errors="coerce") > 0).sum(axis=1)
 
 
+def _any_ducted_row(ds) -> pd.Series:
+    """The series of D3_DUCT_ROW: the printed option names, NaN where the design has no answer."""
+    units = propulsor_units(ds.variants)["units"]
+    ad = propulsion_states(ds.variants)["any_ducted"]
+    s = pd.Series([D3_DUCT_NAMES[str(bool(x))] if pd.notna(x) else np.nan for x in ad], index=ds.variants.index, dtype=object)
+    return s.where(units.notna())
+
+
 def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
     """Table 6: per label field the aircraft that answer it, the number of different answers, the top share and the most
     common answers with their aircraft ("answer n · answer n"), then two derived propulsion rows: the propulsor units per
@@ -1223,7 +1242,7 @@ def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
         s = ds.variants[f]
         if f in D3_DROP_OPTIONS:                    # an option left out of the table (rerun of 2026-10-15)
             s = s.where(~s.astype(str).str.replace(r"\.0$", "", regex=True).isin(D3_DROP_OPTIONS[f]))
-        names = option_names(ds.data_dictionary, f)
+        names = option_names(ds.data_dictionary, f) or D3_OPTION_NAMES.get(f, {})
         top = s.dropna().value_counts().head(4)
         rows.append({"name": D3_FIELD_NAMES.get(f, f), "field": f, "answered": int(s.notna().sum()),
                      "answers": int(s.nunique(dropna=True)), "top_share": round(_conc.top_k_share(s, 1), 2),
@@ -1235,6 +1254,7 @@ def selected_fields(ds, fields: Optional[List[str]] = None) -> pd.DataFrame:
             (D3_PLACES_ROW, "(derived) M3 stations carrying units",
              propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g))).where(units.notna())
              .where(lambda x: ~x.isin(D3_DROP_OPTIONS[D3_PLACES_ROW]))),
+            (D3_DUCT_ROW, "(derived) any propulsor unit ducted", _any_ducted_row(ds)),
         ]:
             s = s.where(s.ne("nan")).dropna()
             top = s.value_counts().head(5)
@@ -1255,13 +1275,13 @@ def selected_field_series(ds) -> Dict[str, pd.Series]:
         s = ds.variants[f]
         if f in D3_DROP_OPTIONS:
             s = s.where(~s.astype(str).str.replace(r"\.0$", "", regex=True).isin(D3_DROP_OPTIONS[f]))
-        names = option_names(ds.data_dictionary, f)
+        names = option_names(ds.data_dictionary, f) or D3_OPTION_NAMES.get(f, {})
         ids = [str(k).replace(".0", "") if pd.notna(k) else None for k in s]        # option ids as strings ("2", not "2.0"; True/False as is)
         out[D3_FIELD_NAMES.get(f, f)] = pd.Series([names.get(k, k) if k is not None else np.nan for k in ids], index=s.index, dtype=object)
     units = propulsor_units(ds.variants)["units"]
     places = (propulsor_groups(ds.variants).map(lambda g: "4 or more" if g >= 4 else str(int(g))).where(units.notna())
               .where(lambda x: ~x.isin(D3_DROP_OPTIONS[D3_PLACES_ROW])))
-    for name, s in [(D3_UNITS_ROW, rotor_bin(units)), (D3_PLACES_ROW, places)]:
+    for name, s in [(D3_UNITS_ROW, rotor_bin(units)), (D3_PLACES_ROW, places), (D3_DUCT_ROW, _any_ducted_row(ds))]:
         out[name] = s.where(s.ne("nan")).astype(object).where(s.notna())
     return out
 
