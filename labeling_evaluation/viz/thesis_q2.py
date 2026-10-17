@@ -48,6 +48,7 @@ def _frames(ctx) -> dict:
         d["es"] = frames.entry_split(ent, ctx.COMPLETE, DOCCLS)
         d["et"] = frames.entry_split_test(ent, ctx.COMPLETE)
         d["twe"] = frames.tw_entry(v, ctx.COMPLETE)
+        d["twf"] = frames.tw_entry_tests(d["twe"])
         ctx._q2 = d
     return ctx._q2
 
@@ -107,16 +108,24 @@ def fig_largest_filers_share(ctx):
     return fig, data
 
 
-def fig_filer_types(ctx):
-    """Figure 16 (ii): the share of each filer type, all years (representative patents, then aircraft) and per priority window."""
+def _filer_types_parts(ctx):
+    """The counts behind q2_filer_types: one row per bar (all representative patents, all aircraft, then each window), one column per filer
+    type (FT order), with the bar names and the n of each row. Shared by fig_filer_types and fig_filer_types_flat (same data, same CSV)."""
     d = _frames(ctx)
     v, fmr = ctx.v, d["fmr"]
     win_counts = [v[v["window"] == w]["filer"].value_counts().reindex(FT).fillna(0) for w in ctx.WIN_NAMES]
     rep = fmr.set_index("filer")["representative patents"]
     parts = pd.DataFrame([[rep["Named companies"], rep["Universities and institutes"], rep["Individual inventors"]],
                           list(v["filer"].value_counts().reindex(FT).fillna(0))] + [list(c) for c in win_counts], columns=FT)
-    pos = [0, 1] + [2.4 + k for k in range(len(ctx.WIN_NAMES))]
     parts_n = parts.sum(axis=1).astype(int).to_numpy()
+    bars = ["all, repr. patents", "all, aircraft"] + ctx.WIN_NAMES
+    return parts, parts_n, bars
+
+
+def fig_filer_types(ctx):
+    """Figure 16 (ii): the share of each filer type, all years (representative patents, then aircraft) and per priority window."""
+    parts, parts_n, bars = _filer_types_parts(ctx)
+    pos = [0, 1] + [2.4 + k for k in range(len(ctx.WIN_NAMES))]
     fig, ax = plt.subplots(figsize=(ctx.W * 0.66, 2.9), constrained_layout=True)
     # shares printed with one decimal (author, 2026-10-17) so a bar reads 63.6 / 6.9 / 29.5; a block from 4 % prints (the 4.7 % of universities)
     plots.stack_bars(ax, parts, FILER_STYLE, positions=pos, width=0.72, partial=[len(parts) - 1], min_label=0.04, label_fmt="{:.1f}")
@@ -126,7 +135,34 @@ def fig_filer_types(ctx):
     ax.spines[["bottom"]].set_visible(False); ax.tick_params(axis="x", length=0)
     fig.legend(handles=[Patch(facecolor=FILER_STYLE[k][0], hatch=FILER_STYLE[k][1], edgecolor="white", label=FT_NAME[k]) for k in FT],
                loc="outside lower center", ncol=3, fontsize=7.5, handlelength=1.4, columnspacing=1.0)
-    data = parts.assign(bar=["all, repr. patents", "all, aircraft"] + ctx.WIN_NAMES, n=parts_n)
+    data = parts.assign(bar=bars, n=parts_n)
+    return fig, data
+
+
+#: the flat style (viz/flatstyle.py): companies dark blue-grey, individual inventors mid grey, universities the warm accent
+FLAT_COLOURS = {"Named company": "#3b4a5a", "Individual inventor": "#9aa5b1", "University / institute": "#c8792a"}
+#: legend words (author, 2026-10-17): the printed assignee-type names, never "Named company" / "organisations"
+FLAT_WORDS = {"Named company": "Company", "Individual inventor": "Individual inventor", "University / institute": "University / institute"}
+FLAT_ROW = {"all, repr. patents": "all representative patents", "all, aircraft": "all aircraft", "<= 2011": "\u22642011", "2012-15": "2012-15",
+            "2016-19": "2016-19", "2020-23": "2020-23", "2024-26 (partial)": "2024-26, incomplete"}
+
+
+def fig_filer_types_flat(ctx, width_cm: float = 11.0, height_cm: float = 6.0):
+    """q2_filer_types in the flat style (author, 2026-10-17): the same data and CSV as fig_filer_types, drawn as horizontal 100 % rows
+    (all representative patents, all aircraft, a gap, the cohorts); companies / individuals print their share inside (one decimal),
+    universities in a grey side column; the incomplete cohort's bar at 50 % opacity, its texts full; legend as one line above.
+    The registry entry of q2_filer_types points here since 2026-10-17 (author); fig_filer_types is the previous look."""
+    from viz import flatstyle as fs
+    parts, parts_n, bars = _filer_types_parts(ctx)
+    order = ["Named company", "Individual inventor", "University / institute"]          # dark, light, accent left to right
+    labels = [f"{FLAT_ROW[b]} (n {n})" for b, n in zip(bars, parts_n)]
+    with fs.context():
+        fig, ax = fs.figure(width_cm, height_cm)
+        fs.stacked_rows(ax, parts[order], FLAT_COLOURS, labels, side=["University / institute"], side_prefix={"University / institute": "univ."},
+                        gaps_before=[2], faded=[len(parts) - 1])
+        fig.subplots_adjust(left=0.30, right=0.88, top=0.88, bottom=0.10)
+        fs.legend_line(fig, ax, [FLAT_WORDS[k] for k in order], [FLAT_COLOURS[k] for k in order])
+    data = parts.assign(bar=bars, n=parts_n)
     return fig, data
 
 
@@ -264,9 +300,10 @@ ITEMS = [
          title="Filer types, all years and per window",
          caption="The share of each filer type over all years, in representative patents and in aircraft, then per priority window in aircraft; "
                  "the window 2024-26 is still filling (faded).",
-         source_item="Figure 16 (ii)", flag=None, flag_note="", builder=fig_filer_types,
+         source_item="Figure 16 (ii)", flag=None, flag_note="", builder=fig_filer_types_flat,
          source="PatSeer (assignee, priority date) · human labelling", unit="unique aircraft; the first bar the representative patents",
-         read="Each bar is 100 %; a segment of 6 % or more prints its share."),
+         read="Each row is 100 %; companies and individual inventors print their share inside the segment from 10 %, the university "
+              "share stands right of the bar; the incomplete cohort's bar is faded."),
     dict(name="q2_largest_filer_per_class", slot="results", kind="table", sub="B",
          title="Largest filer of each class",
          caption="The classes of 20 aircraft or more: filers, effective number of filers (1 / Σ sᵢ²), the largest filer over all years "
@@ -309,6 +346,7 @@ def numbers(ctx) -> dict:
     v, thin, pct = ctx.v, ctx.thin, ctx.pct
     fm, fmr, cov, fw, cb, lev, levc, es, et, twe = (d[k] for k in ("fm", "fmr", "cov", "fw", "cb", "lev", "levc", "es", "et", "twe"))
     fmi, fmri, fwi, cbi, eti, twi = (x.set_index(k) for x, k in ((fm, "filer"), (fmr, "filer"), (fw, "window"), (cb, "code"), (et, "window"), (twe, "window")))
+    twf = d["twf"].set_index("window")
     n = len(v)
     bell = lev.iloc[0]["firm"]
     bell_cls = levc[levc["firm"] == bell].set_index("class")
@@ -372,6 +410,14 @@ def numbers(ctx) -> dict:
         "tw_ent_share_1619": pct(twi.loc["2016-19", "Tilt Wing share of entrants"]), "tw_ent_share_2023": pct(twi.loc["2020-23", "Tilt Wing share of entrants"]),
         "tw_air_1619": pct(twi.loc["2016-19", "Tilt Wing share of the aircraft"]), "tw_air_2023": pct(twi.loc["2020-23", "Tilt Wing share of the aircraft"]),
         "tw_fisher_p": f"{tw23['Tilt Wing share, Fisher p against the window before']:.2f}",
+        # Fisher per cohort (2026-10-17): Tilt Wing as the entrants' first aircraft against Tilt Wing's share of the cohort's aircraft
+        # (tw_fisher_p above is a different test: the aircraft share of 2020-23 against 2016-19)
+        "tw_air_n_1619": thin(twi.loc["2016-19", "Tilt Wing aircraft"]), "air_n_1619": thin(twi.loc["2016-19", "aircraft in the window"]),
+        "tw_air_n_2023": thin(twi.loc["2020-23", "Tilt Wing aircraft"]), "air_n_2023": thin(twi.loc["2020-23", "aircraft in the window"]),
+        "tw_fisher_p_1619": _pval(twf.loc["2016-19", "p against all the window's aircraft"]),
+        "tw_fisher_p_2023": _pval(twf.loc["2020-23", "p against all the window's aircraft"]),
+        "tw_fisher_rest_p_1619": _pval(twf.loc["2016-19", "p against the window's other aircraft"]),
+        "tw_fisher_rest_p_2023": _pval(twf.loc["2020-23", "p against the window's other aircraft"]),
         "tw_uni_2023": thin(tw23["Tilt Wing entrants: universities / institutes"]), "tw_single_2023": thin(tw23["Tilt Wing entrants: no other aircraft"]),
         "ent_uni_share_2023": pct(tw23["all entrants: universities / institutes"] / tw23["firms entering"]),
         "ent_single_share_2023": pct(tw23["all entrants: no other aircraft"] / tw23["firms entering"]),

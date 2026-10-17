@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
@@ -569,25 +570,181 @@ def fig_cvt_ducted_booms5(ctx):
     return _standalone(ctx, panel_cvt_ducted_booms, 3.2, 2)
 
 
+# ---- the composite (rebuilt 2026-10-17: one compact 16 x 9.3 cm figure, two rows of two panels)
+TRACE_PT = 7.0                 # ticks, legends, axis labels and point labels of the composite
+TRACE_PT_MIN = 6.5             # the band words; nothing in the composite is smaller
+TRACE_H_CM = 9.6               # the height of the composite (row 2 carries two legend lines: the five entries do not fit one)
+#: figure name -> the smallest text it may carry (default MIN_PT)
+FLOOR = {"q6_iv1_traces": TRACE_PT_MIN}
+
+
+def _n_str(ns) -> str:
+    return "·".join(str(int(n)) for n in ns)
+
+
+def _trace_axes(fig):
+    """The four panels of the composite at fixed positions (cm from the bottom-left corner): two rows of two, each 7.3 x 3.5 cm, a 4 mm gap
+    with a thin rule between the rows, room for the shared y labels on the left, the ticks, one legend line under each row and the x label."""
+    W, H = TEXT_CM, TRACE_H_CM
+    pw, ph = 7.3, 3.5                                  # panel size
+    x0, xgap = 1.05, 0.35                              # left margin (y label + tick labels), gap between the columns
+    top, tick, leg, gap, xlab, bot = 0.10, 0.46, 0.28, 0.40, 0.28, 0.06      # tick: a 7 pt label plus tick and pad is 0.38 cm
+    y1 = H - top - ph                                  # row 1 panel bottom
+    y2 = y1 - tick - leg - gap - ph                    # row 2 panel bottom
+    assert y2 - tick - 2 * leg - xlab - bot >= -0.01, y2        # row 2: the legend of (c) and, under it, the legend of (d)
+    f = lambda x, y, w, h: fig.add_axes([x / W, y / H, w / W, h / H])       # noqa: E731
+    axs = np.array([[f(x0, y1, pw, ph), f(x0 + pw + xgap, y1, pw, ph)],
+                    [f(x0, y2, pw, ph), f(x0 + pw + xgap, y2, pw, ph)]])
+    ylegend = ((y1 - tick) / H, (y2 - tick) / H, (y2 - tick - leg) / H)       # the top of each legend line: row 1, row 2 (c), row 2 (d)
+    yrule = (y1 - tick - leg - gap / 2) / H
+    yxlabel = (y2 - tick - 2 * leg) / H
+    return axs, ylegend, yrule, yxlabel, (x0 / W, (x0 + 2 * pw + xgap) / W)
+
+
+def _trace_line(ax, y, color, dash, marker) -> None:
+    _line5(ax, y, color, dash, marker, ms=3.0, lw=1.0)
+
+
+def _trace_bands(ax, k: int, words: bool) -> None:
+    """The few-design and incomplete bands; the words once per row, in the left panel only, at the top of the band, 6.5 pt grey."""
+    plots.few_band(ax, N_FEW, text=None)
+    ax.axvspan(k - 1.5, k - 0.5, color=plots.FEW_FILL, zorder=0, linewidth=0)
+    ax.axvline(k - 1.5, color=style.MUTED, linewidth=0.8, linestyle="--", zorder=1)
+    if words:
+        kw = dict(transform=ax.get_xaxis_transform(), ha="center", va="top", fontsize=TRACE_PT_MIN, color=style.MUTED, zorder=6)
+        ax.text((N_FEW - 1) / 2, 0.985, "few designs", **kw)
+        ax.text(k - 1, 0.985, "incomplete", **kw)
+
+
+def _trace_axes_style(ax, k: int, wins, left: bool, ylabel: str = "share of designs, %") -> None:
+    ax.set_xlim(-0.5, k - 0.5)
+    ax.set_ylim(-0.04, 1.05)
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.set_xticks(range(k), [COHORT_TICK[w] for w in wins])
+    ax.tick_params(axis="both", labelsize=TRACE_PT, length=2.5, pad=1.8)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
+    q6._ygrid(ax)
+    if left:
+        ax.set_ylabel(ylabel, fontsize=TRACE_PT, labelpad=2)
+    else:
+        ax.tick_params(axis="y", labelleft=False)      # same range as the panel on its left; ticks only
+
+
+def _trace_legend(fig, handles, y_top: float, xspan) -> None:
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=((xspan[0] + xspan[1]) / 2, y_top), ncol=len(handles), fontsize=TRACE_PT,
+               handlelength=1.5, handletextpad=0.5, columnspacing=0.9, borderpad=0.0, borderaxespad=0.0, frameon=False)
+
+
+def _h(color, dash, marker, label) -> Line2D:
+    return Line2D([], [], color=color, linestyle=dash, marker=marker, markersize=3.0, linewidth=1.0, label=label)
+
+
 def fig_iv1_traces(ctx):
-    """The composite: the four trace figures as panels (a) to (d), two by two, one shared legend; 16 cm wide, about 10 cm tall."""
-    w_in = TEXT_CM / 2.54
-    fig, axs = plt.subplots(2, 2, figsize=(w_in, 4.05), constrained_layout=True)
-    panels = [("(a)", lambda ax: panel_share(ax, ctx, "share with units on booms", "share of designs with\npropulsors on booms", True)),
-              ("(b)", lambda ax: panel_cvt_booms(ax, ctx, True)),
-              ("(c)", lambda ax: panel_share(ax, ctx, "share with a ducted unit", "share of designs with\na ducted propulsor", True)),
-              ("(d)", lambda ax: panel_cvt_ducted_booms(ax, ctx, True))]
-    for ax, (letter, draw) in zip(axs.ravel(), panels):
-        draw(ax)
-        ax.text(0.0, 1.0, letter, transform=ax.transAxes, ha="left", va="bottom", fontsize=MIN_PT + 1, fontweight="bold")
-    for ax in axs[:, 1]:                                   # one y label per row: (b) and (d) are the CVT share of the same thing
-        ax.set_ylabel("")
-    for ax in axs[1]:
-        ax.set_xlabel("priority cohort; under it, the designs of each line", fontsize=MIN_PT)
-    handles = _handles3() + [Line2D([], [], color=style.MUTED, marker="o", markersize=4.4, linewidth=1.4, label="CVT, no propulsors on booms (panel d)"),
-                             _hollow_handle("hollow marker: few designs (≤2015) or incomplete cohort (2024-26*); ρ, p: Spearman against the priority year, to 2023")]
-    fig.legend(handles=handles, loc="outside lower center", ncol=3, fontsize=MIN_PT, handlelength=2.0, columnspacing=1.2, labelspacing=0.35)
+    """The composite: panels (a) to (d) of the four trace figures, two rows of two at 7.3 x 3.5 cm, 16 cm wide and 9.6 cm tall. Row 1 the
+    boom traces, row 2 the duct traces, a thin rule between them; one y label per row (left panel), one x label for the figure, one legend
+    line per row carrying the n of each line and its Spearman test (every year to 2023), row 2 on two lines ((c), then (d): its five entries
+    do not fit one line at 7 pt); the band words once per row in the left panel.
+    The same data, tests, point labels and hollow markers as the four single-panel figures (panel_share, panel_cvt_booms,
+    panel_cvt_ducted_booms); only the layout is new."""
+    d = q6._data(ctx)
+    dw, wins = d["dw5"], _wins(ctx)
+    k = len(wins)
+    fig = plt.figure(figsize=(TEXT_CM / 2.54, TRACE_H_CM / 2.54))
+    axs, yleg, yrule, yxlab, xspan = _trace_axes(fig)
+    cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+    sc = style.cls("CVT")
+    legends = []
+    # row 1 (a) booms per architecture, (b) CVT on booms with its values; row 2 (c) ducted per architecture, (d) CVT ducted by boom layout
+    for row, col in enumerate(["share with units on booms", "share with a ducted unit"]):
+        ax = axs[row, 0]
+        fr = dw.pivot(index="window", columns="code", values=col).reindex(wins)[ARCH3]
+        ns = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
+        _trace_bands(ax, k, words=True)
+        tests = _trace_tests(ctx, col)
+        hs = []
+        for c in ARCH3:
+            s = style.cls(c)
+            _trace_line(ax, fr[c], s.color, s.dash, s.marker)
+            hs.append(_h(s.color, s.dash, s.marker, f"{SHORT3[c]}, n {_n_str(ns[c])} ({_test_txt(tests[c]['rho'], tests[c]['p'])})"))
+        _trace_axes_style(ax, k, wins, left=True)
+        legends.append(hs)
+    # (b)
+    ax = axs[0, 1]
+    y = cv["share with units on booms"].to_numpy(dtype=float)
+    _trace_bands(ax, k, words=False)
+    _trace_line(ax, y, sc.color, sc.dash, sc.marker)
+    for xi in range(k):
+        if np.isfinite(y[xi]):
+            ax.annotate(f"{100 * y[xi]:.0f} %", (xi, y[xi]), textcoords="offset points", xytext=(0, 4.5), ha="center", va="bottom",
+                        fontsize=TRACE_PT, color=style.INK)
+    _trace_axes_style(ax, k, wins, left=False)
+    # (d)
+    ax = axs[1, 1]
+    nb, nn = cv["aircraft, units on booms"].to_numpy(), cv["aircraft, no units on booms"].to_numpy()
+    lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
+    _trace_bands(ax, k, words=False)
+    legends.append([])                                 # the legend line of (d), under the one of (c)
+    for name, short, col, color, marker, ns in (("units on booms", "CVT on booms", "ducted share, units on booms", sc.color, sc.marker, nb),
+                                                ("no units on booms", "CVT no booms", "ducted share, no units on booms", style.MUTED, "o", nn)):
+        yv = cv[col].to_numpy(dtype=float)
+        _trace_line(ax, yv, color, "-", marker)
+        for xi in range(k):
+            if np.isfinite(yv[xi]):
+                side = "below" if name.startswith("units") else "above"       # on booms: under the point; none on booms: over it
+                if side == "below" and yv[xi] < 0.15:
+                    side = "right"                                            # a point near the axis: the label to its right
+                xy, ha, va = {"below": ((0, -4.5), "center", "top"), "above": ((0, 4.5), "center", "bottom"), "right": ((5, 0), "left", "center")}[side]
+                ax.annotate(f"{int(ns[xi])}/{int(nb[xi] + nn[xi])}", (xi, yv[xi]), textcoords="offset points", xytext=xy, ha=ha, va=va,
+                            fontsize=TRACE_PT, color=style.INK, bbox=dict(fc="white", ec="none", pad=0.4, alpha=0.85))
+        r = lt.loc[name]
+        legends[2].append(_h(color, "-", marker, f"{short}, n {_n_str(ns)}, {r['movement']} ({_test_txt(r['rho'], r['p'])})"))
+    _trace_axes_style(ax, k, wins, left=False)
+    # letters, legends, rule, x label
+    for ax, letter in zip(axs.ravel(), ["(a)", "(b)", "(c)", "(d)"]):
+        ax.text(0.012, 0.97, letter, transform=ax.transAxes, ha="left", va="top", fontsize=8, fontweight="bold", zorder=7)
+    for hs, yt in zip(legends, yleg):
+        _trace_legend(fig, hs, yt, xspan)
+    fig.add_artist(Line2D([xspan[0], xspan[1]], [yrule, yrule], color=style.MUTED, linewidth=0.5, alpha=0.7, transform=fig.transFigure))
+    fig.text((xspan[0] + xspan[1]) / 2, yxlab, "priority cohort", ha="center", va="top", fontsize=TRACE_PT)
     return fig, None
+
+
+def export_iv1_traces(cfg, ctx, png_dir: Path = None):
+    """Write the composite alone (vector PDF at 16 x 9.3 cm, no bounding-box crop) to LaTeX_v15 and the two hand-over folders; a PNG copy
+    for a quick look next to it (and in ``png_dir`` if given). Returns the check row."""
+    name = "q6_iv1_traces"
+    group, role, _, _, _ = REFRESH[name]
+    fig, _, chk = draw_refresh(name, ctx)
+    outside = len(_outside(fig))                       # measured at the figure's own dpi, before any save changes the renderer
+    R = root(cfg)
+    out = R / "Figures" / PART / group / role
+    out.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out / f"{name}.pdf", bbox_inches=None)
+    fig.savefig(out / f"{name}.png", bbox_inches=None, dpi=300)
+    if png_dir is not None:
+        fig.savefig(Path(png_dir) / f"{name}.png", bbox_inches=None, dpi=300)
+    row = {"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
+           "text over text": chk[0], f"under {FLOOR[name]} pt": chk[1], "outside the page": outside}
+    plt.close(fig)
+    rel = [f"Figures/{PART}/{group}/{role}/{name}.{ext}" for ext in ("pdf", "png")]
+    _manifest(R, [(rel[1], "PNG copy of the composite q6_iv1_traces, for a quick look")], used=False)
+    handover_copy(cfg, rel)
+    return row
+
+
+def _outside(fig) -> list:
+    """Texts whose box leaves the figure (the composite is saved without a bounding-box crop)."""
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    W, H = fig.bbox.width, fig.bbox.height
+    bad = []
+    for t in fig.findobj(Text):
+        if not t.get_text():
+            continue
+        b = t.get_window_extent(rend)
+        if b.x0 < -0.5 or b.y0 < -0.5 or b.x1 > W + 0.5 or b.y1 > H + 0.5:
+            bad.append(t.get_text())
+    return bad
 
 
 # ---- the architecture centres
@@ -660,7 +817,8 @@ REFRESH = {
     "q6_cvt_ducted_by_boom_layout": ("IV2_attributes_and_drivers", "main", fig_cvt_ducted_booms5, FRAC62,
                                      "CVT ducted share with and without propulsors on booms, with the tests; 2024-26 drawn, not tested"),
     "q6_iv1_traces": ("IV2_attributes_and_drivers", "main", fig_iv1_traces, 1.0,
-                      "composite of q6_boom_share_by_architecture, q6_cvt_units_on_booms, q6_ducted_share_by_architecture, q6_cvt_ducted_by_boom_layout as panels (a) to (d)"),
+                      "composite of q6_boom_share_by_architecture, q6_cvt_units_on_booms, q6_ducted_share_by_architecture, q6_cvt_ducted_by_boom_layout "
+                      "as panels (a) to (d), 16 x 9.3 cm, one legend line per row (rebuilt 2026-10-17)"),
 }
 
 
@@ -672,11 +830,12 @@ def draw_refresh(name: str, ctx):
     try:
         with plt.style.context(str(Path(p4.__file__).with_name("part1.mplstyle"))):
             fig, data = builder(ctx)
+            floor = FLOOR.get(name, MIN_PT)
             for t in fig.findobj(Text):
-                if t.get_text() and t.get_fontsize() < MIN_PT:
-                    t.set_fontsize(MIN_PT)
+                if t.get_text() and t.get_fontsize() < floor:
+                    t.set_fontsize(floor)
             fig.canvas.draw()
-            chk = (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, MIN_PT)))
+            chk = (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, floor)))
     finally:
         ctx.W = old
     return fig, data, chk
@@ -710,7 +869,7 @@ def export_refresh(cfg, ctx):
         fig, data, chk = draw_refresh(name, ctx)
         out = R / "Figures" / PART / group / role
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / f"{name}.pdf")
+        fig.savefig(out / f"{name}.pdf", bbox_inches=None if name in FLOOR else "tight")      # the composite is laid out at its exact size
         checks.append({"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
                        "text over text": chk[0], "under 7 pt": chk[1]})
         plt.close(fig)

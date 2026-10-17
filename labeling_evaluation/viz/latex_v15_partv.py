@@ -23,9 +23,11 @@ from viz import thesis_q7 as q7
 from viz.thesis_latex_common import MAX_H, TEXT_CM, root as latex_root
 
 CM, MIN_PT = 2.54, 7.0
+PNG_PREVIEW = {"q2_filer_types"}                        # figures that also write a .png preview beside the pdf
 PART = "Part_V_assignees_and_regions"
 FIGS = {
-    "q2_filer_types": (q2.fig_filer_types, 0.66, "V1_who_files", "main", True, "share of each assignee type, all years and per cohort"),
+    # flat style since 2026-10-17 (viz/flatstyle.py, thesis_q2.fig_filer_types_flat); 11 / 16 = the 11 cm the author gave, a PNG preview beside the pdf
+    "q2_filer_types": (q2.fig_filer_types_flat, 11.0 / TEXT_CM, "V1_who_files", "main", True, "share of each assignee type, all years and per cohort"),
     "q3_region_design_all_years": (q3.fig_region_design_all_years, 1.0, "V3_regions_what_and_when", "main", True,
                                    "architecture, propulsor units and tilting per region, all years"),
     "q7_region_family_share": (q7.fig_region_family_share, 0.7, "V4_regions_and_family_F", "main", True,
@@ -38,6 +40,8 @@ FIGS = {
                                  "proximity of the assignees' architecture mixes within and across regions (width not given: 0.7, as the 0.5 of before overlapped its labels at 7 pt)"),
     "q3_firm_successions": (q3.fig_firm_successions, 1.0, "V3_regions_what_and_when", "appendix", False,
                             "where an assignee's next design lands, by the architecture of the one before (width not given: 1.0)"),
+    "q3_region_mix_by_window_class": (q3.fig_region_mix_by_window_class, 1.0, "V3_regions_what_and_when", "appendix", True,
+                                      "architecture mix of each region per cohort, the two strongest 2012-2023 trends above each panel (appendix; added 2026-10-17, width 1.0)"),
 }
 
 
@@ -85,6 +89,8 @@ def export_figure(name: str, cfg, ctx) -> dict:
     pdf.parent.mkdir(parents=True, exist_ok=True)
     csv.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(pdf)
+    if name in PNG_PREVIEW:
+        fig.savefig(pdf.with_suffix(".png"), dpi=300)
     data.to_csv(csv, index=False)
     info = dict(name=name, pdf=pdf, csv=csv, width_cm=round(fig.get_figwidth() * CM, 2), height_cm=round(fig.get_figheight() * CM, 2),
                 height_over_width=round(fig.get_figheight() / fig.get_figwidth(), 3), overlaps=figcheck.overlaps(fig),
@@ -142,7 +148,30 @@ def numbers_md(cfg, ctx) -> str:
     for title, mod, keep in (("Analysis V.1 and V.2 (`q2.numbers`)", q2, None), ("Analysis V.3 (`q3.numbers`)", q3, None), ("Analysis V.4, regional keys (`q7.numbers`)", q7, ("r_", "px_"))):
         d = {k: v for k, v in mod.numbers(ctx).items() if keep is None or k.startswith(keep)}
         L += [f"### {title}\n", "| key | value |", "|---|---|"] + [f"| `{k}` | {a5.relabel(str(v))} |" for k, v in d.items()] + [""]
+        if mod is q2:
+            L += tw_fisher_section(ctx)
     return "\n".join(L)
+
+
+def tw_fisher_section(ctx) -> list:
+    """V.2, Tilt Wing among entrants: the three Fisher exact tests behind the text's p values, with their 2x2 counts (author's request, 2026-10-17)."""
+    twf = q2._frames(ctx)["twf"]
+    twe = q2._frames(ctx)["twe"].set_index("window")
+    t = twf[twf["window"].isin(["2016-19", "2020-23"])].rename(columns={"window": "cohort"})
+    t1 = t[["cohort", "entrants with Tilt Wing", "other entrants", "Tilt Wing aircraft", "other aircraft", "p against all the window's aircraft"]]
+    t2 = t[["cohort", "entrants with Tilt Wing", "other entrants", "other aircraft with Tilt Wing", "other aircraft without", "p against the window's other aircraft"]]
+    w16, w20 = twe.loc["2016-19"], twe.loc["2020-23"]
+    return ["### V.2, Tilt Wing among entrants: Fisher exact tests per cohort\n",
+            "Source: `viz.frames.tw_entry_tests` on `viz.thesis_q2._frames(ctx)['twe']` (`lib.association.fisher_exact_p`, two-sided). "
+            "An entrant is a named assignee whose first design (first row after a sort on priority year) falls in the cohort; its first design counts as "
+            "Tilt Wing when that design is a Tilt Wing. The cohort's aircraft are every design of the cohort, named or not.\n",
+            "**(1) Entrants against all the cohort's aircraft** (keys `tw_fisher_p_1619`, `tw_fisher_p_2023`): 2x2 of (entrants with Tilt Wing, other entrants) x "
+            "(Tilt Wing aircraft, other aircraft).\n", _md_table(t1), "",
+            "**(2) Entrants against the cohort's other aircraft** (keys `tw_fisher_rest_p_1619`, `tw_fisher_rest_p_2023`): the same rows against the cohort's aircraft "
+            "without the entrants' first designs (disjoint sets). These are the \"0.46 and 0.22\" of the Results text.\n", _md_table(t2), "",
+            f"**(3) `tw_fisher_p` = {w20['Tilt Wing share, Fisher p against the window before']:.2f}** is a third test, between cohorts and without entrants: "
+            f"Tilt Wing's share of the aircraft in 2020-23 ({int(w20['Tilt Wing aircraft'])} of {int(w20['aircraft in the window'])}) against 2016-19 "
+            f"({int(w16['Tilt Wing aircraft'])} of {int(w16['aircraft in the window'])}), the test of the fall of the share named in the text.\n"]
 
 
 def lag_two_decimals(ctx) -> pd.DataFrame:
@@ -238,6 +267,19 @@ def export_part_v(cfg=None, ctx=None) -> list:
         mf.write_text(old.rstrip("\n") + "\n" + "\n".join(new) + "\n", encoding="utf-8")
     return infos
 
+
+def export_filer_types_flat(cfg=None, ctx=None) -> dict:
+    """The one-figure entry of the flat-style q2_filer_types (author, 2026-10-17): the registry path (build + export_figure, so a full
+    Part V export writes the very same files), plus the png path and the font facts for the notebook to print."""
+    cfg = cfg or config.load(strict=False)
+    ctx = ctx or thesis.context(cfg)
+    info = export_figure("q2_filer_types", cfg, ctx)
+    info["png"] = info["pdf"].with_suffix(".png")
+    fig, _ = build("q2_filer_types", cfg, ctx)
+    info["fonts"] = sorted({t.get_fontsize() for t in fig.findobj(Text) if t.get_text()})
+    info["font_name"] = next(t for t in fig.findobj(Text) if t.get_text()).get_fontname()
+    plt.close(fig)
+    return info
 
 if __name__ == "__main__":
     for i in export_part_v():

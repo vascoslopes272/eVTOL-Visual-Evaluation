@@ -177,12 +177,40 @@ An entrant is an assignee whose earliest cohort in the dataset is this cohort: t
 | `tw_air_1619` | 11 % |
 | `tw_air_2023` | 8 % |
 | `tw_fisher_p` | 0.33 |
+| `tw_air_n_1619` | 23 |
+| `air_n_1619` | 213 |
+| `tw_air_n_2023` | 19 |
+| `air_n_2023` | 237 |
+| `tw_fisher_p_1619` | 0.49 |
+| `tw_fisher_p_2023` | 0.37 |
+| `tw_fisher_rest_p_1619` | 0.46 |
+| `tw_fisher_rest_p_2023` | 0.22 |
 | `tw_uni_2023` | 3 |
 | `tw_single_2023` | 6 |
 | `ent_uni_share_2023` | 19 % |
 | `ent_single_share_2023` | 69 % |
 | `tw_uni_share_2023` | 33 % |
 | `tw_single_share_2023` | 67 % |
+
+### V.2, Tilt Wing among entrants: Fisher exact tests per cohort
+
+Source: `viz.frames.tw_entry_tests` on `viz.thesis_q2._frames(ctx)['twe']` (`lib.association.fisher_exact_p`, two-sided). An entrant is a named assignee whose first design (first row after a sort on priority year) falls in the cohort; its first design counts as Tilt Wing when that design is a Tilt Wing. The cohort's aircraft are every design of the cohort, named or not.
+
+**(1) Entrants against all the cohort's aircraft** (keys `tw_fisher_p_1619`, `tw_fisher_p_2023`): 2x2 of (entrants with Tilt Wing, other entrants) x (Tilt Wing aircraft, other aircraft).
+
+| cohort | entrants with Tilt Wing | other entrants | Tilt Wing aircraft | other aircraft | p against all the cohort's aircraft |
+|---|---|---|---|---|---|
+| 2016-19 | 8 | 50 | 23 | 190 | 0.493 |
+| 2020-23 | 9 | 72 | 19 | 218 | 0.374 |
+
+**(2) Entrants against the cohort's other aircraft** (keys `tw_fisher_rest_p_1619`, `tw_fisher_rest_p_2023`): the same rows against the cohort's aircraft without the entrants' first designs (disjoint sets). These are the "0.46 and 0.22" of the Results text.
+
+| cohort | entrants with Tilt Wing | other entrants | other aircraft with Tilt Wing | other aircraft without | p against the cohort's other aircraft |
+|---|---|---|---|---|---|
+| 2016-19 | 8 | 50 | 15 | 140 | 0.457 |
+| 2020-23 | 9 | 72 | 10 | 146 | 0.216 |
+
+**(3) `tw_fisher_p` = 0.33** is a third test, between cohorts and without entrants: Tilt Wing's share of the aircraft in 2020-23 (19 of 237) against 2016-19 (23 of 213), the test of the fall of the share named in the text.
 
 ### Analysis V.3 (`q3.numbers`)
 
