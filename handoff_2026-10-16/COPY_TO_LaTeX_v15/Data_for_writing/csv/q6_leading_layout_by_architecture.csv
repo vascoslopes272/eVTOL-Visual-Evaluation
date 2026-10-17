@@ -15,6 +15,10 @@ proposed,Combined Vectored Thrust,CVT,2020-23,rotors and a wing tilt · no fixed
 proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · fixed propulsors elsewhere,15,53,0.283
 proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · fixed propulsors on booms,28,53,0.528
 proposed,Combined Vectored Thrust,CVT,2020-23,rotors tilt · no fixed propulsor,1,53,0.019
+proposed,Combined Vectored Thrust,CVT,2024-26 (incomplete),a wing tilts · fixed propulsors elsewhere,1,10,0.1
+proposed,Combined Vectored Thrust,CVT,2024-26 (incomplete),rotors and a wing tilt · no fixed propulsor,2,10,0.2
+proposed,Combined Vectored Thrust,CVT,2024-26 (incomplete),rotors tilt · fixed propulsors elsewhere,4,10,0.4
+proposed,Combined Vectored Thrust,CVT,2024-26 (incomplete),rotors tilt · fixed propulsors on booms,3,10,0.3
 proposed,Combined Vectored Thrust,CVT,<= 2011,rotors tilt · fixed propulsors elsewhere,4,5,0.8
 proposed,Combined Vectored Thrust,CVT,<= 2011,rotors tilt · fixed propulsors on booms,1,5,0.2
 proposed,Multicopter,MR,2012-15,booms · 1-3,1,4,0.25
@@ -35,6 +39,10 @@ proposed,Multicopter,MR,2020-23,booms · 9+,1,15,0.067
 proposed,Multicopter,MR,2020-23,no booms · 5-6,2,15,0.133
 proposed,Multicopter,MR,2020-23,no booms · 7-8,1,15,0.067
 proposed,Multicopter,MR,2020-23,no booms · 9+,3,15,0.2
+proposed,Multicopter,MR,2024-26 (incomplete),booms · 1-3,1,4,0.25
+proposed,Multicopter,MR,2024-26 (incomplete),booms · 4,1,4,0.25
+proposed,Multicopter,MR,2024-26 (incomplete),booms · 9+,1,4,0.25
+proposed,Multicopter,MR,2024-26 (incomplete),no booms · 4,1,4,0.25
 proposed,Multicopter,MR,<= 2011,booms · 7-8,1,9,0.111
 proposed,Multicopter,MR,<= 2011,no booms · 1-3,2,9,0.222
 proposed,Multicopter,MR,<= 2011,no booms · 4,4,9,0.444
@@ -56,6 +64,11 @@ proposed,Separate Lift + Cruise,SLC,2020-23,lift propulsors on the body,15,75,0.
 proposed,Separate Lift + Cruise,SLC,2020-23,"lift propulsors on the body, stowed in cruise",1,75,0.013
 proposed,Separate Lift + Cruise,SLC,2020-23,lift propulsors on the wing,19,75,0.253
 proposed,Separate Lift + Cruise,SLC,2020-23,"lift propulsors on the wing, stowed in cruise",1,75,0.013
+proposed,Separate Lift + Cruise,SLC,2024-26 (incomplete),lift propulsors on booms,10,16,0.625
+proposed,Separate Lift + Cruise,SLC,2024-26 (incomplete),"lift propulsors on booms, stowed in cruise",1,16,0.062
+proposed,Separate Lift + Cruise,SLC,2024-26 (incomplete),lift propulsors on the body,1,16,0.062
+proposed,Separate Lift + Cruise,SLC,2024-26 (incomplete),"lift propulsors on the body, stowed in cruise",1,16,0.062
+proposed,Separate Lift + Cruise,SLC,2024-26 (incomplete),lift propulsors on the wing,3,16,0.188
 proposed,Separate Lift + Cruise,SLC,<= 2011,lift propulsors on booms,8,17,0.471
 proposed,Separate Lift + Cruise,SLC,<= 2011,lift propulsors on the body,4,17,0.235
 proposed,Separate Lift + Cruise,SLC,<= 2011,lift propulsors on the wing,5,17,0.294
@@ -69,6 +82,8 @@ proposed,Tilt Propulsor,TR,2020-23,no tilting set recorded,1,49,0.02
 proposed,Tilt Propulsor,TR,2020-23,one tilting set,15,49,0.306
 proposed,Tilt Propulsor,TR,2020-23,"two or more tilting sets, on one station",14,49,0.286
 proposed,Tilt Propulsor,TR,2020-23,"two or more tilting sets, on two or more stations",19,49,0.388
+proposed,Tilt Propulsor,TR,2024-26 (incomplete),"two or more tilting sets, on one station",2,12,0.167
+proposed,Tilt Propulsor,TR,2024-26 (incomplete),"two or more tilting sets, on two or more stations",10,12,0.833
 proposed,Tilt Propulsor,TR,<= 2011,one tilting set,15,20,0.75
 proposed,Tilt Propulsor,TR,<= 2011,"two or more tilting sets, on one station",1,20,0.05
 proposed,Tilt Propulsor,TR,<= 2011,"two or more tilting sets, on two or more stations",4,20,0.2
@@ -91,6 +106,9 @@ proposed,Tilt Wing,TW,2020-23,2+ wings · 1-3,1,19,0.053
 proposed,Tilt Wing,TW,2020-23,2+ wings · 4,2,19,0.105
 proposed,Tilt Wing,TW,2020-23,2+ wings · 7-8,2,19,0.105
 proposed,Tilt Wing,TW,2020-23,2+ wings · 9+,2,19,0.105
+proposed,Tilt Wing,TW,2024-26 (incomplete),1 wing · 1-3,1,4,0.25
+proposed,Tilt Wing,TW,2024-26 (incomplete),2+ wings · 4,1,4,0.25
+proposed,Tilt Wing,TW,2024-26 (incomplete),2+ wings · 9+,2,4,0.5
 proposed,Tilt Wing,TW,<= 2011,1 wing · 1-3,2,4,0.5
 proposed,Tilt Wing,TW,<= 2011,2+ wings · 4,1,4,0.25
 proposed,Tilt Wing,TW,<= 2011,2+ wings · 5-6,1,4,0.25

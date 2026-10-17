@@ -118,7 +118,8 @@ def fig_filer_types(ctx):
     pos = [0, 1] + [2.4 + k for k in range(len(ctx.WIN_NAMES))]
     parts_n = parts.sum(axis=1).astype(int).to_numpy()
     fig, ax = plt.subplots(figsize=(ctx.W * 0.66, 2.9), constrained_layout=True)
-    plots.stack_bars(ax, parts, FILER_STYLE, positions=pos, width=0.72, partial=[len(parts) - 1], min_label=0.06)
+    # shares printed with one decimal (author, 2026-10-17) so a bar reads 63.6 / 6.9 / 29.5; a block from 4 % prints (the 4.7 % of universities)
+    plots.stack_bars(ax, parts, FILER_STYLE, positions=pos, width=0.72, partial=[len(parts) - 1], min_label=0.04, label_fmt="{:.1f}")
     ax.axvline(1.7, color=style.MUTED, linewidth=0.8, linestyle=":")
     ax.set_xticks(pos, [f"{t}\nn {n}" for t, n in zip(["all, repr.\npatents", "all,\naircraft"] + [ctx.WSHORT[w] for w in ctx.WIN_NAMES], parts_n)], fontsize=7)
     ax.set_ylim(0, 1); ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0)); ax.set_ylabel("share")

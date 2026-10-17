@@ -60,6 +60,8 @@ RULES = [
     (re.compile(r"\b[Ff]ilers\b"), lambda m: _case(m.group(0), "assignees")),
     (re.compile(r"\b[Ff]iler\b"), lambda m: _case(m.group(0), "assignee")),
     (re.compile(r"\b[Oo]ut of force\b"), lambda m: _case(m.group(0), "not actively protected")),
+    # the assignee type "Named company" prints "Company" (author's brief of 2026-10-16, Analysis V); the data code stays "Named company"
+    (re.compile(r"\b[Nn]amed compan(y|ies)\b"), lambda m: _case(m.group(0), "compan" + m.group(1))),
     (re.compile(r"\bMulti-?rotors\b"), "Multicopters"), (re.compile(r"\bMulti-?rotor\b"), "Multicopter"),
     (re.compile(r"\bevtol\.news directory"), "VFS eVTOL directory"), (re.compile(r"\bevtol\.news\b"), "VFS eVTOL directory"),
     (re.compile(r"\bwindows\b"), "cohorts"), (re.compile(r"\bWindows\b"), "Cohorts"),

@@ -132,6 +132,13 @@ def _data(ctx):
     d["dw"] = drivers.driver_windows(cf, CLASSES5, ctx.COMPLETE, ctx.COMPLETE[:2], class_names=cn)
     d["links"] = drivers.driver_links(cf)
     d["spu"] = frames.sets_per_unit_brief(cf, ctx.COMPLETE, ctx.WSHORT)
+    # the same two frames over the five cohorts, the incomplete 2024-26 one included (refresh of 2026-10-16: it is DRAWN, never tested;
+    # every test above and every number of NUMBERS_IV.md stays on the four complete cohorts). On the complete cohorts they equal dw and pmix.
+    d["dw5"] = drivers.driver_windows(cf, CLASSES5, ctx.WIN_NAMES, ctx.COMPLETE[:2], class_names=cn)
+    mix5 = frames.class_config_mix(frames.class_config_keys(ds, v, cf, ctx.WIN_NAMES), cn)
+    d["pmix5"] = mix5[mix5["rule set"] == "proposed"]
+    same = lambda a, b, keys: a[a["window"].isin(ctx.COMPLETE)].sort_values(keys).reset_index(drop=True).equals(b.sort_values(keys).reset_index(drop=True))  # noqa: E731
+    assert same(d["dw5"], d["dw"], ["code", "window"]) and same(d["pmix5"], d["pmix"], ["code", "window", "configuration"])
     ctx._q6 = d
     return d
 

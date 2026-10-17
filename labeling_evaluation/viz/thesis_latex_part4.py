@@ -11,6 +11,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
 from matplotlib.text import Text
 
 from lib import drivers
@@ -35,32 +36,35 @@ def fig_layout_rows(ctx):
     """The same data and blocks as q6.fig_leading_layout_by_class (pmix, DISPLAY, config_stack), three rows instead of three columns:
     one row per architecture, the bars on the left, the key of that row on the right."""
     d = q6._data(ctx)
-    pmix = d["pmix"]
+    pmix = d["pmix5"]                                      # the five cohorts (refresh of 2026-10-16); equals pmix on the complete ones
+    wins = list(ctx.WIN_NAMES)
     w = ctx.W
     fig, axs = plt.subplots(3, 2, figsize=(w, 3.4), gridspec_kw=dict(width_ratios=[1.0, 0.95], hspace=0.62, wspace=0.02))
     for (ax, kx), c in zip(axs, ["SLC", "TR", "CVT"]):
         m = pmix[pmix["code"] == c]
-        lastw = m[m["window"] == "2020-23"].sort_values("aircraft", ascending=False)
+        lastw = m[m["window"] == "2020-23"].sort_values("aircraft", ascending=False)       # the leader and the stacking order: 2020-23, as before
         ordc = [k for k in lastw["configuration"] if not frames.cfg_outside(k)]
         keep = ordc[:3] if len(ordc) > 4 else ordc[:4]
-        frac = lambda k: (m[m["configuration"].isin(k)].groupby("window")["aircraft"].sum().reindex(ctx.COMPLETE).fillna(0)
-                          / m.groupby("window")["class aircraft"].first().reindex(ctx.COMPLETE))
+        frac = lambda k: (m[m["configuration"].isin(k)].groupby("window")["aircraft"].sum().reindex(wins).fillna(0)
+                          / m.groupby("window")["class aircraft"].first().reindex(wins))
         comp = pd.DataFrame({q6.DISPLAY[c](k): frac([k]) for k in keep})
         rest = frac([k for k in m["configuration"].unique() if k not in keep])
         if rest.sum() > 0:
             comp["other configurations"] = rest
         plots.config_stack(ax, comp, style.cls(c).color, n_few=2, min_label=MIN_LABEL)
-        nwin = m.groupby("window")["aircraft"].sum().reindex(ctx.COMPLETE)
-        ax.set_xticks(range(len(ctx.COMPLETE)), [f"{ctx.WSHORT[x]}  n {int(n)}" for x, n in zip(ctx.COMPLETE, nwin)])
+        _fade_incomplete_column(ax, len(wins) - 1)
+        nwin = m.groupby("window")["aircraft"].sum().reindex(wins)
+        ax.set_xticks(range(len(wins)), [f"{COHORT_TICK[x]}\nn {int(n)}" + ("\n(incomplete)" if x == INCOMPLETE else "") for x, n in zip(wins, nwin)])
         ax.set_yticks([0, 0.5, 1.0])
         ax.set_ylabel({"SLC": "Separate\nLift + Cruise", "TR": "Tilt\nPropulsor", "CVT": "Combined\nVectored Thrust"}[c])
         h, lab = ax.get_legend_handles_labels()
+        kx.set_xticks([]), kx.set_yticks([])
         kx.axis("off")
         kx.legend(h[::-1], [p4._relabel(t) for t in lab[::-1]], loc="center left", fontsize=MIN_PT, handlelength=1.1, labelspacing=0.3, frameon=False,
                   title={"SLC": "where the lift units sit", "TR": "how the tilting thrust is split", "CVT": "what tilts · where the fixed units sit"}[c],
                   title_fontsize=MIN_PT, alignment="left")
-    fig.subplots_adjust(left=0.125, right=0.995, top=0.985, bottom=0.07)      # room for the two-line architecture names (rerun 2026-10-15)
-    return fig, pmix.reset_index(drop=True)
+    fig.subplots_adjust(left=0.125, right=0.995, top=0.985, bottom=0.125)     # room for the two-line architecture names and three-line cohort ticks
+    return fig, _csv_cohorts(pmix.reset_index(drop=True))
 
 
 def _draw(name, ctx):
@@ -356,3 +360,403 @@ def _numbers_rep(R, t, stem, dims, chk):
     body = f"{head}\n\nSource: `{stem}.csv`; shares are those of the layout figure.\n\n" + tables_md(t[cols]) + "\n"
     nf.write_text("\n".join(keep).rstrip("\n") + "\n\n" + body, encoding="utf-8")
     return dims, chk, t
+
+
+# ================================================================================== refresh of 2026-10-16: the 2024-26 cohort, drawn and never tested
+#: Rules (author's brief of 2026-10-16). Data and tests do not change: every Spearman test, the disparity and every number of NUMBERS_IV.md stay
+#: on the four complete cohorts; the 2024-26 cohort is a fifth column or point, hollow, dashed, under a grey band like the "few designs" band.
+#: Only the three largest architectures are drawn. Each figure is drawn at 0.62 of the 16 cm text block (the layout figure and the composite
+#: at the full width) with no text under 7 pt, and its CSV (same columns as before, the 2024-26 rows added) goes to Data_for_writing/csv/.
+ARCH3 = ["SLC", "TR", "CVT"]
+LABEL3 = {"SLC": "Separate Lift + Cruise (SLC)", "TR": "Tilt Propulsor (TP)", "CVT": "Combined Vectored Thrust (CVT)"}
+SHORT3 = {"SLC": "SLC", "TR": "TP", "CVT": "CVT"}
+INCOMPLETE = "2024-26 (partial)"                      # the record's name of the incomplete cohort
+COHORT_TICK = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23", INCOMPLETE: "2024-26*"}
+COHORT_CSV = {INCOMPLETE: "2024-26 (incomplete)"}     # how the CSVs name it
+N_FEW = 2                                             # the first two cohorts hold few designs (as every Analysis IV figure)
+FRAC62 = 0.62
+#: the Spearman test of each share drawn (frame ``trends`` of viz/thesis_q6.py: every year to 2023, the complete cohorts only)
+TRACE_TEST = {"share with units on booms": "units carried on booms", "share with a ducted unit": "a ducted unit"}
+OUTPUTS = "outputs_for_thesis_2026-10-16"             # the hand-over folder at the repository root, mirroring LaTeX_v15/
+MIRROR = "handoff_2026-10-16/COPY_TO_LaTeX_v15"       # the same files, in the folder git carries to the dissertation's computer
+
+
+def _wins(ctx) -> list:
+    return list(ctx.WIN_NAMES)                         # the four complete cohorts, then the incomplete one
+
+
+def _csv_cohorts(df: pd.DataFrame) -> pd.DataFrame:
+    """The CSV copy of a frame: the incomplete cohort named "2024-26 (incomplete)" (column ``window``, printed ``cohort``)."""
+    out = df.copy()
+    if "window" in out.columns:
+        out["window"] = out["window"].map(lambda w: COHORT_CSV.get(w, w))
+    return out
+
+
+def _fade_incomplete_column(ax, k: int) -> None:
+    """The bars of column ``k`` faded like the few-design columns of :func:`viz.plots.config_stack`, behind the same dashed line."""
+    for b in ax.patches:
+        if abs(b.get_x() + b.get_width() / 2 - k) < 1e-6:
+            b.set_alpha(0.55)
+    ax.axvline(k - 0.5, color=style.MUTED, linewidth=0.8, linestyle="--", zorder=5)
+
+
+def _cohort_bands(ax, k: int, bottom: bool = False) -> None:
+    """The two grey bands of a trace figure, drawn alike: few designs (the first N_FEW cohorts) and incomplete (the last). Their labels sit at
+    the top of the band, or at its foot (``bottom``) in a composite panel, where the tests take the top."""
+    plots.few_band(ax, N_FEW, text=None)
+    ax.axvspan(k - 1.5, k - 0.5, color=plots.FEW_FILL, zorder=0, linewidth=0)
+    ax.axvline(k - 1.5, color=style.MUTED, linewidth=0.8, linestyle="--", zorder=1)
+    y, va = (0.02, "bottom") if bottom else (0.985, "top")
+    ax.text((N_FEW - 1) / 2, y, "few designs", transform=ax.get_xaxis_transform(), ha="center", va=va, fontsize=MIN_PT, color=style.MUTED, zorder=6)
+    ax.text(k - 0.95, y, "incomplete", transform=ax.get_xaxis_transform(), ha="center", va=va, fontsize=MIN_PT, color=style.MUTED, zorder=6)
+
+
+def _tick(w: str, ns) -> str:
+    return f"{COHORT_TICK[w]}\n" + "·".join(str(int(n)) for n in ns)
+
+
+def _line5(ax, y, color, dash, marker, ms: float = 4.4, lw: float = 1.4) -> None:
+    """One trace over the five cohorts: the line through the complete cohorts, a dashed segment to the incomplete one; the markers of the
+    few-design cohorts and of the incomplete cohort hollow. A blank cohort (under 5 designs) breaks nothing: the line joins the drawn ones."""
+    y = np.asarray(y, dtype=float)
+    x = np.arange(len(y))
+    ok = np.isfinite(y)
+    k = len(y) - 1
+    xc = x[:k][ok[:k]]
+    ax.plot(xc, y[xc], color=color, linestyle=dash, linewidth=lw, zorder=3, solid_capstyle="round")
+    if ok[k] and len(xc):
+        ax.plot([xc[-1], k], [y[xc[-1]], y[k]], color=color, linestyle=(0, (2.2, 2.0)), linewidth=lw * 0.9, zorder=3, alpha=0.75)
+    for xi in x[ok]:
+        hollow = xi < N_FEW or xi == k
+        ax.plot(xi, y[xi], marker=marker, markersize=ms, color=color, markeredgecolor=color, markeredgewidth=1.0,
+                markerfacecolor="white" if hollow else color, linestyle="none", zorder=4, alpha=0.8 if xi == k else 1.0)
+
+
+def _handles3(labels=None, codes=ARCH3) -> list:
+    return [Line2D([], [], color=style.cls(c).color, linestyle=style.cls(c).dash, marker=style.cls(c).marker, markersize=4.4, linewidth=1.4,
+                   label=(labels or LABEL3)[c]) for c in codes]
+
+
+def _hollow_handle(label: str, color=style.MUTED) -> Line2D:
+    return Line2D([], [], marker="o", markersize=4.4, color=color, markerfacecolor="white", markeredgecolor=color, linestyle="none", label=label)
+
+
+def _test_txt(rho, p) -> str:
+    return (f"ρ {rho:+.2f}, {q6._ptxt(p)}" if rho == rho else "not tested").replace("-", "−")
+
+
+def _trace_tests(ctx, col: str) -> dict:
+    t = q6._data(ctx)["trends"]
+    return {c: t[(t["trace"] == TRACE_TEST[col]) & (t["code"] == c)].iloc[0] for c in ARCH3}
+
+
+def _share_axes(ax, k: int, ylabel: str, headroom: bool) -> None:
+    ax.set_xlim(-0.5, k - 0.5)
+    ax.set_ylim(-0.04, 1.30 if headroom else 1.05)        # headroom: the tests are printed above the 100 % line inside the panel
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    q6._pc(ax)
+    q6._ygrid(ax)
+    ax.set_ylabel(ylabel)
+
+
+def _panel_tests(ax, lines: list) -> None:
+    """The Spearman tests of a composite panel, printed above the 100 % line (the headroom), between the two grey bands."""
+    ax.text(0.5, 0.985, "\n".join(lines), transform=ax.transAxes, ha="center", va="top", fontsize=MIN_PT, linespacing=1.25,
+            bbox=dict(fc="white", ec="none", pad=1.2, alpha=0.9))
+
+
+# ---- the four trace panels (each a standalone figure and a panel of the composite)
+def panel_share(ax, ctx, col: str, ylabel: str, in_panel: bool):
+    """Share ``col`` of the three architectures over the five cohorts; the Spearman test of each architecture (every year to 2023)."""
+    dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
+    k = len(wins)
+    fr = dw.pivot(index="window", columns="code", values=col).reindex(wins)[ARCH3]
+    ns = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
+    _cohort_bands(ax, k, bottom=in_panel)
+    for c in ARCH3:
+        s = style.cls(c)
+        _line5(ax, fr[c], s.color, s.dash, s.marker)
+    ax.set_xticks(range(k), [_tick(w, ns.loc[w]) for w in wins])
+    _share_axes(ax, k, ylabel, in_panel)
+    tests = _trace_tests(ctx, col)
+    if in_panel:
+        _panel_tests(ax, [f"{SHORT3[c]} {_test_txt(tests[c]['rho'], tests[c]['p'])}" for c in ARCH3])
+    data = _csv_cohorts(dw[["class", "code", "window", "aircraft", col]].reset_index(drop=True))
+    return _handles3({c: f"{LABEL3[c]}: {_test_txt(tests[c]['rho'], tests[c]['p'])}" for c in ARCH3}), data
+
+
+def panel_cvt_booms(ax, ctx, in_panel: bool):
+    """CVT designs with propulsors on booms, share per cohort with its value at each point; the Spearman test of CVT."""
+    dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
+    k = len(wins)
+    cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+    sc = style.cls("CVT")
+    y = cv["share with units on booms"].to_numpy(dtype=float)
+    _cohort_bands(ax, k, bottom=in_panel)
+    _line5(ax, y, sc.color, sc.dash, sc.marker)
+    for xi in range(k):
+        if not np.isfinite(y[xi]):
+            continue
+        dip = (not in_panel) and 0 < xi < k - 1 and y[xi] <= min(y[xi - 1], y[xi + 1])      # in a panel the band label takes the foot
+        ax.annotate(f"{100 * y[xi]:.0f} %", (xi, y[xi]), textcoords="offset points", xytext=(0, -7 if dip else 6), ha="center",
+                    va="top" if dip else "bottom", fontsize=MIN_PT, color=style.INK)
+    ax.set_xticks(range(k), [_tick(w, [cv.loc[w, "aircraft"]]) for w in wins])
+    _share_axes(ax, k, "share of CVT designs with\npropulsors on booms", in_panel)
+    t = _trace_tests(ctx, "share with units on booms")["CVT"]
+    if in_panel:
+        _panel_tests(ax, [f"CVT {_test_txt(t['rho'], t['p'])}"])
+    data = _csv_cohorts(cv[["aircraft", "aircraft, units on booms", "share with units on booms"]].reset_index())
+    return _handles3({"CVT": f"{LABEL3['CVT']}: {_test_txt(t['rho'], t['p'])}"}, ["CVT"]), data
+
+
+def panel_cvt_ducted_booms(ax, ctx, in_panel: bool):
+    """CVT ducted share inside each boom layout (propulsors on booms, none on booms), with the two Spearman tests (frame ``links``)."""
+    d = q6._data(ctx)
+    dw, wins = d["dw5"], _wins(ctx)
+    k = len(wins)
+    cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+    sc = style.cls("CVT")
+    nb, nn = cv["aircraft, units on booms"].to_numpy(), cv["aircraft, no units on booms"].to_numpy()
+    lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
+    _cohort_bands(ax, k, bottom=in_panel)
+    handles = []
+    for name, col, color, marker, ns in (("units on booms", "ducted share, units on booms", sc.color, sc.marker, nb),
+                                         ("no units on booms", "ducted share, no units on booms", style.MUTED, "o", nn)):
+        y = cv[col].to_numpy(dtype=float)
+        _line5(ax, y, color, "-", marker)
+        for xi in range(k):
+            if np.isfinite(y[xi]):
+                below = name.startswith("units")
+                ax.annotate(f"{int(ns[xi])}/{int(nb[xi] + nn[xi])}", (xi, y[xi]), textcoords="offset points", xytext=(-5, 0) if below else (0, 6),
+                            ha="right" if below else "center", va="center" if below else "bottom", fontsize=MIN_PT, color=style.INK,
+                            bbox=dict(fc="white", ec="none", pad=0.6, alpha=0.85))
+        r = lt.loc[name]
+        handles.append(Line2D([], [], color=color, marker=marker, markersize=4.4, linewidth=1.4,
+                              label=f"CVT, {name}: {r['movement']} ({_test_txt(r['rho'], r['p'])})"))
+    ax.set_xticks(range(k), [_tick(w, [a, b]) for w, a, b in zip(wins, nb, nn)])
+    _share_axes(ax, k, "share of CVT designs with\na ducted propulsor", in_panel)
+    if in_panel:
+        _panel_tests(ax, [f"on booms: {lt.loc['units on booms', 'movement']} ({_test_txt(lt.loc['units on booms', 'rho'], lt.loc['units on booms', 'p'])})",
+                          f"none on booms: {lt.loc['no units on booms', 'movement']} ({_test_txt(lt.loc['no units on booms', 'rho'], lt.loc['no units on booms', 'p'])})"])
+    data = _csv_cohorts(cv[["aircraft, units on booms", "ducted share, units on booms", "aircraft, no units on booms", "ducted share, no units on booms"]].reset_index())
+    return handles, data
+
+
+def _standalone(ctx, draw, height_in: float, legend_rows: int):
+    """One trace figure at 0.62 of the text block: the panel, its legend (with the tests) under it."""
+    w_in = TEXT_CM / 2.54 * FRAC62
+    fig, ax = plt.subplots(figsize=(w_in, height_in), constrained_layout=True)
+    handles, data = draw(ax, ctx, False)
+    ax.set_xlabel("priority cohort; under it, the designs of each line in legend order", fontsize=MIN_PT)
+    fig.legend(handles=handles, loc="outside lower center", ncol=1, fontsize=MIN_PT, handlelength=2.0, labelspacing=0.35)
+    return fig, data
+
+
+def fig_boom_share5(ctx):
+    return _standalone(ctx, lambda ax, c, p: panel_share(ax, c, "share with units on booms", "share of the architecture with\npropulsors on booms", p), 3.35, 3)
+
+
+def fig_ducted_share5(ctx):
+    return _standalone(ctx, lambda ax, c, p: panel_share(ax, c, "share with a ducted unit", "share of the architecture with\na ducted propulsor", p), 3.35, 3)
+
+
+def fig_cvt_booms5(ctx):
+    return _standalone(ctx, panel_cvt_booms, 2.9, 1)
+
+
+def fig_cvt_ducted_booms5(ctx):
+    return _standalone(ctx, panel_cvt_ducted_booms, 3.2, 2)
+
+
+def fig_iv1_traces(ctx):
+    """The composite: the four trace figures as panels (a) to (d), two by two, one shared legend; 16 cm wide, about 10 cm tall."""
+    w_in = TEXT_CM / 2.54
+    fig, axs = plt.subplots(2, 2, figsize=(w_in, 4.05), constrained_layout=True)
+    panels = [("(a)", lambda ax: panel_share(ax, ctx, "share with units on booms", "share of designs with\npropulsors on booms", True)),
+              ("(b)", lambda ax: panel_cvt_booms(ax, ctx, True)),
+              ("(c)", lambda ax: panel_share(ax, ctx, "share with a ducted unit", "share of designs with\na ducted propulsor", True)),
+              ("(d)", lambda ax: panel_cvt_ducted_booms(ax, ctx, True))]
+    for ax, (letter, draw) in zip(axs.ravel(), panels):
+        draw(ax)
+        ax.text(0.0, 1.0, letter, transform=ax.transAxes, ha="left", va="bottom", fontsize=MIN_PT + 1, fontweight="bold")
+    for ax in axs[:, 1]:                                   # one y label per row: (b) and (d) are the CVT share of the same thing
+        ax.set_ylabel("")
+    for ax in axs[1]:
+        ax.set_xlabel("priority cohort; under it, the designs of each line", fontsize=MIN_PT)
+    handles = _handles3() + [Line2D([], [], color=style.MUTED, marker="o", markersize=4.4, linewidth=1.4, label="CVT, no propulsors on booms (panel d)"),
+                             _hollow_handle("hollow marker: few designs (≤2015) or incomplete cohort (2024-26*); ρ, p: Spearman against the priority year, to 2023")]
+    fig.legend(handles=handles, loc="outside lower center", ncol=3, fontsize=MIN_PT, handlelength=2.0, columnspacing=1.2, labelspacing=0.35)
+    return fig, None
+
+
+# ---- the architecture centres
+def _centre_trajectory5(ax, centres: dict, markersize: float = 6.0) -> list:
+    """:func:`viz.plots.centre_trajectory` with the incomplete cohort (the last row): a hollow grey point at the end of each arrow chain,
+    reached by a dashed grey arrow. The few-design cohorts (the first N_FEW) hollow and faint, as before."""
+    pts = []
+    for code, d in centres.items():
+        s = style.cls(code)
+        xs, ys = d["x"].to_numpy(dtype=float), d["y"].to_numpy(dtype=float)
+        last = len(d) - 1
+        for k in range(len(d)):
+            if not (np.isfinite(xs[k]) and np.isfinite(ys[k])):
+                continue
+            early, inc = k < N_FEW, k == last
+            col = style.MUTED if inc else s.color
+            ax.plot(xs[k], ys[k], marker=s.marker, markersize=markersize * 1.3 if inc else markersize, color=col, markeredgecolor=col,
+                    markerfacecolor="none" if inc else ("white" if early else s.color), alpha=0.6 if early else 1.0, linestyle="none", zorder=5 if inc else 4)
+            pts.append((xs[k], ys[k], k, code))
+            if k + 1 < len(d) and np.isfinite(xs[k + 1]) and np.isfinite(ys[k + 1]):
+                to_inc = k + 1 == last
+                ax.annotate("", xy=(xs[k + 1], ys[k + 1]), xytext=(xs[k], ys[k]), zorder=3,
+                            arrowprops=dict(arrowstyle="->", color=style.MUTED if to_inc else s.color, linewidth=1.1 if to_inc else 1.3,
+                                            linestyle=(0, (2.5, 2)) if to_inc else "-", shrinkA=4, shrinkB=4, alpha=0.4 if k + 1 < N_FEW else 1.0))
+    return pts
+
+
+def fig_centres5(ctx):
+    dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
+    w_in = TEXT_CM / 2.54 * FRAC62
+    fig, ax = plt.subplots(figsize=(w_in, 3.7), constrained_layout=True)
+    tw = lambda c: dw[dw["code"] == c].set_index("window").reindex(wins)                                       # noqa: E731
+    cent = {c: pd.DataFrame({"x": tw(c)["tilting sets (mean)"], "y": tw(c)["propulsive units (median)"]}) for c in ARCH3}
+    pts = _centre_trajectory5(ax, cent)
+    ax.set_xlim(-0.15, 2.95)
+    ax.set_ylim(0, 10.6)
+    ax.set_xlabel("tilting sets per design (mean)")
+    ax.set_ylabel("propulsors per design (median)")
+    ax.grid(color=style.GRID, linewidth=0.5)
+    ax.set_axisbelow(True)
+    handles = [Line2D([], [], color=style.cls(c).color, marker=style.cls(c).marker, markersize=5, linewidth=1.3, label=LABEL3[c]) for c in ARCH3]
+    handles += [_hollow_handle("hollow, in colour: few designs (≤2015)", style.INK), _hollow_handle("hollow, grey: 2024-26* (incomplete)")]
+    leg = ax.legend(handles=handles, loc="upper right", fontsize=MIN_PT, frameon=True, framealpha=0.95, edgecolor="none", handlelength=1.6, labelspacing=0.3)
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    lab = [COHORT_TICK[wins[k]] for _, _, k, _ in pts]
+    failed = plots.place_labels(ax, [p[0] for p in pts], [p[1] for p in pts], lab, [3.6] * len(pts),
+                                obstacles=[leg.get_window_extent(rend).expanded(1.03, 1.1)], fontsize=MIN_PT)
+    assert not failed, failed
+    for t in ax.texts:
+        if t.get_text() == COHORT_TICK[INCOMPLETE]:
+            t.set_color(style.MUTED)
+    data = dw[dw["code"].isin(ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
+    return fig, _csv_cohorts(data.reset_index(drop=True))
+
+
+# ---- the writer
+#: name -> (group, role, builder, width as a share of the text block, what it shows); the composite has no CSV of its own
+REFRESH = {
+    "q6_leading_layout_by_architecture": ("IV1_layout_convergence", "main", fig_layout_rows, 1.0,
+                                          "layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, one row each; 2024-26 drawn, incomplete"),
+    "q6_architecture_centres_tilting_units": ("IV1_layout_convergence", "main", fig_centres5, FRAC62,
+                                              "centre of each architecture per cohort (mean tilting sets, median propulsors), arrows in time order; 2024-26 hollow grey"),
+    "q6_boom_share_by_architecture": ("IV2_attributes_and_drivers", "main", fig_boom_share5, FRAC62,
+                                      "share with propulsors on booms per architecture and cohort, Spearman tests; 2024-26 drawn, not tested"),
+    "q6_cvt_units_on_booms": ("IV2_attributes_and_drivers", "main", fig_cvt_booms5, FRAC62,
+                              "CVT share with propulsors on booms per cohort, with rho and p; 2024-26 drawn, not tested"),
+    "q6_ducted_share_by_architecture": ("IV2_attributes_and_drivers", "main", fig_ducted_share5, FRAC62,
+                                        "share with a ducted propulsor per architecture and cohort; 2024-26 drawn, not tested"),
+    "q6_cvt_ducted_by_boom_layout": ("IV2_attributes_and_drivers", "main", fig_cvt_ducted_booms5, FRAC62,
+                                     "CVT ducted share with and without propulsors on booms, with the tests; 2024-26 drawn, not tested"),
+    "q6_iv1_traces": ("IV2_attributes_and_drivers", "main", fig_iv1_traces, 1.0,
+                      "composite of q6_boom_share_by_architecture, q6_cvt_units_on_booms, q6_ducted_share_by_architecture, q6_cvt_ducted_by_boom_layout as panels (a) to (d)"),
+}
+
+
+def draw_refresh(name: str, ctx):
+    """Build one refreshed figure under the thesis style at its final width, every text at 7 pt or more; returns (fig, data, (overlaps, small))."""
+    group, role, builder, frac, _ = REFRESH[name]
+    old = ctx.W
+    ctx.W = TEXT_CM / 2.54 * frac
+    try:
+        with plt.style.context(str(Path(p4.__file__).with_name("part1.mplstyle"))):
+            fig, data = builder(ctx)
+            for t in fig.findobj(Text):
+                if t.get_text() and t.get_fontsize() < MIN_PT:
+                    t.set_fontsize(MIN_PT)
+            fig.canvas.draw()
+            chk = (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, MIN_PT)))
+    finally:
+        ctx.W = old
+    return fig, data, chk
+
+
+def incomplete_cohort_numbers(ctx) -> dict:
+    """The values of the 2024-26 cohort behind every refreshed figure (drawn, never tested), for the report: layout shares per architecture,
+    the traces per architecture, and the CVT ducted shares by boom layout."""
+    d = q6._data(ctx)
+    pm = d["pmix5"]
+    pm = pm[pm["window"].eq(INCOMPLETE) & pm["code"].isin(ARCH3)]
+    lay = pd.DataFrame([{"architecture": LABEL3[r["code"]], "layout": q6.DISPLAY[r["code"]](r["configuration"]), "designs": int(r["aircraft"]),
+                         "of": int(r["class aircraft"]), "share": f"{100 * r['aircraft'] / r['class aircraft']:.1f} %"} for _, r in pm.iterrows()])
+    dw = d["dw5"]
+    tr = dw[dw["window"].eq(INCOMPLETE) & dw["code"].isin(ARCH3)][["class", "aircraft", "tilting sets (mean)", "propulsive units (median)", "share with units on booms",
+                                                                   "share with a ducted unit", "aircraft, units on booms", "ducted share, units on booms",
+                                                                   "aircraft, no units on booms", "ducted share, no units on booms"]].copy()
+    tr["class"] = tr["class"].map(lambda c: next(LABEL3[k] for k in ARCH3 if style.cls(k).name == c))
+    return {"layouts": lay.reset_index(drop=True), "traces": tr.reset_index(drop=True)}
+
+
+def export_refresh(cfg, ctx):
+    """Write the seven refreshed figures (pdf) to LaTeX_v15/Figures/Part_IV_design_space_evolution/<group>/main/, the six CSVs to
+    Data_for_writing/csv/, the 2024-26 values to Data_for_writing/NUMBERS_IV_incomplete_cohort.md (NUMBERS_IV.md itself stays on the four
+    complete cohorts), append the manifest lines; returns (checks, the LaTeX_v15-relative paths written)."""
+    R = root(cfg)
+    csvd = R / "Data_for_writing" / "csv"
+    csvd.mkdir(parents=True, exist_ok=True)
+    checks, rel = [], []
+    for name, (group, role, _, frac, shows) in REFRESH.items():
+        fig, data, chk = draw_refresh(name, ctx)
+        out = R / "Figures" / PART / group / role
+        out.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out / f"{name}.pdf")
+        checks.append({"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
+                       "text over text": chk[0], "under 7 pt": chk[1]})
+        plt.close(fig)
+        rel.append(f"Figures/{PART}/{group}/{role}/{name}.pdf")
+        lines = [(rel[-1], shows)]
+        if data is not None:
+            data.to_csv(csvd / f"{name}.csv", index=False)
+            rel.append(f"Data_for_writing/csv/{name}.csv")
+            lines.append((rel[-1], f"data behind {name}, the 2024-26 (incomplete) rows added"))
+        _manifest(R, lines)
+    nums = incomplete_cohort_numbers(ctx)
+    md = ["# NUMBERS_IV, the incomplete 2024-26 cohort (drawn, never tested)\n",
+          "Written by notebook 51 (`viz/thesis_latex_part4.py`, refresh of 2026-10-16). The 2024-26 cohort is the fifth column or point of the Analysis IV figures; "
+          "it enters no test, no disparity and no number of `NUMBERS_IV.md`, which stays on the four complete cohorts. Designs with a priority year of 2024 or later.\n",
+          "## Layout shares, 2024-26 (share of the architecture's designs)\n", "Source: `q6_leading_layout_by_architecture.csv`, rows `2024-26 (incomplete)`.\n",
+          tables_md(nums["layouts"]), "",
+          "## Traces, 2024-26 (per architecture)\n",
+          "Source: `q6_architecture_centres_tilting_units.csv`, `q6_boom_share_by_architecture.csv`, `q6_cvt_units_on_booms.csv`, `q6_ducted_share_by_architecture.csv`, "
+          "`q6_cvt_ducted_by_boom_layout.csv`, rows `2024-26 (incomplete)`. A cell is blank under 5 designs (the same rule as every other cohort).\n",
+          tables_md(nums["traces"]), ""]
+    (R / "Data_for_writing" / "NUMBERS_IV_incomplete_cohort.md").write_text("\n".join(md), encoding="utf-8")
+    rel.append("Data_for_writing/NUMBERS_IV_incomplete_cohort.md")
+    _manifest(R, [(rel[-1], "the values of the incomplete 2024-26 cohort drawn in the Analysis IV figures (never tested)")])
+    return pd.DataFrame(checks), rel
+
+
+def _manifest(R: Path, lines, used: bool = True) -> None:
+    mf = R / "Data_for_writing" / "MANIFEST.md"
+    new = not mf.exists()
+    with open(mf, "a", encoding="utf-8") as f:
+        if new:
+            f.write("# MANIFEST\n\nOne line per file: path · used in the dissertation · what it shows.\n\n")
+        have = mf.read_text(encoding="utf-8") if not new else ""
+        for p, what in lines:
+            if f"`LaTeX_v15/{p}`" not in have:
+                f.write(f"- `LaTeX_v15/{p}` · {'yes' if used else 'no (leaves the text)'} · {what}\n")
+
+
+def handover_copy(cfg, rel_paths) -> list:
+    """Copy the LaTeX_v15-relative files to <repository root>/outputs_for_thesis_2026-10-16/<same path>; returns the folder's tree."""
+    import shutil
+    R = root(cfg)
+    repo = Path(__file__).resolve().parents[2]
+    dst = repo / OUTPUTS
+    for d in (dst, repo / MIRROR):                        # the hand-over folder and the git-tracked mirror the Windows side reads
+        for p in rel_paths:
+            (d / p).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(R / p, d / p)
+    return sorted(str(p.relative_to(dst)) for p in dst.rglob("*") if p.is_file())

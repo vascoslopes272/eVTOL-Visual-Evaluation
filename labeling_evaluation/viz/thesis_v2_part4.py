@@ -65,17 +65,27 @@ def _between(D, a, b) -> float:
     return float(np.nanmean(D[np.ix_(a, b)])) - (dd.mean_pairwise_distance(D, a) + dd.mean_pairwise_distance(D, b)) / 2
 
 
-def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
-    """Condition 3 at A (every aircraft with an architecture), the main weighting (w15): Q per cohort (cohesion_band) and the Rao
-    between-group distance of each cohort to the first, with the band of the same shuffles of aircraft across cohorts."""
+def dispersion_base(ctx):
+    """The base of the disparity (condition 3 at A, every design with an architecture and a cohort, the main weighting w15): the Gower
+    distance matrix ``D`` (:func:`viz.frames.form_distance`), its frame, and ``sub``: those designs of ``ctx.v`` with their row in ``D``
+    (column ``row``). The population figure of 2026-10-16 (:mod:`viz.thesis_latex_part3`) reads the same base."""
     v, ds = ctx.v, ctx.ds
     D, frame = frames.form_distance(ds)                     # the condition-3 distance under the main weighting (w15)
-    fields = frames.gower_inputs(ds).fields
     at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
     sub = v[frames.archetype_key(v, "A0").notna()].dropna(subset=["window"]).copy()
     sub["row"] = sub["aircraft_id"].map(at)
-    sub = sub[sub["row"].notna()]
-    rows, win = sub["row"].astype(int).to_numpy(), sub["window"].to_numpy()
+    sub = sub[sub["row"].notna()].copy()
+    sub["row"] = sub["row"].astype(int)
+    return D, frame, sub
+
+
+def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
+    """Condition 3 at A (every aircraft with an architecture), the main weighting (w15): Q per cohort (cohesion_band) and the Rao
+    between-group distance of each cohort to the first, with the band of the same shuffles of aircraft across cohorts."""
+    ds = ctx.ds
+    D, frame, sub = dispersion_base(ctx)
+    fields = frames.gower_inputs(ds).fields
+    rows, win = sub["row"].to_numpy(), sub["window"].to_numpy()
     names = ctx.WIN_NAMES
     q = dd.cohesion_band(D, rows, win, names, perms=perms, seed=seed, min_aircraft=min_aircraft)
     per = {x: rows[win == x] for x in names}
