@@ -30,13 +30,13 @@ from viz.thesis_latex_common import root
 USED = {"q1_filings_per_year": True, "q4_patent_vs_market_clock": True, "q4_class_mix": True,
         "q1_growth_rates": False, "q4_dataset_vs_directory_classes": False, "q4_dataset_vs_directory_subsets": False, "q1_in_force_status": False, "q5_funding_vs_aircraft": False, "q5_patenting_vs_investment": False}
 SHOWS = {
-    "q1_filings_per_year": "Designs filed per priority year, stacked by architecture group, 2024-26 faded; patent families as a line; six dated sector events",
+    "q1_filings_per_year": "Designs filed per priority year (dark-grey bars, 2024-26 outline only) and patent families (blue line, same y axis); dated sector events as thin lines (thesis style, 2026-10-20)",
     "q4_dataset_vs_directory_classes": "Designs per architecture group in the patent dataset and the pages of the VFS eVTOL directory inside the domain, all years (appendix)",
     "q4_dataset_vs_directory_subsets": "Designs of each architecture group in the dataset and in four parts of the in-domain directory (appendix)",
-    "q1_growth_rates": "Growth of eVTOL architecture patents against aeronautics, transport and all patenting, relative to 2005-09, log scale (width not given: 1.0, as in the dissertation before)",
-    "q4_patent_vs_market_clock": "One row per AAM Reality Index firm that files here: first to last patent, peak year, first flight, entry into service",
+    "q1_growth_rates": "Growth of eVTOL architecture patents against aeronautics, transport and all patenting, relative to 2005-09, log2 scale: (a) 2005-23 fits with doubling times, (b) split at 2016 with the fitted level shift as arrows (thesis style, 2026-10-20)",
+    "q4_patent_vs_market_clock": "One row per AAM Reality Index firm that files here: first to last patent, peak year, first flight, entry into service (thesis style, 6.3 in, 2026-10-20)",
     "q1_in_force_status": "Share of designs not actively protected, by architecture and by filing office (US against the other offices), the nine architectures of ten designs or more, 604 designs (width not given: 1.0; appendix at most)",
-    "q4_class_mix": "Architecture distribution per priority-year cohort, patent dataset next to the VFS eVTOL directory",
+    "q4_class_mix": "Share of each VFS directory category per cohort, one panel per category: patent dataset (solid) against the VFS eVTOL directory (dashed) (thesis style, 2026-10-20)",
     "q5_funding_vs_aircraft": "Disclosed funding of the index firms against their designs in the patent dataset (width not given: 0.6, as in the dissertation before)",
     "q5_patenting_vs_investment": "Designs per priority year against disclosed sector investment per year, one dot per published period (width not given: 0.6, as in the dissertation before)",
 }
@@ -66,15 +66,20 @@ def export_figures(cfg, v2) -> pd.DataFrame:
         (base / "Data_for_writing" / "csv").mkdir(parents=True, exist_ok=True)
         shutil.copy2(src / f"{name}.pdf", dst / f"{name}.pdf")
         shutil.copy2(src / f"{name}.csv", base / "Data_for_writing" / "csv" / f"{name}.csv")
+        png = it.get("ts") and (src / f"{name}.png").exists()      # restyled figures (thesis_style, 2026-10-20): the 300 dpi PNG goes along
+        if png:
+            shutil.copy2(src / f"{name}.png", dst / f"{name}.png")
         size = _pdf_size_in(dst / f"{name}.pdf")
         want = it["width"] * v2.TEXT_W_IN
         rows.append({"file": name, "pdf": str((dst / f"{name}.pdf").relative_to(base)), "csv": f"Data_for_writing/csv/{name}.csv",
                      "final width fraction": it["width"], "width cm": round(size[0] * 2.54, 2) if size else "", "height cm": round(size[1] * 2.54, 2) if size else "",
                      "width ok": bool(size and abs(size[0] - want) < 0.01), "height / width": round(size[1] / size[0], 3) if size else "",
                      "height ok (<= 0.55)": bool(size and size[1] <= 0.55 * size[0] + 1e-3),
-                     "used in the dissertation": "yes" if USED.get(name) else "no (leaves the text)"})
+                     "used in the dissertation": "yes" if USED.get(name) else "no (leaves the text)",
+                     "png": str((dst / f"{name}.png").relative_to(base)) if png else ""})
     rep = pd.DataFrame(rows)
     _append_manifest(base, [(r["pdf"], r["used in the dissertation"], SHOWS.get(r["file"], r["file"])) for _, r in rep.iterrows()]
+                     + [(r["png"], r["used in the dissertation"], "300 dpi preview of " + r["file"]) for _, r in rep.iterrows() if r["png"]]
                      + [(r["csv"], r["used in the dissertation"], "data behind " + r["file"]) for _, r in rep.iterrows()])
     return rep
 
@@ -588,10 +593,29 @@ def _old_numbers() -> dict:
 
 
 def _load_text_module(path: Path):
+    """The module at ``path``; when the file is gone from the work tree (the PRE_* backups were deleted in commit a8e4fc0), its last
+    committed version is read from git instead, so the old -> new section still has the old wording."""
     import importlib.util
-    spec = importlib.util.spec_from_file_location(path.stem.replace(".", "_"), path)
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
+    import types
+    if path.exists():
+        spec = importlib.util.spec_from_file_location(path.stem.replace(".", "_"), path)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+    top = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=path.parent, capture_output=True, text=True, check=True).stdout.strip())
+    rel = path.relative_to(top).as_posix()
+    last = subprocess.run(["git", "log", "-1", "--format=%H", "--", rel], cwd=top, capture_output=True, text=True, check=True).stdout.strip()
+    src = None
+    for rev in (f"{last}^", last):                       # the deleting commit's parent holds the file; a non-deleting last commit holds it itself
+        r = subprocess.run(["git", "show", f"{rev}:{rel}"], cwd=top, capture_output=True, text=True)
+        if r.returncode == 0:
+            src = r.stdout
+            break
+    if src is None:
+        raise FileNotFoundError(path)
+    m = types.ModuleType(path.stem.replace(".", "_"))
+    m.__file__ = str(path)
+    exec(compile(src, str(path), "exec"), m.__dict__)
     return m
 
 

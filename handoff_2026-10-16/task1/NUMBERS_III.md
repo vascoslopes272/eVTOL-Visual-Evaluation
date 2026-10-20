@@ -176,7 +176,7 @@ Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.
 
 ## III.4, which VT share the figure draws
 
-`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: two actively protected curves, ringed years above 50 %), and ²D per COHORT against its band (right panel, condition 2, all designs). The per-cohort VT share above is not drawn; it is listed here for the text. Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`.
+`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: all designs solid, actively protected dashed, years under 20 designs hollow grey; the met years of each base as red bars), and ²D per COHORT against its band (right panel, condition 2, all designs). The per-cohort VT share above is not drawn; it is listed here for the text. Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`.
 
 ## Designs per cohort: III.1 against the form distance of condition 3
 

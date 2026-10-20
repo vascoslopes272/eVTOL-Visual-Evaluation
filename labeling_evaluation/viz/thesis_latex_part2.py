@@ -29,7 +29,7 @@ TABLES = {"q6_selected_fields": True, "q7_levels_of_description": True, "q7_hill
           "q6_fixed_by_architecture": True, "q6_fixed_by_architecture_detail": True}
 #: tables whose csv is ALSO copied next to the figures of their group/role (Figures/Part_II_design_space/<group>/<role>/), besides Data_for_writing/csv/
 ALSO_TO = {"q6_fixed_by_architecture": ["figures"], "q6_fixed_by_architecture_detail": ["figures"]}
-SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core and rim; hollow where the largest assignee holds more than 40 %",
+SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core (coloured, named) and rim (grey) apart at a dashed share threshold; ringed where the largest assignee holds more than 40 %",
          "q6_discovery_curve": "distinct configurations seen as the designs accumulate, at A, A·W·T and A·U, against random order; 2024–26 not yet all published",
          "q6_half_of_cohort_heatmap": "designs per A·U configuration and cohort; outlined: the configurations that hold half of each complete cohort (ranked within the cohort)",
          "q6_half_of_cohort": "cumulative share of each cohort's designs held by its largest A·U configurations; where each crosses 50 %",
@@ -59,6 +59,10 @@ def tab_hill_numbers_by_level(ctx):
 def draw(item, ctx, frac: float):
     """Build ``item`` AT its final size (label placement is done in that size): width frac × text block, height capped at 55 % of the width;
     (``HEIGHT`` gives a flatter height for some); or the size in pt of ``SIZE_PT``."""
+    if item["name"] in v2.TS_FIGS:           # thesis style (2026-10-20): drawn at 6.3 in by the builder itself, checked at the 8 pt floor
+        fig, data = item["builder"](ctx)
+        fig.canvas.draw()
+        return fig, data, (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, v2.ts.MIN_PT)))
     w_in = TEXT_CM / 2.54 * frac
     ctx.W, ctx.fig_h = w_in, HEIGHT.get(item["name"], MAX_H) * w_in
     if item["name"] in SIZE_PT:
@@ -84,7 +88,11 @@ def export(cfg, ctx):
         fig, data, chk = draw(it, ctx, frac)
         out = R / "Figures" / "Part_II_design_space" / it["group"] / it["role"]
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / f"{name}.pdf")
+        if name in v2.TS_FIGS:
+            with v2.ts_rc():
+                v2.ts.save(fig, name, out)          # <name>.pdf + <name>.png (300 dpi), 6.3 in, nothing under 8 pt
+        else:
+            fig.savefig(out / f"{name}.pdf")
         wh = (round(fig.get_figwidth() * 2.54, 2), round(fig.get_figheight() * 2.54, 2))
         plt.close(fig)
         data.to_csv(csvd / f"{name}.csv", index=False)

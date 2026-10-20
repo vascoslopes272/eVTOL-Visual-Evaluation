@@ -6,6 +6,7 @@ viz/thesis_v2_part4.py; only the layout of the layout figure (three rows instead
 from __future__ import annotations
 
 import re
+import textwrap
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -33,42 +34,12 @@ FIGS = {
 }
 
 
-def fig_layout_rows(ctx):
-    """The same data and blocks as q6.fig_leading_layout_by_class (pmix, DISPLAY, config_stack), three rows instead of three columns:
-    one row per architecture, the bars on the left, the key of that row on the right."""
-    d = q6._data(ctx)
-    pmix = d["pmix5"]                                      # the five cohorts (refresh of 2026-10-16); equals pmix on the complete ones
-    wins = list(ctx.WIN_NAMES)
-    w = ctx.W
-    fig, axs = plt.subplots(3, 2, figsize=(w, 3.4), gridspec_kw=dict(width_ratios=[1.0, 0.95], hspace=0.62, wspace=0.02))
-    for (ax, kx), c in zip(axs, ["SLC", "TR", "CVT"]):
-        m = pmix[pmix["code"] == c]
-        lastw = m[m["window"] == "2020-23"].sort_values("aircraft", ascending=False)       # the leader and the stacking order: 2020-23, as before
-        ordc = [k for k in lastw["configuration"] if not frames.cfg_outside(k)]
-        keep = ordc[:3] if len(ordc) > 4 else ordc[:4]
-        frac = lambda k: (m[m["configuration"].isin(k)].groupby("window")["aircraft"].sum().reindex(wins).fillna(0)
-                          / m.groupby("window")["class aircraft"].first().reindex(wins))
-        comp = pd.DataFrame({q6.DISPLAY[c](k): frac([k]) for k in keep})
-        rest = frac([k for k in m["configuration"].unique() if k not in keep])
-        if rest.sum() > 0:
-            comp["other configurations"] = rest
-        plots.config_stack(ax, comp, style.cls(c).color, n_few=2, min_label=MIN_LABEL)
-        _fade_incomplete_column(ax, len(wins) - 1)
-        nwin = m.groupby("window")["aircraft"].sum().reindex(wins)
-        ax.set_xticks(range(len(wins)), [f"{COHORT_TICK[x]}\nn {int(n)}" + ("\n(incomplete)" if x == INCOMPLETE else "") for x, n in zip(wins, nwin)])
-        ax.set_yticks([0, 0.5, 1.0])
-        ax.set_ylabel({"SLC": "Separate\nLift + Cruise", "TR": "Tilt\nPropulsor", "CVT": "Combined\nVectored Thrust"}[c])
-        h, lab = ax.get_legend_handles_labels()
-        kx.set_xticks([]), kx.set_yticks([])
-        kx.axis("off")
-        kx.legend(h[::-1], [p4._relabel(t) for t in lab[::-1]], loc="center left", fontsize=MIN_PT, handlelength=1.1, labelspacing=0.3, frameon=False,
-                  title={"SLC": "where the lift units sit", "TR": "how the tilting thrust is split", "CVT": "what tilts · where the fixed units sit"}[c],
-                  title_fontsize=MIN_PT, alignment="left")
-    fig.subplots_adjust(left=0.125, right=0.995, top=0.985, bottom=0.125)     # room for the two-line architecture names and three-line cohort ticks
-    return fig, _csv_cohorts(pmix.reset_index(drop=True))
-
-
 def _draw(name, ctx):
+    if name in TS_FIGS:                      # thesis style (2026-10-20): drawn at 6.3 in by the builder, checked at the 8 pt floor
+        fig, data = fig_layout_rows(ctx)
+        data = data.rename(columns=lambda c: p4._relabel(p4.COLUMNS.get(c, c)))
+        fig.canvas.draw()
+        return fig, data, (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, ts.MIN_PT)))
     frac = FIGS[name][0]
     w_in = TEXT_CM / 2.54 * frac
     old = ctx.W
@@ -101,7 +72,7 @@ def export(cfg, ctx):
         fig, data, chk = _draw(name, ctx)
         out = R / "Figures" / PART / group / role
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / f"{name}.pdf")
+        _save(fig, name, out)
         checks.append({"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
                        "height / width": round(fig.get_figheight() / fig.get_figwidth(), 3), "text over text": chk[0], "under 7 pt": chk[1]})
         plt.close(fig)
@@ -710,26 +681,34 @@ def fig_iv1_traces(ctx):
 
 
 def export_iv1_traces(cfg, ctx, png_dir: Path = None):
-    """Write the composite alone (vector PDF at 16 x 9.3 cm, no bounding-box crop) to LaTeX_v15 and the two hand-over folders; a PNG copy
-    for a quick look next to it (and in ``png_dir`` if given). Returns the check row."""
-    name = "q6_iv1_traces"
-    group, role, _, _, _ = REFRESH[name]
-    fig, _, chk = draw_refresh(name, ctx)
-    outside = len(_outside(fig))                       # measured at the figure's own dpi, before any save changes the renderer
+    """Write the two figures that replace the composite q6_iv1_traces (split 2026-10-20: q6_iv1_traces_booms = Fig 4.15,
+    q6_iv1_traces_ducts = Fig 4.16) with ts.save (vector PDF + 300 dpi PNG, 6.3 in, no bounding-box crop) to LaTeX_v15 and the two
+    hand-over folders (a PNG copy also in ``png_dir`` if given). The composite itself is no longer written. Returns one check row per figure."""
     R = root(cfg)
-    out = R / "Figures" / PART / group / role
-    out.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out / f"{name}.pdf", bbox_inches=None)
-    fig.savefig(out / f"{name}.png", bbox_inches=None, dpi=300)
-    if png_dir is not None:
-        fig.savefig(Path(png_dir) / f"{name}.png", bbox_inches=None, dpi=300)
-    row = {"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
-           "text over text": chk[0], f"under {FLOOR[name]} pt": chk[1], "outside the page": outside}
-    plt.close(fig)
-    rel = [f"Figures/{PART}/{group}/{role}/{name}.{ext}" for ext in ("pdf", "png")]
-    _manifest(R, [(rel[1], "PNG copy of the composite q6_iv1_traces, for a quick look")], used=False)
+    rows, rel = [], []
+    for name in TRACE_SPLIT:
+        group, role, _, _, shows = REFRESH[name]
+        fig, _, chk = draw_refresh(name, ctx)
+        outside = len(_outside(fig))
+        out = R / "Figures" / PART / group / role
+        _save(fig, name, out)
+        if png_dir is not None:
+            with _p2.ts_rc():
+                fig.savefig(Path(png_dir) / f"{name}.png", dpi=300)
+        rows.append({"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
+                     "text over text": chk[0], "under 8 pt": chk[1], "outside the page": outside})
+        plt.close(fig)
+        rel += [f"Figures/{PART}/{group}/{role}/{name}.{ext}" for ext in ("pdf", "png")]
+        _manifest(R, [(rel[-2], shows)])
+        _manifest(R, [(rel[-1], f"PNG copy of {name}, for a quick look")], used=False)
     handover_copy(cfg, rel)
-    return row
+    return rows
+
+
+def _save(fig, name: str, out: Path) -> None:
+    """ts.save under the thesis rc (no bbox crop whatever style the caller runs under): <name>.pdf + <name>.png, 6.3 in, nothing under 8 pt."""
+    with _p2.ts_rc():
+        ts.save(fig, name, out)
 
 
 def _outside(fig) -> list:
@@ -772,42 +751,291 @@ def _centre_trajectory5(ax, centres: dict, markersize: float = 6.0) -> list:
     return pts
 
 
-def fig_centres5(ctx):
+# ================================================================================== thesis style (2026-10-20 restyle of Figs 4.14-4.17)
+import sys as _sys
+_NB = Path(__file__).resolve().parents[1] / "notebooks"
+if str(_NB) not in _sys.path:
+    _sys.path.insert(0, str(_NB))
+import thesis_style as ts                                     # noqa: E402
+from viz import thesis_v2_part2 as _p2                        # noqa: E402  (shared local helpers: ts_tint, ts_ink_on, ts_spread, ts_pt_to_data, ts_rc)
+
+#: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): 6.3 in wide, written with ts.save, no bbox crop
+TS_FIGS = {"q6_leading_layout_by_architecture", "q6_architecture_centres_tilting_units", "q6_iv1_traces_booms", "q6_iv1_traces_ducts"}
+#: the two figures that replace the composite q6_iv1_traces (split 2026-10-20: Fig 4.15 booms, Fig 4.16 ducts)
+TRACE_SPLIT = ("q6_iv1_traces_booms", "q6_iv1_traces_ducts")
+TS_COL = {"SLC": ts.ARCH["SLC"], "TR": ts.ARCH["TP"], "CVT": ts.ARCH["CVT"]}
+TS_MARK = {"SLC": "o", "TR": "s", "CVT": "^"}
+#: Fig 4.14 only: the cohort ticks shortened as in the reference mockup (five two-line ticks of ts.COHORTS_2L do not fit a third of the width)
+COHORTS_SHORT = ["≤\n2011", "12–\n15", "16–\n19", "20–\n23", "24–\n26*"]
+#: Fig 4.14 only: shorter printed layout names (the panel subtitle carries the rest); the CSV keeps the full names
+LAYOUT_SHORT = [("propulsors tilt · ", "tilt + "), ("a wing tilts · ", "wing tilts + "), ("2+ tilting sets, in ", "2+ sets, "),
+                ("propulsors and a wing tilt · ", "both tilt + ")]
+
+
+def _layout_short(name: str) -> str:
+    for a, b in LAYOUT_SHORT:
+        name = name.replace(a, b)
+    return name
+NOTE = _p2.NOTE
+LABEL_DX = 0.8          # end labels start this far right of the 2024-26* column, so its hollow markers read as data, not as legend keys
+LABEL_ROOM = 2.75
+
+
+def _ts_line(ax, y, color, marker, ms: float = 4.2, lw: float = 1.2) -> None:
+    """One series over the five cohorts in the thesis style: a solid line through the complete cohorts (a blank cohort, under 5 designs,
+    is skipped); the few-design cohorts (the first N_FEW) hollow; 2024-26 a hollow faded marker, never joined to 2020-23."""
+    y = np.asarray(y, dtype=float)
+    k = len(y) - 1
+    x = np.arange(len(y))
+    ok = np.isfinite(y)
+    xc = x[:k][ok[:k]]
+    ax.plot(xc, y[xc], color=color, linewidth=lw, zorder=3, solid_capstyle="round")
+    for xi in xc:
+        few = xi < N_FEW
+        ax.plot(xi, y[xi], marker=marker, ms=ms, mfc="white" if few else color, mec=color, mew=1.0, ls="none", zorder=4)
+    if ok[k]:
+        ts.incomplete_point(ax, k, y[k], color, marker=marker, ms=ms, zorder=4)
+
+
+def _ts_cohort_axis(ax, k: int, room: float) -> None:
+    """Cohort ticks (ts.COHORTS_2L, horizontal), the bottom spine only under the cohorts, ``room`` x units right of them for end labels."""
+    ax.set_xticks(range(k), ts.COHORTS_2L[:k])
+    ax.set_xlim(-0.5, k - 0.5 + room)
+    ax.spines["bottom"].set_bounds(-0.5, k - 0.5)
+
+
+def _ts_end_labels(ax, items, x0: float, lines: int = 2, lo: float = -np.inf, hi: float = np.inf) -> None:
+    """Direct labels right of the lines: ``items`` = [(y of the line end, text, colour)], spread so they never touch."""
+    if not items:
+        return
+    gap = _p2.ts_pt_to_data(ax, 8.4 * 1.2 * lines + 2)
+    ys = _p2.ts_spread([i[0] for i in items], gap, lo + gap / 2, hi - gap / 2)
+    for (y0, txt, col), y in zip(items, ys):
+        ax.text(x0, y, txt, ha="left", va="center", fontsize=8.4, color=col, linespacing=1.1)
+
+
+def _ts_pct_axis(ax, label: str = None) -> None:
+    ax.set_ylim(0, 1.0)
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
+    if label:
+        ax.set_ylabel(label)
+
+
+def _last(y) -> float:
+    y = np.asarray(y, dtype=float)
+    return float(y[np.isfinite(y)][-1])
+
+
+def _rho_p(rho, p) -> str:
+    return _test_txt(rho, p) if rho == rho else "not tested"
+
+
+def fig_layout_rows(ctx):
+    """Fig 4.14 (thesis style, 2026-10-20): the layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, three panels side
+    by side of 100 % stacked bars, each in shades of its architecture's colour; the layout names directly right of the last bar (no legend);
+    the share (no %) printed in every segment of 8 % or more, white or dark by luminance; 2024-26* faded with an edge. Same data and the
+    same blocks as before (q6 pmix5, DISPLAY; the three or four largest layouts of 2020-23, the rest "other"). n per cohort: caption."""
+    d = q6._data(ctx)
+    pmix = d["pmix5"]
+    wins = list(ctx.WIN_NAMES)
+    k = len(wins)
+    sub = {"SLC": "where the lift propulsors sit", "TR": "how the tilting thrust is split", "CVT": "what tilts, where fixed ones sit"}
+    shades = (1.0, 0.68, 0.45, 0.28)
+    room = 2.75
+    with _p2.ts_rc():
+        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.6), layout="constrained", sharey=True)
+        fig.get_layout_engine().set(w_pad=0.02, wspace=0.04)
+        for j, (ax, c) in enumerate(zip(axs, ["SLC", "TR", "CVT"])):
+            col = TS_COL[c]
+            m = pmix[pmix["code"] == c]
+            lastw = m[m["window"] == "2020-23"].sort_values("aircraft", ascending=False)
+            ordc = [kk for kk in lastw["configuration"] if not frames.cfg_outside(kk)]
+            keep = ordc[:3] if len(ordc) > 4 else ordc[:4]
+            frac = lambda kk: (m[m["configuration"].isin(kk)].groupby("window")["aircraft"].sum().reindex(wins).fillna(0)      # noqa: E731
+                               / m.groupby("window")["class aircraft"].first().reindex(wins))
+            comp = pd.DataFrame({p4._relabel(q6.DISPLAY[c](kk)): frac([kk]) for kk in keep})
+            rest = frac([kk for kk in m["configuration"].unique() if kk not in keep])
+            if rest.sum() > 0:
+                comp["other"] = rest
+            bottom = np.zeros(k)
+            ends = []
+            for i, name in enumerate(comp.columns):
+                vals = comp[name].fillna(0).to_numpy(dtype=float)
+                fc = _p2.ts_tint(col, 0.13 if name == "other" else shades[min(i, len(shades) - 1)])
+                for xi in range(k):
+                    if vals[xi] <= 0:
+                        continue
+                    inc = xi == k - 1
+                    ax.bar(xi, vals[xi], bottom=bottom[xi], width=0.78, color=fc, alpha=ts.INCOMPLETE_ALPHA if inc else 1.0,
+                           edgecolor="white", linewidth=0.5, zorder=3)
+                    if vals[xi] >= 0.08:
+                        shown = _p2.ts_tint(col, (0.13 if name == "other" else shades[min(i, len(shades) - 1)]) * (ts.INCOMPLETE_ALPHA if inc else 1.0))
+                        ax.text(xi, bottom[xi] + vals[xi] / 2, f"{100 * vals[xi]:.0f}", ha="center", va="center", fontsize=8,
+                                color=_p2.ts_ink_on(shown), zorder=5)
+                ref = k - 1 if vals[k - 1] > 0 else k - 2            # the label sits beside the segment in the last bar (or 2020-23's)
+                ends.append((bottom[ref] + vals[ref] / 2, name))
+                bottom = bottom + vals
+            ax.bar(k - 1, 1.0, width=0.78, fill=False, edgecolor=col, linewidth=0.8, zorder=4)        # 2024-26*: faded, with an edge
+            _ts_cohort_axis(ax, k, room)
+            ax.set_xticks(range(k), COHORTS_SHORT[:k])
+            _ts_pct_axis(ax, "share of the architecture (%)" if j == 0 else None)
+            ax.set_title(f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}", loc="left", linespacing=1.15)
+            items = [(y, "\n".join(textwrap.fill(part, 13) for part in _layout_short(nm).split(", ")), col if i == 0 else NOTE) for i, (y, nm) in enumerate(ends)]
+            gap = _p2.ts_pt_to_data(ax, 8.4 * 1.15)
+            hts = [gap * (t.count("\n") + 1) for _, t, _ in items]
+            # spread multi-line labels: place by centres, the gap between two = half of each one's height plus 2 pt
+            order = np.argsort([y for y, _, _ in items])
+            ys = np.array([items[o][0] for o in order], dtype=float)
+            hs = np.array([hts[o] for o in order])
+            pad = _p2.ts_pt_to_data(ax, 2.0)
+            for _ in range(300):
+                moved = False
+                for i in range(1, len(ys)):
+                    need = (hs[i] + hs[i - 1]) / 2 + pad
+                    if ys[i] - ys[i - 1] < need - 1e-9:
+                        sh = (need - (ys[i] - ys[i - 1])) / 2
+                        ys[i - 1] -= sh
+                        ys[i] += sh
+                        moved = True
+                if ys[0] - hs[0] / 2 < 0:
+                    ys += -(ys[0] - hs[0] / 2)
+                    moved = True
+                if ys[-1] + hs[-1] / 2 > 1.0:
+                    ys -= ys[-1] + hs[-1] / 2 - 1.0
+                    moved = True
+                if not moved:
+                    break
+            for o, y in zip(order, ys):
+                ax.text(k - 0.5 + 0.12, y, items[o][1], ha="left", va="center", fontsize=8.4, color=items[o][2], linespacing=1.05)
+    return fig, _csv_cohorts(pmix.reset_index(drop=True))
+
+
+def _trace_panel_share(ax, ctx, col: str) -> None:
+    """The share ``col`` of SLC, TP and CVT per cohort, with ρ and p of each (every year to 2023) at the line ends."""
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
-    w_in = TEXT_CM / 2.54 * FRAC62
-    fig, ax = plt.subplots(figsize=(w_in, 3.7), constrained_layout=True)
+    k = len(wins)
+    fr = dw.pivot(index="window", columns="code", values=col).reindex(wins)[ARCH3]
+    tests = _trace_tests(ctx, col)
+    items = []
+    for c in ARCH3:
+        _ts_line(ax, fr[c], TS_COL[c], TS_MARK[c])
+        items.append((_last(fr[c]), f"{SHORT3[c]}\n{_rho_p(tests[c]['rho'], tests[c]['p'])}", TS_COL[c]))
+    _ts_cohort_axis(ax, k, LABEL_ROOM)
+    _ts_pct_axis(ax)
+    _ts_end_labels(ax, items, k - 1 + LABEL_DX, lines=2, lo=0, hi=1.0)
+
+
+def fig_traces_booms(ctx):
+    """Fig 4.15 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with propulsors on booms per cohort, (b) the
+    CVT share with its value at each point. ρ and p (Spearman, every year to 2023) as direct labels at the line ends. Hollow markers:
+    few designs (≤2011, 2012–15); 2024–26* hollow and faded, never joined. n per cohort and line: caption."""
+    dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
+    k = len(wins)
+    with _p2.ts_rc():
+        fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.45), layout="constrained", sharey=True)
+        _trace_panel_share(a, ctx, "share with units on booms")
+        a.set_ylabel("share of designs (%)")
+        a.set_title("(a) Propulsors on booms", loc="left")
+        cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+        y = cv["share with units on booms"].to_numpy(dtype=float)
+        _ts_line(b, y, TS_COL["CVT"], TS_MARK["CVT"])
+        for xi in range(k):
+            if np.isfinite(y[xi]):
+                b.annotate(f"{100 * y[xi]:.0f} %", (xi, y[xi]), textcoords="offset points", xytext=(0, 5), ha="center", va="bottom",
+                           fontsize=8, color="#1a1a1a", alpha=ts.INCOMPLETE_ALPHA if xi == k - 1 else 1.0)
+        t = _trace_tests(ctx, "share with units on booms")["CVT"]
+        _ts_cohort_axis(b, k, LABEL_ROOM)
+        _ts_pct_axis(b)
+        _ts_end_labels(b, [(_last(y) - 0.15, f"CVT\n{_rho_p(t['rho'], t['p'])}", TS_COL["CVT"])], k - 1 + LABEL_DX, lo=0, hi=1.0)      # under the end point and its value
+        b.set_title("(b) CVT, propulsors on booms", loc="left")
+    return fig, None
+
+
+def fig_traces_ducts(ctx):
+    """Fig 4.16 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with a ducted propulsor per cohort, (b) the
+    CVT ducted share inside each boom layout (propulsors on booms; none on booms, a light tint of the CVT colour), with the two tests of
+    the frame ``links``. ρ and p as direct labels at the line ends; the n/N point labels moved to the caption."""
+    d = q6._data(ctx)
+    dw, wins = d["dw5"], _wins(ctx)
+    k = len(wins)
+    cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+    lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
+    with _p2.ts_rc():
+        fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.45), layout="constrained", sharey=True)
+        _trace_panel_share(a, ctx, "share with a ducted unit")
+        a.set_ylabel("share of designs (%)")
+        a.set_title("(a) Ducted propulsor", loc="left")
+        items = []
+        for name, txt, colname, color, marker in (("units on booms", "CVT on booms", "ducted share, units on booms", TS_COL["CVT"], "^"),
+                                                  ("no units on booms", "CVT not on\nbooms", "ducted share, no units on booms",
+                                                   _p2.ts_tint(TS_COL["CVT"], 0.5), "o")):
+            yv = cv[colname].to_numpy(dtype=float)
+            _ts_line(b, yv, color, marker)
+            r = lt.loc[name]
+            items.append((_last(yv), f"{txt}\n{_rho_p(r['rho'], r['p'])}", color))
+        _ts_cohort_axis(b, k, LABEL_ROOM)
+        _ts_pct_axis(b)
+        _ts_end_labels(b, items, k - 1 + LABEL_DX, lines=3, lo=0, hi=1.0)
+        b.set_title("(b) CVT ducted, by boom layout", loc="left")
+    return fig, None
+
+
+def fig_centres5(ctx):
+    """Fig 4.17 (thesis style, 2026-10-20; was the centre trajectory): two aligned panels against the cohort, (a) median propulsors per
+    design, (b) mean tilting sets per design, for SLC, TP and CVT; ρ and p (Spearman on every design to 2023: traces 'propulsive units'
+    and 'tilting joint groups') as direct labels at the line ends. Hollow: few designs; 2024–26* hollow, faded, never joined."""
+    d = q6._data(ctx)
+    dw, wins = d["dw5"], _wins(ctx)
+    k = len(wins)
     tw = lambda c: dw[dw["code"] == c].set_index("window").reindex(wins)                                       # noqa: E731
-    cent = {c: pd.DataFrame({"x": tw(c)["tilting sets (mean)"], "y": tw(c)["propulsive units (median)"]}) for c in ARCH3}
-    pts = _centre_trajectory5(ax, cent)
-    ax.set_xlim(-0.15, 2.95)
-    ax.set_ylim(0, 10.6)
-    ax.set_xlabel("tilting sets per design (mean)")
-    ax.set_ylabel("propulsors per design (median)")
-    ax.grid(color=style.GRID, linewidth=0.5)
-    ax.set_axisbelow(True)
-    handles = [Line2D([], [], color=style.cls(c).color, marker=style.cls(c).marker, markersize=5, linewidth=1.3, label=LABEL3[c]) for c in ARCH3]
-    handles += [_hollow_handle("hollow, in colour: few designs (≤2015)", style.INK), _hollow_handle("hollow, grey: 2024-26* (incomplete)")]
-    leg = ax.legend(handles=handles, loc="upper right", fontsize=MIN_PT, frameon=True, framealpha=0.95, edgecolor="none", handlelength=1.6, labelspacing=0.3)
-    fig.canvas.draw()
-    rend = fig.canvas.get_renderer()
-    lab = [COHORT_TICK[wins[k]] for _, _, k, _ in pts]
-    failed = plots.place_labels(ax, [p[0] for p in pts], [p[1] for p in pts], lab, [3.6] * len(pts),
-                                obstacles=[leg.get_window_extent(rend).expanded(1.03, 1.1)], fontsize=MIN_PT)
-    assert not failed, failed
-    for t in ax.texts:
-        if t.get_text() == COHORT_TICK[INCOMPLETE]:
-            t.set_color(style.MUTED)
+    tr = d["trends"]
+    test = lambda trace, c: tr[(tr["trace"] == trace) & (tr["code"] == c)].iloc[0]                              # noqa: E731
+    with _p2.ts_rc():
+        fig, axs = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.45), layout="constrained")
+        for ax, col, trace, ylab, title, top in ((axs[0], "propulsive units (median)", "propulsive units", "propulsors (median)",
+                                                  "(a) Propulsors per design", 11.0),
+                                                 (axs[1], "tilting sets (mean)", "tilting joint groups", "tilting sets (mean)",
+                                                  "(b) Tilting sets per design", 3.0)):
+            items = []
+            for c in ARCH3:
+                y = tw(c)[col].to_numpy(dtype=float)
+                _ts_line(ax, y, TS_COL[c], TS_MARK[c])
+                t = test(trace, c)
+                if t["rho"] == t["rho"]:
+                    txt = f"{SHORT3[c]}\n{_rho_p(t['rho'], t['p'])}"
+                else:
+                    txt = f"{SHORT3[c]}: none" if np.nanmax(np.abs(y)) == 0 else f"{SHORT3[c]}: not tested"
+                items.append((_last(y), txt, TS_COL[c]))
+            _ts_cohort_axis(ax, k, LABEL_ROOM + 0.15)
+            ax.set_ylim(0, top)
+            ax.yaxis.set_major_locator(mticker.MaxNLocator(5, integer=True))
+            ax.set_ylabel(ylab)
+            ax.set_title(title, loc="left")
+            _ts_end_labels(ax, items, k - 1 + LABEL_DX, lines=2, lo=0, hi=top)
     data = dw[dw["code"].isin(ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
     return fig, _csv_cohorts(data.reset_index(drop=True))
+
+
+def caption_counts(ctx) -> dict:
+    """The n behind Figs 4.14-4.17 that the figures no longer print (for the captions): designs per cohort and architecture, and the CVT
+    designs with and without propulsors on booms."""
+    dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
+    n = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
+    cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
+    j = lambda s: "·".join(str(int(v)) for v in s)                                                             # noqa: E731
+    return {**{f"{SHORT3[c]} designs per cohort": j(n[c]) for c in ARCH3},
+            "CVT designs with propulsors on booms": j(cv["aircraft, units on booms"]),
+            "CVT designs with no propulsors on booms": j(cv["aircraft, no units on booms"])}
 
 
 # ---- the writer
 #: name -> (group, role, builder, width as a share of the text block, what it shows); the composite has no CSV of its own
 REFRESH = {
     "q6_leading_layout_by_architecture": ("IV1_layout_convergence", "main", fig_layout_rows, 1.0,
-                                          "layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, one row each; 2024-26 drawn, incomplete"),
-    "q6_architecture_centres_tilting_units": ("IV1_layout_convergence", "main", fig_centres5, FRAC62,
-                                              "centre of each architecture per cohort (mean tilting sets, median propulsors), arrows in time order; 2024-26 hollow grey"),
+                                          "layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, three panels side by side; 2024-26 drawn, incomplete"),
+    "q6_architecture_centres_tilting_units": ("IV1_layout_convergence", "main", fig_centres5, 1.0,
+                                              "centre of each architecture per cohort: (a) median propulsors, (b) mean tilting sets, rho and p at the line ends; 2024-26 hollow, faded"),
     "q6_boom_share_by_architecture": ("IV2_attributes_and_drivers", "main", fig_boom_share5, FRAC62,
                                       "share with propulsors on booms per architecture and cohort, Spearman tests; 2024-26 drawn, not tested"),
     "q6_cvt_units_on_booms": ("IV2_attributes_and_drivers", "main", fig_cvt_booms5, FRAC62,
@@ -816,15 +1044,22 @@ REFRESH = {
                                         "share with a ducted propulsor per architecture and cohort; 2024-26 drawn, not tested"),
     "q6_cvt_ducted_by_boom_layout": ("IV2_attributes_and_drivers", "main", fig_cvt_ducted_booms5, FRAC62,
                                      "CVT ducted share with and without propulsors on booms, with the tests; 2024-26 drawn, not tested"),
-    "q6_iv1_traces": ("IV2_attributes_and_drivers", "main", fig_iv1_traces, 1.0,
-                      "composite of q6_boom_share_by_architecture, q6_cvt_units_on_booms, q6_ducted_share_by_architecture, q6_cvt_ducted_by_boom_layout "
-                      "as panels (a) to (d), 16 x 9.3 cm, one legend line per row (rebuilt 2026-10-17)"),
+    "q6_iv1_traces_booms": ("IV2_attributes_and_drivers", "main", fig_traces_booms, 1.0,
+                            "Fig 4.15 (split from q6_iv1_traces, 2026-10-20): share with propulsors on booms per architecture and cohort, and the CVT share "
+                            "with its values; rho and p at the line ends; 2024-26 drawn, not tested"),
+    "q6_iv1_traces_ducts": ("IV2_attributes_and_drivers", "main", fig_traces_ducts, 1.0,
+                            "Fig 4.16 (split from q6_iv1_traces, 2026-10-20): share with a ducted propulsor per architecture and cohort, and the CVT ducted "
+                            "share inside each boom layout; rho and p at the line ends; 2024-26 drawn, not tested"),
 }
 
 
 def draw_refresh(name: str, ctx):
     """Build one refreshed figure under the thesis style at its final width, every text at 7 pt or more; returns (fig, data, (overlaps, small))."""
     group, role, builder, frac, _ = REFRESH[name]
+    if name in TS_FIGS:                      # thesis style (2026-10-20): 6.3 in, 8 pt floor, no clamping needed
+        fig, data = builder(ctx)
+        fig.canvas.draw()
+        return fig, data, (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, ts.MIN_PT)))
     old = ctx.W
     ctx.W = TEXT_CM / 2.54 * frac
     try:
@@ -869,7 +1104,10 @@ def export_refresh(cfg, ctx):
         fig, data, chk = draw_refresh(name, ctx)
         out = R / "Figures" / PART / group / role
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / f"{name}.pdf", bbox_inches=None if name in FLOOR else "tight")      # the composite is laid out at its exact size
+        if name in TS_FIGS:
+            _save(fig, name, out)
+        else:
+            fig.savefig(out / f"{name}.pdf", bbox_inches=None if name in FLOOR else "tight")      # the composite is laid out at its exact size
         checks.append({"figure": name, "width cm": round(fig.get_figwidth() * 2.54, 2), "height cm": round(fig.get_figheight() * 2.54, 2),
                        "text over text": chk[0], "under 7 pt": chk[1]})
         plt.close(fig)

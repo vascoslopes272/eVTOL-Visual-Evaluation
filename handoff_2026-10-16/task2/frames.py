@@ -3071,6 +3071,27 @@ def tw_entry(v: pd.DataFrame, complete: List[str]) -> pd.DataFrame:
     return out
 
 
+def tw_entry_tests(twe: pd.DataFrame) -> pd.DataFrame:
+    """Per complete window of ``tw_entry``: Fisher's exact test (two-sided, ``lib.association.fisher_exact_p``) of Tilt Wing as the first
+    aircraft of the entering firms against Tilt Wing's share of the aircraft, in two forms (author's request of 2026-10-17, Results V.2):
+    * ``p against all the window's aircraft``: 2x2 of (entrants with Tilt Wing, other entrants) x (Tilt Wing aircraft, other aircraft) over
+      every aircraft of the window (the entrants' first aircraft are among them);
+    * ``p against the window's other aircraft``: the same, over the window's aircraft without the entrants' first aircraft (disjoint sets).
+    The column ``Tilt Wing share, Fisher p against the window before`` of ``tw_entry`` is a third test: the Tilt Wing share of the aircraft
+    of one window against the window before, no entrants involved."""
+    rows = []
+    for _, r in twe.iterrows():
+        te, e = int(r["entering with Tilt Wing"]), int(r["firms entering"])
+        ta, a = int(r["Tilt Wing aircraft"]), int(r["aircraft in the window"])
+        ot, oa = ta - te, a - e
+        rows.append({"window": r["window"], "entrants with Tilt Wing": te, "other entrants": e - te,
+                     "Tilt Wing aircraft": ta, "other aircraft": a - ta,
+                     "p against all the window's aircraft": round(_assoc.fisher_exact_p([[te, e - te], [ta, a - ta]]), 3),
+                     "other aircraft with Tilt Wing": ot, "other aircraft without": oa - ot,
+                     "p against the window's other aircraft": round(_assoc.fisher_exact_p([[te, e - te], [ot, oa - ot]]), 3)})
+    return pd.DataFrame(rows)
+
+
 def succession_pairs(v: pd.DataFrame) -> pd.DataFrame:
     """Every consecutive pair of a named firm's aircraft in priority order (aircraft of one year in the order of the labelled dataset,
     which is arbitrary): one row per succession, with the firm and the class of origin and of destination.

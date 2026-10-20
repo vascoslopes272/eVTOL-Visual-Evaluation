@@ -71,27 +71,6 @@ def joined_shares(ctx):
     return out, joined, total
 
 
-def fig_architecture_shares_by_cohort(ctx):
-    """III1 main: the architectures' share of each cohort's designs (100 % bars; a segment of 5 % or more prints its share); the five
-    smallest categories joined into "Other" (neutral grey)."""
-    d = q6._data(ctx)
-    n_win = d["n_win"]
-    share, joined, _ = joined_shares(ctx)
-    codes = list(share.columns)
-    ticks = [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(ctx.WIN_NAMES, n_win)]
-    fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
-    sh = share[codes].copy()
-    sh.index = list(range(len(sh)))
-    plots.share_bars(ax, sh, partial=[len(sh) - 1], min_label=0.05, label_kind="pct")
-    ax.set_xticks(range(len(ctx.WIN_NAMES)), ticks)
-    ax.set_ylabel("share of the cohort's designs")
-    ax.set_xlabel("priority cohort (* still filling)")
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
-    fig.legend(handles=[Patch(facecolor=arch(c).color if c != "Other" else style.cls(c).color, hatch=style.cls(c).hatch, edgecolor="white",
-                              label=arch(c).name if c != "Other" else "Other") for c in codes],
-               loc="outside lower center", ncol=3, fontsize=FS, handlelength=1.2, columnspacing=1.0)       # 3 columns: 4 ran past 16 cm
-    return _bump(fig), share.round(4).assign(designs=n_win)
-
 
 def fig_largest_architectures_over_time(ctx):
     """III1 main: the five largest architectures' share of each cohort's designs, one line each."""
@@ -156,22 +135,7 @@ def _with_short_titles(builder, ctx):
         q7.SET_TITLE.update(keep)
 
 
-def fig_condition2_balance(ctx):
-    fig, d = _with_short_titles(q7.fig_condition2_balance, ctx)
-    return _bump(fig), _levels(_cohort(d))
 
-
-def fig_condition3_form(ctx):
-    fig, d = _with_short_titles(q7.fig_condition3_cohesion, ctx)
-    fig.axes[0].set_ylabel("ΔQ against the two\nearliest cohorts")
-    return _bump(fig), _levels(_cohort(d).drop(columns=["weighting"]))
-
-
-def fig_family_conditions(ctx):
-    """III2/III3 main: the three conditions on F alone, each on all designs (main) and the actively protected designs (condition 1 also on
-    granted and live); the data is the tidy table of every value drawn (thesis_q7.fig_family_conditions)."""
-    fig, d = q7.fig_family_conditions(ctx)
-    return _bump(fig), d
 
 
 def tab_levels_verdict(ctx):
@@ -214,11 +178,6 @@ def tab_granted_live_condition2(ctx):
 
 
 # ===================================================================================== III4 directory categories
-def fig_directory_categories(ctx):
-    r = analysis3.directory(ctx, q7._data(ctx))
-    fig = analysis3.fig_directory(ctx, r)
-    return _bump(fig), r["balance"].rename(columns={"window": "cohort", "top archetype": "top category"})
-
 
 def tab_directory_fold(ctx):
     """The twelve architectures folded to the five directory categories (analysis.class_fold), with the designs behind each."""
@@ -227,6 +186,375 @@ def tab_directory_fold(ctx):
     t["architecture"] = [arch(c).name for c in t["topType"]]
     t["architecture code"] = [arch(c).short for c in t["topType"]]
     return t.rename(columns={"class5": "directory category"})[["directory category", "architecture code", "architecture", "designs"]], None
+
+
+
+# ===================================================================================== thesis style (2026-10-20 restyle, Figs 4.9 to 4.13)
+#: The five Part III figures of the dissertation are drawn here under notebooks/thesis_style.py (6.3 in wide, 8 pt floor, one bottom
+#: legend, 2024-26 hollow and never joined). Every number comes from the same frames as before (thesis_q6, thesis_q7, analysis3).
+import sys as _sys
+import pathlib as _pathlib
+
+import matplotlib as mpl
+
+_NB = _pathlib.Path(__file__).resolve().parents[1] / "notebooks"
+if str(_NB) not in _sys.path:
+    _sys.path.insert(0, str(_NB))
+import thesis_style as ts                                     # noqa: E402
+
+#: the items drawn under the thesis style: written with ts.save (pdf + 300 dpi png), never resized afterwards
+RESTYLED = ("q6_architecture_shares_by_cohort", "q7_condition2_balance", "q7_condition3_cohesion", "q7_family_conditions",
+            "q7_iii4_directory_categories")
+#: data code -> key of ts.ARCH (the data says TR and TB; the thesis prints Tilt Propulsor and Tilt Frame)
+TS_CODE = {"TR": "TP", "TB": "TF"}
+#: Figs 4.10 and 4.11 are a matched pair, stacked on one page: the same size and the SAME fixed panel geometry (layout=None)
+PAIR_SIZE = (ts.TEXTWIDTH, ts.H_ROW)
+#: Fig 4.9: sideways step between coincident 2024-26* markers (cohort units)
+DODGE = 0.08
+PAIR_ADJUST = dict(left=0.115, right=0.99, bottom=0.36, top=0.90, wspace=0.27)
+PAIR_TITLES = ("(a) A, architecture", "(b) A·W·T, + wings, tilt", "(c) A·U, + propulsors")
+#: helpers that belong in thesis_style (local until the coordinator moves them): a faint y grid, the grey of a year that is not read,
+#: the reference-line grey
+GRID_COLOR = "#EBEBEB"
+UNREAD = "#9E9E9E"
+REF = "#555555"
+CI_LW = 0.8
+
+
+def _exact(fig):
+    """Every later savefig of ``fig`` keeps the exact page size: thesis.context applies viz.style, whose savefig.bbox is "tight", and a
+    tight crop would change the 6.3 in width (and LaTeX would rescale the text). Belongs in thesis_style.save."""
+    orig = fig.savefig
+
+    def savefig(*a, **k):
+        if k.get("bbox_inches") is None:
+            with mpl.rc_context({"savefig.bbox": "standard"}):
+                return orig(*a, **k)
+        return orig(*a, **k)
+    fig.savefig = savefig
+    return fig
+
+
+def _grid(ax):
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=0.5)
+    ax.set_axisbelow(True)
+
+
+def _legend_fixed(fig, handles, labels):
+    """ts.bottom_legend for a figure with layout=None (fixed geometry): one row, no frame, at the bottom edge of the figure."""
+    return fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=len(labels), frameon=False,
+                      handlelength=1.6, columnspacing=1.2, borderaxespad=0.3)
+
+
+def _band_series(ax, val, band_lo, band_hi, color, wlo=None, whi=None, met=None, dashed=False, dx=0.0, band=True):
+    """One condition-2/3 series per cohort (x = 0..4, the last cohort incomplete): the permutation band as a ts.BAND fill (main
+    series only), the four complete cohorts joined (solid filled, or dashed hollow for the actively protected base), the 95 % whiskers
+    when given, 2024-26 hollow at alpha 0.6 and never joined, the cohorts where the condition is met in ts.HIGHLIGHT."""
+    val = np.asarray(val, dtype=float)
+    n = len(val)
+    x = np.arange(n) + dx
+    c = slice(0, n - 1)
+    if band:
+        ax.fill_between(np.arange(n), np.asarray(band_lo, float), np.asarray(band_hi, float), color=ts.BAND, linewidth=0, zorder=1)
+    if wlo is not None:
+        lo, hi = np.asarray(wlo, float), np.asarray(whi, float)
+        ax.errorbar(x[c], val[c], yerr=[val[c] - lo[c], hi[c] - val[c]], fmt="none", ecolor=color, elinewidth=CI_LW, capsize=1.8, capthick=CI_LW, zorder=3)
+        ax.errorbar(x[-1:], val[-1:], yerr=[val[-1:] - lo[-1:], hi[-1:] - val[-1:]], fmt="none", ecolor=color, elinewidth=CI_LW, capsize=1.8,
+                    capthick=CI_LW, alpha=ts.INCOMPLETE_ALPHA, zorder=3)
+    look = dict(linestyle="--", markerfacecolor="white", markeredgewidth=0.9) if dashed else dict(linestyle="-")
+    ax.plot(x[c], val[c], marker="o", color=color, markeredgecolor=color, zorder=4, **look)
+    ts.incomplete_point(ax, x[-1], val[-1], color, zorder=4)
+    hit = [i for i, m in enumerate(met if met is not None else []) if m and i < n - 1]
+    if hit:
+        if dashed:
+            ax.plot(x[hit], val[hit], "o", markersize=5.2, markerfacecolor="white", markeredgecolor=ts.HIGHLIGHT, markeredgewidth=1.2, zorder=6)
+        else:
+            ax.plot(x[hit], val[hit], "o", markersize=5.2, color=ts.HIGHLIGHT, markeredgecolor=ts.HIGHLIGHT, zorder=6)
+    ax.set_xlim(-0.5, n - 0.5)
+    ax.set_xticks(np.arange(n), ts.COHORTS_2L)
+    _grid(ax)
+
+
+def _pair_figure(ctx, panels, ylabel, sharey=False):
+    """Figs 4.10 / 4.11: three panels at PAIR_ADJUST, black series, titles PAIR_TITLES, one x label, the bottom legend."""
+    fig, axs = plt.subplots(1, 3, figsize=PAIR_SIZE, layout=None, sharey=sharey)
+    fig.subplots_adjust(**PAIR_ADJUST)
+    for ax, ttl, p in zip(axs, PAIR_TITLES, panels):
+        _band_series(ax, **p, color="black")
+        ax.set_title(ttl, loc="left")
+    axs[0].set_ylabel(ylabel)
+    axs[1].set_xlabel("priority cohort")
+    _legend_fixed(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                        Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                  ["permutation band (95 %)", "below the band: condition met"])
+    return fig, axs
+
+
+def fig_condition2_balance(ctx):
+    """Fig 4.10: ²D per cohort with its 95 % interval over the rarefaction draws against the permutation band, levels A, A·W·T, A·U."""
+    d = q7._data(ctx)
+    bal, win = d["bal"], ctx.WIN_NAMES
+    with mpl.rc_context(ts.RC):
+        panels, tops = [], []
+        for lvl in q7.MAIN_LEVELS:
+            s = bal[bal["level"] == lvl].set_index("window").reindex(win)
+            met = [bool(s.loc[w, "below band"]) and "partial" not in w for w in win]
+            panels.append(dict(val=s["D2"], band_lo=s["D2 permutation low"], band_hi=s["D2 permutation high"], wlo=s["D2 low"], whi=s["D2 high"], met=met))
+            tops.append(float(np.nanmax(s[["D2 high", "D2 permutation high"]].to_numpy())))
+        fig, axs = _pair_figure(ctx, panels, "²D: large designs\nin play")
+        for ax, t in zip(axs, tops):
+            ax.set_ylim(0, t * 1.12)
+        fig.canvas.draw()
+    _exact(fig)
+    return fig, _levels(_cohort(bal[bal["level"].isin(q7.MAIN_LEVELS)].reset_index(drop=True)))
+
+
+def fig_condition3_form(ctx):
+    """Fig 4.11: ΔQ per cohort (main weighting) against its permutation band, levels A, A·W·T, A·U; shared y axis."""
+    d = q7._data(ctx)
+    form, win = d["form"], ctx.WIN_NAMES
+    main = frames.Q_WEIGHTINGS[0]
+    with mpl.rc_context(ts.RC):
+        panels = []
+        for lvl in q7.MAIN_LEVELS:
+            s = form[(form["level"] == lvl) & (form["weighting"] == main)].set_index("window").reindex(win)
+            met = [bool(q < lo) and "partial" not in w for q, lo, w in zip(s["ΔQ"], s["ΔQ permutation low"], win)]
+            panels.append(dict(val=s["ΔQ"], band_lo=s["ΔQ permutation low"], band_hi=s["ΔQ permutation high"], met=met))
+        fig, axs = _pair_figure(ctx, panels, "ΔQ against the two\nearliest cohorts", sharey=True)
+        for ax in axs:
+            ax.axhline(0, color=REF, linewidth=0.5, zorder=2)
+        fig.canvas.draw()
+    _exact(fig)
+    out = form[form["weighting"].eq(main) & form["level"].isin(q7.MAIN_LEVELS)].reset_index(drop=True)
+    return fig, _levels(_cohort(out).drop(columns=["weighting"]))
+
+
+def _spread(ys, gap, lo, hi):
+    """Label positions: each label as near its value as possible, at least ``gap`` apart, inside [lo, hi]."""
+    ys = np.asarray(ys, dtype=float)
+    o = np.argsort(ys, kind="stable")
+    p = ys[o].copy()
+    p[0] = max(p[0], lo)
+    for i in range(1, len(p)):
+        p[i] = max(p[i], p[i - 1] + gap)
+    if p[-1] > hi:
+        p[-1] = hi
+        for i in range(len(p) - 2, -1, -1):
+            p[i] = min(p[i], p[i + 1] - gap)
+    out = np.empty_like(p)
+    out[o] = p
+    return out
+
+
+def fig_architecture_shares_by_cohort(ctx):
+    """Fig 4.9: each architecture's share of the cohort's designs, one line per architecture in its ts.ARCH colour (SLC, TP, CVT thick,
+    the rest thin and lighter); the JOIN_N smallest categories joined into "Other"; 2024-26 hollow, not joined; direct labels at the right."""
+    d = q6._data(ctx)
+    n_win = d["n_win"]
+    share, joined, _ = joined_shares(ctx)
+    codes = list(share.columns)
+    big = ("SLC", "TR", "CVT")
+    with mpl.rc_context(ts.RC):
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.5), layout="constrained")
+        n = len(share)
+        x = np.arange(n)
+        # 2024-26* markers that coincide (within 0.6 percentage points) are dodged sideways by DODGE cohort units, so each is visible
+        last_v = share.iloc[-1].to_numpy(dtype=float) * 100
+        groups = {}
+        for c, yv in zip(codes, last_v):
+            key = next((g for g in groups if abs(g - yv) < 0.6), yv)
+            groups.setdefault(key, []).append(c)
+        dodge = {}
+        for members in groups.values():
+            k = len(members)
+            for i, c in enumerate(members):
+                dodge[c] = ((k - 1) / 2 - i) * DODGE        # the first in code order takes the lowest label (_spread is stable): leftmost marker -> highest label, so the leaders never cross
+        for c in codes[::-1]:                                   # the large architectures drawn last, on top
+            col = ts.ARCH[TS_CODE.get(c, c)]
+            y = share[c].to_numpy(dtype=float) * 100
+            main = c in big
+            ax.plot(x[:-1], y[:-1], marker="o", color=col, linewidth=2.0 if main else 0.9, markersize=4.0 if main else 2.6,
+                    alpha=1.0 if main else 0.6, zorder=4 if main else 3)
+            ts.incomplete_point(ax, x[-1] + dodge[c], y[-1], col, markersize=4.0 if main else 2.8, zorder=4)
+        top = float(np.ceil(share.to_numpy().max() * 100 / 5) * 5 + 2)
+        ax.set_ylim(0, top)
+        ax.set_xlim(-0.3, n + 1.55)
+        ax.spines["bottom"].set_bounds(-0.3, n - 1 + 0.3)
+        ax.set_xticks(x, ts.COHORTS)
+        ax.set_ylabel("share of the cohort's\ndesigns (%)")
+        ax.set_xlabel("priority cohort")
+        _grid(ax)
+        fig.canvas.draw()
+        gap = abs(ax.transData.inverted().transform((0, 0))[1] - ax.transData.inverted().transform((0, 10.2 * fig.dpi / 72))[1])
+        last = share.iloc[-1].to_numpy(dtype=float) * 100
+        pos = _spread(last, gap, 0.6, top - 1.0)
+        xl = n - 1 + 0.42
+        for c, yv, yp in zip(codes, last, pos):
+            k = TS_CODE.get(c, c)
+            col = ts.ARCH[k]
+            main = c in big
+            ax.plot([n - 1 + dodge[c] + 0.07, xl - 0.06], [yv, yp], color=col, linewidth=0.5, alpha=1.0 if main else 0.7, zorder=2)
+            ax.text(xl, yp, ts.ARCH_NAME[k] if k != "Other" else "Other", color=col, ha="left", va="center", fontsize=8.4,
+                    fontweight="bold" if main else "normal")
+        fig.canvas.draw()
+    _exact(fig)
+    return fig, share.round(4).assign(designs=n_win)
+
+
+def fig_family_conditions(ctx):
+    """Fig 4.12: the three conditions on F, all designs (solid, filled) and actively protected (dashed, hollow), colour ts.ARCH['F']:
+    (a) share per priority year from 2016 against 50 %, (b) ²D per cohort with its band, (c) ΔQ per cohort with its band. The values are
+    the tidy table of thesis_q7.fig_family_conditions; its "granted and live" series is not drawn (and left out of the table)."""
+    import matplotlib.pyplot as _plt
+    from lib import dominant_design as _dd
+    f0, data = q7.fig_family_conditions(ctx)
+    _plt.close(f0)
+    data = data[data["base"] != "granted and live"].reset_index(drop=True)
+    win = ctx.WIN_NAMES
+    col = ts.ARCH["F"]
+    bases = (("all designs", False, 0.0), ("actively protected", True, 0.14))
+    with mpl.rc_context(ts.RC):
+        fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.5), layout="constrained")
+        # (a) condition 1, read years only
+        p1 = data[data["panel"] == "(a) condition 1"]
+        top_at = {}
+        for base, dashed, _ in bases:
+            s = p1[(p1["base"] == base) & p1["drawn"]]
+            yrs, y = s["year / cohort"].astype(int).to_numpy(), s["value"].to_numpy(float) * 100
+            look = dict(linestyle="--", markerfacecolor="white", markeredgewidth=0.9) if dashed else dict(linestyle="-")
+            a1.plot(yrs, y, marker="o", color=col, markeredgecolor=col, zorder=4 if not dashed else 3, **look)
+            met = sorted(_dd.condition1_years(pd.DataFrame({"priority year": yrs, "read": True, "above 50 %": y > 50})))
+            for yr in met:
+                yy = y[list(yrs).index(yr)]
+                if dashed:
+                    a1.plot(yr, yy, "o", markersize=5.2, markerfacecolor="white", markeredgecolor=ts.HIGHLIGHT, markeredgewidth=1.2, zorder=6)
+                else:
+                    a1.plot(yr, yy, "o", markersize=5.2, color=ts.HIGHLIGHT, zorder=6)
+            for yr, yy in zip(yrs, y):
+                top_at[yr] = max(top_at.get(yr, 0), yy)
+        s_all = p1[(p1["base"] == "all designs") & p1["drawn"]]
+        for yr, sh in zip(s_all["year / cohort"].astype(int), s_all["value"].astype(float)):
+            if sh > 0.5:
+                a1.annotate(f"{100 * sh:.1f} %", (yr, top_at[yr]), textcoords="offset points", xytext=(0, 4), ha="center", va="bottom", fontsize=8.4, color=col)
+        a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=2)
+        yrs_all = sorted(p1["year / cohort"].astype(int).unique())
+        a1.text(yrs_all[0] - 0.4, 51, "50 %", ha="left", va="bottom", fontsize=8.4, color=REF)
+        a1.set_xlim(yrs_all[0] - 0.5, yrs_all[-1] + 0.5)
+        a1.set_xticks(yrs_all, [str(y) if (y - yrs_all[0]) % 2 == 0 else "" for y in yrs_all])
+        a1.set_ylim(0, 75)
+        a1.set_yticks([0, 20, 40, 60])
+        a1.set_ylabel("share of designs in F (%)")
+        a1.set_xlabel("priority year")
+        a1.set_title("(a) share", loc="left")
+        _grid(a1)
+        # (b) condition 2 and (c) condition 3, per cohort
+        for ax, panel, whisk in ((a2, "(b) condition 2", True), (a3, "(c) condition 3", False)):
+            p = data[data["panel"] == panel]
+            for base, dashed, dx in bases:
+                s = p[p["base"] == base].set_index("year / cohort").reindex(win)
+                _band_series(ax, s["value"], s["band low"], s["band high"], col, wlo=s["whisker low"] if whisk and not dashed else None,
+                             whi=s["whisker high"] if whisk and not dashed else None, met=s["met"].astype(bool).tolist(), dashed=dashed, dx=dx,
+                             band=not dashed)
+            ax.set_xlabel("priority cohort")
+        a2.set_ylim(0, float(np.nanmax(data.loc[data["panel"] == "(b) condition 2", ["value", "band high", "whisker high"]].to_numpy(float))) * 1.12)
+        a2.set_ylabel("²D of F")
+        a2.set_title("(b) balance", loc="left")
+        a3.axhline(0, color=REF, linewidth=0.5, zorder=2)
+        a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
+        a3.set_title("(c) disparity", loc="left")
+        ts.bottom_legend(fig, [Line2D([], [], color=col, marker="o"),
+                               Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
+                               mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                         ["all designs", "actively protected", "permutation band (95 %)", "condition met"])
+        fig.canvas.draw()
+    _exact(fig)
+    return fig, data
+
+
+def _vt_yearly(ctx) -> dict:
+    """Vectored Thrust's share of each priority year's designs (2008 to the last complete year) on the two bases of analysis3.directory
+    (all designs with a directory category; actively protected), with read = 20 designs or more (frames.DD_YEAR_MIN)."""
+    v = ctx.v
+    state = frames.patent_state(ctx.ds, v)
+    k = v["class5"].where(v["topType"].notna())
+    live = v["aircraft_id"].map(state["in_force"]).astype(bool)
+    yrs = list(range(frames.DD_YEAR_FIRST, ctx.cfg.analysis["last_complete_year"] + 1))
+    out = {}
+    for base, mask in (("all", k.notna()), ("in force", live & k.notna())):
+        n = np.array([int((mask & v["year"].eq(y)).sum()) for y in yrs])
+        vt = np.array([int((mask & v["year"].eq(y) & k.eq("VT")).sum()) for y in yrs])
+        out[base] = pd.DataFrame({"priority year": yrs, "designs": n, "VT designs": vt, "VT share": np.where(n > 0, vt / np.maximum(n, 1), np.nan),
+                                  "read": n >= frames.DD_YEAR_MIN})
+    return out
+
+
+def _runs(years):
+    """Consecutive runs of the sorted years: [2016, 2017, 2021] -> [(2016, 2017), (2021, 2021)]."""
+    runs = []
+    for y in sorted(years):
+        if runs and y == runs[-1][1] + 1:
+            runs[-1] = (runs[-1][0], y)
+        else:
+            runs.append((y, y))
+    return runs
+
+
+def fig_directory_categories(ctx):
+    """Fig 4.13: (a) Vectored Thrust's share per priority year, all designs solid and actively protected dashed (years under 20 designs
+    hollow grey), the 50 % line, and the years where condition 1 is met (a read year above 50 % next to another one) as red bars, one row
+    per base; (b) ²D per cohort with its 95 % interval against the permutation band. Colour ts.VFS['Vectored Thrust']."""
+    r = analysis3.directory(ctx, q7._data(ctx))
+    vy = _vt_yearly(ctx)
+    for base in ("all", "in force"):                         # VT is the largest category in every read year: the share drawn is condition 1's
+        t = r["yearly"][base].set_index("priority year")
+        rd = vy[base][vy[base]["read"]].set_index("priority year")
+        if not (t.loc[rd.index, "largest archetype"].eq("VT").all() and np.allclose(t.loc[rd.index, "its share"], rd["VT share"], atol=1e-4)):
+            import warnings
+            warnings.warn(f"fig_directory_categories: VT is not the largest category in every read year ({base})")
+    col = ts.VFS["Vectored Thrust"]
+    win = ctx.WIN_NAMES
+    bal = r["balance"].set_index("window").reindex(win)
+    with mpl.rc_context(ts.RC):
+        fig, (a1, a2) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.5), layout="constrained", gridspec_kw=dict(width_ratios=[1.6, 1]))
+        for base, dashed in (("all", False), ("in force", True)):
+            t = vy[base]
+            yrs, y, rd = t["priority year"].to_numpy(), t["VT share"].to_numpy(float) * 100, t["read"].to_numpy(bool)
+            ls = "--" if dashed else "-"
+            first = int(np.argmax(rd))
+            a1.plot(yrs[:first + 1], y[:first + 1], linestyle=ls, color=UNREAD, linewidth=0.9, zorder=2)
+            a1.plot(yrs[~rd], y[~rd], "o", markerfacecolor="white", markeredgecolor=UNREAD, markeredgewidth=0.8, linestyle="none", zorder=3)
+            a1.plot(yrs[rd], y[rd], marker="o", linestyle=ls, color=col, markeredgecolor=col, zorder=4,
+                    **(dict(markerfacecolor="white", markeredgewidth=0.9) if dashed else {}))
+        a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=1)
+        y0, y1 = int(vy["all"]["priority year"].iloc[0]), int(vy["all"]["priority year"].iloc[-1])
+        a1.text(y1 + 0.5, 48, "50 %", ha="right", va="top", fontsize=8.4, color=REF)
+        a1.text(2011.5, 24, f"under {frames.DD_YEAR_MIN} designs: not read", ha="center", va="bottom", fontsize=8.4, color=UNREAD)
+        for row, (yy, met, lab) in enumerate(((17, r["met_all"], "met, all designs"), (6, r["met"], "met, protected"))):
+            runs = _runs(met)
+            for a, b in runs:
+                a1.plot([a - 0.4, b + 0.4], [yy, yy], color=ts.HIGHLIGHT, linewidth=3.2, solid_capstyle="butt", zorder=4)
+            if runs:
+                a1.text(runs[0][0] - 0.65, yy, lab, ha="right", va="center", fontsize=8.4, color=ts.HIGHLIGHT)
+        a1.text(2018.6, 78, "actively protected", ha="center", va="bottom", fontsize=8.4, color=col)
+        a1.text(2020.0, 34, "all designs", ha="center", va="top", fontsize=8.4, color=col)
+        a1.set_xlim(y0 - 0.5, y1 + 0.5)
+        a1.set_xticks(range(y0, y1 + 1), [str(y) if (y - y0) % 2 == 0 else "" for y in range(y0, y1 + 1)])
+        a1.set_ylim(0, 105)
+        a1.set_yticks([0, 20, 40, 60, 80, 100])
+        a1.set_ylabel("share of designs in\nVectored Thrust (%)")
+        a1.set_xlabel("priority year")
+        a1.set_title("(a) condition 1, Vectored Thrust share", loc="left")
+        _grid(a1)
+        metw = [bool(bal.loc[w, "below band"]) and "partial" not in w for w in win]
+        _band_series(a2, bal["D2"], bal["D2 permutation low"], bal["D2 permutation high"], col, wlo=bal["D2 low"], whi=bal["D2 high"], met=metw)
+        a2.set_ylim(0, float(np.nanmax(bal[["D2 high", "D2 permutation high"]].to_numpy(float))) * 1.15)
+        a2.set_ylabel("²D: large designs\nin play")
+        a2.set_xlabel("priority cohort")
+        a2.set_title("(b) condition 2, balance", loc="left")
+        fig.canvas.draw()
+    _exact(fig)
+    return fig, r["balance"].rename(columns={"window": "cohort", "top archetype": "top category"})
 
 
 ITEMS = [
@@ -270,7 +598,19 @@ def out_root(cfg):
 
 
 def save_v2_item(item: dict, cfg, ctx):
-    """Built and saved under the Part I/II style, through Part II's writer pointed at this part's folder."""
+    """Built and saved under the Part I/II style, through Part II's writer pointed at this part's folder; the items in RESTYLED are drawn
+    under notebooks/thesis_style.py and written with ts.save (pdf + 300 dpi png, width and 8 pt floor checked), csv and json beside."""
+    if item["name"] in RESTYLED:
+        import json
+        fig, data = item["builder"](ctx)
+        out = out_root(cfg) / item["group"] / item["role"]
+        ts.save(fig, item["name"], out)
+        if data is not None:
+            data.to_csv(out / f"{item['name']}.csv", index=False)
+        meta = {k: item[k] for k in ("name", "group", "role", "kind", "title", "source_item")}
+        meta.update(width_in=round(fig.get_figwidth(), 3), height_in=round(fig.get_figheight(), 3), style="notebooks/thesis_style.py")
+        (out / f"{item['name']}.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
+        return fig, data
     p2.out_root, saved = out_root, p2.out_root
     try:
         return p2.save_v2_item(item, cfg, ctx)

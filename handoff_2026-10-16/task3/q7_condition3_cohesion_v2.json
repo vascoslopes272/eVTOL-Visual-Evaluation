@@ -6,5 +6,6 @@
  "title": "Condition 3: ΔQ against its band",
  "source_item": "v2 of q7_condition3_cohesion (Figure 12 (ii))",
  "width_in": 6.3,
- "height_in": 3.4
+ "height_in": 2.25,
+ "style": "notebooks/thesis_style.py"
 }

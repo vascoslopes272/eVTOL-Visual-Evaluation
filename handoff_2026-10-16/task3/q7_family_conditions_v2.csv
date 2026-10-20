@@ -15,14 +15,6 @@ panel,base,year / cohort,value,band low,band high,whisker low,whisker high,drawn
 (a) condition 1,actively protected,2021,0.5932,,,,,True,False,59,35
 (a) condition 1,actively protected,2022,0.4286,,,,,True,False,35,15
 (a) condition 1,actively protected,2023,0.4318,,,,,True,False,44,19
-(a) condition 1,granted and live,2016,0.25,,,,,True,False,24,6
-(a) condition 1,granted and live,2017,0.1562,,,,,True,False,32,5
-(a) condition 1,granted and live,2018,0.3143,,,,,True,False,35,11
-(a) condition 1,granted and live,2019,0.3636,,,,,True,False,44,16
-(a) condition 1,granted and live,2020,0.5294,,,,,True,False,51,27
-(a) condition 1,granted and live,2021,0.5926,,,,,True,False,54,32
-(a) condition 1,granted and live,2022,0.3929,,,,,True,False,28,11
-(a) condition 1,granted and live,2023,0.6,,,,,False,False,15,9
 (b) condition 2,all designs,<= 2011,3.9,3.14,5.38,3.24,4.62,True,False,63,
 (b) condition 2,all designs,2012-15,4.82,3.03,5.28,3.99,5.82,True,False,58,
 (b) condition 2,all designs,2016-19,4.84,3.65,4.66,3.52,6.45,True,False,211,

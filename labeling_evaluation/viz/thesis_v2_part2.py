@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
 from lib import diversity
@@ -30,6 +31,72 @@ from viz import frames, plots, style
 from viz import thesis_q6 as q6
 from viz import thesis_q7 as q7
 from viz import thesis_v2_part1 as p1
+
+# ================================================================================== thesis style (2026-10-20 restyle of Figs 4.6-4.8)
+import sys as _sys
+import pathlib as _pathlib
+_NB = _pathlib.Path(__file__).resolve().parents[1] / "notebooks"
+if str(_NB) not in _sys.path:
+    _sys.path.insert(0, str(_NB))
+import thesis_style as ts                                     # noqa: E402
+
+#: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): full text width, ts.save, no bbox crop
+TS_FIGS = {"q6_configuration_core", "q6_half_of_cohort", "q6_discovery_curve"}
+TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.3}
+NOTE = "#555555"                                              # dark grey of the 8 pt notes (local; candidate for thesis_style)
+
+
+def ts_tint(color, k: float):
+    """``color`` mixed with white (k = 1 the colour, k = 0 white). Local helper; candidate for thesis_style."""
+    r, g, b = mpl.colors.to_rgb(color)
+    return (1 - k * (1 - r), 1 - k * (1 - g), 1 - k * (1 - b))
+
+
+def ts_ink_on(color) -> str:
+    """White or near-black text, whichever reads on ``color`` (relative luminance). Local helper; candidate for thesis_style."""
+    r, g, b = mpl.colors.to_rgb(color)
+    return "#1a1a1a" if 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.5 else "white"
+
+
+def ts_spread(ys, gap: float, lo: float = -np.inf, hi: float = np.inf) -> np.ndarray:
+    """Positions as near as possible to ``ys`` with at least ``gap`` between neighbours, kept inside [lo, hi] (end-label de-overlap)."""
+    ys = np.asarray(ys, dtype=float)
+    order = np.argsort(ys)
+    y = ys[order].copy()
+    for _ in range(200):
+        moved = False
+        for i in range(1, len(y)):
+            d = y[i] - y[i - 1]
+            if d < gap - 1e-9:
+                push = (gap - d) / 2
+                y[i - 1] -= push
+                y[i] += push
+                moved = True
+        if len(y):
+            if y[0] < lo:
+                y += lo - y[0]
+                moved = True
+            if y[-1] > hi:
+                y -= y[-1] - hi
+                moved = True
+        if not moved:
+            break
+    out = np.empty_like(y)
+    out[order] = y
+    return out
+
+
+def ts_pt_to_data(ax, pt: float) -> float:
+    """``pt`` points as a distance along the y axis of ``ax`` (data units), at the drawn size."""
+    ax.figure.canvas.draw()
+    h_px = ax.get_window_extent().height
+    y0, y1 = ax.get_ylim()
+    return pt * ax.figure.dpi / 72 / h_px * (y1 - y0)
+
+
+def ts_rc():
+    """The thesis rc as a context (so a figure drawn inside a part1.mplstyle caller still gets the thesis style and no bbox crop)."""
+    return mpl.rc_context(ts.RC)
 
 FS = 8.0                      # the smallest text of any figure, pt at print size
 TITLE_FS = 9.0
@@ -427,80 +494,103 @@ def largest_assignee(v: pd.DataFrame, keys) -> pd.DataFrame:
 
 
 def fig_configuration_core_v2(ctx):
-    """II3 main: the A·U configurations of five designs or more by share of the 2016–23 designs and distinct assignees per
-    design. Label only the core configurations and the 3 non-core ones with the largest 2016–23 share; every other
-    point grey and unlabelled; the core outlined solid, the rim dashed, each named once. Rerun of 2026-10-15: each named point carries
-    its architecture's marker shape as well as its colour (legend: full names); a hollow marker where the configuration's largest
-    assignee holds more than 40 % of its designs (``SOLO_ASSIGNEE``, read by :func:`largest_assignee`). Core, rim and data unchanged."""
+    """II3 main (Fig 4.6, thesis style 2026-10-20): the A·U configurations of five designs or more by share of the 2016–23 designs and
+    distinct assignees per design. The core configurations (thesis_q6: taken by share until half of the 2016–23 designs) coloured by
+    architecture and labelled; every other configuration a small grey dot; a thin dashed line at the share threshold between core and
+    rim, "rim" / "core (…)" at the top; a ring round the configuration whose largest assignee holds more than 40 % (``SOLO_ASSIGNEE``),
+    with an 8 pt note on a short leader. No hulls. Data and CSV as before (the three largest non-core configurations are no longer named)."""
     d = q6._data(ctx)
     zz, core, rim = d["zz"], d["core"], d["rim"]
-    extra = zz[~zz.index.isin(core.index)].assign(_x=d["share_exact"]).sort_values("_x", ascending=False, kind="stable").head(3).drop(columns="_x")
-    lab = pd.concat([core, extra])
+    lab = core
     big = largest_assignee(ctx.v, zz["archetype"])
     solo = zz["archetype"].map(big["its share"]).gt(SOLO_ASSIGNEE)
-    s_pt2 = 46.0
-    r_pt = float(np.sqrt(s_pt2 / np.pi))
-    size_of = {"*": 1.9, "P": 1.2, "X": 1.2, "h": 1.1, "p": 1.1}           # thin marker shapes drawn a little larger, to read as large as a circle
-
-    fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, 'fig_h', 4.7)), constrained_layout=True)
-    grey = zz[~zz.index.isin(lab.index)]
-    for i, r in grey.iterrows():
-        hollow = bool(solo.loc[i])
-        ax.scatter(r["share 2016-23"], r["filers per aircraft"], s=s_pt2 * 0.55, facecolor="white" if hollow else GREY,
-                   edgecolor=GREY if hollow else "white", linewidth=1.2 if hollow else 0.5, zorder=3)
-    for i, r in lab.iterrows():
-        a = arch(r["code"])
-        hollow = bool(solo.loc[i])
-        ax.scatter(r["share 2016-23"], r["filers per aircraft"], s=s_pt2 * size_of.get(a.marker, 1.0), marker=a.marker,
-                   facecolor="white" if hollow else a.color, edgecolor=a.color if hollow else "white", linewidth=1.4 if hollow else 0.6, zorder=4)
-    ax.set_xlim(-0.002, zz["share 2016-23"].max() * 1.12)
-    ax.set_ylim(0.4, 1.08)
-    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
-    ax.set_xlabel("share of the 2016–23 designs\n(label: architecture, propulsors; SLC 5–6 = Separate Lift + Cruise, 5–6 propulsors)")
-    ax.set_ylabel("distinct assignees per design")
-    codes = [c for c in style.CLASS_ORDER if c in set(lab["code"])]
-    hs = [Line2D([], [], marker=arch(c).marker, markersize=6 * np.sqrt(size_of.get(arch(c).marker, 1.0)), linestyle="none",
-                 markerfacecolor=arch(c).color, markeredgecolor="white", label=f"{arch(c).short} {arch(c).name}") for c in codes]
-    hs += [Line2D([], [], marker="o", markersize=4.5, linestyle="none", markerfacecolor=GREY, markeredgecolor="white", label="other configurations, not named"),
-           Line2D([], [], marker="o", markersize=6, linestyle="none", markerfacecolor="white", markeredgecolor=style.INK, markeredgewidth=1.2,
-                  label="largest assignee above 40 %")]
-    fig.legend(handles=hs, loc="outside lower center", ncol=3, fontsize=FS, columnspacing=1.2, handletextpad=0.3)
-    fig.canvas.draw()
-    ring_core = plots.hull_ring(ax, core["share 2016-23"], core["filers per aircraft"], [r_pt] * len(core), pad_pt=4, linewidth=1.4)
-    ring_rim = plots.hull_ring(ax, rim["share 2016-23"], rim["filers per aircraft"], [r_pt] * len(rim), pad_pt=4, linewidth=1.2,
-                               linestyle=(0, (4, 2)), edgecolor=style.MUTED)
-    obstacles = _ring_boxes(ring_core) + _ring_boxes(ring_rim)
-    failed = _place_point_labels(ax, lab[["share 2016-23", "filers per aircraft"]].to_numpy(), [cfg_label(a) for a in lab["archetype"]], r_pt,
-                                 obstacles, zz[["share 2016-23", "filers per aircraft"]].to_numpy(), max_r_pt=140.0)
-    assert not failed, failed
-    for t in ax.texts:                       # a point label never shows a ring line through it
-        t.set_bbox(dict(fc="white", ec="none", pad=0.3, alpha=0.9))
-    fig.canvas.draw()
-    rend = fig.canvas.get_renderer()
-    placed = [t.get_window_extent(rend).expanded(1.04, 1.12) for t in ax.texts]
-    pts = [Bbox([[x - r_pt * fig.dpi / 72, y - r_pt * fig.dpi / 72], [x + r_pt * fig.dpi / 72, y + r_pt * fig.dpi / 72]])
-           for x, y in ax.transData.transform(np.c_[zz["share 2016-23"], zz["filers per aircraft"]])]
-    for name, ring, colour in (("core: largest configurations", ring_core, style.INK), ("rim: smallest configurations", ring_rim, style.MUTED)):
-        size = _label_size(ax, name, weight="bold" if name.startswith("core") else "normal")
-        target = [tuple(ring.mean(axis=0))] if name.startswith("core") else [tuple(p) for p in ring]      # the core's name sits inside it
-        spot = _free_spot(ax, size, placed + pts + _ring_boxes(ring_core) + _ring_boxes(ring_rim), target)
-        assert spot is not None, name
-        x_d, y_d = ax.transData.inverted().transform(spot)
-        ax.text(x_d, y_d, name, fontsize=FS, color=colour, ha="left", va="bottom", fontweight="bold" if name.startswith("core") else "normal")
-        placed.append(Bbox([[spot[0], spot[1]], [spot[0] + size[0], spot[1] + size[1]]]))
-    cols = ["archetype", "class", "aircraft", "filers", "filers per aircraft", "share 2016-23", "zone"]
-    data = zz[cols].reset_index(drop=True).rename(columns={"archetype": "configuration", "class": "architecture", "aircraft": "designs",
-                                                           "filers": "assignees", "filers per aircraft": "assignees per design",
-                                                           "zone": "first seen"})
+    X, Y = "share 2016-23", "filers per aircraft"
+    s_core, s_grey = 30.0, 9.0
+    r_pt = float(np.sqrt(s_core / np.pi))
+    with ts_rc():
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, TS_H["q6_configuration_core"]), layout="constrained")
+        grey = zz[~zz.index.isin(lab.index)]
+        ax.scatter(grey[X], grey[Y], s=s_grey, color=ts.NEUTRAL, edgecolor="none", zorder=3)
+        cols = [ts.ARCH.get(arch(c).short, ts.ARCH["Other"]) for c in lab["code"]]
+        ax.scatter(lab[X], lab[Y], s=s_core, color=cols, edgecolor="white", linewidth=0.4, zorder=4)
+        thr = (lab[X].min() + grey[X].max()) / 2                     # between the smallest core share and the largest other share
+        xmax = zz[X].max() * 1.08
+        ax.set_xlim(0, xmax)
+        ax.set_ylim(0.34, 1.13)
+        ax.set_yticks([0.4, 0.6, 0.8, 1.0])
+        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.1f"))
+        ax.xaxis.set_major_locator(mticker.MultipleLocator(0.02))
+        ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
+        ax.grid(axis="y", color="#e6e6e6", linewidth=0.5)
+        ax.set_axisbelow(True)
+        ax.axvline(thr, color=NOTE, linewidth=0.7, linestyle=(0, (3, 2)), zorder=2)
+        ax.set_xlabel("share of the 2016–23 designs (%)")
+        ax.set_ylabel("distinct assignees\nper design")
+        ytop = 1.105
+        t_rim = ax.text(thr - 0.0012, ytop, "rim", ha="right", va="center", fontsize=8.4, color=NOTE)
+        t_core = ax.text(thr + 0.0012, ytop, f"core ({len(core)} configurations, half of the designs)", ha="left", va="center", fontsize=8.4, color=NOTE)
+        fig.canvas.draw()
+        rend = fig.canvas.get_renderer()
+        avoid = [t.get_window_extent(rend).expanded(1.02, 1.3) for t in (t_rim, t_core)]
+        sel = zz.index[solo.to_numpy()]
+        for i in sel:                                                 # the ring (drawn first, so the labels keep clear of it)
+            ax.scatter(zz.loc[i, X], zz.loc[i, Y], s=s_core * 4.2, facecolor="none", edgecolor="#1a1a1a", linewidth=0.7, zorder=5)
+        ring_r = r_pt * np.sqrt(4.2)
+        ring_xy = ax.transData.transform(zz.loc[sel, [X, Y]].to_numpy(dtype=float)) if len(sel) else np.zeros((0, 2))
+        k = fig.dpi / 72
+        avoid += [Bbox([[x - ring_r * k, y - ring_r * k], [x + ring_r * k, y + ring_r * k]]) for x, y in ring_xy]
+        tx_ = ax.transData.transform([[thr, 0.34], [thr, 1.13]])
+        thr_box = Bbox([[tx_[0][0] - 2, tx_[0][1]], [tx_[1][0] + 2, tx_[1][1]]])        # the threshold line: no label crosses it
+        avoid.append(thr_box)
+        names = [cfg_label(a) for a in lab["archetype"]]
+        failed = _place_point_labels(ax, lab[[X, Y]].to_numpy(dtype=float), names, r_pt, avoid, zz[[X, Y]].to_numpy(dtype=float),
+                                     fs=8.4, max_r_pt=40.0)
+        assert not failed, failed
+        colour_of = dict(zip(names, cols))
+        for t in ax.texts:
+            if t.get_text() in colour_of:
+                t.set_color(colour_of[t.get_text()])
+                if t.arrow_patch is not None:
+                    t.arrow_patch.set_color(colour_of[t.get_text()])
+        # the note of the ringed point: 8 pt dark grey, on a short leader, at the first free spot
+        fig.canvas.draw()
+        boxes = [Text.get_window_extent(t, rend).expanded(1.05, 1.15) for t in ax.texts]
+        A = ax.transData.transform(zz[[X, Y]].to_numpy(dtype=float))
+        marks = [Bbox([[x - 3 * k, y - 3 * k], [x + 3 * k, y + 3 * k]]) for x, y in A]
+        axbb = ax.get_window_extent(rend)
+        note = "largest assignee > 40 %"
+        for i, (px, py) in zip(sel, ring_xy):
+            placed = False
+            for dx, dy in [(14, -24), (24, -24), (34, -22), (44, -18), (24, 18), (-14, -24), (-24, -24), (-34, -22), (-24, 18)]:
+                t = ax.annotate(note, (zz.loc[i, X], zz.loc[i, Y]), xytext=(dx, dy), textcoords="offset points", fontsize=8, color=NOTE,
+                                ha="left" if dx > 0 else "right", va="center", zorder=6,
+                                arrowprops=dict(arrowstyle="-", color=NOTE, linewidth=0.5, shrinkA=0, shrinkB=ring_r + 0.5))
+                fig.canvas.draw()
+                bb = Text.get_window_extent(t, rend)                 # the text alone (an annotation's extent includes its leader)
+                inside = axbb.x0 <= bb.x0 and bb.x1 <= axbb.x1 and axbb.y0 <= bb.y0 and bb.y1 <= axbb.y1
+                end = np.array([bb.x0 if dx > 0 else bb.x1, (bb.y0 + bb.y1) / 2])
+                seg = np.array([px, py]) + (end - np.array([px, py])) * np.linspace(0.25, 1, 30)[:, None]
+                hit_line = any(b.contains(*q) for q in seg for b in boxes + [thr_box])
+                if inside and not hit_line and not any(bb.overlaps(b) for b in boxes + marks + avoid + [thr_box]):
+                    placed = True
+                    boxes.append(bb)
+                    break
+                t.remove()
+            assert placed, "no place for the note of the ringed configuration"
+    cols_ = ["archetype", "class", "aircraft", "filers", "filers per aircraft", "share 2016-23", "zone"]
+    data = zz[cols_].reset_index(drop=True).rename(columns={"archetype": "configuration", "class": "architecture", "aircraft": "designs",
+                                                            "filers": "assignees", "filers per aircraft": "assignees per design",
+                                                            "zone": "first seen"})
     data["configuration"] = data["configuration"].map(cfg_label)
     data["architecture"] = zz["code"].map(lambda c: arch(c).name).to_numpy()
     data["group"] = ["core" if i in core.index else "rim" if i in rim.index else "" for i in zz.index]
     data["labelled"] = [i in lab.index for i in zz.index]
-    bb = big.loc[zz["archetype"]]
-    data["largest assignee"] = bb["largest assignee"].to_numpy()
-    data["its designs"] = bb["its designs"].to_numpy()
-    data["its share"] = bb["its share"].to_numpy()
+    bb_ = big.loc[zz["archetype"]]
+    data["largest assignee"] = bb_["largest assignee"].to_numpy()
+    data["its designs"] = bb_["its designs"].to_numpy()
+    data["its share"] = bb_["its share"].to_numpy()
     data["largest assignee above 40 %"] = solo.to_numpy()
+    data["core / rim threshold (share 2016-23, drawn)"] = round(float(thr), 4)
     return fig, data
 
 
@@ -534,72 +624,80 @@ TAIL_BAND = "#e3e3e3"
 
 
 def fig_discovery_curve_v2(ctx):
-    """II3 main: configurations seen as the designs accumulate in priority order, to 2026, three small panels (A | A·W·T | A·U), each about
-    twice as wide as tall with its own y range: the real curve, the random-order expectation as a thin dashed grey line, the last 100
-    designs of the complete years (to 2023) as a light grey band, the 2024–26 designs hatched (not yet all published). Thin dotted lines
-    mark the first design of 2016 and of 2020, the year small at the bottom; the last-100 numbers (complete years) sit inside each panel.
-    One legend row on top, one shared x label, one y label (rerun of 2026-10-15). Every number as before."""
+    """II3 main (Fig 4.8, thesis style 2026-10-20): configurations seen as the designs accumulate in priority order, to 2026, panels
+    (a) A, (b) A·W·T, (c) A·U: real order solid black, random-order expectation dashed grey, the 2024–26* part thin dotted and faded;
+    the last 100 designs to 2023 marked by a thin bracket (no shaded zone); the first design of 2016 and of 2020 as short ticks at the
+    foot. (d): the new configurations among the last 100 designs to 2023 as a dot plot, real (filled) against random (hollow), one row per
+    level, values printed. Every number as before."""
     d = q6._data(ctx)
     full, est, tail = curve_to_2026(ctx), d["est"], ctx.cfg.analysis["discovery_tail"]
     n_done = d["curve"].groupby("level")["aircraft"].max()
     levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
-    small = 7.0
-    fig, axs4 = plt.subplots(1, 4, figsize=(ctx.W, getattr(ctx, 'fig_h', 1.8)), constrained_layout=True,
-                             gridspec_kw=dict(width_ratios=[1, 1, 1, 0.95]))
-    fig.get_layout_engine().set(w_pad=0.02, h_pad=0.01, wspace=0.02, hspace=0)
-    axs, axb = axs4[:3], axs4[3]
+    RND = "#7a7a7a"
     starts = {}
-    for ax, (lvl, name) in zip(axs, levels):
-        g = full[full["level"] == lvl]
-        x = g["aircraft"].to_numpy()
-        real, rnd = g["archetypes (date order)"].to_numpy(), g["archetypes (random order)"].to_numpy()
-        n_c, n_max = int(n_done[lvl]), int(x.max())
-        ax.axvspan(n_c - tail, n_c, color=TAIL_BAND, zorder=0, linewidth=0)
-        ax.axvspan(n_c, n_max, facecolor="white", edgecolor=GREY, hatch="////", linewidth=0, zorder=0)
-        for sel, al in ((x <= n_c, 1.0), (x >= n_c, 0.4)):          # 2024-26 faded; every number as before
-            ax.plot(x[sel], rnd[sel], color="#6b6b6b", linewidth=0.9, linestyle=(0, (3, 2)), alpha=al, zorder=2)
-            ax.plot(x[sel], real[sel], color=style.INK, linewidth=1.5, alpha=al, zorder=4)
-        top = max(real.max(), rnd.max()) * 1.1
-        ax.set_xlim(0, n_max + 3)
-        ax.set_ylim(0, top)
-        ax.set_box_aspect(0.5)
-        ax.xaxis.set_major_locator(mticker.MultipleLocator(200))
-        ax.yaxis.set_major_locator(mticker.MaxNLocator(4, integer=True))
-        ax.tick_params(labelsize=small, length=2.5, pad=1.5)
-        ax.grid(axis="y", color=style.GRID, linewidth=0.5)
-        ax.set_axisbelow(True)
-        for yr in (2016, 2020):
-            xs = _year_start(g, yr)
-            starts[(name, yr)] = xs
-            ax.axvline(xs, color=style.INK, linewidth=0.6, linestyle=(0, (1, 1.5)), zorder=3)
-            ax.text(xs + 6, top * 0.03, str(yr), fontsize=small, ha="left", va="bottom", color=style.INK, zorder=5)
-        ax.set_title(name, loc="left", fontsize=FS, fontweight="bold", pad=2)
-        # the last-100 numbers moved to the fourth panel (2026-10-16): the text box no longer fits the narrower panel without covering the year marks
-    axs[0].set_ylabel("distinct configurations seen", fontsize=small)
-    # fourth panel (2026-10-16): the two last-100 numbers of each level as bars, real order (ink) against random order (grey), values printed
-    obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
-    rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
-    xb, wb, off = np.arange(len(levels)), 0.38, 0.24
-    axb.bar(xb - off, obs, wb, color=style.INK, zorder=3)
-    axb.bar(xb + off, rnd_, wb, color="#6b6b6b", hatch="////", edgecolor="white", linewidth=0, zorder=3)
-    ymax = max(obs + rnd_) * 1.32
-    for xx, val in list(zip(xb - off, obs)) + list(zip(xb + off, rnd_)):
-        axb.text(xx, val + ymax * 0.02, f"{val:.1f}", ha="center", va="bottom", fontsize=small, zorder=5)
-    axb.set_xticks(xb, [name for _, name in levels])
-    axb.set_xlim(-0.6, len(levels) - 0.4)
-    axb.set_ylim(0, ymax)
-    axb.set_box_aspect(0.5)
-    axb.yaxis.set_major_locator(mticker.MaxNLocator(4, integer=True))
-    axb.tick_params(labelsize=small, length=2.5, pad=1.5)
-    axb.grid(axis="y", color=style.GRID, linewidth=0.5)
-    axb.set_axisbelow(True)
-    axb.set_title(f"new configurations,\nlast {tail} designs to 2023", loc="left", fontsize=small, fontweight="bold", pad=2)
-    fig.supxlabel("designs, in priority order, to 2026 (curves)", fontsize=FS)
-    fig.legend(handles=[Line2D([], [], color=style.INK, linewidth=1.5, label="real order (line, bar)"),
-                        Line2D([], [], color="#6b6b6b", linewidth=0.9, linestyle=(0, (3, 2)), label="random order (line, bar)"),
-                        Patch(facecolor=TAIL_BAND, label=f"last {tail} designs to 2023"),
-                        Patch(facecolor="white", edgecolor=GREY, hatch="////", label="2024–26 incomplete")],
-               loc="outside upper center", ncol=4, fontsize=small, handlelength=1.8, columnspacing=1.2, handletextpad=0.4)
+    with ts_rc():
+        fig, axs4 = plt.subplots(1, 4, figsize=(ts.TEXTWIDTH, TS_H["q6_discovery_curve"]), layout="constrained",
+                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.12]))
+        axs, axd = axs4[:3], axs4[3]
+        for j, (ax, (lvl, nm)) in enumerate(zip(axs, levels)):
+            g = full[full["level"] == lvl]
+            x = g["aircraft"].to_numpy()
+            real, rnd = g["archetypes (date order)"].to_numpy(), g["archetypes (random order)"].to_numpy()
+            n_c, n_max = int(n_done[lvl]), int(x.max())
+            done, inc = x <= n_c, x > n_c                             # 2024-26*: from the first 2024 design, never joined to 2023
+            ax.plot(x[done], rnd[done], color=RND, linewidth=1.0, linestyle=(0, (3.5, 2)), zorder=2)
+            ax.plot(x[done], real[done], color="#000000", linewidth=1.3, solid_capstyle="butt", zorder=4)
+            gap_ls = (1.0, (1, 2.2))                                  # the dotted part opens with a gap: visibly apart from the solid curve
+            ax.plot(x[inc], rnd[inc], color=RND, linewidth=0.8, linestyle=gap_ls, dash_capstyle="butt", alpha=ts.INCOMPLETE_ALPHA, zorder=2)
+            ax.plot(x[inc], real[inc], color="#000000", linewidth=0.8, linestyle=gap_ls, dash_capstyle="butt", alpha=ts.INCOMPLETE_ALPHA, zorder=4)
+            hi = max(real.max(), rnd.max())
+            top = hi * 1.32
+            ax.set_xlim(0, n_max + 5)
+            ax.set_ylim(0, top)
+            ax.xaxis.set_major_locator(mticker.MultipleLocator(300))
+            ax.yaxis.set_major_locator(mticker.MaxNLocator(4, integer=True))
+            yb = hi * 1.12                                            # the last-100 bracket, above the curves
+            ax.plot([n_c - tail, n_c - tail, n_c, n_c], [yb - hi * 0.05, yb, yb, yb - hi * 0.05], color=NOTE, linewidth=0.7, zorder=5)
+            ax.text(n_c - tail / 2, yb + hi * 0.02, f"last {tail}", ha="center", va="bottom", fontsize=8, color=NOTE)
+            for yr in (2016, 2020):
+                xs = _year_start(g, yr)
+                starts[(nm, yr)] = xs
+                ax.plot([xs, xs], [0, hi * 0.06], color=NOTE, linewidth=0.7, zorder=5)
+                ax.text(xs, hi * 0.08, str(yr), ha="center", va="bottom", fontsize=8, color=NOTE)
+            ax.set_title(f"({'abc'[j]}) {nm}", loc="left")
+            if j == 1:                                                # the two curves named once, in (b)
+                xi = int(np.searchsorted(x, n_c * 0.8))
+                ax.text(x[xi], rnd[xi] + hi * 0.08, "random order", ha="right", va="bottom", fontsize=8.4, color=RND)
+                xi = int(np.searchsorted(x, n_c * 0.72))
+                ax.text(x[xi], real[xi] - hi * 0.08, "real order", ha="center", va="top", fontsize=8.4, color="#000000")
+        axs[0].set_ylabel("distinct\nconfigurations seen")
+        axs[1].set_xlabel("designs, in priority order (dotted: 2024–26*, incomplete)")
+        # (d) the last-100 numbers as a dot plot
+        obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
+        rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
+        yy = np.arange(len(levels))[::-1]
+        xm = max(obs + rnd_)
+        for y, o, r in zip(yy, obs, rnd_):
+            axd.plot([min(o, r), max(o, r)], [y, y], color="#cfcfcf", linewidth=1.2, zorder=2)
+            axd.plot(r, y, "o", ms=5, mfc="white", mec=RND, mew=1.0, ls="none", zorder=3)
+            axd.plot(o, y, "o", ms=5, color="#000000", ls="none", zorder=4)
+            if abs(o - r) < 0.05:
+                axd.text(max(o, r) + xm * 0.11, y, f"{o:.1f} (both)", ha="left", va="center", fontsize=8.4)
+            else:
+                lo_, hi_ = (r, o) if r < o else (o, r)
+                axd.text(hi_ + xm * 0.07, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
+                axd.text(lo_ - xm * 0.07, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
+        key = next((i for i, (o, r) in enumerate(zip(obs, rnd_)) if abs(o - r) >= 0.5), 1)       # the words on the widest-apart row
+        axd.text(obs[key], yy[key] + 0.3, "real", ha="center", va="bottom", fontsize=8.4, color="#000000")
+        axd.text(rnd_[key], yy[key] + 0.3, "random", ha="center", va="bottom", fontsize=8.4, color=RND)
+        axd.set_yticks(yy, [nm for _, nm in levels])
+        axd.set_ylim(-0.6, len(levels) - 0.3)
+        axd.set_xlim(-xm * 0.32, xm * 1.35)
+        axd.xaxis.set_major_locator(mticker.MultipleLocator(2))
+        axd.spines["left"].set_visible(False)
+        axd.tick_params(axis="y", length=0)
+        axd.set_xlabel("new configurations")
+        axd.set_title(f"(d) last {tail} designs to 2023", loc="left", x=-0.42)
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
     data["level"] = data["level"].map(LEVEL)
@@ -618,49 +716,51 @@ COHORT_LOOK = {"<= 2011": ("#b0b0b0", (0, (1, 1.2)), "^", 1.3), "2012-15": ("#8a
 
 
 def fig_half_of_cohort_v2(ctx):
-    """II3 auxiliary: replaces the configuration × cohort heatmap. One line per cohort: the cumulative share of the cohort's designs held by
-    its k largest A·U configurations (ranked by size within the cohort, among the A·U configurations of five designs or more:
-    ``frames.zones`` on the A·U key ``archetype``), the 50 % line, and where each cohort crosses it. Rerun of 2026-10-15: a legend gives
-    each cohort's line, colour, marker and "half in N" (no end labels); the level is stated in the x label. Redrawn wide on 2026-10-15
-    (7 in × 2.6 in in the notebook; the LaTeX export sets ctx.W and ctx.fig_h to the same proportions at the text width): only the first
-    ``K_DRAW`` = 12 configurations are drawn (every cohort crosses 50 % by the 9th), ticks at every one, a thicker black 50 % line and
-    crossing markers twice the size with a white halo so the five (at 5, 5, 9, 7 and 6) can be told apart. The frame keeps all 20 ranks."""
-    from matplotlib import patheffects as pe
+    """II3 auxiliary (Fig 4.7, thesis style 2026-10-20): one curve per cohort, the cumulative share of the cohort's designs held by its k
+    largest A·U configurations (ranked within the cohort, among the configurations of five designs or more: ``frames.zones``); cohorts in
+    ts.GREYS (≤2011 lightest, 2020–23 black), 2024–26* hollow, faded and dotted; a dashed 50 % line; the crossing of each cohort a larger
+    marker; direct labels at the right end ("2016–19: half in 9"), no legend. The frame keeps all 20 ranks; 12 are drawn."""
     d = q6._data(ctx)
     z = d["zones"]
-    K, K_DRAW = 20, 12                           # ranks in the frame; ranks drawn
+    K, K_DRAW = 20, 12
     ranks = np.arange(1, K + 1)
-    small = 7.0
-    fig, ax = plt.subplots(figsize=(ctx.W, ctx.fig_h) if hasattr(ctx, "fig_h") else (7.0, 2.6), constrained_layout=True)
-    fig.get_layout_engine().set(w_pad=0.02, h_pad=0.02)
-    ax.axhline(0.5, color="black", linewidth=1.4, linestyle=(0, (4, 3)), zorder=1)
-    rows, handles = [], []
-    for w in ctx.WIN_NAMES:                      # the four complete cohorts and 2024–26, which is incomplete
-        c = np.sort(z[w].astype(float).to_numpy())[::-1]
-        cs = np.cumsum(c) / c.sum()
-        k = int(np.searchsorted(cs, 0.5)) + 1
-        col, ls, mk, lw = COHORT_LOOK[w]
-        part = "partial" in w
-        ax.plot(ranks[:K_DRAW], cs[:K_DRAW], color=col, linestyle=ls, linewidth=lw, zorder=3)
-        nudge = {"<= 2011": -0.38, "2012-15": 0.38}.get(w, 0.0)    # ≤2011 and 2012-15 both cross at 5: keep both visible
-        ax.plot(k + nudge, cs[k - 1], marker=mk, markersize=11, markerfacecolor="white" if part else col, markeredgecolor=col,
-                markeredgewidth=1.2, linestyle="none", zorder=5, path_effects=[pe.withStroke(linewidth=4.0, foreground="white")])
-        name = "2024–26 (incomplete)" if part else plots.WINDOW_TICKS[w]
-        handles.append(Line2D([], [], color=col, linestyle=ls, linewidth=lw, marker=mk, markersize=5.5, markerfacecolor="white" if part else col,
-                              markeredgecolor=col, label=f"{name}: half in {k}"))
-        rows += [{"cohort": "2024-26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
-                  "cumulative share": round(float(cs[r - 1]), 4), "crosses 50 % here": bool(r == k)} for r in ranks]
-    ax.set_xlim(0.5, K_DRAW + 0.5)
-    ax.set_ylim(0, 1.02)
-    ax.set_xticks(list(range(1, K_DRAW + 1)))
-    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1, decimals=0))
-    ax.tick_params(labelsize=small, length=2.5, pad=1.5)
-    ax.grid(axis="y", color=style.GRID, linewidth=0.5)
-    ax.set_axisbelow(True)
-    ax.set_xlabel("A·U configurations (architecture, propulsors),\nranked by size within the cohort", fontsize=small)
-    ax.set_ylabel("cumulative share\nof the cohort's designs", fontsize=small)
-    fig.legend(handles=handles, loc="outside right center", fontsize=small, handlelength=2.6, labelspacing=0.45, borderaxespad=0.2)
+    look = {"<= 2011": ts.GREYS[0], "2012-15": ts.GREYS[1], "2016-19": ts.GREYS[2], "2020-23": ts.GREYS[4], "2024-26 (partial)": ts.GREYS[3]}
+    name = dict(zip(ctx.WIN_NAMES, ts.COHORTS))
+    rows, ends = [], []
+    with ts_rc():
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, TS_H["q6_half_of_cohort"]), layout="constrained")
+        room = 3.6                                                    # x units right of rank 12 for the end labels
+        ax.plot([0.5, K_DRAW + 0.5], [0.5, 0.5], color="#1a1a1a", linewidth=0.8, linestyle=(0, (4, 3)), zorder=1)
+        ax.text(0.6, 0.515, "50 %", ha="left", va="bottom", fontsize=8.4, color=NOTE)
+        for w in ctx.WIN_NAMES:
+            c = np.sort(z[w].astype(float).to_numpy())[::-1]
+            cs = np.cumsum(c) / c.sum()
+            k = int(np.searchsorted(cs, 0.5)) + 1
+            col, part = look[w], "partial" in w
+            al = ts.INCOMPLETE_ALPHA if part else 1.0
+            ax.plot(ranks[:K_DRAW], cs[:K_DRAW], color=col, linewidth=0.9 if part else 1.2, linestyle=(0, (1, 1.5)) if part else "-",
+                    alpha=al, zorder=4 if w == "2020-23" else 3)
+            ax.plot(ranks[:K_DRAW], cs[:K_DRAW], "o", ms=3.0, mfc="white" if part else col, mec=col, mew=0.8, alpha=al, ls="none",
+                    zorder=4 if w == "2020-23" else 3)
+            ax.plot(k, cs[k - 1], "o", ms=6.5, mfc="white" if part else col, mec=col, mew=1.2, alpha=al, ls="none", zorder=5)
+            ends.append((cs[K_DRAW - 1], f"{name[w]}: half in {k}", col, al))
+            rows += [{"cohort": "2024-26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
+                      "cumulative share": round(float(cs[r - 1]), 4), "crosses 50 % here": bool(r == k)} for r in ranks]
+        ax.set_xlim(0.5, K_DRAW + 0.5 + room)
+        ax.set_ylim(0, 1.0)
+        ax.spines["bottom"].set_bounds(0.5, K_DRAW + 0.5)
+        ax.set_xticks(list(range(1, K_DRAW + 1)))
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
+        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
+        ax.set_xlabel("A·U configurations, ranked by size within the cohort")
+        ax.set_ylabel("cumulative share of\nthe cohort's designs (%)")
+        gap = ts_pt_to_data(ax, 10.5)
+        ys = ts_spread([e[0] for e in ends], gap, hi=1.0 - gap / 2)
+        x_lab = K_DRAW + 0.5 + 0.55
+        for (y0, txt, col, al), y in zip(ends, ys):
+            ax.text(x_lab + 0.15, y, txt, ha="left", va="center", fontsize=8.4, color="#1a1a1a" if col in (ts.GREYS[3], ts.GREYS[4]) else NOTE)
+            ax.plot([K_DRAW + 0.15, x_lab], [y0, y], color=col, linewidth=0.5, alpha=max(al, 0.8), zorder=2)
+        ax.xaxis.label.set_x((K_DRAW / 2) / (K_DRAW + room))
     return fig, pd.DataFrame(rows)
 
 
@@ -742,6 +842,9 @@ def save_v2_item(item: dict, cfg, ctx) -> None:
     """Same as before, built and saved under the author's thesis figure style (viz/part1.mplstyle, style 1), as Part I."""
     import matplotlib.pyplot as plt
     from pathlib import Path
+    if item["name"] in TS_FIGS:              # restyled 2026-10-20: the thesis style (notebooks/thesis_style.py), no bbox crop
+        with ts_rc():
+            return _save_v2_item(item, cfg, ctx)
     with plt.style.context(str(Path(__file__).with_name("part1.mplstyle"))):
         return _save_v2_item(item, cfg, ctx)
 

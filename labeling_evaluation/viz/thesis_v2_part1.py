@@ -601,18 +601,309 @@ def fig_dataset_vs_directory_subsets_v2(ctx):
     return fig, d["why"]
 
 
+# ================================================================================== thesis style (2026-10-20)
+# Restyled builders of Figs 4.2-4.5 under notebooks/thesis_style.py (6.3 in wide, Helvetica clone, 8 pt floor, one bottom legend,
+# 2024-26 hollow and never joined to 2023). The numbers are the same frames as the v2 builders above; only the drawing changes.
+import sys as _sys
+import pathlib as _pathlib
+_NB = _pathlib.Path(__file__).resolve().parents[1] / "notebooks"
+if str(_NB) not in _sys.path:
+    _sys.path.insert(0, str(_NB))
+import thesis_style as ts  # noqa: E402
+
+#: local helpers that belong in thesis_style (not edited here: the coordinator owns it)
+BAR_GREY = "#4D4D4D"          # designs, Fig 4.2
+EVENT_GREY = "#B0B0B0"        # thin event lines
+EVENT_TEXT = "#6B6B6B"        # event labels, notes
+#: short event labels written horizontally at the top of Fig 4.2 (the sector-event file's full names stay in the CSV)
+EVENT_SHORT = {"2016-01-06": "EHang 184, Uber Elevate", "2016-10-27": None,        # same year as EHang 184: one line, one label
+               "2019-07-02": "EASA SC-VTOL", "2020-03-11": "COVID-19", "2021-08-11": "Joby, Archer, Lilium listed",
+               "2023-10-13": "EHang type certificate"}
+#: directory category -> the code of the fold (frames.CLASS5_ORDER) and the key of ts.VFS
+VFS_OF = {"LC": "Lift + Cruise", "VT": "Vectored Thrust", "WM": "Wingless (Multicopter)", "ER": "Electric Rotorcraft",
+          "HB": "Hover Bikes / PFD"}
+VFS_TITLE = {"LC": "Lift + Cruise", "VT": "Vectored\nThrust", "WM": "Wingless\n(Multicopter)", "ER": "Electric\nRotorcraft",
+             "HB": "Hover Bikes\n/ PFD"}
+
+
+class _RawText(mpl.text.Text):
+    """A text viz/relabel.py does not reword (it rewrites every Text.set_text, also at draw time): the brief of 2026-10-20 asks for
+    "aircraft designs (627)" in Fig 4.2, which the relabel layer would print "designs designs"."""
+
+    def set_text(self, s):
+        s = "" if s is None else str(s)
+        if s != getattr(self, "_text", None):
+            self._text = s
+            self.stale = True
+
+
+def ts_context():
+    """matplotlib defaults + the thesis style only (no viz/style.py or part1.mplstyle leftovers)."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def ctx_():
+        with plt.style.context("default"):
+            mpl.rcParams.update(ts.RC)
+            yield
+    return ctx_()
+
+
+def fig_filings_per_year_ts(ctx):
+    """Fig 4.2: designs per priority year as dark-grey bars (2024-26 outline only), patent families as a blue line on the same y axis
+    (2024-26 hollow, joined only to each other by a thin dotted line), dated sector events as thin grey lines with horizontal labels."""
+    c = q1._calc(ctx)
+    fpy = c["fpy"]
+    regs = frames.REGIONS + ["Other regions"]
+    t = fpy.loc[2005:, regs + ["patents representative"]].copy()
+    t.loc[2005, regs + ["patents representative"]] = fpy.loc[:2005, regs + ["patents representative"]].sum()
+    designs = t[regs].sum(axis=1).astype(int)
+    fam = t["patents representative"].astype(int)
+    years = list(t.index)
+    partial = int(ctx.cfg.analysis["partial_window_start"])
+    done = np.array([y < partial for y in years])
+    yr = np.array(years, dtype=float)
+    events = frames.sector_events(ctx.cfg, fpy.attrs["snapshot"])
+    ev = events[events["date"].dt.strftime("%Y-%m-%d").isin(EVENTS_MAIN)].sort_values("date")
+    n_des, n_fam = int(designs.sum()), int(fam.sum())
+    col = ts.ARCH["SLC"]
+
+    fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.5), layout="constrained")
+    ax.bar(yr[done], designs.to_numpy()[done], 0.72, color=BAR_GREY, linewidth=0, zorder=2)
+    ax.bar(yr[~done], designs.to_numpy()[~done], 0.72, facecolor="none", edgecolor=BAR_GREY, linewidth=0.8,
+           alpha=ts.INCOMPLETE_ALPHA, zorder=2)
+    ax.plot(yr[done], fam.to_numpy()[done], "-o", color=col, lw=1.4, ms=3.5, zorder=4)
+    ax.plot(yr[~done], fam.to_numpy()[~done], ":", color=col, lw=0.8, alpha=ts.INCOMPLETE_ALPHA, zorder=3)
+    ts.incomplete_point(ax, yr[~done], fam.to_numpy()[~done], col, ms=3.5, zorder=4)
+    ymax = float(max(designs.max(), fam.max()))
+    top = 20 * np.ceil(ymax / 20)
+    ax.set_ylim(0, top * 1.72)
+    ax.spines["left"].set_bounds(0, top)
+    ax.set_yticks(np.arange(0, top + 1, 20))
+    # events: thin grey line from the plot top to the label, label horizontal; 2016 label to the left, the rest to the right, staggered
+    levels = [1.18, 1.66, 1.52, 1.38, 1.18]
+    shown = [(r["date"], r["year"]) for _, r in ev.iterrows() if EVENT_SHORT.get(r["date"].strftime("%Y-%m-%d"))]
+    for k, (d, y) in enumerate(shown):
+        lab = EVENT_SHORT[d.strftime("%Y-%m-%d")]
+        h = top * levels[k % len(levels)]
+        ax.plot([y, y], [0, h], color=EVENT_GREY, lw=0.6, zorder=1)
+        left = k == 0
+        ax.text(y + (-0.15 if left else 0.15), h, lab, ha="right" if left else "left", va="top", fontsize=8.4, color=EVENT_TEXT)
+    # direct labels
+    i16 = years.index(2016) if 2016 in years else len(years) // 2
+    ax.text(yr[i16] - 0.6, float(fam.iloc[i16 - 1]) + top * 0.55, f"patent families ({n_fam})", color=col, ha="right", va="center", fontsize=8.4)
+    ax.add_artist(_RawText(yr[i16] - 1.6, float(designs.iloc[i16 - 1]) + top * 0.2, f"aircraft designs ({n_des})", color=BAR_GREY,
+                           ha="right", va="center", fontsize=8.4, transform=ax.transData))      # the brief's wording, past viz/relabel.py
+    ip = years.index(partial)
+    ax.text(yr[-1], float(fam.iloc[ip]) + top * 0.12, "incomplete", ha="right", va="bottom", fontsize=8.4, color=EVENT_TEXT)
+    ax.set_xlim(yr[0] - 0.6, yr[-1] + 0.6)
+    ticks = [years[0]] + [y for y in years if y % 2 == 0 and y >= years[0] + 2]
+    ax.set_xticks(ticks, ["≤2005" if y == years[0] else str(y) for y in ticks])
+    ax.set_xlabel("priority year of first patent")
+    ax.set_ylabel("count")
+    data = pd.DataFrame({"designs filed": designs.to_numpy(), "patent families": fam.to_numpy(), "2024-26 (incomplete)": ~done}, index=t.index)
+    data.index.name = "priority year (2005 = 2005 and earlier)"
+    evd = ev.assign(label=[EVENT_SHORT.get(d.strftime("%Y-%m-%d")) or "(shares the 2016 line)" for d in ev["date"]])
+    data.attrs["events"] = evd
+    return fig, data
+
+
+def fig_growth_rates_ts(ctx):
+    """Fig 4.3: (a) the four series relative to 2005-09, markers + 2005-23 log-linear fits, direct labels with the doubling time;
+    (b) eVTOL and aeronautics, separate fits before and after the 2016 break, the jump as a vertical arrow AT the break (x = 2015.5)."""
+    from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator, MultipleLocator
+    c = q1._calc(ctx)
+    keys = ["evtol_families", "b64", "secb", "all"]
+    short = {"evtol_families": "eVTOL", "b64": "aeronautics", "secb": "transport", "all": "all patents"}
+    colour = {k: ts.SERIES[short[k]] for k in keys}
+    text_col = {"evtol_families": ts.SERIES["eVTOL"], "b64": "#555555", "secb": "#707070", "all": "#8A8A8A"}   # print-legible greys
+    marker = {"evtol_families": "o", "b64": "s", "secb": "^", "all": "v"}
+    first, last = 2005, 2023
+    yrs = np.arange(first, last + 1)
+    late = np.arange(last + 1, 2027)
+    BRK = 2015.5
+
+    def counts(k):
+        return c["ser"][k].reindex(yrs, fill_value=0).astype(float)
+
+    base = {k: float(counts(k).loc[2005:2009].mean()) for k in keys}
+    fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.5), layout="constrained", sharey=True)
+
+    def points(ax, k):
+        cnt = counts(k)
+        ok = cnt.to_numpy() > 0
+        ax.plot(yrs[ok], cnt.to_numpy()[ok] / base[k], ls="none", marker=marker[k], ms=3, color=colour[k], zorder=3)
+        lt = c["ser"][k].reindex(late).astype(float)
+        okl = (lt > 0).to_numpy()
+        if okl.any():
+            ts.incomplete_point(ax, late[okl], lt.to_numpy()[okl] / base[k], colour[k], marker=marker[k], ms=3, zorder=3)
+
+    # (a) whole-period fits
+    ends = []
+    for k in keys:
+        points(a, k)
+        cnt = counts(k)
+        ok = cnt.to_numpy() > 0
+        bb, aa = np.polyfit(yrs[ok], np.log(cnt.to_numpy()[ok]), 1)
+        a.plot(yrs, np.exp(aa + bb * yrs) / base[k], "-", lw=1.2, color=colour[k], zorder=2)
+        dbl = c["fits"][k]["doubling time (years)"]
+        ends.append([float(np.exp(aa + bb * last) / base[k]), f"{short[k]}\n×2 in {dbl:.1f} y", k])
+    # spread the end labels so they never touch (log space, min gap)
+    ends.sort(key=lambda e: -e[0])
+    ly = np.log2([e[0] for e in ends])
+    for i in range(1, len(ly)):
+        ly[i] = min(ly[i], ly[i - 1] - 1.05)
+    for (yv, lab, k), l2 in zip(ends, ly):
+        a.annotate(lab, (2026.4, 2 ** l2), ha="left", va="center", fontsize=8.4, color=text_col[k], linespacing=1.0,
+                   annotation_clip=False)
+    a.set_title("(a) trend 2005–23")
+
+    # (b) segmented fit, break 2016
+    labs = []
+    for k, dx in (("evtol_families", -0.17), ("b64", 0.17)):
+        points(b, k)
+        seg = c["seg"][k]
+        tb = int(seg["turn"]["break"])
+        cnt = counts(k)
+        (lo1, hi1, _), (lo2, hi2, _) = list(seg["lines"].values())[1:]
+        fits = []
+        for lo, hi in ((lo1, hi1), (lo2, hi2)):
+            m = (yrs >= lo) & (yrs <= hi) & (cnt.to_numpy() > 0)
+            fits.append(np.polyfit(yrs[m], np.log(cnt.to_numpy()[m]), 1))
+        (b1, a1), (b2, a2) = fits
+        x1 = np.array([lo1, tb - 0.5])
+        x2 = np.array([tb - 0.5, hi2])
+        lw = 2.4 if k == "evtol_families" else 1.4
+        b.plot(x1, np.exp(a1 + b1 * x1) / base[k], "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
+        b.plot(x2, np.exp(a2 + b2 * x2) / base[k], "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
+        y_from, y_to = np.exp(a1 + b1 * (tb - 0.5)) / base[k], np.exp(a2 + b2 * (tb - 0.5)) / base[k]
+        b.annotate("", xy=(tb - 0.5 + dx, y_to), xytext=(tb - 0.5 + dx, y_from),
+                   arrowprops=dict(arrowstyle="-|>", color="black", lw=1.0, mutation_scale=7, shrinkA=0, shrinkB=0), zorder=6)
+        labs.append([float(np.exp(a2 + b2 * last) / base[k]), f"{short[k]}\nstep ×{seg['turn']['jump']:.1f}", k])
+    labs.sort(key=lambda e: -e[0])
+    ly = np.log2([e[0] for e in labs])
+    for i in range(1, len(ly)):
+        ly[i] = min(ly[i], ly[i - 1] - 1.05)
+    for (yv, lab, k), l2 in zip(labs, ly):
+        b.annotate(lab, (2026.4, 2 ** l2), ha="left", va="center", fontsize=8.4, color=text_col[k], linespacing=1.0,
+                   annotation_clip=False)
+    b.axvline(BRK, color="#9A9A9A", lw=0.6, ls=":", zorder=1)
+    pre = c["seg"]["evtol_families"]["lines"]
+    d_pre = [v[2]["doubling time (years)"] for kk in ("evtol_families", "b64") for v in list(c["seg"][kk]["lines"].values())[1:2]]
+    pre_txt = (f"before 2016:\nboth ×2 in {d_pre[0]:.1f} y" if abs(d_pre[0] - d_pre[1]) < 0.05
+               else f"before 2016: ×2 in\n{d_pre[0]:.1f} y and {d_pre[1]:.1f} y")
+    b.text(2005, 6.0, pre_txt, ha="left", va="bottom", fontsize=8.4, color=EVENT_TEXT, linespacing=1.0)
+    b.text(2016.6, 0.32, "jump at 2016\n(fitted level shift)", ha="left", va="bottom", fontsize=8.4, color="black", linespacing=1.0)
+    b.set_title(f"(b) split at {int(c['seg']['evtol_families']['turn']['break'])}")
+
+    for ax in (a, b):
+        ax.axhline(1, color="#BDBDBD", lw=0.5, zorder=0)
+        ax.set_yscale("log", base=2)
+        ax.yaxis.set_major_locator(FixedLocator([0.25, 0.5, 1, 2, 4, 8, 16]))
+        ax.yaxis.set_minor_locator(NullLocator())
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"×{v:g}"))
+        ax.set_ylim(0.21, 24)
+        ax.set_xlim(2004.2, 2026.6)
+        ax.set_xticks(range(2005, 2027, 3), [str(y) if y in (2005, 2011, 2017, 2023, 2026) else "" for y in range(2005, 2027, 3)])
+        ax.set_xlabel("priority year")
+        from matplotlib.transforms import ScaledTranslation
+        for tl_ in ax.get_xticklabels():          # 2023 and 2026 sit 3 years apart: nudge them apart so they never touch
+            dx = {"2023": -3, "2026": 3}.get(tl_.get_text(), 0)
+            if dx:
+                tl_.set_transform(tl_.get_transform() + ScaledTranslation(dx / 72, 0, fig.dpi_scale_trans))
+    a.set_ylabel("index, 2005–09 = 1 (log)")
+    b.tick_params(labelleft=True)
+    data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in keys}).loc[2005:2026]
+    data.index.name = "priority year"
+    return fig, data
+
+
+def fig_class_mix_ts(ctx):
+    """Fig 4.4: one small panel per VFS directory category (the fold frames.CLASS5_ORDER), share of the cohort's designs per cohort;
+    patent dataset solid + filled, VFS directory dashed + hollow, 2024-26 hollow and faded, never joined to 2020-23; shared y."""
+    mix = q4.class_mix(ctx)
+    wins = list(ctx.WIN_NAMES)
+    order = ["LC", "VT", "WM", "ER", "HB"]                                   # the mockup's order
+    x = np.arange(len(wins))
+    fig, axes = plt.subplots(1, 5, figsize=(ts.TEXTWIDTH, 2.4), layout="constrained", sharey=True)
+    for i, (code, ax) in enumerate(zip(order, axes)):
+        colr = ts.VFS[VFS_OF[code]]
+        for src, ls, filled in ((q4.SRC_PATENT, "-", True), (q4.SRC_DIR, "--", False)):
+            s = mix[(mix["source"] == src) & (mix["code"] == code)].set_index("window").reindex(wins)["share"].to_numpy() * 100
+            ax.plot(x[:-1], s[:-1], ls=ls, marker="o", ms=3.5, color=colr, lw=1.2,
+                    mfc=colr if filled else "white", mec=colr, mew=0.9, zorder=3)
+            ts.incomplete_point(ax, x[-1:], s[-1:], colr, ms=3.5, zorder=3)
+        ax.set_title(f"({'abcde'[i]}) {VFS_TITLE[code]}", color=colr, loc="left", linespacing=1.0)
+        ax.set_xticks(x, ["11", "15", "19", "23", "26*"])
+        ax.set_xlim(-0.5, len(wins) - 0.5)
+        ax.set_ylim(0, 75)
+        ax.set_yticks([0, 25, 50, 75])
+        if i:
+            ax.tick_params(labelleft=False)
+    axes[0].set_ylabel("share of cohort's\ndesigns (%)")
+    axes[2].set_xlabel("priority-year cohort (end year)")
+    h = [Line2D([], [], color="#333333", ls="-", marker="o", ms=3.5, lw=1.2),
+         Line2D([], [], color="#333333", ls="--", marker="o", ms=3.5, mfc="white", lw=1.2)]
+    ts.bottom_legend(fig, h, ["patent dataset", "VFS directory"])
+    data = mix[mix["source"].isin([q4.SRC_PATENT, q4.SRC_DIR]) & mix["window"].isin(wins)].copy()
+    data["source"] = data["source"].replace({q4.SRC_DIR: "VFS eVTOL directory, pages in the domain (development year)",
+                                             q4.SRC_PATENT: "patent dataset (designs, priority year)"})
+    data["directory category"] = data["code"].map(VFS_OF)
+    data = data.rename(columns={"window": "cohort", "window total": "cohort total", "aircraft": "designs"})
+    return fig, data
+
+
+def fig_patent_vs_market_clock_ts(ctx):
+    """Fig 4.5: the clock figure of fig_patent_vs_market_clock_v2 (same chart type and marks), at 6.3 in under the thesis style,
+    one bottom legend row; the per-firm design counts leave the tick labels (they stay in the CSV, for the caption)."""
+    from matplotlib.legend_handler import HandlerTuple
+    tl = q4.ari_timeline(ctx)
+    fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.6), layout="constrained")
+    y = np.arange(len(tl))
+    planned_after = frames.ARI_RELEASE_YEAR - 1
+    INK = "#1A1A1A"
+    for yi, (_, r) in zip(y, tl.iterrows()):
+        ax.plot([r["first patent"] - 0.4, r["last patent"] + 0.4], [yi, yi], color="#A8A8A8", linewidth=4.0, solid_capstyle="butt", zorder=2)
+        ax.plot(r["peak filing year"], yi, marker="|", markersize=7, markeredgewidth=1.4, color=INK, zorder=4)
+        for col, mk in (("first flight (ARI)", "s"), ("entry into service (ARI)", "^")):
+            if pd.notna(r[col]):
+                plan = r[col] > planned_after
+                ax.plot(r[col], yi, marker=mk, markersize=4.2, markerfacecolor="white" if plan else INK, markeredgecolor=INK,
+                        markeredgewidth=0.8, linestyle="none", zorder=5)
+    ax.set_yticks(y, [CLOCK_SHORT.get(c_, c_) for c_ in tl["company"]])
+    ax.tick_params(axis="y", length=0)
+    ax.invert_yaxis()
+    ax.set_ylim(len(tl) - 0.4, -0.9)
+    ax.axvline(2026.45, color="#9A9A9A", linewidth=0.7, linestyle=":")
+    ax.text(2026.6, -0.75, "mid-2026", fontsize=8.4, color=EVENT_TEXT, ha="left", va="center")
+    ax.set_xlim(2012, 2031)
+    ax.set_xticks(range(2012, 2031, 2), [str(v) if v % 4 == 0 else "" for v in range(2012, 2031, 2)])
+    ax.set_xlabel("year")
+    hollow_sq = Line2D([], [], color="white", marker="s", markeredgecolor=INK, markersize=4.2, linestyle="none")
+    hollow_tr = Line2D([], [], color="white", marker="^", markeredgecolor=INK, markersize=4.2, linestyle="none")
+    handles = [Line2D([], [], color="#A8A8A8", linewidth=4.0),
+               Line2D([], [], color=INK, marker="|", markersize=7, markeredgewidth=1.4, linestyle="none"),
+               Line2D([], [], color=INK, marker="s", markersize=4.2, linestyle="none"),
+               Line2D([], [], color=INK, marker="^", markersize=4.2, linestyle="none"),
+               (hollow_sq, hollow_tr)]
+    labels = ["first to last patent", "peak filing year", "first flight", "entry into service", "planned"]
+    fig.legend(handles, labels, loc="outside lower center", ncol=len(labels), frameon=False, handlelength=1.6, columnspacing=1.2,
+               handler_map={tuple: HandlerTuple(ndivide=None, pad=0.4)})
+    return fig, tl.rename(columns={"unique aircraft": "designs"})
+
+
 # ================================================================================== items + writer
 #: one row per figure/table of thesis_figures_v2/Part_I_evidence_base/, grouped and slotted as the task's layout
 ITEMS = [
-    dict(name="q1_filings_per_year", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_filings_per_year_v2,
+    dict(name="q1_filings_per_year", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_filings_per_year_ts, ts=True,
          title="Designs filed per priority year", source_item="v2 of Figure 1 (i)"),
-    dict(name="q1_growth_rates", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_growth_rates_v2,
+    dict(name="q1_growth_rates", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_growth_rates_ts, ts=True,
          title="Growth of each series, log scale", source_item="v2 of Figure 1 (ii)"),
     dict(name="q1_na_drop_is_real_A", group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_na_drop_is_real_v2a,
          title="Designs per year and region, NA share as a line (version A)", source_item="v2 of Figure 23 (i), version A"),
     dict(name="q1_na_drop_is_real_B", group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_na_drop_is_real_v2b,
          title="North America's share of the year, bars replaced by a line (version B)", source_item="v2 of Figure 23 (i), version B"),
-    dict(name="q4_patent_vs_market_clock", width=0.8, group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_patent_vs_market_clock_v2,
+    dict(name="q4_patent_vs_market_clock", width=1.0, group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_patent_vs_market_clock_ts, ts=True,
          title="The patent clock against the market clock", source_item="v2 of Figure 3"),
     dict(name="q5_ari_timeline", group="I1_patenting_rate", role="auxiliary", kind="table", builder=tab_ari_timeline_v2,
          title="AAM Reality Index timing", source_item="v2 of q5_ari_timeline (Table 1)"),
@@ -630,7 +921,7 @@ ITEMS = [
          title="Flown designs against the rest", source_item="v2 of Table 4 (flown = TRL 5 or more, 2026-10-12)"),
     dict(name="q4_flown_index_firm_representativeness", group="I3_construct_validity", role="auxiliary", kind="table", builder=tab_index_firm_representativeness_v2,
          title="Flown index-firm designs against the rest", source_item="v2 of Table 5 (index firms flown before the snapshot, 2026-10-12)"),
-    dict(name="q4_class_mix", width=1.0, group="I4_external_validity", role="main", kind="figure", builder=_keep_dir(fig_class_mix_combined_v2),
+    dict(name="q4_class_mix", width=1.0, group="I4_external_validity", role="main", kind="figure", builder=_keep_dir(fig_class_mix_ts), ts=True,
          title="Architecture distribution per window, dataset and directory side by side", source_item="v2 merging Figure 2 (i) and (ii)"),
     dict(name="q4_dataset_vs_directory_classes", width=1.0, group="I4_external_validity", role="appendix", kind="figure", builder=_keep_dir(fig_dataset_vs_directory_classes_v2),
          title="Dataset against directory, all years", source_item="v2 of Figure 5b (i)"),
@@ -649,6 +940,9 @@ def save_v2_item(item: dict, cfg, ctx) -> None:
     import json
     import matplotlib.pyplot as plt
     from pathlib import Path
+    if item.get("ts"):                       # Figs 4.2-4.5 (2026-10-20): notebooks/thesis_style.py only, saved with ts.save
+        with ts_context():
+            return _save_v2_item(item, cfg, ctx, json)
     # the author's Part I style (viz/part1.mplstyle), on top of the thesis base style, for the build and the save
     with plt.style.context(str(Path(__file__).with_name("part1.mplstyle"))):
         return _save_v2_item(item, cfg, ctx, json)
@@ -667,9 +961,12 @@ def _save_v2_item(item, cfg, ctx, json) -> None:
     if item["kind"] == "figure":
         import matplotlib.pyplot as plt
         exact = {"savefig.bbox": "standard"} if item.get("width") else {}        # final-size figures keep their exact page size (no tight crop)
-        with plt.rc_context(exact):
-            for ext in cfg.style.get("formats", ["pdf", "png"]):
-                obj.savefig(out / f"{name}.{ext}")
+        if item.get("ts"):
+            ts.save(obj, name, out)          # vector PDF + 300 dpi PNG, 6.3 in, nothing under 8 pt
+        else:
+            with plt.rc_context(exact):
+                for ext in cfg.style.get("formats", ["pdf", "png"]):
+                    obj.savefig(out / f"{name}.{ext}")
         if data is not None:
             data.to_csv(out / f"{name}.csv", index=not isinstance(data.index, pd.RangeIndex))
         meta.update(width_in=round(obj.get_figwidth(), 3), height_in=round(obj.get_figheight(), 3))

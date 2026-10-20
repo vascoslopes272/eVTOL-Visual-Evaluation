@@ -15,15 +15,17 @@ from viz import analysis3, figcheck, frames, thesis_q6 as q6, thesis_q7 as q7, t
 from viz.thesis_latex_common import MAX_H, TEXT_CM, root, tables_md
 
 #: name -> (final width as a share of the text block, in the dissertation)
-FIGS = {"q6_architecture_shares_by_cohort": (1.0, True), "q7_condition2_balance": (0.9, True), "q7_condition3_cohesion": (0.85, True),
+FIGS = {"q6_architecture_shares_by_cohort": (1.0, True), "q7_condition2_balance": (1.0, True), "q7_condition3_cohesion": (1.0, True),
         "q7_family_conditions": (1.0, True), "q7_condition1_family": (1.0, False), "q6_largest_architectures_over_time": (1.0, False),
         "q7_iii4_directory_categories": (1.0, False)}
+#: the figures drawn under notebooks/thesis_style.py (2026-10-20): built at 6.3 in by their builders, never resized, written with ts.save
+RESTYLED = v3.RESTYLED
 TABLES = {"q7_verdict_table": True, "q7_verdict_detail": True, "q7_condition3_weights": True, "q7_condition3_family": True, "q6_share_trend_spearman": True, "q7_three_year_check": True,
           "q7_granted_live_condition1": True, "q7_granted_live_condition2": True, "q7_iii4_directory_fold": True}
 SHOWS = {"q6_architecture_shares_by_cohort": "share of each cohort's designs by architecture", "q7_condition2_balance": "condition 2: ²D against its permutation band, per level",
          "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, main weighting, levels A, A·W·T, A·U", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
-         "q7_family_conditions": "the three conditions on F: all designs (band) and actively protected (dashed); condition 1 also granted and live",
-         "q6_largest_architectures_over_time": "five largest architectures' share per cohort", "q7_iii4_directory_categories": "III.4: largest directory category per year and its ²D against the band",
+         "q7_family_conditions": "the three conditions on F: all designs (band) and actively protected (dashed)",
+         "q6_largest_architectures_over_time": "five largest architectures' share per cohort", "q7_iii4_directory_categories": "III.4: Vectored Thrust share per year (met years as bars) and ²D against the band",
          "q7_verdict_table": "verdict per condition and level, all designs (main) and actively protected (sensitivity), each base read alone", "q7_verdict_detail": "the numbers behind the verdict on each base", "q7_condition3_weights": "weights of the form distance (w15): 15 dimensions, four systems each weighing 1", "q7_condition3_family": "condition 3 on F: actively protected, all designs, granted and live",
          "q6_share_trend_spearman": "Spearman rho of architecture share on priority year", "q7_three_year_check": "condition 1 with three consecutive years",
          "q7_granted_live_condition1": "F's share per year, granted and live patents", "q7_granted_live_condition2": "²D of F, granted and live patents",
@@ -35,7 +37,12 @@ def _item(name):
 
 
 def draw(item, ctx, frac: float):
-    """Build ``item`` at width frac × text block; height capped at 55 % of the width; return (figure, data, checks)."""
+    """Build ``item`` at width frac × text block; height capped at 55 % of the width; return (figure, data, checks). The items in RESTYLED
+    are built by their builders at the full text width (6.3 in) under notebooks/thesis_style.py and are returned as built."""
+    if item["name"] in RESTYLED:
+        fig, data = item["builder"](ctx)
+        fig.canvas.draw()
+        return fig, data, (len(figcheck.overlaps(fig)), len(figcheck.small_text(fig, 7.0)))
     from matplotlib import style as mstyle
     w_in = TEXT_CM / 2.54 * frac
     old = ctx.W
@@ -62,7 +69,10 @@ def export(cfg, ctx):
         fig, data, chk = draw(it, ctx, frac)
         out = R / "Figures" / "Part_III_dominant_design" / it["group"] / it["role"]
         out.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out / f"{name}.pdf")
+        if name in RESTYLED:
+            v3.ts.save(fig, name, out)                    # pdf + 300 dpi png; refuses a width other than 6.3 in or text under 8 pt
+        else:
+            fig.savefig(out / f"{name}.pdf")
         info = (round(fig.get_figwidth() * 2.54, 2), round(fig.get_figheight() * 2.54, 2))
         plt.close(fig)
         if data is not None:
@@ -153,7 +163,7 @@ def _numbers(cfg, ctx, R: Path):
          "## Three-year check (condition 1, three consecutive years, actively protected designs)\n", "Source: `q7_three_year_check.csv`.\n", tables_md(t3), "",
          "## F on granted and live patents alone\n", "Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.\n", tables_md(gl1), "", tables_md(gl2), "",
          "## III.4, which VT share the figure draws\n",
-         "`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: two actively protected curves, ringed years above 50 %), "
+         "`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: all designs solid, actively protected dashed, years under 20 designs hollow grey; the met years of each base as red bars), "
          "and ²D per COHORT against its band (right panel, condition 2, all designs). The per-cohort VT share above is not drawn; it is listed here for the text. "
          "Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`.\n",
          "## Designs per cohort: III.1 against the form distance of condition 3\n", "Source: `q6_architecture_shares_by_cohort.csv` (`designs`), `q7_condition3_cohesion.csv` (`aircraft`, w15 weighting).\n", tables_md(dist), "",

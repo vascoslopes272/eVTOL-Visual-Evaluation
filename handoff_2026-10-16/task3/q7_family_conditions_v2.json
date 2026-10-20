@@ -6,5 +6,6 @@
  "title": "The three conditions on F: all designs and actively protected",
  "source_item": "new (handoff 2026-10-15, Task 3)",
  "width_in": 6.3,
- "height_in": 3.4
+ "height_in": 2.5,
+ "style": "notebooks/thesis_style.py"
 }

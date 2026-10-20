@@ -3,6 +3,8 @@ height at most 55 % of the width, text 7 pt or more, the thesis style (viz/part1
 changes: every builder is the one of viz/thesis_q2.py, thesis_q3.py or thesis_q7.py; only the figure size is imposed. Writes to LaTeX_v15/:
     Figures/Part_V_assignees_and_regions/<group>/<role>/<name>.pdf, Data_for_writing/csv/<name>.csv, NUMBERS_V.md, MANIFEST.md (appended)
 (The module of the other parts is viz/latex_v15.py; this one is separate so the two never overwrite each other.)
+Since 2026-10-20 the five dissertation figures 4.17-4.21 (RESTYLED) are drawn by viz/thesis_style_partv.py in the one thesis style
+(notebooks/thesis_style.py: 6.3 in wide, 8 pt or more, bottom legend) and written by thesis_style.save (pdf + png); the rest as above.
 Driver: python3 -m viz.latex_v15_partv
 """
 from __future__ import annotations
@@ -10,6 +12,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -20,19 +23,21 @@ from viz import config, figcheck, thesis
 from viz import thesis_q2 as q2
 from viz import thesis_q3 as q3
 from viz import thesis_q7 as q7
+from viz import thesis_style_partv as sp
 from viz.thesis_latex_common import MAX_H, TEXT_CM, root as latex_root
 
 CM, MIN_PT = 2.54, 7.0
 PNG_PREVIEW = {"q2_filer_types"}                        # figures that also write a .png preview beside the pdf
 PART = "Part_V_assignees_and_regions"
 FIGS = {
-    # flat style since 2026-10-17 (viz/flatstyle.py, thesis_q2.fig_filer_types_flat); 11 / 16 = the 11 cm the author gave, a PNG preview beside the pdf
-    "q2_filer_types": (q2.fig_filer_types_flat, 11.0 / TEXT_CM, "V1_who_files", "main", True, "share of each assignee type, all years and per cohort"),
-    "q3_region_design_all_years": (q3.fig_region_design_all_years, 1.0, "V3_regions_what_and_when", "main", True,
+    # Figs 4.17-4.21 in the thesis style since 2026-10-20 (viz/thesis_style_partv.py, notebooks/thesis_style.py): 6.3 in wide, >= 8 pt,
+    # written by thesis_style.save (pdf + 300 dpi png); the fraction column is 1.0 for them and not used (see RESTYLED)
+    "q2_filer_types": (sp.fig_filer_types, 1.0, "V1_who_files", "main", True, "share of each assignee type, all years and per cohort"),
+    "q3_region_design_all_years": (sp.fig_region_design_all_years, 1.0, "V3_regions_what_and_when", "main", True,
                                    "architecture, propulsor units and tilting per region, all years"),
-    "q7_region_family_share": (q7.fig_region_family_share, 0.7, "V4_regions_and_family_F", "main", True,
+    "q7_region_family_share": (sp.fig_region_family_share, 1.0, "V4_regions_and_family_F", "main", True,
                                "share of designs in F per region and cohort, chi-square p under each cohort"),
-    "q2_largest_filers_share": (a5._largest_assignees_share, 1.0, "V1_who_files", "main", False,
+    "q2_largest_filers_share": (sp.fig_largest_filers_share, 1.0, "V1_who_files", "main", False,
                                 "cumulative share of the designs held by the largest assignees (width not given: 1.0)"),
     "q3_region_entry_lag": (q3.fig_region_entry_lag, 0.72, "V3_regions_what_and_when", "main", False,
                             "years after North America per architecture, median difference with 95 % bootstrap interval (width not given: 0.72, as before)"),
@@ -40,7 +45,7 @@ FIGS = {
                                  "proximity of the assignees' architecture mixes within and across regions (width not given: 0.7, as the 0.5 of before overlapped its labels at 7 pt)"),
     "q3_firm_successions": (q3.fig_firm_successions, 1.0, "V3_regions_what_and_when", "appendix", False,
                             "where an assignee's next design lands, by the architecture of the one before (width not given: 1.0)"),
-    "q3_region_mix_by_window_class": (q3.fig_region_mix_by_window_class, 1.0, "V3_regions_what_and_when", "appendix", True,
+    "q3_region_mix_by_window_class": (sp.fig_region_mix_by_window_class, 1.0, "V3_regions_what_and_when", "appendix", True,
                                       "architecture mix of each region per cohort, the two strongest 2012-2023 trends above each panel (appendix; added 2026-10-17, width 1.0)"),
 }
 
@@ -63,9 +68,19 @@ def _final_size(width_in: float):
         plt.subplots = orig
 
 
+RESTYLED = set(sp.BUILDERS)                            # drawn in the thesis style: no size override, no 7 pt floor, no label layer
+
+
 def build(name: str, cfg, ctx):
     builder, frac = FIGS[name][:2]
     a5.CURRENT[0] = name
+    if name in RESTYLED:
+        with mpl.rc_context(sp.ts.RC):
+            fig, data = builder(ctx)
+            fig.canvas.draw()
+        a5.print_log(name)
+        a5.CURRENT[0] = None
+        return fig, a5.relabel_df(data)
     with plt.style.context(str(Path(__file__).with_name("part1.mplstyle"))), _final_size(frac * TEXT_CM / CM):
         fig, data = builder(ctx)
         a5.relabel_fig(fig)
@@ -88,9 +103,13 @@ def export_figure(name: str, cfg, ctx) -> dict:
     csv = root / "Data_for_writing" / "csv" / f"{name}.csv"
     pdf.parent.mkdir(parents=True, exist_ok=True)
     csv.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(pdf)
-    if name in PNG_PREVIEW:
-        fig.savefig(pdf.with_suffix(".png"), dpi=300)
+    if name in RESTYLED:
+        with mpl.rc_context(sp.ts.RC):
+            sp.ts.save(fig, name, pdf.parent)            # <name>.pdf + <name>.png (300 dpi), checks 6.3 in and >= 8 pt
+    else:
+        fig.savefig(pdf)
+        if name in PNG_PREVIEW:
+            fig.savefig(pdf.with_suffix(".png"), dpi=300)
     data.to_csv(csv, index=False)
     info = dict(name=name, pdf=pdf, csv=csv, width_cm=round(fig.get_figwidth() * CM, 2), height_cm=round(fig.get_figheight() * CM, 2),
                 height_over_width=round(fig.get_figheight() / fig.get_figwidth(), 3), overlaps=figcheck.overlaps(fig),
