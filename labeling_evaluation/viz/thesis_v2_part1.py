@@ -710,7 +710,8 @@ def fig_filings_per_year_ts(ctx):
 
 def fig_growth_rates_ts(ctx):
     """Fig 4.3: (a) the four series relative to 2005-09, markers + 2005-23 log-linear fits, direct labels with the doubling time;
-    (b) eVTOL and aeronautics, separate fits before and after the 2016 break, the jump as a vertical arrow AT the break (x = 2015.5)."""
+    (b) eVTOL and aeronautics, the cited two-segment model (pre-2016 trend + level shift + slope change), the jump as a vertical arrow
+    AT the break (x = 2015.5) whose length equals the printed step."""
     from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator, MultipleLocator
     c = q1._calc(ctx)
     keys = ["evtol_families", "b64", "secb", "all"]
@@ -758,28 +759,32 @@ def fig_growth_rates_ts(ctx):
                    annotation_clip=False)
     a.set_title("(a) trend 2005–23")
 
-    # (b) segmented fit, break 2016
-    labs = []
+    # (b) the cited segmented model itself (lib/growth.turning_point, fitted on log counts 2006-23, break b = 2016):
+    #     log y = c0 + c1*t + c2*1[t >= b] + c3*max(t - b, 0). Pre-break line c0 + c1*t up to x = 2015.5; post-break line
+    #     c0 + c1*t + c2 + c3*max(t - b, 0) from x = 2015.5. At any x < b the two differ by exactly c2, so each arrow spans
+    #     exp(c2) = the printed "step" (turning_point()['jump']).
+    from lib import growth as _growth
+    labs, d_pre = [], []
     for k, dx in (("evtol_families", -0.17), ("b64", 0.17)):
         points(b, k)
         seg = c["seg"][k]
         tb = int(seg["turn"]["break"])
-        cnt = counts(k)
-        (lo1, hi1, _), (lo2, hi2, _) = list(seg["lines"].values())[1:]
-        fits = []
-        for lo, hi in ((lo1, hi1), (lo2, hi2)):
-            m = (yrs >= lo) & (yrs <= hi) & (cnt.to_numpy() > 0)
-            fits.append(np.polyfit(yrs[m], np.log(cnt.to_numpy()[m]), 1))
-        (b1, a1), (b2, a2) = fits
-        x1 = np.array([lo1, tb - 0.5])
-        x2 = np.array([tb - 0.5, hi2])
+        y06 = c["ser"][k].reindex(range(2006, 2024), fill_value=0).astype(float)
+        _, co = _growth.two_segment_fit(y06.index.to_numpy(float), np.log(y06.to_numpy()), tb)
+        assert abs(np.exp(co[2]) - seg["turn"]["jump"]) < 1e-9, "the drawn model must be the cited one"
+        c0, c1, c2, c3 = co
+        pre_y = lambda x: np.exp(c0 + c1 * x) / base[k]
+        post_y = lambda x: np.exp(c0 + c1 * x + c2 + c3 * np.maximum(x - tb, 0)) / base[k]
+        x1 = np.linspace(2006, BRK, 50)
+        x2 = np.linspace(BRK, last, 80)
         lw = 2.4 if k == "evtol_families" else 1.4
-        b.plot(x1, np.exp(a1 + b1 * x1) / base[k], "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
-        b.plot(x2, np.exp(a2 + b2 * x2) / base[k], "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
-        y_from, y_to = np.exp(a1 + b1 * (tb - 0.5)) / base[k], np.exp(a2 + b2 * (tb - 0.5)) / base[k]
-        b.annotate("", xy=(tb - 0.5 + dx, y_to), xytext=(tb - 0.5 + dx, y_from),
+        b.plot(x1, pre_y(x1), "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
+        b.plot(x2, post_y(x2), "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
+        xa = BRK + dx                                        # < tb, so the arrow spans exactly exp(c2)
+        b.annotate("", xy=(xa, post_y(xa)), xytext=(xa, pre_y(xa)),
                    arrowprops=dict(arrowstyle="-|>", color="black", lw=1.0, mutation_scale=7, shrinkA=0, shrinkB=0), zorder=6)
-        labs.append([float(np.exp(a2 + b2 * last) / base[k]), f"{short[k]}\nstep ×{seg['turn']['jump']:.1f}", k])
+        labs.append([float(post_y(last)), f"{short[k]}\nstep ×{seg['turn']['jump']:.1f}", k])
+        d_pre.append(float(np.log(2) / c1))
     labs.sort(key=lambda e: -e[0])
     ly = np.log2([e[0] for e in labs])
     for i in range(1, len(ly)):
@@ -788,11 +793,9 @@ def fig_growth_rates_ts(ctx):
         b.annotate(lab, (2026.4, 2 ** l2), ha="left", va="center", fontsize=8.4, color=text_col[k], linespacing=1.0,
                    annotation_clip=False)
     b.axvline(BRK, color="#9A9A9A", lw=0.6, ls=":", zorder=1)
-    pre = c["seg"]["evtol_families"]["lines"]
-    d_pre = [v[2]["doubling time (years)"] for kk in ("evtol_families", "b64") for v in list(c["seg"][kk]["lines"].values())[1:2]]
     pre_txt = (f"before 2016:\nboth ×2 in {d_pre[0]:.1f} y" if abs(d_pre[0] - d_pre[1]) < 0.05
-               else f"before 2016: ×2 in\n{d_pre[0]:.1f} y and {d_pre[1]:.1f} y")
-    b.text(2005, 6.0, pre_txt, ha="left", va="bottom", fontsize=8.4, color=EVENT_TEXT, linespacing=1.0)
+               else f"before 2016:\n×2 in {d_pre[0]:.1f} y\nand {d_pre[1]:.1f} y")
+    b.text(2005, 4.6, pre_txt, ha="left", va="bottom", fontsize=8.4, color=EVENT_TEXT, linespacing=1.0)
     b.text(2016.6, 0.32, "jump at 2016\n(fitted level shift)", ha="left", va="bottom", fontsize=8.4, color="black", linespacing=1.0)
     b.set_title(f"(b) split at {int(c['seg']['evtol_families']['turn']['break'])}")
 
