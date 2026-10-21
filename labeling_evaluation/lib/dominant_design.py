@@ -107,11 +107,11 @@ def all_three_windows(c1_years: Set[int], c2_windows: Set[str], c3_windows: Set[
 
 # --------------------------------------------------------------------------- condition 2
 def balance_band(keys: Sequence, windows: Sequence, window_names: Sequence[str], n: int = 40,
-                 perms: int = 200, seed: int = 42, rng: Optional[np.random.Generator] = None,
-                 min_aircraft: int = 10, obs_draws: int = 300, perm_draws: int = 40) -> pd.DataFrame:
+                 perms: int = 1000, seed: int = 42, rng: Optional[np.random.Generator] = None,
+                 min_aircraft: int = 10, obs_draws: int = 1000, perm_draws: int = 40) -> pd.DataFrame:
     """Condition 2 for ONE level: rarefied ²D per window against a permutation band.
 
-    Observed: for each window with >= min_aircraft aircraft, hill_numbers(keys, n, draws=300) gives
+    Observed: for each window with >= min_aircraft aircraft, hill_numbers(keys, n, draws=1000) gives
     D2 = 1 / Σ p_i² averaged over rarefied draws of size n (and its 95 % band), plus the top and top-2
     archetype shares (rounded 3). Band: `perms` times, the keys are shuffled across all windows
     (rng.permutation, window sizes kept); for each window, in order, ²D of the shuffled keys of that
@@ -123,7 +123,7 @@ def balance_band(keys: Sequence, windows: Sequence, window_names: Sequence[str],
     per observed window in window_names order. The archive seeds one generator for the first two
     levels (A0c then A1t, shared) and a fresh one per other level: pass `rng` to share, or `seed`.
 
-    Parameters: n=40, perms=200, seed=42, min_aircraft=10, obs_draws=300, perm_draws=40.
+    Parameters: n=40, perms=1000, seed=42, min_aircraft=10, obs_draws=1000, perm_draws=40.
     Ported from: archive/.../dataset_facts/la_tables.py:dominant_design (one level) and
                  sm_open.py:dd_balance (levels C and F)
     Used in: la_dominant_design, la_dd_balance.
@@ -175,7 +175,7 @@ def mean_pairwise_distance(D: np.ndarray, idx: np.ndarray) -> float:
 
 
 def cohesion_band(D: np.ndarray, rows: np.ndarray, windows: Sequence, window_names: Sequence[str],
-                  baseline: int = 2, perms: int = 200, seed: int = 42,
+                  baseline: int = 2, perms: int = 1000, seed: int = 42,
                   rng: Optional[np.random.Generator] = None, min_aircraft: int = 10) -> pd.DataFrame:
     """Condition 3 for ONE level and ONE weighting: Q per window against the earliest windows and a permutation band.
 
@@ -187,7 +187,7 @@ def cohesion_band(D: np.ndarray, rows: np.ndarray, windows: Sequence, window_nam
     of ΔQ*. below band = ΔQ < low.
 
     Parameters: rows = row index into D of each aircraft; windows = window of each aircraft (aligned);
-    baseline=2, perms=200, seed=42, min_aircraft=10. Rounded to 4 decimals. The archive creates a
+    baseline=2, perms=1000, seed=42, min_aircraft=10. Rounded to 4 decimals. The archive creates a
     fresh default_rng(seed) for every (weighting, level): pass `rng` only to share one.
     Ported from: archive/.../dataset_facts/la_tables.py:dominant_design_q (one weighting, one level)
     Used in: la_dd_q, la_dd_form.

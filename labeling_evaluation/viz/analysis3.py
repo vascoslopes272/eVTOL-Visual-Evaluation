@@ -14,6 +14,7 @@ from matplotlib.patches import Patch
 from scipy import stats
 
 from lib import dominant_design as dd
+from lib.multiple import holm
 from viz import config, frames, plots, style, thesis, thesis_q6, thesis_q7
 
 RUN3 = 3
@@ -37,7 +38,8 @@ RHO_LATE_FIRST = 2016
 
 def rho_table(ctx) -> pd.DataFrame:
     """Spearman rho and p of each architecture's share of the year's aircraft on the priority year (2008 to the last complete
-    year), architectures with 20 aircraft or more over those years; all unique aircraft with an architecture recorded."""
+    year), architectures with 20 aircraft or more over those years; all unique aircraft with an architecture recorded. Each p column
+    has its Holm-adjusted column beside it, one family per column (the architectures tested over that span)."""
     v = ctx.v
     last = ctx.cfg.analysis["last_complete_year"]
     w = v[v["topType"].notna() & v["year"].between(frames.DD_YEAR_FIRST, last)]
@@ -57,6 +59,9 @@ def rho_table(ctx) -> pd.DataFrame:
                      "p": float(p), "rho, years with 20+ aircraft": round(float(r2), 3), "p, years with 20+ aircraft": float(p2),
                      "years with 20+ aircraft": int(ok.sum()), "rho, 2016-23": round(float(r3), 3), "p, 2016-23": float(p3)})
     t = pd.DataFrame(rows)
+    # Holm within each family (supervisor review 2, 2026-10): the architectures' p values of one span are one family
+    for col in ("p", "p, years with 20+ aircraft", "p, 2016-23"):
+        t.insert(t.columns.get_loc(col) + 1, f"{col} (Holm)", holm(t[col]))
     first = {"SLC": 0, "TR": 1}
     t = t.assign(_o=t["code"].map(first).fillna(2)).sort_values(["_o", "aircraft"], ascending=[True, False]).drop(columns="_o")
     return t.reset_index(drop=True)

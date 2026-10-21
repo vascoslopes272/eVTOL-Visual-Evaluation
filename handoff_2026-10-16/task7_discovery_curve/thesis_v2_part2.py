@@ -309,8 +309,12 @@ def tab_selected_fields_v2(ctx):
     return t, None
 
 
-def _fixed_tables(ctx):
-    summary, detail = q6.fixed_by_architecture(ctx)
+def _fixed_tables(ctx, share: float = None, min_designs: int = None):
+    """The printed q6_fixed_by_architecture tables; ``share`` = the leading-option rule (q6.FIXED_SHARE, 80 %, unless given),
+    ``min_designs`` = the designs an architecture needs to be read (q6.FIXED_MIN_DESIGNS, 10, unless given)."""
+    share = q6.FIXED_SHARE if share is None else share
+    min_designs = q6.FIXED_MIN_DESIGNS if min_designs is None else min_designs
+    summary, detail = q6.fixed_by_architecture(ctx, share=share, min_designs=min_designs)
     dim = lambda s: s.str.replace("aircraft", "design", regex=False)             # noqa: E731
     name = lambda c: arch(c).name                                                # noqa: E731
     pval = lambda p: f"{p:.3f}" if p > 0 else f"< {1 / q6.FIXED_PERMS:.3f}"       # noqa: E731  0 hits in 1 000 shuffles: below the resolution
@@ -319,7 +323,8 @@ def _fixed_tables(ctx):
         "designs answering": summary["designs answering"],
         "Cramér's V": summary["cramers_v"].map(lambda x: f"{x:.2f}"),
         "p": summary["p"].map(pval),
-        "architectures at 80 % or more": [f"{f} of {r} read" for f, r in zip(summary["fixed"], summary["read"])],
+        "p (Holm)": summary["p (Holm)"].map(pval),
+        f"architectures at {round(100 * share)} % or more": [f"{f} of {r} read" for f, r in zip(summary["fixed"], summary["read"])],
         "architectures too few to read": summary["too few codes"].map(lambda cs: ", ".join(name(c) for c in cs) or "none"),
     })
     t2 = pd.DataFrame({
@@ -497,7 +502,7 @@ def fig_configuration_core_v2(ctx):
     """II3 main (Fig 4.6, thesis style 2026-10-20): the A·U configurations of five designs or more by share of the 2016–23 designs and
     distinct assignees per design. The core configurations (thesis_q6: taken by share until half of the 2016–23 designs) coloured by
     architecture and labelled; every other configuration a small grey dot; a thin dashed line at the share threshold between core and
-    rim, "rim" / "core (…)" at the top; a ring round the configuration whose largest assignee holds more than 40 % (``SOLO_ASSIGNEE``),
+    periphery, "periphery" / "core (…)" at the top (the word "rim" was dropped on 2026-10-22); a ring round the configuration whose largest assignee holds more than 40 % (``SOLO_ASSIGNEE``),
     with an 8 pt note on a short leader. No hulls. Data and CSV as before (the three largest non-core configurations are no longer named)."""
     d = q6._data(ctx)
     zz, core, rim = d["zz"], d["core"], d["rim"]
@@ -527,7 +532,7 @@ def fig_configuration_core_v2(ctx):
         ax.set_xlabel("share of the 2016–23 designs (%)")
         ax.set_ylabel("distinct assignees\nper design")
         ytop = 1.105
-        t_rim = ax.text(thr - 0.0012, ytop, "rim", ha="right", va="center", fontsize=8.4, color=NOTE)
+        t_rim = ax.text(thr - 0.0012, ytop, "periphery", ha="right", va="center", fontsize=8.4, color=NOTE)
         t_core = ax.text(thr + 0.0012, ytop, f"core ({len(core)} configurations, half of the designs)", ha="left", va="center", fontsize=8.4, color=NOTE)
         fig.canvas.draw()
         rend = fig.canvas.get_renderer()
@@ -583,14 +588,14 @@ def fig_configuration_core_v2(ctx):
                                                             "zone": "first seen"})
     data["configuration"] = data["configuration"].map(cfg_label)
     data["architecture"] = zz["code"].map(lambda c: arch(c).name).to_numpy()
-    data["group"] = ["core" if i in core.index else "rim" if i in rim.index else "" for i in zz.index]
+    data["group"] = ["core" if i in core.index else "periphery" if i in rim.index else "" for i in zz.index]
     data["labelled"] = [i in lab.index for i in zz.index]
     bb_ = big.loc[zz["archetype"]]
     data["largest assignee"] = bb_["largest assignee"].to_numpy()
     data["its designs"] = bb_["its designs"].to_numpy()
     data["its share"] = bb_["its share"].to_numpy()
     data["largest assignee above 40 %"] = solo.to_numpy()
-    data["core / rim threshold (share 2016-23, drawn)"] = round(float(thr), 4)
+    data["core / periphery threshold (share 2016-23, drawn)"] = round(float(thr), 4)
     return fig, data
 
 
@@ -823,7 +828,7 @@ ITEMS = [
     dict(name="q7_levels_of_description", group="II2_levels_of_description", role="main", kind="table", builder=tab_levels_of_description_v2,
          title="The three levels of description", source_item="v2 of q7_archetype_sets (Table 7), F row removed"),
     dict(name="q6_configuration_core", group="II3_distribution_and_new_variety", role="main", kind="figure", builder=fig_configuration_core_v2,
-         title="Crowded core and empty rim", source_item="v2 of q6_archetype_core (Figure 8 (i))"),
+         title="Core and periphery of the configurations", source_item="v2 of q6_archetype_core (Figure 8 (i))"),
     dict(name="q6_discovery_curve", group="II3_distribution_and_new_variety", role="main", kind="figure", builder=fig_discovery_curve_v2,
          title="Is the design space still opening", source_item="v2 of q6_discovery_curve (Figure 9)"),
     dict(name="q6_half_of_cohort_heatmap", group="II3_distribution_and_new_variety", role="auxiliary", kind="figure", builder=fig_half_of_cohort_heatmap_v2,

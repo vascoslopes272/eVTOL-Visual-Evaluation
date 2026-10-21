@@ -105,9 +105,10 @@ def tab_share_trend(ctx):
     t["architecture"] = [arch(c).name for c in t["code"]]
     t["code"] = [arch(c).short for c in t["code"]]
     t = t.rename(columns={"code": "architecture code", "aircraft": "designs", "years": "years"})
-    t = t.drop(columns=["rho, years with 20+ aircraft", "p, years with 20+ aircraft", "years with 20+ aircraft"])   # handoff 2026-10-15: 2016-23 instead
-    t["p"] = t["p"].map(q7.pval5)
-    t["p, 2016-23"] = t["p, 2016-23"].map(q7.pval5)
+    t = t.drop(columns=["rho, years with 20+ aircraft", "p, years with 20+ aircraft", "p, years with 20+ aircraft (Holm)",
+                        "years with 20+ aircraft"])   # handoff 2026-10-15: 2016-23 instead
+    for col in ("p", "p (Holm)", "p, 2016-23", "p, 2016-23 (Holm)"):        # Holm within each span (supervisor review 2, 2026-10)
+        t[col] = t[col].map(q7.pval5)
     return t, None
 
 

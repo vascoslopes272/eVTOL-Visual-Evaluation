@@ -15,6 +15,7 @@ import pandas as pd
 from matplotlib.patches import Patch
 
 from viz import flow, frames, plots, style
+from lib.multiple import holm
 from lib import association, intervals
 
 # ------------------------------------------------------------------------------------------ shared frames
@@ -65,8 +66,32 @@ def public_frame(ctx) -> pd.DataFrame:
     return _cache(ctx, "pub", lambda: frames.public_arch_frame(ctx.ds))
 
 
+#: the architecture the free text of a disagreeing public record names (``public_arch``, rows matched "no"); a record that names no
+#: architecture of the taxonomy keeps its own label, which matches no source (2026-10-22, for Cohen's kappa; no new reading)
+PUBLIC_NAMED = (("tilt rotor", "TR"), ("lift + cruise", "SLC"))
+
+
+def public_labels(ctx) -> pd.DataFrame:
+    """The 97 named designs with the architecture of each source, rebuilt from the existing match record (no new reading): ``drawing``
+    (topType), ``text`` (arch_gt) and the public aircraft's label once per pair, because Table 2 counts a "taxonomy" row (the sources
+    differ only in the directory's coarser category) as agreement in both public pairs even where drawing and text differ (GyroBike):
+    ``public vs drawing``: the drawing's label on the rows Table 2 counts as agreeing ("yes", "taxonomy"), the text's on "image" rows;
+    ``public vs text``: the text's label on its agreeing rows ("yes", "taxonomy", "image"); on "no" rows both take the architecture the
+    public record's free text names (PUBLIC_NAMED), else the free text itself (no architecture code). Asserted in :func:`pairwise` to give
+    back exactly Table 2's agreement counts."""
+    pub = public_frame(ctx)
+    out = pd.DataFrame({"aircraft_id": pub["aircraft_id"], "match": pub["match"].astype(str),
+                        "drawing": pub["topType"].astype(str), "text": pub["arch_gt"].fillna("").astype(str)})
+    named = [next((c for k, c in PUBLIC_NAMED if k in str(f).lower()), f"no architecture code: {f}") for f in pub["public_arch"]]
+    m = out["match"]
+    out["public vs drawing"] = np.where(m.isin(["yes", "taxonomy"]), out["drawing"], np.where(m.eq("image"), out["text"], named))
+    out["public vs text"] = np.where(m.isin(["yes", "taxonomy", "image"]), out["text"], named)
+    return out
+
+
 def pairwise(ctx) -> pd.DataFrame:
-    """Table 2: three sources of a class two at a time, Wilson interval with the finite-population correction."""
+    """Table 2: three sources of a class two at a time, Wilson interval with the finite-population correction, and Cohen's kappa at the
+    architecture level on the same designs (lib.association.cohen_kappa on the labels of :func:`public_labels`; 2026-10-22)."""
     def build():
         pub = public_frame(ctx)
         m = pub["match"].astype(str)
@@ -78,11 +103,19 @@ def pairwise(ctx) -> pd.DataFrame:
         why = ["the patent describes another configuration than the one the firm built, or the drawing was misread",
                "the patent describes another configuration than the one the firm built",
                "the drawing was read as one class and the text states another"]
+        lab = public_labels(ctx)
+        lab = lab[lab["text"].ne("")]
+        pairs = {"drawing label against the public aircraft": ("drawing", "public vs drawing"),
+                 "patent text against the public aircraft": ("text", "public vs text"),
+                 "drawing label against the patent text": ("drawing", "text")}
         rows = []
         for (name, (k, n)), w in zip(agree.items(), why):
+            a_, b_ = pairs[name]
+            assert int((lab[a_] == lab[b_]).sum()) == k and len(lab) == n, f"rebuilt labels do not give back {name}"
             lo, hi = intervals.wilson_fpc_interval(k, n, len(ctx.v))
             rows.append({"comparison": name, "agree": k, "of": n, "share": round(k / n, 2),
-                         "95 % interval": f"{lo:.2f}–{hi:.2f}", "the disagreements": w})
+                         "95 % interval": f"{lo:.2f}–{hi:.2f}", "Cohen's kappa": round(association.cohen_kappa(lab[a_], lab[b_]), 2),
+                         "the disagreements": w})
         return pd.DataFrame(rows)
     return _cache(ctx, "pairwise", build)
 
@@ -189,7 +222,7 @@ def directory_mix(ctx, in_domain: bool = True) -> dict:
         })
         counts = {name: (n_set if m is None else dirf.loc[m, "class5"].value_counts().reindex(O5, fill_value=0))
                   for name, m in subsets.items()}
-        rows = []
+        rows, p_raw = [], {}
         for name, k in counts.items():
             row = {"source": name, "n": int(k.sum())}
             for c in O5:
@@ -197,9 +230,15 @@ def directory_mix(ctx, in_domain: bool = True) -> dict:
             if name != "labelled dataset (patented aircraft)":
                 t = association.chi2_test(np.vstack([n_set.to_numpy(), k.to_numpy()]))
                 row["chi-square vs dataset"], row["p vs dataset"] = round(t["chi2"], 1), ctx.pval(t["p"])
+                p_raw[name] = t["p"]
             rows.append(row)
         why = pd.DataFrame(rows)
-        return {"n_set": n_set, "n_dir": n_dir, "test": test, "resid": resid, "counts": counts, "why": why}
+        # Holm over the directory parts tested against the dataset, one family (supervisor review 2, 2026-10)
+        p_raw = pd.Series(p_raw, dtype=float)
+        p_holm = pd.Series(holm(p_raw.to_numpy()), index=p_raw.index)
+        why.insert(why.columns.get_loc("p vs dataset") + 1, "p vs dataset (Holm)", why["source"].map(p_holm).map(lambda p: ctx.pval(p) if p == p else ""))
+        return {"n_set": n_set, "n_dir": n_dir, "test": test, "resid": resid, "counts": counts, "why": why,
+                "p_raw": p_raw, "p_holm": p_holm}
     return _cache(ctx, f"dir{in_domain}", build)
 
 

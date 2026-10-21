@@ -10,7 +10,7 @@ Steps (the brief's numbering):
 * 6.1 :func:`form_variables`: one row per design with an architecture (625), the form variables read off the w15 frame.
 * 6.2 :data:`FAMILIES`: the five families P1-P5, fixed before any result was seen; :func:`membership`.
 * 6.3a :func:`membership_tables`: family x architecture, per cohort, empennage inside the family; "renamed architecture" above 85 %.
-* 6.3b :func:`premise_check`: cohesion and separation of each family per cohort against random subsets of the same size (200
+* 6.3b :func:`premise_check`: cohesion and separation of each family per cohort against random subsets of the same size (1000
   permutations, seed 42); :func:`q_decomposition`: Q of a cohort split into within-family, within-rest and between pairs.
 * 6.3c :func:`condition1`: the family's share per priority year on the code path of ``q7_condition1_family``.
 * 6.3d :func:`condition2`: ²D rarefied to 40 against the band on the partition {family} ∪ {each remaining architecture}, as F.
@@ -32,7 +32,7 @@ from viz import analysis3, frames, thesis_q7
 from viz import thesis_v2_part2 as p2
 from viz.thesis_latex_common import root, tables_md
 
-PERMS = thesis_q7.PERMS                 # 200, as conditions 2 and 3 of Task 1
+PERMS = thesis_q7.PERMS                 # 1000 (200 until 2026-10), as conditions 2 and 3 of Task 1
 MIN_READ = 10                           # a family needs 10 designs in a cohort for the premise check (the min_aircraft of the Task 1 bands)
 RENAMED_SHARE = 0.85                    # above this share of one architecture a family is that architecture renamed
 BAND_LABELS = list(frames.ROTOR_BINS[1])        # rank 0..4 -> "1-3", "4", "5-6", "7-8", "9+"
@@ -232,7 +232,7 @@ def _between_mean(D: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
 
 def premise_check(ctx) -> pd.DataFrame:
     """Per family, base and cohort: cohesion = mean w15 Gower distance over the pairs of the family's designs in the cohort (diagonal
-    left out) against the 2.5-97.5 % band of the same mean on 200 random subsets of the cohort's designs of the family's size (seed 42,
+    left out) against the 2.5-97.5 % band of the same mean on PERMS (1000) random subsets of the cohort's designs of the family's size (seed 42,
     one fresh generator per family and base); separation = mean distance from the family's designs to the rest of the cohort against the
     band of the same statistic on the same random subsets. The premise holds in a cohort when cohesion is below its band AND separation is
     above its band. A family with fewer than MIN_READ designs in the cohort, or no rest, is not read."""
@@ -347,7 +347,7 @@ def condition1(ctx) -> Dict[str, object]:
 
 # ------------------------------------------------------------------------------------------------------ 6.3d condition 2
 def condition2(ctx) -> pd.DataFrame:
-    """Condition 2 per family and base: ²D rarefied to 40 against the 200-permutation band (seed 42, a fresh generator per family and base,
+    """Condition 2 per family and base: ²D rarefied to 40 against the 1000-permutation band (seed 42, a fresh generator per family and base,
     as F), on the partition {family} ∪ {each remaining architecture as its own option}: the key is the design's architecture code, replaced by
     the family's id for its members; designs with a blank rule variable keep their architecture. Exactly :func:`frames.dd_level_keys`'s
     construction of F's key, with the family's member set, then :func:`lib.dominant_design.balance_band`."""
@@ -543,8 +543,8 @@ def numbers_md(ctx) -> str:
          "Family x architecture, actively protected (codes):\n", tables_md(crosstab(ctx, "actively protected")), ""]
     for base, _ in BASES:
         L += [f"## Verdict table, {base}" + (" (main)" if base == "all designs" else " (sensitivity)") + "\n",
-              "Source: `q8_families_verdict.csv`. Premise = cohesion below AND separation above the band of 200 random subsets of the cohort of the family's size (seed 42); "
-              "condition 1 read years only (20 designs or more), two consecutive years above 50 %; condition 2 ²D rarefied to 40 against the 200-permutation band on the partition "
+              "Source: `q8_families_verdict.csv`. Premise = cohesion below AND separation above the band of 1000 random subsets of the cohort of the family's size (seed 42); "
+              "condition 1 read years only (20 designs or more), two consecutive years above 50 %; condition 2 ²D rarefied to 40 against the 1000-permutation band on the partition "
               "{family} ∪ {each remaining architecture as its own option}, complete cohorts; condition 3 = Task 1, level A, w15, family-independent.\n",
               tables_md(verdict_md_table(ctx, base)), ""]
         for fid in FAMILY_IDS:

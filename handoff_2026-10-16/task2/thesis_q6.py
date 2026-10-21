@@ -167,13 +167,17 @@ FIXED_SHARE = 0.80
 FIXED_PERMS = 1000
 
 
-def fixed_by_architecture(ctx):
+def fixed_by_architecture(ctx, share: float = FIXED_SHARE, min_designs: int = FIXED_MIN_DESIGNS):
     """Which of the dimensions of Table 6 the architecture (topType) fixes: per dimension, on the designs that answer it AND have an
     architecture, the bias-corrected Cramér's V (Bergsma 2013) of dimension x architecture, a permutation p (the architecture column
     shuffled FIXED_PERMS times with one numpy Generator seeded ctx.SEED, dimensions in the order of Table 6 as the v2 table prints it:
     top share ascending), and per architecture the leading option and its share of the architecture's answering designs
     (tie: the option more common over all answering designs). Architectures with fewer than FIXED_MIN_DESIGNS answering designs are
-    "too few to read"; the dimension is fixed in an architecture when the leading share is >= FIXED_SHARE.
+    "too few to read"; the dimension is fixed in an architecture when the leading share is >= ``share`` (FIXED_SHARE, 0.80; the
+    sensitivity of supervisor review 2 reads 0.70 and 0.90, the V and p do not depend on it). ``p (Holm)``: the permutation p values of
+    the dimensions as ONE family, Holm-adjusted (lib.multiple.holm; supervisor review 2, 2026-10). ``min_designs``: an architecture is
+    read when it has at least this many answering designs (FIXED_MIN_DESIGNS, 10; the dissertation's table of 2026-10 reads 20). V and p
+    use every architecture and do not depend on it.
 
     The series are those of :func:`viz.frames.selected_field_series` (the same options dropped as Table 6), so "designs answering"
     equals Table 6's column less the designs without an architecture.
@@ -181,6 +185,7 @@ def fixed_by_architecture(ctx):
     Returns (summary, detail): summary one row per dimension with the architecture CODES in the two list columns
     (``fixed codes``, ``too few codes``); detail one row per dimension x architecture (code), designs, leading option, share."""
     from lib import association
+    from lib.multiple import holm
     d = _data(ctx)
     t6, cut = d["t6"], d["cut"]
     kept = t6[t6["top_share"] < cut]
@@ -202,15 +207,17 @@ def fixed_by_architecture(ctx):
         res = association.cramers_v_permutation(xi, ai, perms=FIXED_PERMS, rng=rng)
         fixed, few = [], []
         for c in ct.columns:
-            i, share = association.leading_share(ct[c].to_numpy())
+            i, lead = association.leading_share(ct[c].to_numpy())
             n_c = int(ct[c].sum())
-            detail.append({"dimension": name, "code": c, "designs": n_c, "leading option": ct.index[i] if i >= 0 else "", "share": share,
-                           "read": n_c >= FIXED_MIN_DESIGNS})
-            (few if n_c < FIXED_MIN_DESIGNS else (fixed if share >= FIXED_SHARE else [])).append(c)
-        n_read = sum(int(ct[c].sum()) >= FIXED_MIN_DESIGNS for c in ct.columns)
+            detail.append({"dimension": name, "code": c, "designs": n_c, "leading option": ct.index[i] if i >= 0 else "", "share": lead,
+                           "read": n_c >= min_designs})
+            (few if n_c < min_designs else (fixed if lead >= share else [])).append(c)
+        n_read = sum(int(ct[c].sum()) >= min_designs for c in ct.columns)
         rows.append({"dimension": name, "designs answering": int(res["n"]), "options": int(ct.shape[0]), "architectures": int(ct.shape[1]),
                      "cramers_v": res["v"], "p": res["p"], "fixed": len(fixed), "read": n_read, "fixed codes": fixed, "too few codes": few})
-    return pd.DataFrame(rows), pd.DataFrame(detail)
+    summary = pd.DataFrame(rows)
+    summary.insert(summary.columns.get_loc("p") + 1, "p (Holm)", holm(summary["p"]))
+    return summary, pd.DataFrame(detail)
 
 
 def fig_propulsor_units_per_class(ctx):

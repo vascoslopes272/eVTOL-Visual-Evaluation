@@ -28,12 +28,13 @@ from viz.thesis_latex_common import root
 
 #: figures of the remake prompt that stay in the dissertation text (yes) and those that leave it (no, still delivered)
 USED = {"q1_filings_per_year": True, "q4_patent_vs_market_clock": True, "q4_class_mix": True,
-        "q1_growth_rates": False, "q4_dataset_vs_directory_classes": False, "q4_dataset_vs_directory_subsets": False, "q1_in_force_status": False, "q5_funding_vs_aircraft": False, "q5_patenting_vs_investment": False}
+        "q1_growth_rates": False, "q1_growth_rates_baselines": False, "q4_dataset_vs_directory_classes": False, "q4_dataset_vs_directory_subsets": False, "q1_in_force_status": False, "q5_funding_vs_aircraft": False, "q5_patenting_vs_investment": False}
 SHOWS = {
     "q1_filings_per_year": "Designs filed per priority year (dark-grey bars, 2024-26 outline only) and patent families (blue line, same y axis); dated sector events as thin lines (thesis style, 2026-10-20)",
     "q4_dataset_vs_directory_classes": "Designs per architecture group in the patent dataset and the pages of the VFS eVTOL directory inside the domain, all years (appendix)",
     "q4_dataset_vs_directory_subsets": "Designs of each architecture group in the dataset and in four parts of the in-domain directory (appendix)",
-    "q1_growth_rates": "Growth of eVTOL architecture patents against aeronautics, transport and all patenting, relative to 2005-09, log2 scale: (a) 2005-23 fits with doubling times, (b) split at 2016 with the fitted level shift as arrows (thesis style, 2026-10-20)",
+    "q1_growth_rates": "Growth of eVTOL architecture patents and aeronautics (CPC B64), relative to 2005-09, log2 scale, each drawn with the model that wins on AIC and BIC (its own break, fitted 2005-2022); (b) eVTOL families per 1 000 B64 families per priority year (supervisor review 2, 2026-10; no level-shift arrows)",
+    "q1_growth_rates_baselines": "Appendix to q1_growth_rates: transport and operations (CPC section B) and all patents, the same reading, one panel each (supervisor review 2, 2026-10)",
     "q4_patent_vs_market_clock": "One row per AAM Reality Index firm that files here: first to last patent, peak year, first flight, entry into service (thesis style, 6.3 in, 2026-10-20)",
     "q1_in_force_status": "Share of designs not actively protected, by architecture and by filing office (US against the other offices), the nine architectures of ten designs or more, 604 designs (width not given: 1.0; appendix at most)",
     "q4_class_mix": "Share of each VFS directory category per cohort, one panel per category: patent dataset (solid) against the VFS eVTOL directory (dashed) (thesis style, 2026-10-20)",
@@ -302,6 +303,7 @@ def write_numbers_I(cfg, ctx) -> Path:
     out.append("`thesis_figures/Q1_growth/numbers.json`, `Q4_representativeness/numbers.json` and `Q5_money/numbers.json` were rewritten on 2026-10-13 from the current inputs (the corrected company map with EHang, the script TRL, the script years); "
                "the previous Q4 and Q5 files are kept beside them as `numbers.PRE_20261013.json`, and the values of the old Results text are in `review/numbers_old/`.\n")
     out += _changes_section(cfg, ctx, c, n1, n4, n5, OLD, CSV)
+    out += _growth_models(ctx, CSV)
     out += _segment_slopes(c, CSV)
     out += _in_domain_directory(ctx, CSV)
     out += _office_by_cohort(ctx, c, CSV)
@@ -311,6 +313,33 @@ def write_numbers_I(cfg, ctx) -> Path:
     _append_manifest(base, [("Data_for_writing/NUMBERS_I.md", "yes", "numbers of Analysis I with their sources")]
                      + [(f"Data_for_writing/csv/{f.name}", "no", "table behind NUMBERS_I.md (not printed)") for f in sorted(CSV.glob("numbers_I_*.csv"))])
     return p
+
+
+def _growth_models(ctx, CSV) -> list:
+    """Section "I.1 growth models (supervisor review 2, 2026-10)" of NUMBERS_I.md: the three models of lib/growth_models on the four series
+    of Figure 4.2, fitted 2005-2022 (main) and 2005-2023 (check), with AIC / BIC and the bootstrap intervals of the break and the slopes."""
+    from viz import thesis_q1 as q1
+    from lib import growth_models as gm
+    g = q1.growth_models(ctx)
+    last = q1.GROWTH_MODEL_LAST
+    mods = pd.concat([g["tables"][k]["models"] for k in (last, last + 1)], ignore_index=True).drop(columns=["key"])
+    est = pd.concat([g["tables"][k]["estimates"] for k in (last, last + 1)], ignore_index=True).drop(columns=["key"])
+    mods.to_csv(CSV / "numbers_I_growth_models.csv", index=False)
+    # one row per series x model, the main fit 2005-2022 only (author's request 2026-10-22; the 2023 check stays in the file above)
+    g["tables"][last]["models"].drop(columns=["key"]).to_csv(CSV / "numbers_I_growth_model_comparison.csv", index=False)
+    est.to_csv(CSV / "numbers_I_growth_breakpoints.csv", index=False)
+    cols_a = ["series", "years", "model", "break year", "break low", "break high", "share of draws at the break", "pre slope", "pre slope low",
+              "pre slope high", "pre doubling (years)", "post slope", "post slope low", "post slope high", "level step (factor)", "step low", "step high"]
+    short = mods[["series", "years", "model", "parameters k", "SSE (log scale)", "AIC", "BIC", "AICc", "ΔAIC", "ΔBIC", "wins clearly"]]
+    return ["## I.1 growth models (supervisor review 2, 2026-10)\n",
+            "Figure `q1_growth_rates` (and `q1_growth_rates_baselines`). ln count on priority year, least squares, each series alone: (a) two lines with a free "
+            "level step at the break, (b) two lines meeting at the break, (c) logistic S-curve. The break is each series' own, searched over every year "
+            f"leaving {gm.MIN_SEGMENT} years or more on each side; the break and the error variance count as parameters (k = 6, 5, 4). "
+            f"Winner: lowest AIC and BIC; 'wins clearly' = lowest on both by {gm.CLEAR_DELTA:g} or more. Intervals: residual bootstrap, {gm.DRAWS} resamples "
+            "per series and model, break searched again each time, seeds [42, series, model]. Main fit 2005-2022 (2023 still filling up); 2005-2023 as the check. "
+            "Source: `lib/growth_models.py`, `viz/thesis_q1.py:growth_models`; `csv/numbers_I_growth_models.csv`, `csv/numbers_I_growth_breakpoints.csv`.\n",
+            _md_table(short), "", "Breaks, slopes (per year, log scale) and the level step of model (a), with 95 % bootstrap intervals:\n",
+            _md_table(est[est["model"].str.startswith("(a)")][cols_a]), ""]
 
 
 def _segment_slopes(c, CSV) -> list:
@@ -337,7 +366,7 @@ def _segment_slopes(c, CSV) -> list:
     tbl = pd.DataFrame(rows, columns=cols)
     tbl.to_csv(CSV / "numbers_I_segment_slopes.csv", index=False)
     tpt = pd.DataFrame(tp_rows, columns=["series", "turning point (year)", "share of resampled fits choosing it", "95 % range of resampled turning points"])
-    return ["## I.1 segment slopes (added 2026-10-14)\n",
+    return ["## I.1 segment slopes (added 2026-10-14; kept for the record: Figure 4.2 no longer draws the 2016 split, see the growth models above)\n",
             "Figure `q1_growth_rates`. Turning point = break year of the two-segment fit of ln count on year over 2006–2023 (`lib/growth.py:turning_point`, "
             f"breaks {growth.TURNING_BREAKS[0]}–{growth.TURNING_BREAKS[-1]}, {growth.TURNING_DRAWS} residual-bootstrap draws, generator seeded as for the eVTOL turning point of section 1); "
             "the B64 series is run alone with the same settings. The break year opens the second segment. Slope b of ln c_t = a + b t, "
@@ -387,10 +416,11 @@ def _in_domain_directory(ctx, CSV) -> list:
     ch = pd.DataFrame(rows, columns=["number", "old: all pages", "new: in-domain pages"])
     ch.to_csv(CSV / "numbers_I_in_domain_directory.csv", index=False)
     do, dn = q4.directory_mix(ctx, False)["why"], q4.directory_mix(ctx, True)["why"]
-    parts = dn[["source", "n", "chi-square vs dataset", "p vs dataset"]].merge(
-        do[["source", "n", "chi-square vs dataset", "p vs dataset"]], on="source", how="left", suffixes=(" new", " old"))
+    cols = ["source", "n", "chi-square vs dataset", "p vs dataset", "p vs dataset (Holm)"]        # Holm: supervisor review 2, 2026-10
+    parts = dn[cols].merge(do[cols], on="source", how="left", suffixes=(" new", " old"))
     parts = parts.dropna(subset=["chi-square vs dataset new"])
-    parts = parts[["source", "n old", "chi-square vs dataset old", "p vs dataset old", "n new", "chi-square vs dataset new", "p vs dataset new"]]
+    parts = parts[["source", "n old", "chi-square vs dataset old", "p vs dataset old", "p vs dataset (Holm) old",
+                   "n new", "chi-square vs dataset new", "p vs dataset new", "p vs dataset (Holm) new"]]
     parts.to_csv(CSV / "numbers_I_in_domain_directory_parts.csv", index=False)
     vt_big = lambda t: all(t.loc[w].astype(float).idxmax() == "VT" for w in ctx.COMPLETE)
     vt_all = lambda t: all(t.loc[w].astype(float).idxmax() == "VT" for w in ctx.WIN_NAMES)

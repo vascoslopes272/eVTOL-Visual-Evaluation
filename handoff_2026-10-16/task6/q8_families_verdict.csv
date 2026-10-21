@@ -1,17 +1,17 @@
 base,condition,P1,P2,P3,P4,P5
-all designs,premise: cohesion 2020-23,0.3986 (band 0.4965 to 0.5432) ✓ below,0.4465 (band 0.5036 to 0.5380) ✓ below,0.4242 (band 0.4970 to 0.5435) ✓ below,not read,0.4567 (band 0.5099 to 0.5346) ✓ below
-all designs,premise: separation 2020-23,0.5365 (band 0.5154 to 0.5274) ✓ above,0.5534 (band 0.5193 to 0.5231) ✓ above,0.5365 (band 0.5168 to 0.5253) ✓ above,not read,0.5592 (band 0.5174 to 0.5241) ✓ above
-all designs,premise: cohesion below AND separation above the band (complete cohorts),"✓ holds in 2016-19, 2020-23","✓ holds in <= 2011, 2012-15, 2016-19, 2020-23","✓ holds in 2016-19, 2020-23",✗ does not hold,"✓ holds in <= 2011, 2016-19, 2020-23"
+all designs,premise: cohesion 2020-23,0.3986 (band 0.4981 to 0.5459) ✓ below,0.4465 (band 0.5042 to 0.5360) ✓ below,0.4242 (band 0.4958 to 0.5437) ✓ below,not read,0.4567 (band 0.5041 to 0.5346) ✓ below
+all designs,premise: separation 2020-23,0.5365 (band 0.5155 to 0.5276) ✓ above,0.5534 (band 0.5193 to 0.5230) ✓ above,0.5365 (band 0.5166 to 0.5257) ✓ above,not read,0.5592 (band 0.5173 to 0.5249) ✓ above
+all designs,premise: cohesion below AND separation above the band (complete cohorts),"✓ holds in 2016-19, 2020-23","✓ holds in <= 2011, 2012-15, 2016-19, 2020-23","✓ holds in 2016-19, 2020-23",✗ does not hold,"✓ holds in <= 2011, 2012-15, 2016-19, 2020-23"
 all designs,"1, counts: the family above 50 % of the designs, two consecutive priority years","✗ not met, at most 41.7 % (2022)","✓ met in 2021, 2022 and 2023 (54.2 %, 64.6 %, 54.2 %)","✗ not met, at most 50.0 % (2022)","✗ not met, at most 5.9 % (2016)","✓ met in 2021, 2022 and 2023 (63.9 %, 68.8 %, 60.4 %)"
 all designs,"1, sensitivity: three consecutive priority years",✗ not met,"✓ 2021, 2022, 2023",✗ not met,✗ not met,"✓ 2021, 2022, 2023"
 all designs,"2, balance: ²D below the permutation band, partition {family} ∪ {each remaining architecture}",✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23
 all designs,"3, form: Q below the two earliest cohorts by more than the band (Task 1, level A; family-independent)",✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23
 all designs,all three in the same period,✗ not met,✓ met in 2020-23,✗ not met,✗ not met,✓ met in 2020-23
-actively protected,premise: cohesion 2020-23,0.4059 (band 0.4878 to 0.5444) ✓ below,0.4499 (band 0.4998 to 0.5344) ✓ below,0.4272 (band 0.4970 to 0.5425) ✓ below,not read,0.4596 (band 0.5039 to 0.5340) ✓ below
-actively protected,premise: separation 2020-23,0.5343 (band 0.5123 to 0.5248) ✓ above,0.5534 (band 0.5151 to 0.5224) ✓ above,0.5341 (band 0.5145 to 0.5239) ✓ above,not read,0.5616 (band 0.5121 to 0.5242) ✓ above
+actively protected,premise: cohesion 2020-23,0.4059 (band 0.4898 to 0.5442) ✓ below,0.4499 (band 0.5002 to 0.5353) ✓ below,0.4272 (band 0.4938 to 0.5431) ✓ below,not read,0.4596 (band 0.5019 to 0.5339) ✓ below
+actively protected,premise: separation 2020-23,0.5343 (band 0.5127 to 0.5249) ✓ above,0.5534 (band 0.5152 to 0.5217) ✓ above,0.5341 (band 0.5145 to 0.5232) ✓ above,not read,0.5616 (band 0.5121 to 0.5253) ✓ above
 actively protected,premise: cohesion below AND separation above the band (complete cohorts),"✓ holds in 2016-19, 2020-23","✓ holds in 2016-19, 2020-23","✓ holds in 2016-19, 2020-23",✗ does not hold,"✓ holds in 2016-19, 2020-23"
 actively protected,"1, counts: the family above 50 % of the designs, two consecutive priority years","✗ not met, at most 42.9 % (2022)","✓ met in 2021, 2022 and 2023 (55.9 %, 71.4 %, 56.8 %)","✗ not met, at most 54.3 % (2022)","✗ not met, at most 9.1 % (2017)","✓ met in 2019, 2020, 2021, 2022 and 2023 (59.1 %, 53.7 %, 67.8 %, 74.3 %, 63.6 %)"
 actively protected,"1, sensitivity: three consecutive priority years",✗ not met,"✓ 2021, 2022, 2023",✗ not met,✗ not met,"✓ 2019, 2020, 2021, 2022, 2023"
-actively protected,"2, balance: ²D below the permutation band, partition {family} ∪ {each remaining architecture}",✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23
+actively protected,"2, balance: ²D below the permutation band, partition {family} ∪ {each remaining architecture}",✓ met in 2020-23,✓ met in 2020-23,✓ met in 2020-23,"✓ met in <= 2011, 2020-23",✓ met in 2020-23
 actively protected,"3, form: Q below the two earliest cohorts by more than the band (Task 1, level A; family-independent)",✗ not met,✗ not met,✗ not met,✗ not met,✗ not met
 actively protected,all three in the same period,✗ not met,✗ not met,✗ not met,✗ not met,✗ not met

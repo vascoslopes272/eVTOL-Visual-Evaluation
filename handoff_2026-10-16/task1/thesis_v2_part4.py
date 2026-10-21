@@ -79,7 +79,7 @@ def dispersion_base(ctx):
     return D, frame, sub
 
 
-def dispersion(ctx, perms: int = 200, seed: int = 42, min_aircraft: int = 10):
+def dispersion(ctx, perms: int = 1000, seed: int = 42, min_aircraft: int = 10):
     """Condition 3 at A (every aircraft with an architecture), the main weighting (w15): Q per cohort (cohesion_band) and the Rao
     between-group distance of each cohort to the first, with the band of the same shuffles of aircraft across cohorts."""
     ds = ctx.ds

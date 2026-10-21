@@ -266,6 +266,23 @@ def append_two_decimals(cfg, ctx) -> str:
     return text
 
 
+def regional_test_csvs(cfg, ctx) -> list:
+    """The two families of regional tests behind NUMBERS_V (V.3, V.4), each p with its Holm-adjusted p beside it (supervisor review 2,
+    2026-10; ``viz.frames.region_tests`` and ``region_mix_change``). Returns [(path, what)]."""
+    d = q7._data(ctx)
+    dfw = latex_root(cfg) / "Data_for_writing" / "csv"
+    dfw.mkdir(parents=True, exist_ok=True)
+    out = []
+    for name, t, what in (("q7_region_tests", d["ts"], "chi-square of region against each measure, all years and per cohort, with and without the largest "
+                           "North American assignee; Holm within each assignee reading"),
+                          ("q3_region_mix_change", d["mc"], "per region, variable and answer: shares per cohort and the Spearman trend 2012-2023; "
+                           "Holm over every trend test of the table")):
+        path = dfw / f"{name}.csv"
+        t.to_csv(path, index=False)
+        out.append((path, what))
+    return out
+
+
 def export_part_v(cfg=None, ctx=None) -> list:
     cfg = cfg or config.load(strict=False)
     ctx = ctx or thesis.context(cfg)
@@ -275,8 +292,10 @@ def export_part_v(cfg=None, ctx=None) -> list:
     nf = dfw / "NUMBERS_V.md"
     nf.write_text(numbers_md(cfg, ctx), encoding="utf-8")
     append_two_decimals(cfg, ctx)                     # the follow-up section and its CSV, recomputed every run (never carried over)
+    tests = regional_test_csvs(cfg, ctx)
     yn = lambda u: "yes" if u else "no (leaves the text)"                                           # noqa: E731
     lines = [(f"LaTeX_v15/{i['pdf'].relative_to(root)}", yn(i["used"]), i["shows"]) for i in infos]
+    lines += [(f"LaTeX_v15/{c.relative_to(root)}", "no (behind NUMBERS_V)", what) for c, what in tests]
     lines += [(f"LaTeX_v15/{i['csv'].relative_to(root)}", yn(i["used"]), f"data behind {i['name']}") for i in infos]
     lines += [("LaTeX_v15/Data_for_writing/NUMBERS_V.md", "yes", "numbers of Analysis V with their sources")]
     mf = dfw / "MANIFEST.md"

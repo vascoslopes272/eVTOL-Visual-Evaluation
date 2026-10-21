@@ -29,7 +29,7 @@ TABLES = {"q6_selected_fields": True, "q7_levels_of_description": True, "q7_hill
           "q6_fixed_by_architecture": True, "q6_fixed_by_architecture_detail": True}
 #: tables whose csv is ALSO copied next to the figures of their group/role (Figures/Part_II_design_space/<group>/<role>/), besides Data_for_writing/csv/
 ALSO_TO = {"q6_fixed_by_architecture": ["figures"], "q6_fixed_by_architecture_detail": ["figures"]}
-SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core (coloured, named) and rim (grey) apart at a dashed share threshold; ringed where the largest assignee holds more than 40 %",
+SHOWS = {"q6_configuration_core": "configurations by share of the 2016–23 designs and assignees per design; core (coloured, named) and periphery (grey) apart at a dashed share threshold; ringed where the largest assignee holds more than 40 %",
          "q6_discovery_curve": "distinct configurations seen as the designs accumulate, at A, A·W·T and A·U, against random order; 2024–26 not yet all published",
          "q6_half_of_cohort_heatmap": "designs per A·U configuration and cohort; outlined: the configurations that hold half of each complete cohort (ranked within the cohort)",
          "q6_half_of_cohort": "cumulative share of each cohort's designs held by its largest A·U configurations; where each crosses 50 %",
@@ -180,7 +180,7 @@ def _numbers(cfg, ctx, R: Path):
          "## Discovery (`q6_discovery_curve`): complete years (to 2023)\n", "Source: `q6_discovery_estimators.csv`; the figure's last-100 window and these numbers are on the complete years.\n", tables_md(est_t), "",
          f"## Core (`q6_configuration_core`)\n\nSource: `q6_configuration_core.csv`. Core: the A·U configurations taken in order of their share of the 2016–23 designs until the cumulative share reaches 50 % "
          f"(the one that crosses 50 % is included, and any tied with it, on the unrounded shares): {len(core)} configurations holding {100 * d6['core_share_exact']:.1f} % of the 2016–23 designs; "
-         f"rim: {len(d6['rim'])} configurations holding {100 * d6['rim']['share 2016-23'].sum():.1f} %. 2024–26 is not drawn. "
+         f"periphery: {len(d6['rim'])} configurations holding {100 * d6['rim']['share 2016-23'].sum():.1f} %. 2024–26 is not drawn. "
          "Judgement call on labels: the figure names the core and the 3 largest non-core configurations by their 2016–23 share (unrounded; ties kept); every other point is grey and unnamed.\n",
          "## Numbers quoted by the Results text, Analysis II (sub-question A)\n", "Source: `viz/thesis_q6.py` numbers(ctx), notebook cells of groups II1–II3.\n",
          "\n".join(f"- `{k_}` = {n6[k_]}" for k_ in keys6 if k_ in n6), ""]

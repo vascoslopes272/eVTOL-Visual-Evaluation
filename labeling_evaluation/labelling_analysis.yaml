@@ -91,7 +91,7 @@ analysis:
     max_singleton_share: 0.05           # at most this share of the aircraft alone in their archetype
     min_share_in_big: 0.90              # at least this share of the aircraft in big archetypes
     min_big_share_archetypes: 3         # at least this many archetypes with 5 % or more
-  discovery_orders: 400                 # tie orderings drawn inside a priority year (discovery curve)
+  discovery_orders: 1000                # tie orderings drawn inside a priority year (discovery curve)
   discovery_tail: 100                   # the last aircraft the curve is read on
   evtolnews_min_n: 30                   # Figure 2 / 3.1: a window is compared with the directory when both sources hold this many dated aircraft
   check_tolerance: 0.0005               # |notebook − document| allowed when checking a number

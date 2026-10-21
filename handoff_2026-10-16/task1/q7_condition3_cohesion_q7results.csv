@@ -1,16 +1,16 @@
 ,level,level name,weighting,cohort,aircraft,Q,Q of the earliest cohorts,ΔQ,ΔQ permutation low,ΔQ permutation high,below band,partial
-0,A0,C — Architecture,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0184,0.018,False,False
-1,A0,C — Architecture,w15,2012-15,58,0.5343,0.5463,-0.012,-0.018,0.0184,False,False
-2,A0,C — Architecture,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0168,0.0407,False,False
-3,A0,C — Architecture,w15,2020-23,237,0.5185,0.5463,-0.0279,-0.019,0.039,True,False
-4,A0,C — Architecture,w15,2024-26 (partial),56,0.549,0.5463,0.0027,-0.0451,0.0431,False,True
-5,A1t,A·W·T — Architecture + wings + tilt,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0208,0.024,False,False
-6,A1t,A·W·T — Architecture + wings + tilt,w15,2012-15,58,0.5343,0.5463,-0.012,-0.024,0.0208,False,False
-7,A1t,A·W·T — Architecture + wings + tilt,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0224,0.0304,False,False
-8,A1t,A·W·T — Architecture + wings + tilt,w15,2020-23,236,0.5165,0.5463,-0.0299,-0.0204,0.034,True,False
-9,A1t,A·W·T — Architecture + wings + tilt,w15,2024-26 (partial),55,0.5468,0.5463,0.0005,-0.0391,0.0354,False,True
-10,A0c,A·U — Architecture + propulsors,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0245,0.0221,False,False
-11,A0c,A·U — Architecture + propulsors,w15,2012-15,58,0.5343,0.5463,-0.012,-0.0221,0.0245,False,False
-12,A0c,A·U — Architecture + propulsors,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0173,0.0362,False,False
-13,A0c,A·U — Architecture + propulsors,w15,2020-23,236,0.5165,0.5463,-0.0299,-0.0168,0.0374,True,False
-14,A0c,A·U — Architecture + propulsors,w15,2024-26 (partial),56,0.549,0.5463,0.0027,-0.0417,0.0408,False,True
+0,A0,C — Architecture,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0213,0.0213,False,False
+1,A0,C — Architecture,w15,2012-15,58,0.5343,0.5463,-0.012,-0.0213,0.0213,False,False
+2,A0,C — Architecture,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0205,0.0361,False,False
+3,A0,C — Architecture,w15,2020-23,237,0.5185,0.5463,-0.0279,-0.0196,0.0351,True,False
+4,A0,C — Architecture,w15,2024-26 (partial),56,0.549,0.5463,0.0027,-0.0437,0.0401,False,True
+5,A1t,A·W·T — Architecture + wings + tilt,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0223,0.0232,False,False
+6,A1t,A·W·T — Architecture + wings + tilt,w15,2012-15,58,0.5343,0.5463,-0.012,-0.0232,0.0223,False,False
+7,A1t,A·W·T — Architecture + wings + tilt,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0224,0.0354,False,False
+8,A1t,A·W·T — Architecture + wings + tilt,w15,2020-23,236,0.5165,0.5463,-0.0299,-0.0206,0.0369,True,False
+9,A1t,A·W·T — Architecture + wings + tilt,w15,2024-26 (partial),55,0.5468,0.5463,0.0005,-0.042,0.0371,False,True
+10,A0c,A·U — Architecture + propulsors,w15,<= 2011,63,0.5583,0.5463,0.012,-0.0226,0.0226,False,False
+11,A0c,A·U — Architecture + propulsors,w15,2012-15,58,0.5343,0.5463,-0.012,-0.0226,0.0226,False,False
+12,A0c,A·U — Architecture + propulsors,w15,2016-19,211,0.5679,0.5463,0.0215,-0.0214,0.0352,False,False
+13,A0c,A·U — Architecture + propulsors,w15,2020-23,236,0.5165,0.5463,-0.0299,-0.0234,0.0369,True,False
+14,A0c,A·U — Architecture + propulsors,w15,2024-26 (partial),56,0.549,0.5463,0.0027,-0.0445,0.0402,False,True

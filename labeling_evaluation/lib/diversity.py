@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 #: orderings drawn to break the ties inside a priority year (discovery curve)
-ORDERS = 400
+ORDERS = 1000
 #: the tail the flattening is read on: new archetypes over the last this-many aircraft
 TAIL = 100
 
@@ -166,7 +166,7 @@ def discovery_curve(years: np.ndarray, keys, orders: int = ORDERS, seed: int = 4
     np.random.default_rng(42) and uses it for A0, A0c, A1t in that order): pass `rng`, or use
     :func:`discovery_curve_levels`.
 
-    Parameters: orders=400, seed=42.
+    Parameters: orders=1000, seed=42.
     Ported from: archive/.../dataset_facts/sm_open.py:discovery_curve (computation only)
     Used in: la_discovery_curve; its last 100 steps feed la_discovery_estimators.
     """

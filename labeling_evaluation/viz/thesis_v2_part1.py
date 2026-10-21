@@ -708,115 +708,123 @@ def fig_filings_per_year_ts(ctx):
     return fig, data
 
 
-def fig_growth_rates_ts(ctx):
-    """Fig 4.3: (a) the four series relative to 2005-09, markers + 2005-23 log-linear fits, direct labels with the doubling time;
-    (b) eVTOL and aeronautics, the cited two-segment model (pre-2016 trend + level shift + slope change), the jump as a vertical arrow
-    AT the break (x = 2015.5) whose length equals the printed step."""
-    from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator, MultipleLocator
-    c = q1._calc(ctx)
-    keys = ["evtol_families", "b64", "secb", "all"]
-    short = {"evtol_families": "eVTOL", "b64": "aeronautics", "secb": "transport", "all": "all patents"}
-    colour = {k: ts.SERIES[short[k]] for k in keys}
-    text_col = {"evtol_families": ts.SERIES["eVTOL"], "b64": "#555555", "secb": "#707070", "all": "#8A8A8A"}   # print-legible greys
-    marker = {"evtol_families": "o", "b64": "s", "secb": "^", "all": "v"}
-    first, last = 2005, 2023
-    yrs = np.arange(first, last + 1)
-    late = np.arange(last + 1, 2027)
-    BRK = 2015.5
+#: Fig 4.2 (supervisor review 2, 2026-10): the model each series' points are drawn with, short words for the legend
+MODEL_WORDS = {"a": "two lines with a level step", "b": "two lines meeting at the break", "c": "logistic S-curve"}
+GROWTH_KEYS = {"evtol_families": "eVTOL", "b64": "aeronautics", "secb": "transport", "all": "all patents"}
+GROWTH_MARKER = {"evtol_families": "o", "b64": "s", "secb": "^", "all": "v"}
 
-    def counts(k):
-        return c["ser"][k].reindex(yrs, fill_value=0).astype(float)
 
-    base = {k: float(counts(k).loc[2005:2009].mean()) for k in keys}
-    fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.5), layout="constrained", sharey=True)
-
-    def points(ax, k):
-        cnt = counts(k)
-        ok = cnt.to_numpy() > 0
-        ax.plot(yrs[ok], cnt.to_numpy()[ok] / base[k], ls="none", marker=marker[k], ms=3, color=colour[k], zorder=3)
-        lt = c["ser"][k].reindex(late).astype(float)
-        okl = (lt > 0).to_numpy()
-        if okl.any():
-            ts.incomplete_point(ax, late[okl], lt.to_numpy()[okl] / base[k], colour[k], marker=marker[k], ms=3, zorder=3)
-
-    # (a) whole-period fits
-    ends = []
+def _growth_panel(ax, ctx, keys, fit_last=None):
+    """Points of each series relative to its 2005-09 mean (log 2 scale) and the curve of the model that wins on AIC for that series,
+    fitted over 2005..fit_last (q1.growth_models). Years after fit_last: hollow, never fitted. Returns the end-label rows."""
+    from lib import growth_models as gm
+    c, gmod = q1._calc(ctx), q1.growth_models(ctx)
+    fit_last = fit_last or q1.GROWTH_MODEL_LAST
+    fits = gmod["fits"][fit_last]
+    yrs = np.arange(2005, fit_last + 1)
+    later = np.arange(fit_last + 1, 2027)
+    labels = []
     for k in keys:
-        points(a, k)
-        cnt = counts(k)
-        ok = cnt.to_numpy() > 0
-        bb, aa = np.polyfit(yrs[ok], np.log(cnt.to_numpy()[ok]), 1)
-        a.plot(yrs, np.exp(aa + bb * yrs) / base[k], "-", lw=1.2, color=colour[k], zorder=2)
-        dbl = c["fits"][k]["doubling time (years)"]
-        ends.append([float(np.exp(aa + bb * last) / base[k]), f"{short[k]}\n×2 in {dbl:.1f} y", k])
-    # spread the end labels so they never touch (log space, min gap)
-    ends.sort(key=lambda e: -e[0])
-    ly = np.log2([e[0] for e in ends])
+        col = ts.SERIES[GROWTH_KEYS[k]]
+        cnt = c["ser"][k].reindex(yrs).astype(float)
+        base = float(cnt.loc[2005:2009].mean())
+        ax.plot(yrs, cnt / base, ls="none", marker=GROWTH_MARKER[k], ms=3, color=col, zorder=3)
+        lt = c["ser"][k].reindex(later).astype(float)
+        ok = (lt > 0).to_numpy()
+        if ok.any():
+            ts.incomplete_point(ax, later[ok], lt.to_numpy()[ok] / base, col, marker=GROWTH_MARKER[k], ms=3, zorder=3)
+        f, m = fits[k], fits[k]["winner"]
+        lw = 1.6 if k == "evtol_families" else 1.1
+        if m == "c":
+            x = np.linspace(2005, fit_last, 120)
+            ax.plot(x, np.exp(gm.logistic_curve(f["c"], x)) / base, "-", lw=lw, color=col, zorder=2)
+        else:
+            b = f[m]["break"]
+            for side, x in (("pre", np.linspace(2005, b - 0.5, 60)), ("post", np.linspace(b - 0.5, fit_last, 60))):  # one line per segment, nothing joins them
+                ax.plot(x, np.exp(gm.piecewise_curve(f[m], x, m == "a", side)) / base, "-", lw=lw, color=col, solid_capstyle="butt", zorder=2)
+        y_end = float(np.exp((gm.logistic_curve(f["c"], [fit_last]) if m == "c" else gm.piecewise_curve(f[m], [fit_last], m == "a"))[0]) / base)
+        labels.append([y_end, GROWTH_KEYS[k], col])
+    labels.sort(key=lambda e: -e[0])
+    ly = np.log2([e[0] for e in labels])
     for i in range(1, len(ly)):
-        ly[i] = min(ly[i], ly[i - 1] - 1.05)
-    for (yv, lab, k), l2 in zip(ends, ly):
-        a.annotate(lab, (2026.4, 2 ** l2), ha="left", va="center", fontsize=8.4, color=text_col[k], linespacing=1.0,
-                   annotation_clip=False)
-    a.set_title("(a) trend 2005–23")
+        ly[i] = min(ly[i], ly[i - 1] - 0.9)
+    for (_, lab, col), l2 in zip(labels, ly):
+        ax.annotate(lab, (2026.6, 2 ** l2), ha="left", va="center", fontsize=8.4, color=col, annotation_clip=False)
+    _growth_axes(ax)
 
-    # (b) the cited segmented model itself (lib/growth.turning_point, fitted on log counts 2006-23, break b = 2016):
-    #     log y = c0 + c1*t + c2*1[t >= b] + c3*max(t - b, 0). Pre-break line c0 + c1*t up to x = 2015.5; post-break line
-    #     c0 + c1*t + c2 + c3*max(t - b, 0) from x = 2015.5. At any x < b the two differ by exactly c2, so each arrow spans
-    #     exp(c2) = the printed "step" (turning_point()['jump']).
-    from lib import growth as _growth
-    labs, d_pre = [], []
-    for k, dx in (("evtol_families", -0.17), ("b64", 0.17)):
-        points(b, k)
-        seg = c["seg"][k]
-        tb = int(seg["turn"]["break"])
-        y06 = c["ser"][k].reindex(range(2006, 2024), fill_value=0).astype(float)
-        _, co = _growth.two_segment_fit(y06.index.to_numpy(float), np.log(y06.to_numpy()), tb)
-        assert abs(np.exp(co[2]) - seg["turn"]["jump"]) < 1e-9, "the drawn model must be the cited one"
-        c0, c1, c2, c3 = co
-        pre_y = lambda x: np.exp(c0 + c1 * x) / base[k]
-        post_y = lambda x: np.exp(c0 + c1 * x + c2 + c3 * np.maximum(x - tb, 0)) / base[k]
-        x1 = np.linspace(2006, BRK, 50)
-        x2 = np.linspace(BRK, last, 80)
-        lw = 2.4 if k == "evtol_families" else 1.4
-        b.plot(x1, pre_y(x1), "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
-        b.plot(x2, post_y(x2), "-", lw=lw, color=colour[k], solid_capstyle="butt", zorder=2)
-        xa = BRK + dx                                        # < tb, so the arrow spans exactly exp(c2)
-        b.annotate("", xy=(xa, post_y(xa)), xytext=(xa, pre_y(xa)),
-                   arrowprops=dict(arrowstyle="-|>", color="black", lw=1.0, mutation_scale=7, shrinkA=0, shrinkB=0), zorder=6)
-        labs.append([float(post_y(last)), f"{short[k]}\nstep ×{seg['turn']['jump']:.1f}", k])
-        d_pre.append(float(np.log(2) / c1))
-    labs.sort(key=lambda e: -e[0])
-    ly = np.log2([e[0] for e in labs])
-    for i in range(1, len(ly)):
-        ly[i] = min(ly[i], ly[i - 1] - 1.05)
-    for (yv, lab, k), l2 in zip(labs, ly):
-        b.annotate(lab, (2026.4, 2 ** l2), ha="left", va="center", fontsize=8.4, color=text_col[k], linespacing=1.0,
-                   annotation_clip=False)
-    b.axvline(BRK, color="#9A9A9A", lw=0.6, ls=":", zorder=1)
-    pre_txt = (f"before 2016:\nboth ×2 in {d_pre[0]:.1f} y" if abs(d_pre[0] - d_pre[1]) < 0.05
-               else f"before 2016:\n×2 in {d_pre[0]:.1f} y\nand {d_pre[1]:.1f} y")
-    b.text(2005, 4.6, pre_txt, ha="left", va="bottom", fontsize=8.4, color=EVENT_TEXT, linespacing=1.0)
-    b.text(2016.6, 0.32, "jump at 2016\n(fitted level shift)", ha="left", va="bottom", fontsize=8.4, color="black", linespacing=1.0)
-    b.set_title(f"(b) split at {int(c['seg']['evtol_families']['turn']['break'])}")
 
-    for ax in (a, b):
-        ax.axhline(1, color="#BDBDBD", lw=0.5, zorder=0)
-        ax.set_yscale("log", base=2)
-        ax.yaxis.set_major_locator(FixedLocator([0.25, 0.5, 1, 2, 4, 8, 16]))
-        ax.yaxis.set_minor_locator(NullLocator())
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"×{v:g}"))
-        ax.set_ylim(0.21, 24)
-        ax.set_xlim(2004.2, 2026.6)
-        ax.set_xticks(range(2005, 2027, 3), [str(y) if y in (2005, 2011, 2017, 2023, 2026) else "" for y in range(2005, 2027, 3)])
-        ax.set_xlabel("priority year")
-        from matplotlib.transforms import ScaledTranslation
-        for tl_ in ax.get_xticklabels():          # 2023 and 2026 sit 3 years apart: nudge them apart so they never touch
-            dx = {"2023": -3, "2026": 3}.get(tl_.get_text(), 0)
-            if dx:
-                tl_.set_transform(tl_.get_transform() + ScaledTranslation(dx / 72, 0, fig.dpi_scale_trans))
-    a.set_ylabel("index, 2005–09 = 1 (log)")
-    b.tick_params(labelleft=True)
-    data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in keys}).loc[2005:2026]
+def _growth_axes(ax):
+    from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
+    ax.axhline(1, color="#BDBDBD", lw=0.5, zorder=0)
+    ax.set_yscale("log", base=2)
+    ax.yaxis.set_major_locator(FixedLocator([0.25, 0.5, 1, 2, 4, 8, 16]))
+    ax.yaxis.set_minor_locator(NullLocator())
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"×{v:g}"))
+    ax.set_ylim(0.21, 24)
+    ax.set_xlim(2004.2, 2026.6)
+    ax.set_xticks([2005, 2010, 2015, 2020, 2025])
+    ax.set_xlabel("priority year")
+    ax.set_ylabel("index, 2005–09 = 1 (log)")
+
+
+def _growth_legend(fig, ctx, keys):
+    """Bottom legend: the model drawn (one entry per model used) and the hollow years."""
+    gmod = q1.growth_models(ctx)
+    fits = gmod["fits"][q1.GROWTH_MODEL_LAST]
+    used = []
+    for k in keys:
+        m = fits[k]["winner"]
+        if m not in used:
+            used.append(m)
+    h = [Line2D([], [], color="#333333", lw=1.2) for _ in used]
+    lab = [f"best model (AIC, BIC): {MODEL_WORDS[m]}" if len(used) == 1 else f"{MODEL_WORDS[m]}" for m in used]
+    h.append(Line2D([], [], ls="none", marker="o", ms=3, mfc="white", mec="#333333", alpha=ts.INCOMPLETE_ALPHA))
+    lab.append(f"{q1.GROWTH_MODEL_LAST + 1}–26: incomplete, not fitted")
+    ts.bottom_legend(fig, h, lab)
+
+
+def fig_growth_rates_ts(ctx):
+    """Fig 4.2 (supervisor review 2, 2026-10): (a) eVTOL architecture patents and aeronautics (CPC B64) relative to 2005-09, each drawn
+    with the model that wins on AIC and BIC for that series, its break the series' own (lib/growth_models, fitted 2005-2022);
+    (b) the ratio of eVTOL families to B64 families per priority year (both PatSeer simple families), per 1 000. No level-shift
+    arrows; the model comparison and the bootstrap intervals are in NUMBERS_I (csv/numbers_I_growth_models.csv, _growth_breakpoints.csv).
+    Section B and all patents: :func:`fig_growth_baselines_ts` (appendix)."""
+    c = q1._calc(ctx)
+    keys = ["evtol_families", "b64"]
+    fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.6), layout="constrained", gridspec_kw=dict(width_ratios=[1.35, 1]))
+    _growth_panel(a, ctx, keys)
+    a.set_title("(a) eVTOL and aeronautics")
+    yrs = np.arange(2005, 2027)
+    ratio = (c["ser"]["evtol_families"].reindex(yrs) / c["ser"]["b64"].reindex(yrs) * 1000).astype(float)
+    done = yrs <= q1.GROWTH_MODEL_LAST
+    col = ts.SERIES["eVTOL"]
+    b.plot(yrs[done], ratio[done], "-", marker="o", ms=3, lw=1.2, color=col, zorder=3)
+    ts.incomplete_point(b, yrs[~done], ratio.to_numpy()[~done], col, ms=3, zorder=3)
+    b.set_ylim(0, max(8.0, float(np.nanmax(ratio.to_numpy())) * 1.1))
+    b.set_xlim(2004.2, 2026.6)
+    b.set_xticks([2005, 2010, 2015, 2020, 2025])
+    b.set_xlabel("priority year")
+    b.set_ylabel("eVTOL families per\n1 000 aeronautics families")
+    b.set_title("(b) eVTOL against aeronautics")
+    _growth_legend(fig, ctx, keys)
+    data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in ("evtol_families", "b64", "secb", "all")}).reindex(yrs)
+    data["eVTOL per 1 000 B64 families"] = ratio.round(3).to_numpy()
+    data.index.name = "priority year"
+    return fig, data
+
+
+def fig_growth_baselines_ts(ctx):
+    """Appendix to Fig 4.2: transport and operations (CPC section B) and all patents (WIPO), the same reading as panel (a) of
+    :func:`fig_growth_rates_ts`, one panel per series."""
+    c = q1._calc(ctx)
+    fig, axs = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.4), layout="constrained", sharey=True)
+    for ax, k, t in zip(axs, ("secb", "all"), ("(a) transport and operations (CPC B)", "(b) all patents")):
+        _growth_panel(ax, ctx, [k])
+        ax.set_title(t)
+    axs[1].set_ylabel("")
+    _growth_legend(fig, ctx, ["secb", "all"])
+    yrs = np.arange(2005, 2027)
+    data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in ("secb", "all")}).reindex(yrs)
     data.index.name = "priority year"
     return fig, data
 
@@ -901,7 +909,9 @@ ITEMS = [
     dict(name="q1_filings_per_year", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_filings_per_year_ts, ts=True,
          title="Designs filed per priority year", source_item="v2 of Figure 1 (i)"),
     dict(name="q1_growth_rates", width=1.0, group="I1_patenting_rate", role="main", kind="figure", builder=fig_growth_rates_ts, ts=True,
-         title="Growth of each series, log scale", source_item="v2 of Figure 1 (ii)"),
+         title="Growth of eVTOL and aeronautics, best model per series, and their ratio", source_item="v2 of Figure 1 (ii), rebuilt for supervisor review 2 (2026-10)"),
+    dict(name="q1_growth_rates_baselines", width=1.0, group="I1_patenting_rate", role="appendix", kind="figure", builder=fig_growth_baselines_ts, ts=True,
+         title="Growth of transport and of all patents, best model per series", source_item="appendix to q1_growth_rates (supervisor review 2, 2026-10)"),
     dict(name="q1_na_drop_is_real_A", group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_na_drop_is_real_v2a,
          title="Designs per year and region, NA share as a line (version A)", source_item="v2 of Figure 23 (i), version A"),
     dict(name="q1_na_drop_is_real_B", group="I1_patenting_rate", role="auxiliary", kind="figure", builder=fig_na_drop_is_real_v2b,

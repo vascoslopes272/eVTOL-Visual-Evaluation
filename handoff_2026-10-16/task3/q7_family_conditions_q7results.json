@@ -9,7 +9,7 @@
  "flag": null,
  "flag_note": "",
  "source": "human labelling (architecture; the family F; every field of the form distance) · PatSeer (priority date; legal status at the snapshot, 2026-06-08)",
- "propulsor": "unique aircraft by priority year 2016-2023 (condition 1; a base is read when it holds 20 designs or more) and per four-year priority cohort (conditions 2 and 3; 200 permutations, seed 42; the partial cohort 2024-26 is hatched and not read)",
+ "propulsor": "unique aircraft by priority year 2016-2023 (condition 1; a base is read when it holds 20 designs or more) and per four-year priority cohort (conditions 2 and 3; 1000 permutations, seed 42; the partial cohort 2024-26 is hatched and not read)",
  "read": "(a) Solid line, dots: F's share of all designs of the year; dashed, squares: of the actively protected designs; dotted, triangles: of the granted-and-live designs; a ring marks a year above 50 % on all designs. (b) Dot and whisker: ²D of F rarefied to 40 (middle 95 % of the draws) on all designs, grey band: the middle 95 % of ²D with the designs shuffled among the cohorts; dashed: the same on the actively protected designs (its band in the appendix table). (c) ΔQ: the cohort's mean form distance minus that of the two earliest cohorts, all designs with its band, the actively protected designs dashed. A red point is below the band (condition met); a red ring marks the actively protected designs below their own band.",
  "width_in": 6.3,
  "height_in": 3.4

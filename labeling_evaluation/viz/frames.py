@@ -677,6 +677,7 @@ import datetime as _dt                                   # noqa: E402
 from pathlib import Path as _Path                        # noqa: E402
 
 from lib import growth as _growth                        # noqa: E402
+from lib.multiple import holm_by as _holm_by           # noqa: E402
 
 #: the index release year: a first flight dated after it is a plan, not a flight.
 #: Ported from: sm_index.py:ARI_RELEASE_YEAR
@@ -3240,7 +3241,10 @@ def region_mix_change(w: pd.DataFrame) -> pd.DataFrame:
                 row["rho"] = round(rho, 3) if np.isfinite(rho) else np.nan
                 row["p"] = round(p, 4) if np.isfinite(p) else np.nan
                 rows.append(row)
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    # Holm (supervisor review 2, 2026-10): every trend test of the table (region x variable x answer with a defined p) is one family
+    out["p (Holm)"] = _holm_by(out, "p", []).round(4)
+    return out
 
 
 def region_window_mix(w: pd.DataFrame, window_names: List[str]) -> pd.DataFrame:
@@ -3279,6 +3283,8 @@ def region_tests(w: pd.DataFrame) -> pd.DataFrame:
                 p, n = _assoc.chi2_p_of_columns(sub, "region3", col)
                 rows.append({"measure": name, "period": per, "filers": who, "aircraft": n, "p (chi-square, region)": round(p, 4)})
     out = pd.DataFrame(rows)
+    # Holm (supervisor review 2, 2026-10): one family per filer reading (all filers; without the largest), every measure x period in it
+    out["p (Holm)"] = _holm_by(out, "p (chi-square, region)", ["filers"]).round(4)
     out.attrs["left_out"] = big
     return out
 

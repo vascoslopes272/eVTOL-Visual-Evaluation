@@ -69,11 +69,11 @@ def _between(D, a, b) -> float:
     return float(np.nanmean(D[np.ix_(a, b)])) if len(a) and len(b) else float("nan")
 
 
-def cvt_lc_distance(ctx, perms: int = 200) -> pd.DataFrame:
+def cvt_lc_distance(ctx, perms: int = 1000) -> pd.DataFrame:
     """Between-group Gower distance (the condition-3 distance: the 15 dimensions of w15, each of the four systems weighing 1) of Lift + Cruise
     to CVT* and to all CVT, per cohort; the change from
     2012-15 to 2020-23 with a permutation band: the cohort labels of the 2012-15 and 2020-23 designs are shuffled WITHIN each architecture
-    (CVT*, CVT and Lift + Cruise keep their sizes), 200 permutations, seed 42, band = 2.5 and 97.5 percentiles of the change."""
+    (CVT*, CVT and Lift + Cruise keep their sizes), 1000 permutations, seed 42, band = 2.5 and 97.5 percentiles of the change."""
     D, at = _form_distance(ctx)
     g = _groups(ctx, at)
     slc = g["Lift + Cruise"]

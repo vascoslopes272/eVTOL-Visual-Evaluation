@@ -18,15 +18,15 @@ Source: `q6_architecture_shares_by_cohort.csv` (share of the cohort's designs).
 
 Source: `q6_share_trend_spearman.csv`.
 
-| architecture code   | architecture             |   designs |   years |    rho |     p |   rho, 2016-23 |   p, 2016-23 |
-|:--------------------|:-------------------------|----------:|--------:|-------:|------:|---------------:|-------------:|
-| SLC                 | Separate Lift + Cruise            |       142 |      16 |  0.443 | 0.09  |          0.515 |         0.19 |
-| TP                  | Tilt Propulsor           |       132 |      16 | -0.675 | 0.004 |         -0.357 |         0.39 |
-| CVT                 | Combined Vectored Thrust |        93 |      16 |  0.255 | 0.34  |          0.548 |         0.16 |
-| TW                  | Tilt Wing                |        51 |      16 | -0.169 | 0.53  |         -0.548 |         0.16 |
-| MR                  | Multicopter              |        37 |      16 |  0.074 | 0.78  |         -0.476 |         0.23 |
-| PTC                 | Pitch-to-Cruise          |        22 |      16 |  0.472 | 0.07  |          0.204 |         0.63 |
-| TF                  | Tilt Frame               |        22 |      16 | -0.003 | 0.99  |         -0.286 |         0.49 |
+| architecture code   | architecture             |   designs |   years |    rho |     p |   p (Holm) |   rho, 2016-23 |   p, 2016-23 |   p, 2016-23 (Holm) |
+|:--------------------|:-------------------------|----------:|--------:|-------:|------:|-----------:|---------------:|-------------:|--------------------:|
+| SLC                 | Separate Lift + Cruise            |       142 |      16 |  0.443 | 0.09  |      0.43  |          0.515 |         0.19 |                   1 |
+| TP                  | Tilt Propulsor           |       132 |      16 | -0.675 | 0.004 |      0.029 |         -0.357 |         0.39 |                   1 |
+| CVT                 | Combined Vectored Thrust |        93 |      16 |  0.255 | 0.34  |      1     |          0.548 |         0.16 |                   1 |
+| TW                  | Tilt Wing                |        51 |      16 | -0.169 | 0.53  |      1     |         -0.548 |         0.16 |                   1 |
+| MR                  | Multicopter              |        37 |      16 |  0.074 | 0.78  |      1     |         -0.476 |         0.23 |                   1 |
+| PTC                 | Pitch-to-Cruise          |        22 |      16 |  0.472 | 0.07  |      0.39  |          0.204 |         0.63 |                   1 |
+| TF                  | Tilt Frame               |        22 |      16 | -0.003 | 0.99  |      1     |         -0.286 |         0.49 |                   1 |
 
 ## (b) III.4, VT on the five directory categories, actively protected designs
 
@@ -55,15 +55,15 @@ VT share per priority year (read years, 20 designs or more, 2016–2023); condit
 |            2022 |         35 |             23 | 65.7 %  | True         |
 |            2023 |         44 |             26 | 59.1 %  | True         |
 
-Balance (²D rarefied to 40, all designs, 200 permutations) with the band, per cohort; 2024–26* is incomplete and not read:
+Balance (²D rarefied to 40, all designs, 1000 permutations) with the band, per cohort; 2024–26* is incomplete and not read:
 
 | cohort            |   aircraft |   D2 |   D2 permutation low |   D2 permutation high | below band   |
 |:------------------|-----------:|-----:|---------------------:|----------------------:|:-------------|
-| <= 2011           |         63 | 2.93 |                 1.87 |                  2.91 | False        |
-| 2012-15           |         58 | 1.97 |                 1.85 |                  2.84 | False        |
-| 2016-19           |        211 | 2.34 |                 2.06 |                  2.55 | False        |
-| 2020-23           |        237 | 2.16 |                 2.09 |                  2.52 | False        |
-| 2024-26 (partial) |         56 | 2.4  |                 1.77 |                  2.75 | False        |
+| <= 2011           |         63 | 2.91 |                 1.86 |                  2.83 | False        |
+| 2012-15           |         58 | 1.97 |                 1.84 |                  2.82 | False        |
+| 2016-19           |        211 | 2.34 |                 2.08 |                  2.56 | False        |
+| 2020-23           |        237 | 2.18 |                 2.09 |                  2.53 | False        |
+| 2024-26 (partial) |         56 | 2.4  |                 1.81 |                  2.83 | False        |
 
 ## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity; condition 3 under the w15 weighting)
 
@@ -76,24 +76,24 @@ Source: `q7_verdict_table.csv`.
 | all designs        | 3, form: Q below the two earliest cohorts by more than the band                       | ✓ met in 2020-23                 | ✓ met in 2020-23                 | ✓ met in 2020-23                   | ✓ met in 2020-23                        |
 | all designs        | all three in the same period                                                          | ✗ not met                        | ✗ not met                        | ✗ not met                          | ✗ not met                               |
 | actively protected | 1, counts: one architecture above 50 % of the designs, two consecutive priority years | ✗ not met, at most 39.0 % (2021) | ✗ not met, at most 27.1 % (2021) | ✗ not met, at most 23.7 % (2021)   | ✓ met in 2020 and 2021 (51.8 %, 59.3 %) |
-| actively protected | 2, balance: ²D below the permutation band                                             | ✓ met in 2020-23                 | ✓ met in <= 2011, 2020-23        | ✓ met in <= 2011, 2012-15, 2020-23 | ✓ met in 2020-23                        |
+| actively protected | 2, balance: ²D below the permutation band                                             | ✓ met in <= 2011, 2020-23        | ✓ met in <= 2011, 2020-23        | ✓ met in <= 2011, 2012-15, 2020-23 | ✓ met in 2020-23                        |
 | actively protected | 3, form: Q below the two earliest cohorts by more than the band                       | ✗ not met                        | ✗ not met                        | ✗ not met                          | ✗ not met                               |
 | actively protected | all three in the same period                                                          | ✗ not met                        | ✗ not met                        | ✗ not met                          | ✗ not met                               |
 
 ## The numbers behind the verdict
 
-Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 of the form distance under w15 (15 dimensions, each of the four systems weighing 1) and the lower edge of its band (200 permutations, seed 42).
+Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 of the form distance under w15 (15 dimensions, each of the four systems weighing 1) and the lower edge of its band (1000 permutations, seed 42).
 
 | base               | level   | condition 1: largest share   |   condition 1: its year | condition 1: years met   | condition 1: share 2020 (n of N)   | condition 1: share 2021 (n of N)   |   ²D <= 2011 |   ²D lower band edge <= 2011 |   ²D 2012-15 |   ²D lower band edge 2012-15 |   ²D 2016-19 |   ²D lower band edge 2016-19 |   ²D 2020-23 |   ²D lower band edge 2020-23 |   ΔQ 2020-23 |   ΔQ lower band edge 2020-23 |
 |:-------------------|:--------|:-----------------------------|------------------------:|:-------------------------|:-----------------------------------|:-----------------------------------|-------------:|-----------------------------:|-------------:|-----------------------------:|-------------:|-----------------------------:|-------------:|-----------------------------:|-------------:|-----------------------------:|
-| all designs        | A       | 36.2 %                       |                    2020 | none                     | 36.2 % (25 of 69)                  | 33.3 % (24 of 72)                  |         4.66 |                         4.15 |         5    |                         4.08 |         5.96 |                         4.72 |         4.53 |                         4.74 |      -0.0279 |                      -0.019  |
-| all designs        | A·W·T   | 27.3 %                       |                    2018 | none                     | 24.6 % (17 of 69)                  | 23.6 % (17 of 72)                  |         8.25 |                         6.92 |         8.08 |                         6.99 |        10.56 |                         8.31 |         8.34 |                         8.24 |      -0.0299 |                      -0.0204 |
-| all designs        | A·U     | 19.4 %                       |                    2021 | none                     | 14.5 % (10 of 69)                  | 19.4 % (14 of 72)                  |        10.6  |                        12.39 |        10.1  |                        11.57 |        16.16 |                        13.97 |        14.46 |                        13.93 |      -0.0299 |                      -0.0168 |
-| all designs        | F       | 56.9 %                       |                    2021 | none                     | 49.3 % (34 of 69)                  | 56.9 % (41 of 72)                  |         3.9  |                         3.14 |         4.82 |                         3.03 |         4.84 |                         3.65 |         3.22 |                         3.65 |      -0.0279 |                      -0.019  |
-| actively protected | A       | 39.0 %                       |                    2021 | none                     | 38.9 % (21 of 54)                  | 39.0 % (23 of 59)                  |         3    |                         2.89 |         4.02 |                         3.69 |         6.04 |                         4.49 |         4.43 |                         4.69 |       0.0091 |                      -0.0221 |
-| actively protected | A·W·T   | 27.1 %                       |                    2021 | none                     | 24.1 % (13 of 54)                  | 27.1 % (16 of 59)                  |         4.15 |                         4.91 |         6.68 |                         6.08 |        11.31 |                         8.13 |         8.33 |                         8.43 |       0.0064 |                      -0.0226 |
-| actively protected | A·U     | 23.7 %                       |                    2021 | none                     | 16.7 % (9 of 54)                   | 23.7 % (14 of 59)                  |         5.59 |                         7.04 |         7.72 |                        10.37 |        16.32 |                        13.57 |        13.82 |                        13.97 |       0.0064 |                      -0.0177 |
-| actively protected | F       | 59.3 %                       |                    2021 | 2020, 2021               | 51.8 % (28 of 54)                  | 59.3 % (35 of 59)                  |         2.84 |                         2.42 |         3.93 |                         2.73 |         5.17 |                         3.3  |         3.14 |                         3.58 |       0.0091 |                      -0.0221 |
+| all designs        | A       | 36.2 %                       |                    2020 | none                     | 36.2 % (25 of 69)                  | 33.3 % (24 of 72)                  |         4.66 |                         4.18 |         5.01 |                         4.12 |         5.96 |                         4.68 |         4.55 |                         4.73 |      -0.0279 |                      -0.0196 |
+| all designs        | A·W·T   | 27.3 %                       |                    2018 | none                     | 24.6 % (17 of 69)                  | 23.6 % (17 of 72)                  |         8.25 |                         7.03 |         8.12 |                         6.97 |        10.58 |                         8.25 |         8.36 |                         8.3  |      -0.0299 |                      -0.0206 |
+| all designs        | A·U     | 19.4 %                       |                    2021 | none                     | 14.5 % (10 of 69)                  | 19.4 % (14 of 72)                  |        10.61 |                        12.15 |        10.12 |                        11.89 |        16.21 |                        13.86 |        14.49 |                        13.85 |      -0.0299 |                      -0.0234 |
+| all designs        | F       | 56.9 %                       |                    2021 | none                     | 49.3 % (34 of 69)                  | 56.9 % (41 of 72)                  |         3.9  |                         3.11 |         4.84 |                         3.03 |         4.84 |                         3.58 |         3.25 |                         3.62 |      -0.0279 |                      -0.0196 |
+| actively protected | A       | 39.0 %                       |                    2021 | none                     | 38.9 % (21 of 54)                  | 39.0 % (23 of 59)                  |         3    |                         3.06 |         4.02 |                         3.72 |         6.05 |                         4.48 |         4.4  |                         4.63 |       0.0091 |                      -0.0227 |
+| actively protected | A·W·T   | 27.1 %                       |                    2021 | none                     | 24.1 % (13 of 54)                  | 27.1 % (16 of 59)                  |         4.15 |                         4.91 |         6.68 |                         6.29 |        11.35 |                         8.18 |         8.27 |                         8.5  |       0.0064 |                      -0.0223 |
+| actively protected | A·U     | 23.7 %                       |                    2021 | none                     | 16.7 % (9 of 54)                   | 23.7 % (14 of 59)                  |         5.59 |                         7.04 |         7.72 |                         9.99 |        16.35 |                        13.52 |        13.84 |                        13.89 |       0.0064 |                      -0.0203 |
+| actively protected | F       | 59.3 %                       |                    2021 | 2020, 2021               | 51.8 % (28 of 54)                  | 59.3 % (35 of 59)                  |         2.84 |                         2.28 |         3.93 |                         2.76 |         5.14 |                         3.38 |         3.14 |                         3.5  |       0.0091 |                      -0.0227 |
 
 ## Weights table (condition 3, the reported weighting w15: 15 dimensions of the codebook, each of the four systems weighing 1, 4 in all)
 
@@ -124,21 +124,21 @@ Source: `q7_condition3_family.csv`. Q uses no architecture, so F on all designs 
 
 | base               | cohort            |   designs |      Q |   Q of the earliest cohorts |      ΔQ |   ΔQ permutation low |   ΔQ permutation high | below band   | partial   |
 |:-------------------|:------------------|----------:|-------:|----------------------------:|--------:|---------------------:|----------------------:|:-------------|:----------|
-| actively protected | <= 2011           |        18 | 0.5107 |                      0.5064 |  0.0043 |              -0.0462 |                0.0378 | False        | False     |
-| actively protected | 2012-15           |        33 | 0.5021 |                      0.5064 | -0.0043 |              -0.0378 |                0.0462 | False        | False     |
-| actively protected | 2016-19           |       138 | 0.5727 |                      0.5064 |  0.0663 |              -0.0257 |                0.0641 | False        | False     |
-| actively protected | 2020-23           |       192 | 0.5154 |                      0.5064 |  0.0091 |              -0.0221 |                0.0655 | False        | False     |
-| actively protected | 2024-26 (partial) |        52 | 0.5413 |                      0.5064 |  0.0349 |              -0.0324 |                0.0693 | False        | True      |
-| all designs        | <= 2011           |        63 | 0.5583 |                      0.5463 |  0.012  |              -0.0184 |                0.018  | False        | False     |
-| all designs        | 2012-15           |        58 | 0.5343 |                      0.5463 | -0.012  |              -0.018  |                0.0184 | False        | False     |
-| all designs        | 2016-19           |       211 | 0.5679 |                      0.5463 |  0.0215 |              -0.0168 |                0.0407 | False        | False     |
-| all designs        | 2020-23           |       237 | 0.5185 |                      0.5463 | -0.0279 |              -0.019  |                0.039  | True         | False     |
-| all designs        | 2024-26 (partial) |        56 | 0.549  |                      0.5463 |  0.0027 |              -0.0451 |                0.0431 | False        | True      |
-| granted and live   | <= 2011           |        18 | 0.5107 |                      0.5071 |  0.0036 |              -0.0506 |                0.0281 | False        | False     |
-| granted and live   | 2012-15           |        32 | 0.5034 |                      0.5071 | -0.0036 |              -0.0281 |                0.0506 | False        | False     |
-| granted and live   | 2016-19           |       135 | 0.5748 |                      0.5071 |  0.0677 |              -0.0221 |                0.0703 | False        | False     |
-| granted and live   | 2020-23           |       148 | 0.5046 |                      0.5071 | -0.0025 |              -0.0182 |                0.0678 | False        | False     |
-| granted and live   | 2024-26 (partial) |        10 | 0.5488 |                      0.5071 |  0.0418 |              -0.1252 |                0.047  | False        | True      |
+| actively protected | <= 2011           |        18 | 0.5107 |                      0.5064 |  0.0043 |              -0.0472 |                0.0345 | False        | False     |
+| actively protected | 2012-15           |        33 | 0.5021 |                      0.5064 | -0.0043 |              -0.0345 |                0.0472 | False        | False     |
+| actively protected | 2016-19           |       138 | 0.5727 |                      0.5064 |  0.0663 |              -0.0244 |                0.0692 | False        | False     |
+| actively protected | 2020-23           |       192 | 0.5154 |                      0.5064 |  0.0091 |              -0.0227 |                0.0666 | False        | False     |
+| actively protected | 2024-26 (partial) |        52 | 0.5413 |                      0.5064 |  0.0349 |              -0.0429 |                0.0712 | False        | True      |
+| all designs        | <= 2011           |        63 | 0.5583 |                      0.5463 |  0.012  |              -0.0213 |                0.0213 | False        | False     |
+| all designs        | 2012-15           |        58 | 0.5343 |                      0.5463 | -0.012  |              -0.0213 |                0.0213 | False        | False     |
+| all designs        | 2016-19           |       211 | 0.5679 |                      0.5463 |  0.0215 |              -0.0205 |                0.0361 | False        | False     |
+| all designs        | 2020-23           |       237 | 0.5185 |                      0.5463 | -0.0279 |              -0.0196 |                0.0351 | True         | False     |
+| all designs        | 2024-26 (partial) |        56 | 0.549  |                      0.5463 |  0.0027 |              -0.0437 |                0.0401 | False        | True      |
+| granted and live   | <= 2011           |        18 | 0.5107 |                      0.5071 |  0.0036 |              -0.0489 |                0.0335 | False        | False     |
+| granted and live   | 2012-15           |        32 | 0.5034 |                      0.5071 | -0.0036 |              -0.0335 |                0.0489 | False        | False     |
+| granted and live   | 2016-19           |       135 | 0.5748 |                      0.5071 |  0.0677 |              -0.0262 |                0.0656 | False        | False     |
+| granted and live   | 2020-23           |       148 | 0.5046 |                      0.5071 | -0.0025 |              -0.0241 |                0.066  | False        | False     |
+| granted and live   | 2024-26 (partial) |        10 | 0.5488 |                      0.5071 |  0.0418 |              -0.1301 |                0.0515 | False        | True      |
 
 ## Three-year check (condition 1, three consecutive years, actively protected designs)
 
@@ -168,10 +168,10 @@ Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.
 
 | cohort            |   designs |   ²D |   band, lower edge |   band, upper edge | below band   |
 |:------------------|----------:|-----:|-------------------:|-------------------:|:-------------|
-| <= 2011           |        18 | 2.84 |               2.31 |               5.6  | False        |
-| 2012-15           |        32 | 4.1  |               2.67 |               5.69 | False        |
-| 2016-19           |       135 | 5.14 |               3.54 |               4.56 | False        |
-| 2020-23           |       148 | 3.03 |               3.55 |               4.64 | True         |
+| <= 2011           |        18 | 2.84 |               2.31 |               5.79 | False        |
+| 2012-15           |        32 | 4.1  |               2.69 |               5.69 | False        |
+| 2016-19           |       135 | 5.14 |               3.51 |               4.7  | False        |
+| 2020-23           |       148 | 2.98 |               3.53 |               4.65 | True         |
 | 2024-26 (partial) |        10 | 3.33 |               1.92 |               5.56 | False        |
 
 ## III.4, which VT share the figure draws
@@ -264,26 +264,26 @@ Source: `viz/thesis_q7.py` numbers(ctx), notebook cells of the III2_III3 group.
 - `max_cu` = 23.7 %
 - `max_c_year` = 2021
 - `max_c_arch` = Combined Vectored Thrust
-- `f_d2_last` = 3.22
-- `f_d2_edge` = 3.65
-- `c_d2_last` = 4.53
-- `c_d2_edge` = 4.74
-- `cu_d2_w1` = 10.60
-- `cu_d2_w1_edge` = 12.39
-- `cu_d2_w2` = 10.10
-- `cu_d2_w2_edge` = 11.57
+- `f_d2_last` = 3.25
+- `f_d2_edge` = 3.62
+- `c_d2_last` = 4.55
+- `c_d2_edge` = 4.73
+- `cu_d2_w1` = 10.61
+- `cu_d2_w1_edge` = 12.15
+- `cu_d2_w2` = 10.12
+- `cu_d2_w2_edge` = 11.89
 - `dq_main` = −0.028
-- `dq_main_edge` = −0.019
+- `dq_main_edge` = −0.020
 - `top3_cwt` = 47 %
 - `top3_cu` = 26 %
 - `rarefy_n` = 40
-- `perms` = 200
+- `perms` = 1000
 - `seed` = 42
 - `f_ap_d2` = 3.14
-- `f_ap_d2_edge` = 3.58
+- `f_ap_d2_edge` = 3.50
 - `dq_ap` = +0.009
-- `dq_ap_edge` = −0.022
+- `dq_ap_edge` = −0.023
 - `f_all_short` = 1
 - `max_c_all` = 36.2 %
 - `dq_f_all` = −0.028
-- `dq_f_all_edge` = −0.019
+- `dq_f_all_edge` = −0.020

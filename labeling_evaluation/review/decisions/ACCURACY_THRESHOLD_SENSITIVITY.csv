@@ -1,0 +1,9 @@
+input,method,agree,of,share %,95 % low %,95 % high %,"accepted at 60%, share","accepted at 60%, lower bound","accepted at 70%, share","accepted at 70%, lower bound","accepted at 80%, share","accepted at 80%, lower bound","accepted at 90%, share","accepted at 90%, lower bound"
+Development year,LLM (reading step),84,90,93.3,86.5,96.8,True,True,True,True,True,True,True,False
+Development year,"script, exact year",49,81,60.5,50.0,70.1,True,False,False,False,False,False,False,False
+Development year,"script, within 1 year",61,81,75.3,65.3,83.2,True,True,True,False,False,False,False,False
+Development year,"script, same time window",58,81,71.6,61.4,80.0,True,True,True,False,False,False,False,False
+TRL,LLM (reading step),50,50,100.0,96.1,100.0,True,True,True,True,True,True,True,True
+TRL,"script, exact level",23,50,46.0,36.3,56.0,False,False,False,False,False,False,False,False
+TRL,"script, same side of TRL 2",37,50,74.0,64.3,81.8,True,True,True,False,False,False,False,False
+TRL,"script, within 1 level",37,50,74.0,64.3,81.8,True,True,True,False,False,False,False,False

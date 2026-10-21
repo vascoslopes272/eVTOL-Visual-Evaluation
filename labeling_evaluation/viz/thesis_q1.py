@@ -89,6 +89,37 @@ def _calc(ctx):
     return c
 
 
+#: Fig 4.2 (supervisor review 2, 2026-10): the three growth models are fitted on 2005..GROWTH_MODEL_LAST (2023 is still filling up);
+#: the run with 2023 is kept beside it to show whether it changes anything
+GROWTH_MODEL_FIRST, GROWTH_MODEL_LAST = 2005, 2022
+GROWTH_MODEL_KEYS = ("evtol_families", "b64", "secb", "all")
+
+
+def growth_models(ctx) -> dict:
+    """lib.growth_models on the four series of Fig 4.2, ending in GROWTH_MODEL_LAST and in GROWTH_MODEL_LAST + 1. Returns
+    {"tables": {last: {"models", "estimates"}}, "fits": {last: {key: {"a", "b", "c" fits, "choice" (lib winner), "winner" (lowest AIC)}}}}.
+    Bootstrap: 1000 residual resamples per series and model, generators seeded [ctx.SEED, series, model]."""
+    key = ("growth_models", id(ctx))
+    if key in _CACHE:
+        return _CACHE[key]
+    from lib import growth_models as gm
+    c = _calc(ctx)
+    ser = {k: c["ser"][k] for k in GROWTH_MODEL_KEYS}
+    out = {"tables": {}, "fits": {}}
+    for last in (GROWTH_MODEL_LAST, GROWTH_MODEL_LAST + 1):
+        out["tables"][last] = gm.compare_series(ser, GROWTH_MODEL_FIRST, last, ctx.SEED, names=c["names"])
+        yrs = np.arange(GROWTH_MODEL_FIRST, last + 1)
+        fits = {}
+        for k, s in ser.items():
+            f = gm.fit_all(yrs.astype(float), np.log(s.reindex(yrs).astype(float).to_numpy()))
+            f["choice"] = gm.winner(f)
+            f["winner"] = f["choice"]["AIC"]
+            fits[k] = f
+        out["fits"][last] = fits
+    _CACHE[key] = out
+    return out
+
+
 def _class_test(frame, col):
     table = pd.crosstab(frame["topType"], frame[col])
     return association.chi2_test(table.values)["p"], int(table.shape[0])

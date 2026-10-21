@@ -23,7 +23,7 @@ from matplotlib.transforms import offset_copy
 from lib import dominant_design, regional
 from viz import flow, frames, plots, style
 
-PERMS = 200                                   # permutations behind the bands of conditions 2 and 3 (as the document)
+PERMS = 1000                                  # permutations behind the bands of conditions 2 and 3 (200 until supervisor review 2, 2026-10)
 SET_LABEL = {"A0": "A (architecture)", "A1t": "A·W·T (architecture + wings + tilt)", "A0c": "A·U (architecture + propulsor units)",
              "family_b": "F (Lift + Cruise + CVT* family)"}
 SET_TITLE = {"A0": "A\narchitecture", "A1t": "A·W·T\narchitecture + wings + tilt", "A0c": "A·U\narchitecture + propulsor units",
@@ -465,19 +465,19 @@ ITEMS = [
          caption="Condition 2 per window in the three pre-specified archetype sets A, A·W·T and A·U (F is drawn in q7_family_conditions), ²D rarefied to 40 aircraft against the band of the same archetypes shuffled among the windows. A red point is below the band.",
          source_item="Figure 12 (i)", flag=None, flag_note="", builder=fig_condition2_balance,
          source="human labelling (class, wings, tilt, propulsor units) · PatSeer (priority date)",
-         unit="unique aircraft per four-year priority window; 200 permutations, seed 42; ²D rarefied to 40 aircraft (300 draws); the partial window 2024-26 is hatched and not read",
+         unit="unique aircraft per four-year priority window; 1000 permutations, seed 42; ²D rarefied to 40 aircraft (1000 draws); the partial window 2024-26 is hatched and not read",
          read="Dot: the window's ²D (how many large designs are in play) averaged over the rarefaction draws, whisker: the middle 95 % of the draws. Grey band: the middle 95 % of the ²D of the same archetypes shuffled among the windows at random, window sizes kept. A red dot is below the band: fewer designs in play than chance gives, condition 2 met."),
     dict(name="q7_condition3_cohesion", slot="results", kind="figure", sub="B", title="Condition 3: ΔQ against its band",
          caption="Condition 3 per window. ΔQ is the change in the average Gower distance between two aircraft against the two earliest windows, drawn under the one weighting of the form distance (w15): 15 dimensions of the codebook, each of its four systems weighing 1.",
          source_item="Figure 12 (ii)", flag=None, flag_note="", builder=fig_condition3_cohesion,
          source="human labelling (every field of the distance) · PatSeer (priority date)",
-         unit="unique aircraft per four-year priority window; 200 permutations, seed 42; A, A·U and F read the same aircraft, A·W·T leaves out the aircraft whose wings or tilt are not recorded",
+         unit="unique aircraft per four-year priority window; 1000 permutations, seed 42; A, A·U and F read the same aircraft, A·W·T leaves out the aircraft whose wings or tilt are not recorded",
          read="Q is the average Gower distance between two aircraft of the window (0 = alike on every design field, 1 = no field shared); ΔQ is the window's Q minus the average Q of the two earliest windows. Grey band: the middle 95 % of ΔQ when the aircraft are shuffled among the windows; a red dot is below it (condition 3 met). Weights (w15): 15 dimensions of the codebook, each of its four systems (G1, M1, M2, M3) weighing 1."),
     dict(name="q7_family_conditions", slot="results", kind="figure", sub="B", title="The three conditions on F",
          caption="The three conditions on F alone. (a) Condition 1: F's share of the year's designs from 2016 on all designs, the actively protected designs and the granted-and-live designs, read years only, against the 50 % line; the ringed years are above it on all designs. (b) Condition 2: ²D of F per cohort on all designs against its permutation band, the actively protected designs dashed. (c) Condition 3: ΔQ of F per cohort under the main weighting, the same way. A red point is below the band; a red ring marks the actively protected designs below their own band.",
          source_item="new (handoff 2026-10-15, Task 3)", flag=None, flag_note="", builder=fig_family_conditions,
          source="human labelling (class; the family F; every field of the form distance) · PatSeer (priority date; legal status at the snapshot, 2026-06-08)",
-         unit="unique aircraft by priority year 2016-2023 (condition 1; a base is read when it holds 20 aircraft or more) and per four-year priority cohort (conditions 2 and 3; 200 permutations, seed 42; the partial cohort 2024-26 is hatched and not read)",
+         unit="unique aircraft by priority year 2016-2023 (condition 1; a base is read when it holds 20 aircraft or more) and per four-year priority cohort (conditions 2 and 3; 1000 permutations, seed 42; the partial cohort 2024-26 is hatched and not read)",
          read="(a) Solid line, dots: F's share of all designs of the year; dashed, squares: of the actively protected designs; dotted, triangles: of the granted-and-live designs; a ring marks a year above 50 % on all designs. (b) Dot and whisker: ²D of F rarefied to 40 (middle 95 % of the draws) on all designs, grey band: the middle 95 % of ²D with the designs shuffled among the cohorts; dashed: the same on the actively protected designs (its band in the appendix table). (c) ΔQ: the cohort's mean form distance minus that of the two earliest cohorts, all designs with its band, the actively protected designs dashed. A red point is below the band (condition met); a red ring marks the actively protected designs below their own band."),
     dict(name="q7_verdict_table", slot="appendix", kind="table", sub="B", title="The dominant-design verdict",
          caption="The verdict per condition and archetype set, naming the priority years (condition 1) or windows (conditions 2 and 3) where each condition is met (✓) or not (✗); condition 1 on both bases, condition 3 under the main weighting.",
