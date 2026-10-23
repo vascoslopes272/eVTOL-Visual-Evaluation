@@ -392,7 +392,9 @@ def fig_region_firm_proximity(ctx):
     ax.set_xlim(0, 1.15)
     ax.grid(axis="x", color=style.GRID, linewidth=0.5)
     ax.set_axisbelow(True)
-    ax.set_xlabel(f"proximity (1 = same class mix)\nsame region {px['same_mean']:.2f} · different {px['different_mean']:.2f} · p {pval5(px['p'])}",
+    # base (2026-10-23): frames.region_firm_proximity, the named assignees with FIRM_MIN designs or more, every pair of them
+    ax.set_xlabel(f"proximity of two assignees' architecture mixes\n(1 = same mix), assignees with {frames.FIRM_MIN}+ designs\n"
+                  f"same region {px['same_mean']:.2f} · different {px['different_mean']:.2f} · p {pval5(px['p'])}",
                   fontsize=7.5)
     fig.legend(handles=[Line2D([], [], color=style.INK, marker="D", linestyle="none", markersize=5, label="firm pair within a region (mean)"),
                         Line2D([], [], color=style.MUTED, marker="o", linestyle="none", markersize=5, label="firm pair across regions (mean)")],

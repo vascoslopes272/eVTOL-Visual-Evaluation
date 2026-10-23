@@ -198,7 +198,7 @@ from matplotlib.lines import Line2D                 # noqa: E402
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage   # noqa: E402
 
 PCOA_GREY = {"<= 2011": "#b4b4b4", "2012-15": "#828282", "2016-19": "#4c4c4c", "2020-23": "#000000"}
-PCOA_NAME = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23"}
+PCOA_NAME = {"<= 2011": "≤ 2011", "2012-15": "2012–15", "2016-19": "2016–19", "2020-23": "2020–23"}   # the one-line cohort form (2026-10-23)
 PCOA_PT = 9.0
 POP_STEM = "q6_population_cloud"
 #: where the three drawings sit (axes fraction) and the width of each (cm); the leader line runs from the drawing to the design's point
@@ -298,7 +298,8 @@ def fig_population_cloud(ctx):
             transform=ax.transAxes, ha="right", va="bottom", fontsize=PCOA_PT, linespacing=1.2)
     handles = [Line2D([], [], marker="o", markersize=4, color=PCOA_GREY[w], linestyle="none", label=f"{PCOA_NAME[w]}, n {int((pop['cohort'] == w).sum())}") for w in ctx.COMPLETE]
     handles += [Line2D([], [], marker="o", markersize=8, markerfacecolor="white", markeredgecolor="black", color="black", linewidth=0.8, label="cohort centroid, joined in time order")]
-    ax.legend(handles=handles, loc="lower left", fontsize=PCOA_PT, frameon=True, framealpha=0.92, edgecolor="none", handlelength=1.4, labelspacing=0.3)
+    ax.legend(handles=handles, loc="lower left", fontsize=PCOA_PT, frameon=True, framealpha=0.92, edgecolor="none", handlelength=1.4, labelspacing=0.3,
+              title="all designs (disparity base)", title_fontsize=PCOA_PT, alignment="left")   # base: thesis_v2_part4.dispersion_base
     # the three drawings beside their points, with a thin leader line and the publication number
     px_per_cm = fig.dpi / 2.54
     for _, r in picks.iterrows():

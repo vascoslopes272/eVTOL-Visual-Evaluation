@@ -25,7 +25,9 @@ from viz.thesis_latex_common import root
 
 FS = 8.0
 COH = ["<= 2011", "2012-15", "2016-19", "2020-23"]
-COH_LABEL = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23"}
+COH_LABEL = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23"}      # the CSVs' names (kept)
+#: printed cohorts (2026-10-23): one line, the dissertation's form (ticks and point labels)
+COH_TICK = {"<= 2011": "≤ 2011", "2012-15": "2012–15", "2016-19": "2016–19", "2020-23": "2020–23"}
 PART = "Part_IV_design_space_evolution"
 GROUP = "IV2_attributes_and_drivers"
 STEM_A, STEM_B = "q6_iv2_merge_cvt_lc", "q6_iv2_split_tp"
@@ -198,12 +200,15 @@ def fig_merge(ctx):
     pts = plots.centre_trajectory(ax, cent, n_few=2)
     leg = ax.legend(handles=[Line2D([], [], color=style.cls(c).color, marker=style.cls(c).marker, markersize=5, linewidth=1.3,
                                     label=f"{style.cls(c).name}") for c in archs]
-                    + [Line2D([], [], color=style.MUTED, marker="o", markerfacecolor="white", linestyle="none", markersize=4.5, label="2012-15 design, dashed outline"),
-                       Line2D([], [], color=style.MUTED, marker="o", linestyle="none", markersize=4.5, label="2020-23 design, solid outline")],
-                    loc="upper right", fontsize=FS, frameon=True, framealpha=0.95, edgecolor="none", handlelength=1.6)
+                    + [Line2D([], [], color=style.MUTED, marker="o", markerfacecolor="white", linestyle="none", markersize=4.5, label="2012–15 design, dashed outline"),
+                       Line2D([], [], color=style.MUTED, marker="o", linestyle="none", markersize=4.5, label="2020–23 design, solid outline")],
+                    loc="upper right", fontsize=FS, frameon=True, framealpha=0.95, edgecolor="none", handlelength=1.6,
+                    title="base: each design of the two architectures\n(tilting sets recorded, 1+ propulsor); path: the\ncohort centre (mean sets, median propulsors)",
+                    title_fontsize=FS)
+    leg._legend_box.align = "left"
     fig.canvas.draw()
     rend = fig.canvas.get_renderer()
-    lab = [COH_LABEL[COH[k]] for _, _, k, _ in pts]
+    lab = [COH_TICK[COH[k]] for _, _, k, _ in pts]
     failed = plots.place_labels(ax, [p[0] for p in pts], [p[1] for p in pts], lab, [3.6] * len(pts),
                                 obstacles=[leg.get_window_extent(rend).expanded(1.03, 1.1)], fontsize=FS,
                                 extra_avoid=[(r_["x plotted"], r_["y plotted"], 2.5) for r_ in rows if r_["kind"] == "design" and r_["y plotted"] < YMAX])
@@ -276,13 +281,14 @@ def fig_split(ctx):
                              **{"Tilt Propulsor designs in the cohort": int(t.loc[w, "total"])}))
     ax.set_xlim(-2.75, 7.4)
     ax.set_ylim(-1.0, 4.35)
-    ax.set_xticks(X, [f"{COH_LABEL[w]}\nn {int(t.loc[w, 'total'])}" for w in COH])
+    ax.set_xticks(X, [f"{COH_TICK[w]}\nn {int(t.loc[w, 'total'])}" for w in COH])
     ax.spines["bottom"].set_bounds(-0.4, 3.4)
     ax.set_yticks([])
     for sp in ("left", "right", "top"):
         ax.spines[sp].set_visible(False)
-    ax.set_xlabel("priority cohort")
-    ax.text(1.5, -0.75, "2020-23: 1 design with no tilting set recorded is not drawn", fontsize=FS, color=style.MUTED, ha="center", va="center") if int(t.loc["2020-23", "none"]) else None
+    ax.set_xlabel("priority-year cohort; n: Tilt Propulsor designs of the cohort")
+    ax.text(-0.4, 4.3, "bubble: designs of the branch · % of the cohort's Tilt Propulsor designs", fontsize=FS, color=style.MUTED, ha="left", va="top")
+    ax.text(1.5, -0.75, "2020–23: 1 design with no tilting set recorded is not drawn", fontsize=FS, color=style.MUTED, ha="center", va="center") if int(t.loc["2020-23", "none"]) else None
     # three drawings
     pos = {("one", "<= 2011"): (-2.7, ONE), ("one", "2020-23"): (5.5, ONE), ("two", "2020-23"): (5.5, (ST1 + ST2) / 2)}
     for key, (a, fk, why) in PICKS_B.items():

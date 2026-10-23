@@ -23,7 +23,7 @@ RESTYLED = v3.RESTYLED
 TABLES = {"q7_verdict_table": True, "q7_verdict_detail": True, "q7_condition3_weights": True, "q7_condition3_family": True, "q6_share_trend_spearman": True, "q7_three_year_check": True,
           "q7_granted_live_condition1": True, "q7_granted_live_condition2": True, "q7_iii4_directory_fold": True}
 SHOWS = {"q6_architecture_shares_by_cohort": "share of each cohort's designs by architecture", "q7_condition2_balance": "condition 2: ²D against its permutation band, per level",
-         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, main weighting, levels A, A·W·T, A·U", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
+         "q7_condition3_cohesion": "condition 3: ΔQ against its permutation band, main weighting, level A alone (Q does not depend on the level)", "q7_condition1_family": "condition 1: F's share per priority year, two bases",
          "q7_family_conditions": "the three conditions on F: all designs (band) and actively protected (dashed)",
          "q6_largest_architectures_over_time": "five largest architectures' share per cohort", "q7_iii4_directory_categories": "III.4: Vectored Thrust share per year (met years as bars) and ²D against the band",
          "q7_verdict_table": "verdict per condition and level, all designs (main) and actively protected (sensitivity), each base read alone", "q7_verdict_detail": "the numbers behind the verdict on each base", "q7_condition3_weights": "weights of the form distance (w15): 15 dimensions, four systems each weighing 1", "q7_condition3_family": "condition 3 on F: actively protected, all designs, granted and live",
@@ -121,6 +121,18 @@ def _numbers(cfg, ctx, R: Path):
     vy = di["yearly"]["in force"]
     vy = vy[vy["priority year"] >= 2016].assign(**{"share": lambda t: (100 * t["its share"]).round(1).astype(str) + " %"})[["priority year", "aircraft", "its aircraft", "share", "above 50 %"]]
     vy.to_csv(R / "Data_for_writing" / "csv" / "q7_iii4_vt_share_per_year.csv", index=False)
+    # the same per-year table on ALL designs (2008-2023), VT counted by name (the largest category of a year need not be VT)
+    ka = k[k.notna() & v["year"].notna()]
+    ya = v.loc[ka.index, "year"]
+    va = pd.DataFrame({"priority year": list(range(frames.DD_YEAR_FIRST, ctx.cfg.analysis["last_complete_year"] + 1))})
+    va["designs"] = [int(ya.eq(y).sum()) for y in va["priority year"]]
+    va["Vectored Thrust designs"] = [int((ya.eq(y) & ka.eq("VT")).sum()) for y in va["priority year"]]
+    sh = va["Vectored Thrust designs"] / va["designs"].where(va["designs"] > 0)
+    va["read (20 designs or more)"] = va["designs"] >= frames.DD_YEAR_MIN
+    va["above 50 %"] = va["read (20 designs or more)"] & sh.gt(0.5)
+    va.insert(3, "share", (100 * sh).round(1).astype(str) + " %")
+    va = va[["priority year", "designs", "Vectored Thrust designs", "share", "above 50 %", "read (20 designs or more)"]]
+    va.to_csv(R / "Data_for_writing" / "csv" / "q7_iii4_vt_share_per_year_all.csv", index=False)
     bal = di["balance"][["window", "aircraft", "D2", "D2 permutation low", "D2 permutation high", "below band"]].rename(columns={"window": "cohort"})
     ver, _ = v3.tab_levels_verdict(ctx)
     wts, _ = v3.tab_condition3_weights(ctx)
@@ -165,7 +177,7 @@ def _numbers(cfg, ctx, R: Path):
          "## III.4, which VT share the figure draws\n",
          "`q7_iii4_directory_categories` draws VT's share per priority YEAR (left panel, condition 1: all designs solid, actively protected dashed, years under 20 designs hollow grey; the met years of each base as red bars), "
          "and ²D per COHORT against its band (right panel, condition 2, all designs). The per-cohort VT share above is not drawn; it is listed here for the text. "
-         "Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`.\n",
+         "Per-year values: the table 'VT share per priority year' above, also written to `Data_for_writing/csv/q7_iii4_vt_share_per_year.csv`. The same table on all designs (2008–2023): `Data_for_writing/csv/q7_iii4_vt_share_per_year_all.csv`.\n",
          "## Designs per cohort: III.1 against the form distance of condition 3\n", "Source: `q6_architecture_shares_by_cohort.csv` (`designs`), `q7_condition3_cohesion.csv` (`aircraft`, w15 weighting).\n", tables_md(dist), "",
          "Why they differ: the shares of III.1 divide by every design of the cohort, including the designs with no architecture recorded (a bar segment 'no architecture recorded'), "
          "while the form distance needs an architecture to place a design in a level, so those designs are left out. The two designs without an architecture "
@@ -186,7 +198,7 @@ from matplotlib.lines import Line2D                 # noqa: E402
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage   # noqa: E402
 
 PCOA_GREY = {"<= 2011": "#b4b4b4", "2012-15": "#828282", "2016-19": "#4c4c4c", "2020-23": "#000000"}
-PCOA_NAME = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23"}
+PCOA_NAME = {"<= 2011": "≤ 2011", "2012-15": "2012–15", "2016-19": "2016–19", "2020-23": "2020–23"}   # the one-line cohort form (2026-10-23)
 PCOA_PT = 9.0
 POP_STEM = "q6_population_cloud"
 #: where the three drawings sit (axes fraction) and the width of each (cm); the leader line runs from the drawing to the design's point
@@ -286,7 +298,8 @@ def fig_population_cloud(ctx):
             transform=ax.transAxes, ha="right", va="bottom", fontsize=PCOA_PT, linespacing=1.2)
     handles = [Line2D([], [], marker="o", markersize=4, color=PCOA_GREY[w], linestyle="none", label=f"{PCOA_NAME[w]}, n {int((pop['cohort'] == w).sum())}") for w in ctx.COMPLETE]
     handles += [Line2D([], [], marker="o", markersize=8, markerfacecolor="white", markeredgecolor="black", color="black", linewidth=0.8, label="cohort centroid, joined in time order")]
-    ax.legend(handles=handles, loc="lower left", fontsize=PCOA_PT, frameon=True, framealpha=0.92, edgecolor="none", handlelength=1.4, labelspacing=0.3)
+    ax.legend(handles=handles, loc="lower left", fontsize=PCOA_PT, frameon=True, framealpha=0.92, edgecolor="none", handlelength=1.4, labelspacing=0.3,
+              title="all designs (disparity base)", title_fontsize=PCOA_PT, alignment="left")   # base: thesis_v2_part4.dispersion_base
     # the three drawings beside their points, with a thin leader line and the publication number
     px_per_cm = fig.dpi / 2.54
     for _, r in picks.iterrows():

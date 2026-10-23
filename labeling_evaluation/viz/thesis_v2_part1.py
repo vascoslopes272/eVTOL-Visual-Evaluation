@@ -369,7 +369,7 @@ def _funding_panel_v2(ctx, col: str, ylab: str, ylim, frac: float = 0.6):
 
 def fig_funding_vs_aircraft_v2(ctx):
     """I1 appendix (final size, width 0.6; leaves the dissertation text): disclosed funding against the firm's designs in the patent dataset."""
-    return _funding_panel_v2(ctx, "unique aircraft", "designs in the\npatent dataset", (0.2, 9.3))
+    return _funding_panel_v2(ctx, "unique aircraft", "the assignee's designs\n(all designs)", (0.2, 9.3))
 
 
 def fig_patenting_vs_investment_v2(ctx):
@@ -389,7 +389,7 @@ def fig_patenting_vs_investment_v2(ctx):
     ax.xaxis.set_minor_locator(mpl.ticker.NullLocator())
     ax.set_ylim(0, 85)
     ax.set_xlabel("disclosed sector investment, US$ bn per year (log)")
-    ax.set_ylabel("designs per\npriority year")
+    ax.set_ylabel("all designs per\npriority year")
     ax.grid(color=style.GRID, linewidth=0.5)
     ax.grid(axis="x", visible=True)
     ax.set_axisbelow(True)
@@ -451,16 +451,18 @@ def fig_in_force_status_v2(ctx):
             ax.text(xx, val + 0.02, f"{val:.0%}", ha="center", va="bottom", fontsize=MIN_PT, color=style.INK)
             ax.annotate(f"n {n}", (xx, 0), xycoords=("data", "axes fraction"), xytext=(0, -3),
                         textcoords="offset points", ha="center", va="top", fontsize=MIN_PT, color=style.MUTED, annotation_clip=False)
-    ax.set_xticks(x, ["\n".join(textwrap.wrap(arch(c_).name, 10, break_long_words=False)) for c_ in order], fontsize=MIN_PT + 0.5)
+    ax.set_xticks(x, [arch(c_).short for c_ in order], fontsize=MIN_PT + 0.5)      # codes, horizontal (author 2026-10-23); key under the axis
+    ax.set_xlabel("\n".join(textwrap.wrap(" · ".join(f"{arch(c_).short} {arch(c_).name}" for c_ in order), 95, break_long_words=False,
+                                         break_on_hyphens=False)), fontsize=MIN_PT)
     ax.tick_params(axis="x", pad=13)        # n under the bars first, then the architecture name
-    ax.set_ylabel("Designs not actively\nprotected (%)")
+    ax.set_ylabel("designs not actively protected\n(% of the architecture's designs)")
     ax.set_ylim(0, 1.0)
     ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(0.2))
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
     ax.set_xlim(-0.6, len(order) - 0.3)
     ax.axhline(overall, color=style.INK, linewidth=1, linestyle="--", zorder=2)
-    ax.legend(handles=[Patch(facecolor=style.INK, edgecolor=style.INK, label="US-filed"),
-                       Patch(facecolor="white", edgecolor=style.INK, label="other offices"),
+    ax.legend(handles=[Patch(facecolor=style.INK, edgecolor=style.INK, label="US-filed designs of the architecture"),
+                       Patch(facecolor="white", edgecolor=style.INK, label="designs of the architecture filed at other offices"),
                        Line2D([], [], color=style.INK, linewidth=1, linestyle="--",
                               label=f"all nine architectures: {overall:.0%} of {len(wo2)} designs")],
               loc="upper right", fontsize=MIN_PT, ncol=1)
@@ -555,10 +557,11 @@ def fig_dataset_vs_directory_classes_v2(ctx):
             ax.text(xx, hi * n + 6, f"{ctx.thin(k)}\n({k / n:.0%})".replace("%", " %"), ha="center", va="bottom", fontsize=small)
     ax.set_xticks(x, [f"{c}\n{GROUP_NAME[c].split(' (')[0].split(' /')[0]}" for c in O5])
     ax.set_ylim(0, max(n_set.max(), n_dir.max()) * 1.55)
-    ax.set_ylabel("designs")
-    ax.legend(handles=[Patch(facecolor=style.INK, label=f"patent dataset ({ctx.thin(n_set.sum())} designs; filled)"),
-                       Patch(facecolor="white", edgecolor=style.INK, label=f"VFS eVTOL directory, in domain ({ctx.thin(n_dir.sum())} pages; outline)")],
+    ax.set_ylabel("count in each source")
+    ax.legend(handles=[Patch(facecolor=style.INK, label=f"patent dataset: all designs with a directory category ({ctx.thin(n_set.sum())}; filled)"),
+                       Patch(facecolor="white", edgecolor=style.INK, label=f"VFS directory aircraft, in domain ({ctx.thin(n_dir.sum())}; outline)")],
               loc="upper right")
+    _raw(ax.get_legend().get_texts()[1], f"VFS directory aircraft, in domain ({ctx.thin(n_dir.sum())}; outline)")
     data = pd.DataFrame({"architecture group": [GROUP_NAME[c] for c in O5], "code": O5, "patent dataset": n_set.to_numpy(),
                          "VFS eVTOL directory, in domain": n_dir.to_numpy(), "adjusted residual": d["resid"].round(1)})
     return fig, data
@@ -596,8 +599,10 @@ def fig_dataset_vs_directory_subsets_v2(ctx):
         a.set_title(c, fontsize=mpl.rcParams["font.size"])
         a.tick_params(axis="x", labelsize=mpl.rcParams["xtick.labelsize"] - 1)
         a.xaxis.set_major_locator(mpl.ticker.MaxNLocator(3, integer=True))
-    fig.supxlabel("designs of the group in each source (95 % Wilson interval); parts are subsets of the in-domain pages;\n"
-                  "dotted line: the patent dataset; own x scale per panel", fontsize=mpl.rcParams["xtick.labelsize"])
+    sx = fig.supxlabel("count of the group in each source: designs (patent dataset) or VFS directory aircraft (the other rows; parts are subsets\n"
+                  "of the in-domain pages); 95 % Wilson interval; dotted line: the patent dataset; own x scale per panel", fontsize=mpl.rcParams["xtick.labelsize"])
+    _raw(sx, "count of the group in each source: designs (patent dataset) or VFS directory aircraft (the other rows; parts are subsets\n"
+             "of the in-domain pages); 95 % Wilson interval; dotted line: the patent dataset; own x scale per panel")
     return fig, d["why"]
 
 
@@ -622,6 +627,8 @@ EVENT_SHORT = {"2016-01-06": "EHang 184, Uber Elevate", "2016-10-27": None,     
 #: directory category -> the code of the fold (frames.CLASS5_ORDER) and the key of ts.VFS
 VFS_OF = {"LC": "Lift + Cruise", "VT": "Vectored Thrust", "WM": "Wingless (Multicopter)", "ER": "Electric Rotorcraft",
           "HB": "Hover Bikes / PFD"}
+#: Fig 4.4: rotation of the one-line cohort ticks in its five narrow panels (30 degrees overlaps there; see the report of 2026-10-23)
+TICK_ROT = 60
 VFS_TITLE = {"LC": "Lift + Cruise", "VT": "Vectored\nThrust", "WM": "Wingless\n(Multicopter)", "ER": "Electric\nRotorcraft",
              "HB": "Hover Bikes\n/ PFD"}
 
@@ -635,6 +642,14 @@ class _RawText(mpl.text.Text):
         if s != getattr(self, "_text", None):
             self._text = s
             self.stale = True
+
+
+def _raw(t, s: str):
+    """Print ``s`` on the Text ``t`` exactly (author 2026-10-23: the base "VFS directory aircraft" by name, which viz/relabel.py would
+    print "VFS directory designs")."""
+    t.__class__ = _RawText
+    t.set_text(s)
+    return t
 
 
 def ts_context():
@@ -692,15 +707,15 @@ def fig_filings_per_year_ts(ctx):
     # direct labels
     i16 = years.index(2016) if 2016 in years else len(years) // 2
     ax.text(yr[i16] - 0.6, float(fam.iloc[i16 - 1]) + top * 0.55, f"patent families ({n_fam})", color=col, ha="right", va="center", fontsize=8.4)
-    ax.add_artist(_RawText(yr[i16] - 1.6, float(designs.iloc[i16 - 1]) + top * 0.2, f"aircraft designs ({n_des})", color=BAR_GREY,
-                           ha="right", va="center", fontsize=8.4, transform=ax.transData))      # the brief's wording, past viz/relabel.py
+    ax.add_artist(_RawText(yr[i16] - 1.6, float(designs.iloc[i16 - 1]) + top * 0.2, f"all designs ({n_des})", color=BAR_GREY,
+                           ha="right", va="center", fontsize=8.4, transform=ax.transData))      # the base named (author 2026-10-23)
     ip = years.index(partial)
     ax.text(yr[-1], float(fam.iloc[ip]) + top * 0.12, "incomplete", ha="right", va="bottom", fontsize=8.4, color=EVENT_TEXT)
     ax.set_xlim(yr[0] - 0.6, yr[-1] + 0.6)
     ticks = [years[0]] + [y for y in years if y % 2 == 0 and y >= years[0] + 2]
     ax.set_xticks(ticks, ["≤2005" if y == years[0] else str(y) for y in ticks])
-    ax.set_xlabel("priority year of first patent")
-    ax.set_ylabel("count")
+    ax.set_xlabel(ts.YEAR_X)
+    ax.set_ylabel("count per priority year")
     data = pd.DataFrame({"designs filed": designs.to_numpy(), "patent families": fam.to_numpy(), "2024-26 (incomplete)": ~done}, index=t.index)
     data.index.name = "priority year (2005 = 2005 and earlier)"
     evd = ev.assign(label=[EVENT_SHORT.get(d.strftime("%Y-%m-%d")) or "(shares the 2016 line)" for d in ev["date"]])
@@ -765,8 +780,8 @@ def _growth_axes(ax):
     ax.set_ylim(0.21, 24)
     ax.set_xlim(2004.2, 2026.6)
     ax.set_xticks([2005, 2010, 2015, 2020, 2025])
-    ax.set_xlabel("priority year")
-    ax.set_ylabel("index, 2005–09 = 1 (log)")
+    ax.set_xlabel(ts.YEAR_X)
+    ax.set_ylabel("patent families, index\n2005–09 = 1 (log)")        # every series counts patent families (frames.growth_series)
 
 
 def _growth_legend(fig, ctx, keys):
@@ -793,9 +808,9 @@ def fig_growth_rates_ts(ctx):
     Section B and all patents: :func:`fig_growth_baselines_ts` (appendix)."""
     c = q1._calc(ctx)
     keys = ["evtol_families", "b64"]
-    fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.6), layout="constrained", gridspec_kw=dict(width_ratios=[1.35, 1]))
+    fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.85), layout="constrained", gridspec_kw=dict(width_ratios=[1.35, 1]))   # 2.6 + labels under the panels (2026-10-23)
     _growth_panel(a, ctx, keys)
-    a.set_title("(a) eVTOL and aeronautics")
+    ts.panel_label(a, "(a) eVTOL and aeronautics")
     yrs = np.arange(2005, 2027)
     ratio = (c["ser"]["evtol_families"].reindex(yrs) / c["ser"]["b64"].reindex(yrs) * 1000).astype(float)
     done = yrs <= q1.GROWTH_MODEL_LAST
@@ -805,10 +820,11 @@ def fig_growth_rates_ts(ctx):
     b.set_ylim(0, max(8.0, float(np.nanmax(ratio.to_numpy())) * 1.1))
     b.set_xlim(2004.2, 2026.6)
     b.set_xticks([2005, 2010, 2015, 2020, 2025])
-    b.set_xlabel("priority year")
+    b.set_xlabel(ts.YEAR_X)
     b.set_ylabel("eVTOL architecture families per\n1 000 aeronautics families")
-    b.set_title("(b) eVTOL against aeronautics")
+    ts.panel_label(b, "(b) eVTOL against aeronautics")
     _growth_legend(fig, ctx, keys)
+    ts.place_panel_labels(fig)
     data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in ("evtol_families", "b64", "secb", "all")}).reindex(yrs)
     data["eVTOL per 1 000 B64 families"] = ratio.round(3).to_numpy()
     data.index.name = "priority year"
@@ -819,12 +835,13 @@ def fig_growth_baselines_ts(ctx):
     """Appendix to Fig 4.2: transport and operations (CPC section B) and all patents (WIPO), the same reading as panel (a) of
     :func:`fig_growth_rates_ts`, one panel per series."""
     c = q1._calc(ctx)
-    fig, axs = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.4), layout="constrained", sharey=True)
+    fig, axs = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.65), layout="constrained", sharey=True)   # 2.4 + labels under the panels (2026-10-23)
     for ax, k, t in zip(axs, ("secb", "all"), ("(a) transport and operations (CPC B)", "(b) all patents")):
         _growth_panel(ax, ctx, [k])
-        ax.set_title(t)
+        ts.panel_label(ax, t)
     axs[1].set_ylabel("")
     _growth_legend(fig, ctx, ["secb", "all"])
+    ts.place_panel_labels(fig)
     yrs = np.arange(2005, 2027)
     data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in ("secb", "all")}).reindex(yrs)
     data.index.name = "priority year"
@@ -838,7 +855,7 @@ def fig_class_mix_ts(ctx):
     wins = list(ctx.WIN_NAMES)
     order = ["LC", "VT", "WM", "ER", "HB"]                                   # the mockup's order
     x = np.arange(len(wins))
-    fig, axes = plt.subplots(1, 5, figsize=(ts.TEXTWIDTH, 2.4), layout="constrained", sharey=True)
+    fig, axes = plt.subplots(1, 5, figsize=(ts.TEXTWIDTH, 2.95), layout="constrained", sharey=True)   # 2.4 + labels under the panels and 60° cohort ticks (2026-10-23)
     for i, (code, ax) in enumerate(zip(order, axes)):
         colr = ts.VFS[VFS_OF[code]]
         for src, ls, filled in ((q4.SRC_PATENT, "-", True), (q4.SRC_DIR, "--", False)):
@@ -846,18 +863,25 @@ def fig_class_mix_ts(ctx):
             ax.plot(x[:-1], s[:-1], ls=ls, marker="o", ms=3.5, color=colr, lw=1.2,
                     mfc=colr if filled else "white", mec=colr, mew=0.9, zorder=3)
             ts.incomplete_point(ax, x[-1:], s[-1:], colr, ms=3.5, zorder=3)
-        ax.set_title(f"({'abcde'[i]}) {VFS_TITLE[code]}", color=colr, loc="left", linespacing=1.0)
-        ax.set_xticks(x, ["11", "15", "19", "23", "26*"])
+        ts.panel_label(ax, f"({'abcde'[i]}) {VFS_TITLE[code]}", color=colr)
+        ax.set_xticks(x, ts.COHORTS[:len(wins)])         # one line; ts.save rotates them 30 degrees in these narrow panels
         ax.set_xlim(-0.5, len(wins) - 0.5)
         ax.set_ylim(0, 75)
         ax.set_yticks([0, 25, 50, 75])
         if i:
             ax.tick_params(labelleft=False)
-    axes[0].set_ylabel("share of cohort's\ndesigns (%)")
-    axes[2].set_xlabel("priority-year cohort (end year)")
+    axes[0].set_ylabel("share of the cohort (%)")
     h = [Line2D([], [], color="#333333", ls="-", marker="o", ms=3.5, lw=1.2),
          Line2D([], [], color="#333333", ls="--", marker="o", ms=3.5, mfc="white", lw=1.2)]
-    ts.bottom_legend(fig, h, ["patent dataset", "VFS directory"])
+    leg = ts.bottom_legend(fig, h, ["patent dataset: share of all designs with a directory category", "VFS directory: share of VFS directory aircraft (in domain)"], ncol=1)   # two rows: one row runs off the 16 cm page
+    leg.set_title("priority-year cohort (VFS directory: development-year cohort)", prop={"size": 9})   # the shared x label, under the panel labels (on panel (c) it would take (c)'s colour)
+    _raw(leg.get_texts()[1], "VFS directory: share of VFS directory aircraft (in domain)")
+    for ax in axes:                          # five one-line cohort ticks do not fit a fifth of the width, even at 30 degrees
+        for t in ax.get_xticklabels():
+            t.set_rotation(TICK_ROT)
+            t.set_ha("right")
+            t.set_rotation_mode("anchor")
+    ts.place_panel_labels(fig)
     data = mix[mix["source"].isin([q4.SRC_PATENT, q4.SRC_DIR]) & mix["window"].isin(wins)].copy()
     data["source"] = data["source"].replace({q4.SRC_DIR: "VFS eVTOL directory, pages in the domain (development year)",
                                              q4.SRC_PATENT: "patent dataset (designs, priority year)"})
@@ -891,7 +915,8 @@ def fig_patent_vs_market_clock_ts(ctx):
     ax.text(2026.6, -0.75, "mid-2026", fontsize=8.4, color=EVENT_TEXT, ha="left", va="center")
     ax.set_xlim(2012, 2031)
     ax.set_xticks(range(2012, 2031, 2), [str(v) if v % 4 == 0 else "" for v in range(2012, 2031, 2)])
-    ax.set_xlabel("year")
+    ax.set_xlabel("year (patents: priority year; first flight, entry into service: calendar year)")
+    ax.set_ylabel("assignee (AAM Reality Index)")
     hollow_sq = Line2D([], [], color="white", marker="s", markeredgecolor=INK, markersize=4.2, linestyle="none")
     hollow_tr = Line2D([], [], color="white", marker="^", markeredgecolor=INK, markersize=4.2, linestyle="none")
     handles = [Line2D([], [], color="#A8A8A8", linewidth=4.0),

@@ -115,6 +115,21 @@ def fig_region_design_all_years(ctx):
 
 
 # ------------------------------------------------------------------------------------------ B: when each region enters (Figure 23 ii)
+_SHORT = {"SLC": "SLC", "TB": "TF"}                       # this document's codes (style.py has "L+C" and TB)
+_NAME = {"TB": "Tilt Frame", "MR": "Multicopter"}
+
+
+def _short(c: str) -> str:
+    return "other" if c == "other" else _SHORT.get(c, style.cls(c).short)
+
+
+def _code_key(codes, width: int = 110) -> str:
+    """'SLC Separate Lift + Cruise · TP Tilt Propulsor · …' wrapped at ``width`` characters: the key of a chart whose ticks are codes."""
+    import textwrap
+    items = [f"{_short(c)} {_NAME.get(c, style.cls(c).name)}" for c in codes if c != "other"]
+    return "\n".join(textwrap.wrap(" · ".join(items), width, break_long_words=False, break_on_hyphens=False))
+
+
 def fig_region_entry_lag(ctx):
     """Years after North America, per class: the median priority-year difference with its 95 % bootstrap interval, Europe and Asia-Pacific."""
     f = _frames(ctx)
@@ -139,9 +154,10 @@ def fig_region_entry_lag(ctx):
                             fontsize=7, color=sty[0])
     ax.axvline(0, color=style.REGIONS[NA][0], linewidth=1.2, zorder=2)
     na_med = off[off["region"].eq(NA)].set_index("class")["median priority year"]
-    ax.set_yticks(ypos, [f"{CLS_WORD[c]}\nNA median {int(na_med[frames.LAG_CLASS_NAMES[c]])}" for c in classes], fontsize=7.5)
+    ax.set_yticks(ypos, [f"{_short(c)}\nNA median {int(na_med[frames.LAG_CLASS_NAMES[c]])}" for c in classes], fontsize=7.5)   # codes (author 2026-10-23)
     ax.set_ylim(len(classes) - 0.3, -0.65); ax.set_xlim(-5, XMAX)
-    ax.set_xlabel("years after North America, median difference")
+    # base (2026-10-23): regional.lag_frame, the designs of each architecture per region with a priority year to the last complete year
+    ax.set_xlabel("years after North America (median priority year,\ndesigns of the architecture, region minus NA)\n" + _code_key(classes, 60), fontsize=7.5)
     ax.grid(axis="x", color=style.GRID, linewidth=0.5); ax.set_axisbelow(True)
     ax.legend(loc="upper right", fontsize=7.5, handlelength=1.0)
     return fig, off[off["class"].isin([frames.LAG_CLASS_NAMES[c] for c in classes])].reset_index(drop=True)
@@ -231,7 +247,7 @@ def fig_region_countries(ctx):
 
 # ------------------------------------------------------------------------------------------ appendix: Figure 20, within-firm successions
 def fig_firm_successions(ctx):
-    """Where a named firm's next aircraft lands, by the class of the one before; the boxed cell is the share that stays."""
+    """Where a named assignee's next design lands, by the architecture of the one before; the boxed cell is the share that stays."""
     f = _frames(ctx)
     succ = f["succ"]
     dest = [("SLC", "Lift +\nCruise"), ("TR", "Tilt\nPropulsor"), ("CVT", "Combined\nVectored\nThrust"), ("TW", "Tilt\nWing"), ("MR", "Multi-\nrotor"),
@@ -247,14 +263,16 @@ def fig_firm_successions(ctx):
             if c == r["code"]:
                 ax.add_patch(matplotlib.patches.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, edgecolor=style.INK, linewidth=1.8, zorder=5,
                                                           clip_on=False))
-    ax.set_xticks(range(len(dest)), [d[1] for d in dest], fontsize=7.5); ax.xaxis.tick_top()
-    ax.set_yticks(range(len(succ)), [f"{style.cls(c).name}\n{int(n)} successions · {int(k)} firms"
+    ax.set_xticks(range(len(dest)), [_short(c) for c, _ in dest], fontsize=7.5); ax.xaxis.tick_top()   # codes (author 2026-10-23)
+    ax.set_yticks(range(len(succ)), [f"{_short(c)} · {int(n)} successions · {int(k)} assignees"
                                      for c, n, k in zip(succ["code"], succ["successions"], succ["firms"])], fontsize=7.5)
     ax.tick_params(length=0)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    ax.set_ylabel("class of the firm's aircraft")
-    ax.set_xlabel("class of the same firm's next aircraft"); ax.xaxis.set_label_position("top"); ax.xaxis.labelpad = 8
+    ax.set_ylabel("architecture of the assignee's design")
+    fig.supxlabel(_code_key([c for c, _ in dest], 120), fontsize=7.5)
+    # base (2026-10-23): frames.succession_pairs, consecutive designs of one named assignee; a row is 100 % of its successions
+    ax.set_xlabel("architecture of the same assignee's next design\n(share of the row's successions)"); ax.xaxis.set_label_position("top"); ax.xaxis.labelpad = 8
     return fig, succ
 
 

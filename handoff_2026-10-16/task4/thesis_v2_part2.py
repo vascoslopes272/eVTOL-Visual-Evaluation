@@ -42,7 +42,7 @@ import thesis_style as ts                                     # noqa: E402
 
 #: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): full text width, ts.save, no bbox crop
 TS_FIGS = {"q6_configuration_core", "q6_half_of_cohort", "q6_discovery_curve"}
-TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.3}
+TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.6}   # discovery 2.3 -> 2.6: labels under the panels (2026-10-23)
 NOTE = "#555555"                                              # dark grey of the 8 pt notes (local; candidate for thesis_style)
 
 
@@ -529,8 +529,8 @@ def fig_configuration_core_v2(ctx):
         ax.grid(axis="y", color="#e6e6e6", linewidth=0.5)
         ax.set_axisbelow(True)
         ax.axvline(thr, color=NOTE, linewidth=0.7, linestyle=(0, (3, 2)), zorder=2)
-        ax.set_xlabel("share of the 2016–23 designs (%)")
-        ax.set_ylabel("distinct assignees\nper design")
+        ax.set_xlabel("share of all 2016–23 designs with an A·U configuration (%)")      # frames.zones: share_recent (2026-10-23: base named)
+        ax.set_ylabel("distinct assignees per\ndesign of the configuration")
         ytop = 1.105
         t_rim = ax.text(thr - 0.0012, ytop, "periphery", ha="right", va="center", fontsize=8.4, color=NOTE)
         t_core = ax.text(thr + 0.0012, ytop, f"core ({len(core)} configurations, half of the designs)", ha="left", va="center", fontsize=8.4, color=NOTE)
@@ -642,7 +642,7 @@ def fig_discovery_curve_v2(ctx):
     starts = {}
     with ts_rc():
         fig, axs4 = plt.subplots(1, 4, figsize=(ts.TEXTWIDTH, TS_H["q6_discovery_curve"]), layout="constrained",
-                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.12]))
+                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.5]))   # (d) wider (1.12 -> 1.5): its label now sits under it, centred (2026-10-23)
         axs, axd = axs4[:3], axs4[3]
         for j, (ax, (lvl, nm)) in enumerate(zip(axs, levels)):
             g = full[full["level"] == lvl]
@@ -669,14 +669,14 @@ def fig_discovery_curve_v2(ctx):
                 starts[(nm, yr)] = xs
                 ax.plot([xs, xs], [0, hi * 0.06], color=NOTE, linewidth=0.7, zorder=5)
                 ax.text(xs, hi * 0.08, str(yr), ha="center", va="bottom", fontsize=8, color=NOTE)
-            ax.set_title(f"({'abc'[j]}) {nm}", loc="left")
+            ts.panel_label(ax, f"({'abc'[j]}) {nm}")
             if j == 1:                                                # the two curves named once, in (b)
                 xi = int(np.searchsorted(x, n_c * 0.8))
                 ax.text(x[xi], rnd[xi] + hi * 0.08, "random order", ha="right", va="bottom", fontsize=8.4, color=RND)
                 xi = int(np.searchsorted(x, n_c * 0.72))
                 ax.text(x[xi], real[xi] - hi * 0.08, "real order", ha="center", va="top", fontsize=8.4, color="#000000")
         axs[0].set_ylabel("distinct\nconfigurations seen")
-        axs[1].set_xlabel("designs, in priority order (dotted: 2024–26*, incomplete)")
+        ts.shared_xlabel(axs[1], "all designs, in priority order (dotted: 2024–26*, incomplete)")      # frames.discovery_inputs: every design with a configuration
         # (d) the last-100 numbers as a dot plot
         obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
         rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
@@ -702,7 +702,8 @@ def fig_discovery_curve_v2(ctx):
         axd.spines["left"].set_visible(False)
         axd.tick_params(axis="y", length=0)
         axd.set_xlabel("new configurations")
-        axd.set_title(f"(d) last {tail} designs to 2023", loc="left", x=-0.42)
+        ts.panel_label(axd, f"(d) last {tail} designs to 2023")
+        ts.place_panel_labels(fig)
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
     data["level"] = data["level"].map(LEVEL)
@@ -759,6 +760,8 @@ def fig_half_of_cohort_v2(ctx):
         ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
         ax.set_xlabel("A·U configurations, ranked by size within the cohort")
         ax.set_ylabel("cumulative share of\nthe cohort's designs (%)")
+        ax.text(0.6, 0.97, "base: the cohort's designs in A·U configurations of 5 designs or more", ha="left", va="top", fontsize=8.4,
+                color=NOTE)                                           # frames.zones keeps configurations of five designs or more (2026-10-23)
         gap = ts_pt_to_data(ax, 10.5)
         ys = ts_spread([e[0] for e in ends], gap, hi=1.0 - gap / 2)
         x_lab = K_DRAW + 0.5 + 0.55
@@ -780,7 +783,7 @@ def fig_half_of_cohort_heatmap_v2(ctx):
     mat = z.set_index("archetype")[cohorts].astype(float).T
     mat.columns = [cfg_label(a) for a in mat.columns]
     k = {w: int(np.searchsorted(np.cumsum(np.sort(z[w].astype(float).to_numpy())[::-1]) / z[w].astype(float).sum(), 0.5)) + 1 for w in cohorts}
-    m2 = mat.rename(index=lab)
+    m2 = mat.rename(index=dict(zip(cohorts, ts.COHORTS)))             # rows printed in the one-line cohort form (2026-10-23); the csv keeps ``lab``
     fig, ax = plt.subplots(figsize=(ctx.W, getattr(ctx, "fig_h", 3.0)), constrained_layout=True)
     plots.window_heat(ax, m2, {})
     top = {}                                                  # each complete cohort's own top-k cells (ranking within the cohort, columns in overall order)
@@ -796,8 +799,8 @@ def fig_half_of_cohort_heatmap_v2(ctx):
     ax.add_patch(plt.Rectangle((-0.5, len(cohorts) - 1.5), m2.shape[1], 1, facecolor="white", alpha=0.55, linewidth=0, zorder=5))
     ax.tick_params(axis="x", labelsize=FS)
     ax.tick_params(axis="y", labelsize=FS)
-    ax.set_xlabel("A·U configuration, largest first over all cohorts", fontsize=FS)
-    ax.set_ylabel("cohort", fontsize=FS)
+    ax.set_xlabel("A·U configuration of 5 designs or more (largest first); cell: its designs in the cohort", fontsize=FS)
+    ax.set_ylabel("priority-year cohort", fontsize=FS)
     shown = [c for c in style.CLASS_ORDER if c in set(z["code"])]
     fig.legend(handles=[Patch(facecolor="none", edgecolor=style.INK, linewidth=1.6,
                               label="the cohort's own largest configurations that together hold half of its designs (k = " + ", ".join(str(k[w]) for w in cohorts if "partial" not in w) + ")")],

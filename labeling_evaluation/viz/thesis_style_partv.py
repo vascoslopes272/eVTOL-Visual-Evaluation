@@ -117,10 +117,11 @@ def fig_filer_types(ctx):
         ax.text(1.025, -0.62, ATYPE_WORD["University / institute"], transform=ax.get_yaxis_transform(), ha="left", va="bottom",
                 fontsize=TS, color=ATYPE_COL["University / institute"])
         ax.set_yticks(ypos, labels)
+        ax.set_ylabel("priority-year cohort")      # author 2026-10-23
         ax.set_ylim(ypos[-1] + 0.55, -0.62)
         ax.set_xlim(0, 1)
         ax.set_xticks([0, .25, .5, .75, 1], ["0", "25", "50", "75", "100"])
-        ax.set_xlabel("share of designs, or of patents for all patents (%)")
+        ax.set_xlabel("share of all designs (%); row \u2018all patents\u2019: share of the representative patents")      # base: q2._filer_types_parts (2026-10-23)
         ax.spines["left"].set_visible(False)
         ax.tick_params(axis="y", length=0)
     data = parts.assign(bar=bars, n=parts_n)
@@ -132,8 +133,8 @@ BAND_DESC = ["≥10 designs", "5–9 designs", "2–4 designs", "1 design"]
 
 
 def fig_largest_filers_share(ctx):
-    """4.18: the cumulative share of all designs held by the named assignees ranked largest first, coloured by size group A-D
-    (ts.BLUES dark to light), the group brackets under the axis, the group ends marked, the share of all named assignees dashed."""
+    """4.18: the cumulative share of all designs held by the named assignees ranked largest first, one blue (ts.BLUES[3]) for
+    every size group A-D (author 2026-10-23: the four shades read as four series), the group brackets under the axis, the group ends marked, the share of all named assignees dashed."""
     d = q2._frames(ctx)
     sizes, cov, v = d["sizes"], d["cov"], ctx.v
     n_air, n_named = len(v), len(sizes)
@@ -141,7 +142,7 @@ def fig_largest_filers_share(ctx):
     rank = np.arange(1, n_named + 1)
     xs, ys = np.r_[0, rank], np.r_[0, cum]
     edges = [0] + cov["cumulative firms"].astype(int).tolist()
-    cols = [ts.BLUES[4], ts.BLUES[3], ts.BLUES[2], ts.BLUES[1]]
+    cols = [ts.BLUES[3]] * 4
     letters = "ABCD"
     with _rc():
         fig, (ax, axb) = plt.subplots(2, 1, figsize=(ts.TEXTWIDTH, 2.6), layout="constrained", height_ratios=[1, 0.13])
@@ -172,7 +173,7 @@ def fig_largest_filers_share(ctx):
         ax.set_ylim(0, 1)
         ax.set_yticks([0, .2, .4, .6, .8, 1], ["0", "20", "40", "60", "80", "100"])
         ax.set_xticks([0, 50, 100, 150, n_named])
-        ax.set_ylabel(f"cumulative share of\nthe {n_air} designs (%)")
+        ax.set_ylabel(f"cumulative share of\nall {n_air} designs (%)")
         # brackets A-D under the x axis
         for k in range(len(edges) - 1):
             a, b = edges[k] + 0.4, edges[k + 1] - 0.4
@@ -210,7 +211,7 @@ def fig_region_design_all_years(ctx):
               ("tilting unit", "(c) any propulsor tilts", [True], ["any tilt"])]
     ns = {r: int(data[(data["variable"] == "class") & (data["region"] == r)]["n"].iloc[0]) for r in REGIONS}
     with _rc():
-        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.45), layout="constrained", sharey=True,
+        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.7), layout="constrained", sharey=True,   # 2.45 + labels under the panels (2026-10-23)
                                 gridspec_kw=dict(width_ratios=[6, 5, 3.2]))
         for ax, (var, title, answers, ticks) in zip(axs, panels):
             sub = data[data["variable"] == var].set_index("region")
@@ -238,15 +239,19 @@ def fig_region_design_all_years(ctx):
                 ax.set_xlim(-0.55, len(answers) - 0.45)
             ax.set_xticks(x, ticks)
             ax.tick_params(axis="x", length=0)
-            ax.set_title(title)
+            ts.panel_label(ax, title)
         axs[0].set_ylim(0, 0.7)
         axs[0].set_yticks(np.arange(0, 0.71, 0.1), [f"{v}" for v in range(0, 71, 10)])
         axs[0].set_ylabel("share of the region's\ndesigns, all years (%)")
+        # the base of each panel (q3.fig_region_design_all_years: the region's designs with that field recorded, 2026-10-23)
+        axs[0].text(0.02, 0.98, "base: the region's designs with the\npanel's field recorded", transform=axs[0].transAxes, ha="left", va="top",
+                    fontsize=TS, color=MUTED)
         for ax in axs[1:]:
             ax.tick_params(axis="y", left=False)
             ax.spines["left"].set_visible(False)
         h, l = _region_handles(ns)
         ts.bottom_legend(fig, h, l)
+        ts.place_panel_labels(fig)
     return fig, data
 
 
@@ -260,7 +265,7 @@ def fig_region_mix_by_window_class(ctx):
     wins = frames.CH5_WINS + [INCOMPLETE]
     x = np.arange(len(wins), dtype=float)
     with _rc():
-        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, ts.H_TWO_ROWS), layout="constrained", sharex=True, sharey=True)
+        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, ts.H_TWO_ROWS + 0.4), layout="constrained", sharex=True, sharey=True)   # + labels under the panels (2026-10-23)
         for k, (ax, c) in enumerate(zip(axs.flat, q3.CLASSES5)):
             for r in REGIONS:
                 s = data[data["region"] == r].set_index("window")
@@ -271,7 +276,7 @@ def fig_region_mix_by_window_class(ctx):
                 ax.plot(x[:-1], yc, color=ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, lw=1.2, zorder=3)
                 if ok[-1]:                                                       # dodged by region so coincident points stay visible
                     ts.incomplete_point(ax, x[-1] + DODGE[r], y[-1], ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, zorder=3)
-            ax.set_title(f"({'abcdef'[k]}) {ARCH_TITLE[c]}")
+            ts.panel_label(ax, f"({'abcdef'[k]}) {ARCH_TITLE[c]}")
             sig = mc[(mc["variable"] == "class") & (mc["answer"] == c) & (mc["p"] < 0.05)]
             for i, (_, t) in enumerate(sig.iterrows()):
                 p = "p < 0.001" if t["p"] < 0.001 else f"p {t['p']:.3f}"
@@ -282,10 +287,12 @@ def fig_region_mix_by_window_class(ctx):
         axs[0, 0].set_xlim(-0.35, len(wins) - 0.65)
         for ax in axs[1]:
             ax.set_xticks(x, [COHORT_2L[w] for w in wins])
-        fig.supylabel("share of the region's designs (%)", fontsize=9)
+        fig.supylabel("share of the region's designs with an architecture (%)", fontsize=9)
+        ts.shared_xlabel(axs[1, 1], ts.COHORT_X)
         h = [Line2D([], [], color=ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, lw=1.2) for r in REGIONS]
         h.append(Line2D([], [], ls="none", marker="o", mfc="white", mec=MUTED, mew=0.8, ms=3.5, alpha=ts.INCOMPLETE_ALPHA))
         ts.bottom_legend(fig, h, list(REGIONS) + ["2024–26* (incomplete)"])
+        ts.place_panel_labels(fig)
     return fig, data
 
 
@@ -317,8 +324,11 @@ def fig_region_family_share(ctx):
         ax.set_xlim(-0.3, len(wins) - 0.45)
         ax.set_ylim(0, 0.65)
         ax.set_yticks([0, .2, .4, .6], ["0", "20", "40", "60"])
-        ax.set_xlabel("priority cohort")
-        ax.set_ylabel("share in family F (%)")
+        ax.set_xlabel(ts.COHORT_X)
+        ax.set_ylabel("share of the region's\ndesigns in family F (%)")
+        # base: frames.region_lean, F base = the region's designs of the cohort with an architecture (2026-10-23)
+        ax.text(0.01, 0.98, "base: the region's designs with an architecture, per cohort", transform=ax.transAxes, ha="left", va="top",
+                fontsize=TS, color=MUTED)
     cols = ["region"] + [c for c in ln.columns if c.startswith("F ")]
     return fig, ln[cols]
 

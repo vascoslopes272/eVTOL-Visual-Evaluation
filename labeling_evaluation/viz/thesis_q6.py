@@ -20,7 +20,11 @@ from lib import diversity, drivers
 from viz import config, flow, frames, plots, style
 
 CLASSES5 = ["SLC", "TR", "CVT", "TW", "MR"]
-SETS3 = ["A0", "A0c", "A1t"]                               # the order of the document's discovery-curve generator
+SETS3 = ["A0", "A0c", "A1t"]
+#: Holm families of Analysis IV (sweep of 2026-10-23, promised in 3.4.1): each trace is one family over the three largest architectures
+#: (four cohorts to 2023; a constant or too-thin trace leaves the family); the two CVT ducted-by-boom-layout tests are one family of two
+HOLM_ARCH = ["SLC", "TR", "CVT"]
+HOLM_LINKS = ["units on booms", "no units on booms"]                               # the order of the document's discovery-curve generator
 NAMES3 = {"A0": "C", "A0c": "C·U", "A1t": "C·W·T"}
 FOCUS, NEIGH = "CVT · 5-6", "CVT · 4"
 _AN = config.load(strict=False).analysis                   # the cut-offs the captions print, never typed
@@ -131,6 +135,7 @@ def _data(ctx):
     d["trends"] = drivers.trace_trends(tf, drift, classes, class_names=cn)
     d["dw"] = drivers.driver_windows(cf, CLASSES5, ctx.COMPLETE, ctx.COMPLETE[:2], class_names=cn)
     d["links"] = drivers.driver_links(cf)
+    d["trends"], d["links"] = _with_holm(d["trends"], d["links"])
     d["spu"] = frames.sets_per_unit_brief(cf, ctx.COMPLETE, ctx.WSHORT)
     # the same two frames over the five cohorts, the incomplete 2024-26 one included (refresh of 2026-10-16: it is DRAWN, never tested;
     # every test above and every number of NUMBERS_IV.md stays on the four complete cohorts). On the complete cohorts they equal dw and pmix.
@@ -141,6 +146,21 @@ def _data(ctx):
     assert same(d["dw5"], d["dw"], ["code", "window"]) and same(d["pmix5"], d["pmix"], ["code", "window", "configuration"])
     ctx._q6 = d
     return d
+
+
+def _with_holm(trends: pd.DataFrame, links: pd.DataFrame):
+    """Column ``p_holm`` after ``p``: Holm step-down inside each family (HOLM_ARCH per trace; HOLM_LINKS for the CVT links); NaN outside one."""
+    from lib.multiple import holm_by
+    trends, links = trends.copy(), links.copy()
+    inn = trends["code"].isin(HOLM_ARCH)
+    ph = pd.Series(np.nan, index=trends.index)
+    ph[inn] = holm_by(trends[inn], "p", ["trace"])
+    trends.insert(trends.columns.get_loc("p") + 1, "p_holm", ph)
+    inn = links["link"].str.startswith("CVT") & links["group"].isin(HOLM_LINKS)
+    ph = pd.Series(np.nan, index=links.index)
+    ph[inn] = holm_by(links[inn], "p", [])
+    links.insert(links.columns.get_loc("p") + 1, "p_holm", ph)
+    return trends, links
 
 
 def _trend(d, trace: str, code: str) -> pd.Series:
