@@ -15,6 +15,8 @@ import pandas as pd
 ORDERS = 1000
 #: the tail the flattening is read on: new archetypes over the last this-many aircraft
 TAIL = 100
+#: full random orders drawn for the band of the last-tail count (discovery_tail_band; supervisor review 2)
+SHUFFLES = 10000
 
 
 def effective_number(series: pd.Series) -> float:
@@ -238,6 +240,49 @@ def discovery_tail(date_order: np.ndarray, random_order: np.ndarray, tail: int =
     rar_last = float(r[-1] - r[max(0, n - 1 - tail)])
     half = int(n // 2)
     return {"last": last, "prev": prev, "rar_last": rar_last, "half": float(y[half - 1])}
+
+
+def _new_in_tail(codes: np.ndarray, order: np.ndarray, tail: int) -> int:
+    """Archetypes whose first aircraft in `order` is among the last `tail` (none in the first N - tail)."""
+    _, first = np.unique(codes[order], return_index=True)
+    return int((first >= len(codes) - tail).sum())
+
+
+def discovery_tail_band(levels: Dict[str, Tuple[np.ndarray, object]], tail: int = TAIL, orders: int = ORDERS,
+                        shuffles: int = SHUFFLES, seed: int = 42) -> pd.DataFrame:
+    """Significance band of the new archetypes in the last `tail` aircraft (supervisor review 2, 2026-10).
+
+    Date order: the `orders` tie-breaking orderings of :func:`discovery_curve_levels`, redrawn from the SAME generator stream
+    (np.random.default_rng(seed), levels in the order given, one rng.random(N) per ordering), so the mean is the curve's
+    "new in the last 100". The levels must be passed as to discovery_curve_levels (A0, A0c, A1t) for the stream to match.
+    Random order: `shuffles` full permutations per level from a second np.random.default_rng(seed), levels in the order given.
+    The random mean printed is the exact expectation (rarefaction_curve at N and N - tail), as la_discovery_estimators;
+    the shuffle mean is returned beside it as the check. Two one-sided p:
+      p (share >= date mean)   = share of shuffles with count >= mean date-order count
+      p (whole counts, ...)    = mean over the date orderings j of the share of shuffles with count >= d_j
+
+    Parameters: tail=100, orders=1000, shuffles=10000, seed=42.
+    Used in: q6_discovery_last100_band (notebook 50).
+    """
+    rng_d = np.random.default_rng(seed)
+    rng_r = np.random.default_rng(seed)
+    rows = []
+    for level, (years, keys) in levels.items():
+        years = np.asarray(years)
+        codes = pd.factorize(pd.Series(keys))[0]
+        N = len(codes)
+        d = np.array([_new_in_tail(codes, np.lexsort((rng_d.random(N), years)), tail) for _ in range(orders)])
+        r = np.array([_new_in_tail(codes, rng_r.permutation(N), tail) for _ in range(shuffles)])
+        rar = rarefaction_curve(np.bincount(codes), np.array([N - tail, N]))
+        r_sorted = np.sort(r)
+        ge = 1.0 - np.searchsorted(r_sorted, d, side="left") / shuffles        # share of shuffles >= d_j, per date ordering
+        rows.append({"level": level, "designs": N, "date mean": float(d.mean()),
+                     "date 2.5 %": float(np.percentile(d, 2.5)), "date 97.5 %": float(np.percentile(d, 97.5)),
+                     "random mean (exact)": float(rar[1] - rar[0]), "random mean (shuffles)": float(r.mean()),
+                     "random 95th": float(np.percentile(r, 95)), "random 99th": float(np.percentile(r, 99)), "random max": int(r.max()),
+                     "p (share >= date mean)": float((r >= d.mean() - 1e-12).mean()), "p (whole counts)": float(ge.mean()),
+                     "orders": orders, "shuffles": shuffles, "seed": seed})
+    return pd.DataFrame(rows)
 
 
 def discovery_verdict_code(est: Dict[str, float], last: float, rar_last: float) -> str:

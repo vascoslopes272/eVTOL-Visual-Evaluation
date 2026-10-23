@@ -211,6 +211,29 @@ def publication_lead_summary(ctx) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+# ---------------------------------------------------------------------------------------------------- B64 without its parts (2026-10-22)
+#: PatSeer exports, same settings as patseer_B64_worldwide_by_priority_year.csv (families by Earliest Priority Year, no country filter),
+#: with one part of B64 left out. Not on this machine yet: the author exports them; until then b64_refits returns None.
+B64_PARTS = {"B64 without B64U (drones)": "patseer_B64_noB64U_worldwide_by_priority_year.csv",            # CPC:(B64*) NOT CPC:(B64U*)
+             "B64 without B64C 29/00 (VTOL aircraft)": "patseer_B64_noB64C29_worldwide_by_priority_year.csv"}  # CPC:(B64*) NOT CPC:(B64C29*)
+B64_DIR = Path(__file__).resolve().parents[1] / "assets" / "external" / "aviation_baseline" / "patseer_worldwide"
+
+
+def b64_refits(ctx, first: int = 2005, last: int = 2022):
+    """The three growth models of Fig 4.2 (lib.growth_models, same bootstrap: 1000 resamples, seed 42) on B64 and on each B64_PARTS
+    series present in B64_DIR, 2005-2022. Returns {"models", "estimates"} or None when no part file is there yet."""
+    from lib import growth_models as gm
+    from viz import thesis_q1 as q1
+    ser = {"aeronautics (CPC B64)": q1._calc(ctx)["ser"]["b64"]}
+    for name, f in B64_PARTS.items():
+        if (B64_DIR / f).exists():
+            t = pd.read_csv(B64_DIR / f)
+            ser[name] = pd.Series(t.iloc[:, 1].to_numpy(), index=pd.to_numeric(t.iloc[:, 0]).astype(int)).sort_index()
+    if len(ser) == 1:
+        return None
+    return gm.compare_series(ser, first, last, ctx.SEED)
+
+
 # ---------------------------------------------------------------------------------------------------- 2
 def holm_register(ctx) -> pd.DataFrame:
     """Every test of the four Holm families in one frame: family, test, raw p, Holm p, significant at 0.05 before / after, changed."""
@@ -278,6 +301,11 @@ def write_all(cfg, ctx) -> list:
                     ("q4_publication_lead_summary", publication_lead_summary(ctx))):
         t.to_csv(D / f"{name}.csv", index=False)
         out.append(D / f"{name}.csv")
+    rf = b64_refits(ctx)
+    if rf is not None:
+        for k in ("models", "estimates"):
+            rf[k].to_csv(D / f"numbers_I_b64_parts_{k}.csv", index=False)
+            out.append(D / f"numbers_I_b64_parts_{k}.csv")
     hr = holm_register(ctx)
     hr.to_csv(D / "holm_register.csv", index=False)
     out.append(D / "holm_register.csv")

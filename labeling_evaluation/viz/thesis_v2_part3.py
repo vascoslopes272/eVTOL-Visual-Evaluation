@@ -310,20 +310,30 @@ def fig_condition2_balance(ctx):
     return fig, _levels(_cohort(bal[bal["level"].isin(q7.MAIN_LEVELS)].reset_index(drop=True)))
 
 
+#: Fig 4.11 alone: Q is computed on the aircraft, not the level, so A·W·T and A·U repeat panel (a); full width, one low row
+COHESION_SIZE = (ts.TEXTWIDTH, 2.0)
+COHESION_ADJUST = dict(left=0.135, right=0.99, bottom=0.41, top=0.89)
+
+
 def fig_condition3_form(ctx):
-    """Fig 4.11: ΔQ per cohort (main weighting) against its permutation band, levels A, A·W·T, A·U; shared y axis."""
+    """Fig 4.11: ΔQ per cohort (main weighting) against its permutation band, level A alone (panel (a) of the old three; Rao's Q does not
+    depend on the level). The csv keeps the three levels' rows."""
     d = q7._data(ctx)
     form, win = d["form"], ctx.WIN_NAMES
     main = frames.Q_WEIGHTINGS[0]
     with mpl.rc_context(ts.RC):
-        panels = []
-        for lvl in q7.MAIN_LEVELS:
-            s = form[(form["level"] == lvl) & (form["weighting"] == main)].set_index("window").reindex(win)
-            met = [bool(q < lo) and "partial" not in w for q, lo, w in zip(s["ΔQ"], s["ΔQ permutation low"], win)]
-            panels.append(dict(val=s["ΔQ"], band_lo=s["ΔQ permutation low"], band_hi=s["ΔQ permutation high"], met=met))
-        fig, axs = _pair_figure(ctx, panels, "ΔQ against the two\nearliest cohorts", sharey=True)
-        for ax in axs:
-            ax.axhline(0, color=REF, linewidth=0.5, zorder=2)
+        s = form[(form["level"] == "A0") & (form["weighting"] == main)].set_index("window").reindex(win)
+        met = [bool(q < lo) and "partial" not in w for q, lo, w in zip(s["ΔQ"], s["ΔQ permutation low"], win)]
+        fig, ax = plt.subplots(figsize=COHESION_SIZE, layout=None)
+        fig.subplots_adjust(**COHESION_ADJUST)
+        _band_series(ax, s["ΔQ"], s["ΔQ permutation low"], s["ΔQ permutation high"], color="black", met=met)
+        ax.set_title(PAIR_TITLES[0].removeprefix("(a) "), loc="left")
+        ax.set_ylabel("ΔQ against the\ntwo earliest cohorts")
+        ax.set_xlabel("priority cohort")
+        ax.axhline(0, color=REF, linewidth=0.5, zorder=2)
+        _legend_fixed(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                            Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                      ["permutation band (95 %)", "below the band: condition met"])
         fig.canvas.draw()
     _exact(fig)
     out = form[form["weighting"].eq(main) & form["level"].isin(q7.MAIN_LEVELS)].reset_index(drop=True)

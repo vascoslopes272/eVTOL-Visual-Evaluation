@@ -67,6 +67,17 @@ display(q4.pairwise(ctx)[['comparison', 'agree', 'of', 'share', "Cohen's kappa"]
 display(review2.funnel_steps(ctx).set_index('population').T)
 display(review2.publication_lead(ctx))
 display(review2.publication_lead_summary(ctx))"""))
+c.append(md("""## B64 without its drone and VTOL parts (2026-10-22)
+
+Is the 2016 step of aeronautics made by drones (B64U) or by the VTOL class itself (B64C 29/00)? The same three models and bootstrap as Fig 4.2,
+2005-2022, on B64 with each part left out. Needs two PatSeer exports in `assets/external/aviation_baseline/patseer_worldwide/` (see
+`review2.B64_PARTS`); without them this cell says so and writes nothing."""))
+c.append(code("""rf = review2.b64_refits(ctx)
+if rf is None:
+    print('not run: export', list(review2.B64_PARTS.values()), 'to', review2.B64_DIR)
+else:
+    display(rf['models'][['series', 'model', 'ΔAIC', 'ΔBIC', 'wins clearly']])
+    display(rf['estimates'][rf['estimates']['model'].str.startswith('(a)')][['series', 'break year', 'break low', 'break high', 'level step (factor)', 'step low', 'step high']])"""))
 c.append(md("## Write every table"))
 c.append(code("""for p in review2.write_all(cfg, ctx):
     print(p)"""))

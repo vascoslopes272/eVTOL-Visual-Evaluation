@@ -56,6 +56,38 @@ def tab_hill_numbers_by_level(ctx):
     return t
 
 
+def tab_discovery_last100_band(ctx) -> pd.DataFrame:
+    """Band of the "new configurations in the last 100 designs" of q6_discovery_curve (supervisor review 2, 2026-10): the date-order count over
+    the 1000 tie orderings of the curve (same generator stream), against 10 000 full random orders (lib.diversity.discovery_tail_band). Complete
+    years only, as q6_discovery_estimators. The random mean is the exact expectation (the estimators' value); the shuffle mean must match it to 0.02."""
+    if getattr(ctx, "_q6_band", None) is not None:
+        return ctx._q6_band
+    from lib import diversity
+    from viz import frames
+    cfg = ctx.cfg
+    inputs = frames.discovery_inputs(ctx.v, q6.SETS3, cfg.analysis["last_complete_year"])
+    b = diversity.discovery_tail_band(inputs, tail=cfg.analysis["discovery_tail"], orders=cfg.analysis["discovery_orders"], seed=ctx.SEED)
+    est = q6._data(ctx)["est"]
+    for _, r in b.iterrows():
+        assert abs(r["date mean"] - est.loc[r["level"], "new in the last 100 aircraft"]) < 0.005, r["level"]
+        assert abs(r["random mean (exact)"] - est.loc[r["level"], "new in the last 100, random order"]) < 0.005, r["level"]
+        assert abs(r["random mean (shuffles)"] - r["random mean (exact)"]) <= 0.02, r["level"]
+    b = b.set_index("level").loc[["A0", "A1t", "A0c"]].reset_index()
+    S = f"{int(b['shuffles'].iloc[0]):,}".replace(",", " ")
+    t = pd.DataFrame({"level": b["level"].map(v2.LEVEL), "designs": b["designs"],
+                      "new in last 100 (date order, mean)": b["date mean"].round(2),
+                      "date order 2.5 %": b["date 2.5 %"], "date order 97.5 %": b["date 97.5 %"],
+                      "random mean (exact expectation)": b["random mean (exact)"].round(2),
+                      f"random mean ({S} shuffles, check)": b["random mean (shuffles)"].round(3),
+                      f"random 95th percentile ({S} shuffles)": b["random 95th"], f"random 99th percentile ({S} shuffles)": b["random 99th"],
+                      f"random max ({S} shuffles)": b["random max"],
+                      "one-sided p (share >= date mean)": b["p (share >= date mean)"].round(4),
+                      "one-sided p (whole counts, averaged over the date orderings)": b["p (whole counts)"].round(4),
+                      "date orderings": b["orders"], "shuffles": b["shuffles"], "seed": b["seed"]})
+    ctx._q6_band = t
+    return t
+
+
 def draw(item, ctx, frac: float):
     """Build ``item`` AT its final size (label placement is done in that size): width frac × text block, height capped at 55 % of the width;
     (``HEIGHT`` gives a flatter height for some); or the size in pt of ``SIZE_PT``."""
@@ -114,6 +146,8 @@ def export(cfg, ctx):
     est["level"] = est["level"].map(v2.LEVEL)
     est.to_csv(csvd / "q6_discovery_estimators.csv", index=False)
     manifest.append(("Data_for_writing/csv/q6_discovery_estimators.csv", True, "Chao1, coverage and new configurations in the last 100 designs, per level (complete years)"))
+    tab_discovery_last100_band(ctx).to_csv(csvd / "q6_discovery_last100_band.csv", index=False)
+    manifest.append(("Data_for_writing/csv/q6_discovery_last100_band.csv", True, "band of the new configurations in the last 100 designs: date order (1000 tie orderings, 2.5–97.5 %) against 10 000 random orders (exact mean, 95th / 99th percentile, max), two one-sided p, per level (complete years; supervisor review 2)"))
     _numbers(cfg, ctx, R)
     manifest.append(("Data_for_writing/NUMBERS_II.md", True, "numbers of Analysis II with their sources"))
     mf = R / "Data_for_writing" / "MANIFEST.md"
@@ -178,6 +212,12 @@ def _numbers(cfg, ctx, R: Path):
          "## Table: levels of description\n", "Source: `q7_levels_of_description.csv` (notebook 50, group II2). The family F row is in Analysis III.\n", tables_md(t7), "",
          "## Table: Hill numbers of each level\n", "Source: `q7_hill_numbers_by_level.csv`; all years, 627 designs less those the level cannot name.\n", tables_md(hill), "",
          "## Discovery (`q6_discovery_curve`): complete years (to 2023)\n", "Source: `q6_discovery_estimators.csv`; the figure's last-100 window and these numbers are on the complete years.\n", tables_md(est_t), "",
+         "### Band of the last 100 designs (`q6_discovery_last100_band.csv`, supervisor review 2)\n",
+         "Date order: the count of configurations first seen in the last 100 designs over the 1 000 tie orderings inside a priority year that draw the curve "
+         f"(same generator stream, seed {ctx.SEED}); its mean is the value above. Random order: 10 000 full shuffles of the same designs (second generator, seed {ctx.SEED}); "
+         "the random mean is the exact expectation (the value above), the shuffle mean is the check (within 0.02). One-sided p: (a) share of shuffles with a count at or above "
+         "the date-order mean; (b) for each date ordering the share of shuffles at or above its whole count, averaged over the orderings. The dissertation quotes (b).\n",
+         tables_md(tab_discovery_last100_band(ctx)), "",
          f"## Core (`q6_configuration_core`)\n\nSource: `q6_configuration_core.csv`. Core: the A·U configurations taken in order of their share of the 2016–23 designs until the cumulative share reaches 50 % "
          f"(the one that crosses 50 % is included, and any tied with it, on the unrounded shares): {len(core)} configurations holding {100 * d6['core_share_exact']:.1f} % of the 2016–23 designs; "
          f"periphery: {len(d6['rim'])} configurations holding {100 * d6['rim']['share 2016-23'].sum():.1f} %. 2024–26 is not drawn. "

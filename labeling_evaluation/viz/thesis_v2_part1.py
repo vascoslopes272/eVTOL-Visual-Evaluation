@@ -712,6 +712,8 @@ def fig_filings_per_year_ts(ctx):
 MODEL_WORDS = {"a": "two lines with a level step", "b": "two lines meeting at the break", "c": "logistic S-curve"}
 GROWTH_KEYS = {"evtol_families": "eVTOL", "b64": "aeronautics", "secb": "transport", "all": "all patents"}
 GROWTH_MARKER = {"evtol_families": "o", "b64": "s", "secb": "^", "all": "v"}
+#: the end label printed in the figure where it differs from GROWTH_KEYS (author, 2026-10-22)
+GROWTH_LABEL = {"evtol_families": "eVTOL architecture\npatents"}
 
 
 def _growth_panel(ax, ctx, keys, fit_last=None):
@@ -743,7 +745,7 @@ def _growth_panel(ax, ctx, keys, fit_last=None):
             for side, x in (("pre", np.linspace(2005, b - 0.5, 60)), ("post", np.linspace(b - 0.5, fit_last, 60))):  # one line per segment, nothing joins them
                 ax.plot(x, np.exp(gm.piecewise_curve(f[m], x, m == "a", side)) / base, "-", lw=lw, color=col, solid_capstyle="butt", zorder=2)
         y_end = float(np.exp((gm.logistic_curve(f["c"], [fit_last]) if m == "c" else gm.piecewise_curve(f[m], [fit_last], m == "a"))[0]) / base)
-        labels.append([y_end, GROWTH_KEYS[k], col])
+        labels.append([y_end, GROWTH_LABEL.get(k, GROWTH_KEYS[k]), col])
     labels.sort(key=lambda e: -e[0])
     ly = np.log2([e[0] for e in labels])
     for i in range(1, len(ly)):
@@ -804,7 +806,7 @@ def fig_growth_rates_ts(ctx):
     b.set_xlim(2004.2, 2026.6)
     b.set_xticks([2005, 2010, 2015, 2020, 2025])
     b.set_xlabel("priority year")
-    b.set_ylabel("eVTOL families per\n1 000 aeronautics families")
+    b.set_ylabel("eVTOL architecture families per\n1 000 aeronautics families")
     b.set_title("(b) eVTOL against aeronautics")
     _growth_legend(fig, ctx, keys)
     data = pd.DataFrame({c["names"][k]: c["ser"][k] for k in ("evtol_families", "b64", "secb", "all")}).reindex(yrs)

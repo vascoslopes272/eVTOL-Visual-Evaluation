@@ -391,3 +391,34 @@ of the assignee's designs' patents (`frames.with_publication`). It is in years, 
 **One line for the text:** measured from the first publication instead of the first priority date, the median lead of the 12 index assignees that have flown falls from 3 to 1.5 years (range −2 to 6, against −1 to 7). Across all 13 assignees with a first-flight year, a planned 2027 included, it falls from 3 to 2 years. The difference to the priority-based median is −1.5 years (−1 year over the 13).
 
 The brief's "same 14" does not hold: Supernal has no first-flight year in the index, so 13 of the 14 have a lead. The priority-based median of 3 years is the same over the 12 and over the 13.
+
+## B64 refit without B64U and without B64C 29/00 (2026-10-22): NOT RUN, data missing
+
+The only aeronautics baseline on this machine is one PatSeer export of `CPC:(B64*)` totals per priority year, with no subclass split, so the two refits cannot be computed. The code is ready:
+`viz/review2.py: b64_refits` uses the same three models and bootstrap as Fig 4.2 (2005-2022), and notebook 56 runs it once these two exports exist in
+`labeling_evaluation/assets/external/aviation_baseline/patseer_worldwide/`, in the same format as `patseer_B64_worldwide_by_priority_year.csv`
+(families by Earliest Priority Year, no country filter):
+- `patseer_B64_noB64U_worldwide_by_priority_year.csv`: query `CPC:(B64*) NOT CPC:(B64U*)`
+- `patseer_B64_noB64C29_worldwide_by_priority_year.csv`: query `CPC:(B64*) NOT CPC:(B64C29*)`
+Output: `csv/numbers_I_b64_parts_models.csv` and `_estimates.csv`.
+
+### B64 refit: RUN 2026-10-22 (exports received)
+
+The author's PatSeer exports (simple families by earliest priority year) are saved as `patseer_B64_noB64U_…csv` (`CPC:(B64*) NOT CPC:(B64U*)`)
+and `patseer_B64_noB64C29_…csv` (`CPC:(B64*) NOT CPC:(B64C29*)`). Run by notebook 56, 2005-2022, with the same three models and bootstrap as Fig 4.2.
+Output: `csv/numbers_I_b64_parts_models.csv`, `_estimates.csv`. In both, the free-step model (a) wins clearly and the break is 2016 in every resample.
+
+- **Without B64U (drones):** the 2016 step remains, smaller: ×1.72 (95 % 1.51–1.99) against ×2.10 for all of B64 (ΔAIC 18.3 / ΔBIC 17.4 over the next model).
+- **Without B64C 29/00 (VTOL aircraft):** the 2016 step remains, practically unchanged: ×2.08 (1.75–2.47) against ×2.10 (ΔAIC 20.1 / ΔBIC 19.2).
+
+So drones carry about a fifth of the B64 step, the eVTOL class itself none, and most of the step is in the rest of aeronautics. That is consistent with a database-coverage
+effect common to every PatSeer series. (B64's own interval reads 1.73–2.55 here, against 1.77–2.57 in Fig 4.2, because its bootstrap seed is
+[42, series index, model] and B64 is the first series here, not the second; the point estimate ×2.10 is the same.)
+
+## 2026-10-22: band of the last 100 designs (Analysis II.3, discovery curve)
+
+`lib/diversity.discovery_tail_band` (new; `SHUFFLES = 10000`), written by notebook 50 through `viz/thesis_latex_part2.tab_discovery_last100_band` to
+`Data_for_writing/csv/q6_discovery_last100_band.csv` (+ MANIFEST row, NUMBERS_II "Band of the last 100 designs"). Date order = the curve's 1000 tie orderings (same
+generator stream, seed 42; reproduces 4.14 / 1.09); random = 10 000 full shuffles (seed 42), mean checked within 0.02 of the exact expectation 1.61 / 0.60.
+A·W·T: 95th pct 4, 99th 5, p (share ≥ 4.14) 0.0126, p (whole counts) 0.0579. A·U: 95th 2, 99th 3, p 0.1058 / 0.4447. No .tex or figure changed.
+Backup: `_BACKUPS/PRE_LAST100BAND_LaTeX_v15_20261022`.
