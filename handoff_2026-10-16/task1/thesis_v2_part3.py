@@ -209,7 +209,7 @@ RESTYLED = ("q6_architecture_shares_by_cohort", "q7_condition2_balance", "q7_con
 #: data code -> key of ts.ARCH (the data says TR and TB; the thesis prints Tilt Propulsor and Tilt Frame)
 TS_CODE = {"TR": "TP", "TB": "TF"}
 #: Figs 4.10 and 4.11 are a matched pair, stacked on one page: the same size and the SAME fixed panel geometry (layout=None)
-PAIR_SIZE = (ts.TEXTWIDTH, ts.H_ROW)
+PAIR_SIZE = (ts.TEXTWIDTH, 2.6)   # batch 2 (2026-10-23): + an x label per panel
 #: Fig 4.9: sideways step between coincident 2024-26* markers (cohort units)
 DODGE = 0.08
 #: 2026-10-23: the panel labels moved under the panels; the axes keep their size (0.54 of the height) and move up into the freed title room
@@ -278,18 +278,19 @@ def _band_series(ax, val, band_lo, band_hi, color, wlo=None, whi=None, met=None,
 
 
 def _pair_figure(ctx, panels, ylabel, sharey=False):
-    """Figs 4.10 / 4.11: three panels at PAIR_ADJUST, black series, titles PAIR_TITLES, one x label, the bottom legend."""
-    fig, axs = plt.subplots(1, 3, figsize=PAIR_SIZE, layout=None, sharey=sharey)
-    fig.subplots_adjust(**PAIR_ADJUST)
+    """Fig 4.10: three panels, black series; under each panel its own x label, then its title PAIR_TITLES (batch 2, 2026-10-23: a shared
+    x label under (b) read as part of (b)'s title); one unframed legend row under the panels. Constrained layout."""
+    fig, axs = plt.subplots(1, 3, figsize=PAIR_SIZE, layout="constrained", sharey=sharey)
     for ax, ttl, p in zip(axs, PAIR_TITLES, panels):
         _band_series(ax, **p, color="black")
+        ax.set_xlabel(ts.COHORT_X)
         ts.panel_label(ax, ttl)
     axs[0].set_ylabel(ylabel)
-    ts.shared_xlabel(axs[1], ts.COHORT_X)
+    ts.bottom_legend(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                           Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                     ["permutation band (95 %)", "below the band: condition met"])
+    ts.fit_cohort_ticks(fig)
     ts.place_panel_labels(fig)
-    _legend_fixed(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                        Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                  ["permutation band (95 %)", "below the band: condition met"])
     return fig, axs
 
 
@@ -314,7 +315,7 @@ def fig_condition2_balance(ctx):
 
 
 #: Fig 4.11 alone: Q is computed on the aircraft, not the level, so A·W·T and A·U repeat panel (a); full width, one low row
-COHESION_SIZE = (ts.TEXTWIDTH, 2.0)
+COHESION_SIZE = (ts.TEXTWIDTH, 1.8)   # batch 2 (2026-10-23): compact, constrained layout
 COHESION_ADJUST = dict(left=0.135, right=0.99, bottom=0.41, top=0.89)
 
 
@@ -327,16 +328,18 @@ def fig_condition3_form(ctx):
     with mpl.rc_context(ts.RC):
         s = form[(form["level"] == "A0") & (form["weighting"] == main)].set_index("window").reindex(win)
         met = [bool(q < lo) and "partial" not in w for q, lo, w in zip(s["ΔQ"], s["ΔQ permutation low"], win)]
-        fig, ax = plt.subplots(figsize=COHESION_SIZE, layout=None)
-        fig.subplots_adjust(**COHESION_ADJUST)
+        fig, ax = plt.subplots(figsize=COHESION_SIZE, layout="constrained")
+        fig.get_layout_engine().set(h_pad=0.02)
         _band_series(ax, s["ΔQ"], s["ΔQ permutation low"], s["ΔQ permutation high"], color="black", met=met)
-        ax.set_title(PAIR_TITLES[0].removeprefix("(a) "), loc="left")
-        ax.set_ylabel("ΔQ of all designs against\nthe two earliest cohorts")   # base: frames.dd_form_table, no protection filter
+        # base: frames.dd_form_table, no protection filter; "against the two earliest cohorts" (the ΔQ reference) goes to the caption
+        ax.set_ylabel("ΔQ of all designs")
         ax.set_xlabel(ts.COHORT_X)
+        ts.panel_label(ax, PAIR_TITLES[0].removeprefix("(a) "))
         ax.axhline(0, color=REF, linewidth=0.5, zorder=2)
-        _legend_fixed(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                            Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                      ["permutation band (95 %)", "below the band: condition met"])
+        ts.bottom_legend(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                         ["permutation band (95 %)", "below the band: condition met"])
+        ts.place_panel_labels(fig)
         fig.canvas.draw()
     _exact(fig)
     out = form[form["weighting"].eq(main) & form["level"].isin(q7.MAIN_LEVELS)].reset_index(drop=True)
@@ -532,7 +535,12 @@ def fig_directory_categories(ctx):
     win = ctx.WIN_NAMES
     bal = r["balance"].set_index("window").reindex(win)
     with mpl.rc_context(ts.RC):
-        fig, (a1, a2) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.7), layout="constrained", gridspec_kw=dict(width_ratios=[1.6, 1]))   # 2.5 + labels under the panels (2026-10-23)
+        # batch 2 (2026-10-23): (a) decluttered: the met years in a thin strip under it (same x), the line names in the legend row
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.0), layout="constrained")
+        gs = fig.add_gridspec(2, 2, width_ratios=[1.25, 1], height_ratios=[1, 0.2])   # (b)'s cohort ticks stay rotated; (a)'s labels align with (b)'s
+        a1 = fig.add_subplot(gs[0, 0])
+        strip = fig.add_subplot(gs[1, 0], sharex=a1)
+        a2 = fig.add_subplot(gs[:, 1])
         for base, dashed in (("all", False), ("in force", True)):
             t = vy[base]
             yrs, y, rd = t["priority year"].to_numpy(), t["VT share"].to_numpy(float) * 100, t["read"].to_numpy(bool)
@@ -545,22 +553,23 @@ def fig_directory_categories(ctx):
         a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=1)
         y0, y1 = int(vy["all"]["priority year"].iloc[0]), int(vy["all"]["priority year"].iloc[-1])
         a1.text(y1 + 0.5, 48, "50 %", ha="right", va="top", fontsize=8.4, color=REF)
-        a1.text(2011.5, 24, f"under {frames.DD_YEAR_MIN} designs: not read", ha="center", va="bottom", fontsize=8.4, color=UNREAD)
-        for row, (yy, met, lab) in enumerate(((17, r["met_all"], "met, all designs"), (6, r["met"], "met, actively protected"))):
-            runs = _runs(met)
-            for a, b in runs:
-                a1.plot([a - 0.4, b + 0.4], [yy, yy], color=ts.HIGHLIGHT, linewidth=3.2, solid_capstyle="butt", zorder=4)
-            if runs:
-                a1.text(runs[0][0] - 0.65, yy, lab, ha="right", va="center", fontsize=8.4, color=ts.HIGHLIGHT)
-        a1.text(2018.6, 78, "actively protected designs", ha="center", va="bottom", fontsize=8.4, color=col)
-        a1.text(2020.0, 34, "all designs", ha="center", va="top", fontsize=8.4, color=col)
+        for row, (yy, met) in enumerate(((1, r["met_all"]), (0, r["met"]))):
+            for a, b in _runs(met):
+                strip.plot([a - 0.4, b + 0.4], [yy, yy], color=ts.HIGHLIGHT, linewidth=3.2, solid_capstyle="butt", zorder=4)
+        strip.set_ylim(-0.6, 1.6)
+        strip.set_yticks([1, 0], ["met, all designs", "met, actively protected"])
+        strip.tick_params(axis="y", length=0)
+        for t in strip.get_yticklabels():
+            t.set_color(ts.HIGHLIGHT)
+        strip.spines["left"].set_visible(False)
         a1.set_xlim(y0 - 0.5, y1 + 0.5)
-        a1.set_xticks(range(y0, y1 + 1), [str(y) if (y - y0) % 2 == 0 else "" for y in range(y0, y1 + 1)])
+        strip.set_xticks(range(y0, y1 + 1), [str(y) if (y - y0) % 2 == 0 else "" for y in range(y0, y1 + 1)])
+        a1.tick_params(axis="x", labelbottom=False)
         a1.set_ylim(0, 105)
         a1.set_yticks([0, 20, 40, 60, 80, 100])
         a1.set_ylabel("share of designs in\nVectored Thrust (%)")
-        a1.set_xlabel("priority year")
-        ts.panel_label(a1, "(a) condition 1, Vectored Thrust share")
+        strip.set_xlabel("priority year")
+        ts.panel_label(strip, "(a) condition 1, Vectored Thrust share")
         _grid(a1)
         metw = [bool(bal.loc[w, "below band"]) and "partial" not in w for w in win]
         _band_series(a2, bal["D2"], bal["D2 permutation low"], bal["D2 permutation high"], col, wlo=bal["D2 low"], whi=bal["D2 high"], met=metw)
@@ -568,6 +577,13 @@ def fig_directory_categories(ctx):
         a2.set_ylabel("²D of all designs with a\ndirectory category: large\ndesigns in play")   # base: analysis3.directory, every design with a directory category (625 of 627)
         a2.set_xlabel(ts.COHORT_X)
         ts.panel_label(a2, "(b) condition 2, balance")
+        ts.bottom_legend(fig, [Line2D([], [], color=col, marker="o"),
+                               Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
+                               Line2D([], [], color=UNREAD, marker="o", linestyle="none", markerfacecolor="white", markeredgewidth=0.8),
+                               mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                         ["all designs", "actively protected designs", f"under {frames.DD_YEAR_MIN} designs: not tested",
+                          "permutation band (95 %)", "condition met"], ncol=3)
         ts.fit_cohort_ticks(fig)
         ts.place_panel_labels(fig)
         fig.canvas.draw()

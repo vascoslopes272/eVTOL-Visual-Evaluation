@@ -105,7 +105,7 @@ def _numbers(cfg, ctx, R: Path):
     d6 = q6._data(ctx)
     share = d6["share"]
     n_win = d6["n_win"]
-    cohort = lambda w: "2024–26*" if "partial" in w else w          # noqa: E731
+    cohort = lambda w: "2024–26" if "partial" in w else w          # noqa: E731
     tpl = pd.DataFrame({"cohort": [cohort(w) for w in ctx.WIN_NAMES], "designs": n_win.to_numpy(),
                         "Tilt Propulsor": (share["TR"] * 100).round(1).astype(str) + " %", "Lift + Cruise": (share["SLC"] * 100).round(1).astype(str) + " %"})
     di = analysis3.directory(ctx, d)

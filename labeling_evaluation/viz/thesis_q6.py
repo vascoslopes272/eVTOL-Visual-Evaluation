@@ -91,7 +91,8 @@ def _data(ctx):
     d["zz"] = zz
     # core (ruling 2026-10-15): the configurations ranked by share of the 2016-23 designs, taken in order until the cumulative share reaches 50 %
     # of those designs (the one that crosses 50 % is included, and so is any configuration tied with it); read on the unrounded shares
-    n_recent = int(v["window"].isin(["2016-19", "2020-23"]).sum())
+    # base (author 2026-10-23): the 2016-23 designs WITH a configuration (447 of 450), the same base as the plotted shares (frames.zones)
+    n_recent = int((v["window"].isin(["2016-19", "2020-23"]) & v["archetype"].notna()).sum())
     exact = (zz["2016-19"].astype(float) + zz["2020-23"].astype(float)) / n_recent
     ranked = exact.sort_values(ascending=False, kind="stable")
     k_cross = int(np.searchsorted(ranked.cumsum().to_numpy(), 0.5 - 1e-12))

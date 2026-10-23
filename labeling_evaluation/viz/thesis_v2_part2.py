@@ -42,7 +42,7 @@ import thesis_style as ts                                     # noqa: E402
 
 #: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): full text width, ts.save, no bbox crop
 TS_FIGS = {"q6_configuration_core", "q6_half_of_cohort", "q6_discovery_curve"}
-TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.6}   # discovery 2.3 -> 2.6: labels under the panels (2026-10-23)
+TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.85}   # discovery 2.3 -> 2.6: labels under the panels; 2.85: + the incomplete-cohort legend row (2026-10-23)
 NOTE = "#555555"                                              # dark grey of the 8 pt notes (local; candidate for thesis_style)
 
 
@@ -628,6 +628,28 @@ def curve_to_2026(ctx) -> pd.DataFrame:
 TAIL_BAND = "#e3e3e3"
 
 
+def _clear_label(ax, text, x0, y0, x, curves, side, color, pad_pt=2.5):
+    """A curve label centred at ``x0``, above (side +1) or below (-1) ``y0``, moved away from the curves until its box (plus ``pad_pt``)
+    holds no point of any of them."""
+    t = ax.text(x0, y0, text, ha="center", va="bottom" if side > 0 else "top", fontsize=8.4, color=color, zorder=6)
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    pts = np.vstack([np.column_stack([x, c]) for c in curves])
+    disp = ax.transData.transform(pts)
+    pad = pad_pt * fig.dpi / 72
+    step = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.015
+    y = y0
+    for _ in range(200):
+        b = t.get_window_extent(rend)
+        hit = ((disp[:, 0] > b.x0 - pad) & (disp[:, 0] < b.x1 + pad) & (disp[:, 1] > b.y0 - pad) & (disp[:, 1] < b.y1 + pad)).any()
+        if not hit:
+            break
+        y += side * step
+        t.set_y(y)
+    return t
+
+
 def fig_discovery_curve_v2(ctx):
     """II3 main (Fig 4.8, thesis style 2026-10-20): configurations seen as the designs accumulate in priority order, to 2026, panels
     (a) A, (b) A·W·T, (c) A·U: real order solid black, random-order expectation dashed grey, the 2024–26* part thin dotted and faded;
@@ -640,9 +662,11 @@ def fig_discovery_curve_v2(ctx):
     levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
     RND = "#7a7a7a"
     starts = {}
+    curves = []
     with ts_rc():
         fig, axs4 = plt.subplots(1, 4, figsize=(ts.TEXTWIDTH, TS_H["q6_discovery_curve"]), layout="constrained",
-                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.5]))   # (d) wider (1.12 -> 1.5): its label now sits under it, centred (2026-10-23)
+                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.25]))   # (d) a little wider: its label sits under it, centred (2026-10-23)
+        fig.get_layout_engine().set(w_pad=0.04, wspace=0.06)
         axs, axd = axs4[:3], axs4[3]
         for j, (ax, (lvl, nm)) in enumerate(zip(axs, levels)):
             g = full[full["level"] == lvl]
@@ -670,13 +694,10 @@ def fig_discovery_curve_v2(ctx):
                 ax.plot([xs, xs], [0, hi * 0.06], color=NOTE, linewidth=0.7, zorder=5)
                 ax.text(xs, hi * 0.08, str(yr), ha="center", va="bottom", fontsize=8, color=NOTE)
             ts.panel_label(ax, f"({'abc'[j]}) {nm}")
-            if j == 1:                                                # the two curves named once, in (b)
-                xi = int(np.searchsorted(x, n_c * 0.8))
-                ax.text(x[xi], rnd[xi] + hi * 0.08, "random order", ha="right", va="bottom", fontsize=8.4, color=RND)
-                xi = int(np.searchsorted(x, n_c * 0.72))
-                ax.text(x[xi], real[xi] - hi * 0.08, "real order", ha="center", va="top", fontsize=8.4, color="#000000")
+            if j == 1:                                                # the two curves named once, in (b), clear of both curves (sweep 2026-10-23)
+                curves.append((ax, x, real, rnd, n_c, hi))
         axs[0].set_ylabel("distinct\nconfigurations seen")
-        ts.shared_xlabel(axs[1], "all designs, in priority order (dotted: 2024–26*, incomplete)")      # frames.discovery_inputs: every design with a configuration
+        ts.shared_xlabel(axs[1], "all designs, in priority order")      # frames.discovery_inputs: every design with a configuration; "dotted: 2024–26, incomplete" is in the caption
         # (d) the last-100 numbers as a dot plot
         obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
         rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
@@ -690,20 +711,29 @@ def fig_discovery_curve_v2(ctx):
                 axd.text(max(o, r) + xm * 0.11, y, f"{o:.1f} (both)", ha="left", va="center", fontsize=8.4)
             else:
                 lo_, hi_ = (r, o) if r < o else (o, r)
-                axd.text(hi_ + xm * 0.07, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
-                axd.text(lo_ - xm * 0.07, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
+                axd.text(hi_ + xm * 0.11, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
+                axd.text(lo_ - xm * 0.11, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
         key = next((i for i, (o, r) in enumerate(zip(obs, rnd_)) if abs(o - r) >= 0.5), 1)       # the words on the widest-apart row
         axd.text(obs[key], yy[key] + 0.3, "real", ha="center", va="bottom", fontsize=8.4, color="#000000")
         axd.text(rnd_[key], yy[key] + 0.3, "random", ha="center", va="bottom", fontsize=8.4, color=RND)
-        axd.set_yticks(yy, [nm for _, nm in levels])
         axd.set_ylim(-0.6, len(levels) - 0.3)
-        axd.set_xlim(-xm * 0.32, xm * 1.35)
+        axd.set_xlim(-xm * 0.72, xm * 1.35)
+        axd.set_yticks([])                                         # the level names inside the plot, left (sweep 2026-10-23: even gaps)
+        for y, (_, nm) in zip(yy, levels):
+            axd.text(-xm * 0.68, y, nm, ha="left", va="center", fontsize=8.4, color="#000000")
         axd.xaxis.set_major_locator(mticker.MultipleLocator(2))
-        axd.spines["left"].set_visible(False)
-        axd.tick_params(axis="y", length=0)
+        axd.set_xticks([t for t in axd.get_xticks() if t >= 0])
         axd.set_xlabel("new configurations")
         ts.panel_label(axd, f"(d) last {tail} designs to 2023")
+        # the one mark the dissertation uses for the incomplete cohort (author 2026-10-23): the dotted 2024-26* part, named in a legend row
+        fig.legend(handles=[Line2D([], [], color="#000000", linewidth=0.8, linestyle=(1.0, (1, 2.2)), alpha=ts.INCOMPLETE_ALPHA,
+                                   label=ts.INCOMPLETE_LABEL)],                               # the dotted handle is the 2024-26* part
+                   loc="outside lower center", frameon=False, handlelength=2.2, handletextpad=0.5, borderaxespad=0.1)
         ts.place_panel_labels(fig)
+        for ax, x, real, rnd, n_c, hi in curves:
+            _clear_label(ax, "random order", n_c * 0.5, max(np.interp(n_c * 0.5, x, real), np.interp(n_c * 0.5, x, rnd)), x, (real, rnd), +1, RND)
+            _clear_label(ax, "real order", n_c * 0.72, min(np.interp(n_c * 0.72, x, real), np.interp(n_c * 0.72, x, rnd)), x, (real, rnd), -1,
+                         "#000000")
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
     data["level"] = data["level"].map(LEVEL)
@@ -725,7 +755,7 @@ def fig_half_of_cohort_v2(ctx):
     """II3 auxiliary (Fig 4.7, thesis style 2026-10-20): one curve per cohort, the cumulative share of the cohort's designs held by its k
     largest A·U configurations (ranked within the cohort, among the configurations of five designs or more: ``frames.zones``); cohorts in
     ts.GREYS (≤2011 lightest, 2020–23 black), 2024–26* hollow, faded and dotted; a dashed 50 % line; the crossing of each cohort a larger
-    marker; direct labels at the right end ("2016–19: half in 9"), no legend. The frame keeps all 20 ranks; 12 are drawn."""
+    marker; direct labels at the right end ("2016–19: half in 9"); one legend entry, the incomplete cohort (author 2026-10-23). The frame keeps all 20 ranks; 12 are drawn."""
     d = q6._data(ctx)
     z = d["zones"]
     K, K_DRAW = 20, 12
@@ -769,6 +799,9 @@ def fig_half_of_cohort_v2(ctx):
             ax.text(x_lab + 0.15, y, txt, ha="left", va="center", fontsize=8.4, color="#1a1a1a" if col in (ts.GREYS[3], ts.GREYS[4]) else NOTE)
             ax.plot([K_DRAW + 0.15, x_lab], [y0, y], color=col, linewidth=0.5, alpha=max(al, 0.8), zorder=2)
         ax.xaxis.label.set_x((K_DRAW / 2) / (K_DRAW + room))
+        # restored 2026-10-23 (author: the pre-batch-2 end labels); the one mark the dissertation uses for the incomplete cohort
+        fig.legend(handles=[ts.incomplete_handle(ts.GREYS[3])], loc="outside lower center", frameon=False, handlelength=1.2,
+                   handletextpad=0.4, borderaxespad=0.1)
     return fig, pd.DataFrame(rows)
 
 
@@ -803,7 +836,8 @@ def fig_half_of_cohort_heatmap_v2(ctx):
     ax.set_ylabel("priority-year cohort", fontsize=FS)
     shown = [c for c in style.CLASS_ORDER if c in set(z["code"])]
     fig.legend(handles=[Patch(facecolor="none", edgecolor=style.INK, linewidth=1.6,
-                              label="the cohort's own largest configurations that together hold half of its designs (k = " + ", ".join(str(k[w]) for w in cohorts if "partial" not in w) + ")")],
+                              label="the cohort's own largest configurations that together hold half of its designs (k = " + ", ".join(str(k[w]) for w in cohorts if "partial" not in w) + ")"),
+                        Patch(facecolor="#d9e6f2", edgecolor="none", label=ts.INCOMPLETE_LABEL)],   # author 2026-10-23
                loc="outside lower center", ncol=1, fontsize=FS, title=code_key_lines(fig, shown), title_fontsize=7.0)
     data = (mat.rename(index=lab).rename_axis("cohort").reset_index().melt(id_vars="cohort", var_name="configuration", value_name="designs"))
     data["configurations that hold half (ranked within the cohort)"] = data["cohort"].map({lab[w]: k[w] for w in cohorts})

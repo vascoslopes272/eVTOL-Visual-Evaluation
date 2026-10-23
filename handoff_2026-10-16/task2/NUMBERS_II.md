@@ -94,7 +94,7 @@ Date order: the count of configurations first seen in the last 100 designs over 
 
 ## Core (`q6_configuration_core`)
 
-Source: `q6_configuration_core.csv`. Core: the A·U configurations taken in order of their share of the 2016–23 designs until the cumulative share reaches 50 % (the one that crosses 50 % is included, and any tied with it, on the unrounded shares): 10 configurations holding 55.8 % of the 2016–23 designs; periphery: 16 configurations holding 22.7 %. 2024–26 is not drawn. Judgement call on labels: the figure names the core and the 3 largest non-core configurations by their 2016–23 share (unrounded; ties kept); every other point is grey and unnamed.
+Source: `q6_configuration_core.csv`. Core: the A·U configurations taken in order of their share of the 2016–23 designs until the cumulative share reaches 50 % (the one that crosses 50 % is included, and any tied with it, on the unrounded shares): 10 configurations holding 56.2 % of the 2016–23 designs; periphery: 16 configurations holding 22.7 %. 2024–26 is not drawn. Judgement call on labels: the figure names the core and the 3 largest non-core configurations by their 2016–23 share (unrounded; ties kept); every other point is grey and unnamed.
 
 ## Numbers quoted by the Results text, Analysis II (sub-question A)
 

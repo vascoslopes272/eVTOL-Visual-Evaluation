@@ -29,7 +29,7 @@ NAMES3 = {"A0": "C", "A0c": "C·U", "A1t": "C·W·T"}
 FOCUS, NEIGH = "CVT · 5-6", "CVT · 4"
 _AN = config.load(strict=False).analysis                   # the cut-offs the captions print, never typed
 MIN_LABEL13 = 0.12                                         # a block of Figure 13 (ii) prints its share from this size
-WLAB = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23", "2024-26 (partial)": "2024-26*"}
+WLAB = {"<= 2011": "≤2011", "2012-15": "2012-15", "2016-19": "2016-19", "2020-23": "2020-23", "2024-26 (partial)": "2024-26"}
 
 
 # ------------------------------------------------------------------------------------------------- helpers
@@ -91,7 +91,8 @@ def _data(ctx):
     d["zz"] = zz
     # core (ruling 2026-10-15): the configurations ranked by share of the 2016-23 designs, taken in order until the cumulative share reaches 50 %
     # of those designs (the one that crosses 50 % is included, and so is any configuration tied with it); read on the unrounded shares
-    n_recent = int(v["window"].isin(["2016-19", "2020-23"]).sum())
+    # base (author 2026-10-23): the 2016-23 designs WITH a configuration (447 of 450), the same base as the plotted shares (frames.zones)
+    n_recent = int((v["window"].isin(["2016-19", "2020-23"]) & v["archetype"].notna()).sum())
     exact = (zz["2016-19"].astype(float) + zz["2020-23"].astype(float)) / n_recent
     ranked = exact.sort_values(ascending=False, kind="stable")
     k_cross = int(np.searchsorted(ranked.cumsum().to_numpy(), 0.5 - 1e-12))
@@ -390,7 +391,7 @@ def fig_class_shares_by_window(ctx):
     d = _data(ctx)
     cnt, share, n_win = d["cnt"], d["share"], d["n_win"]
     codes10 = [c for c in style.CLASS_ORDER if c in cnt.columns] + ["Other"]
-    tick10 = [f"{ctx.WSHORT.get(w, '24–26*')}\nn {int(n)}" for w, n in zip(ctx.WIN_NAMES, n_win)]
+    tick10 = [f"{ctx.WSHORT.get(w, '24–26')}\nn {int(n)}" for w, n in zip(ctx.WIN_NAMES, n_win)]
     fig, ax = plt.subplots(figsize=(ctx.W, 3.3), constrained_layout=True)
     sh = share[codes10].copy()
     sh.index = list(range(len(sh)))
@@ -408,7 +409,7 @@ def fig_largest_classes_over_time(ctx):
     fig, ax = plt.subplots(figsize=(ctx.W, 2.9), constrained_layout=True)
     lines = share[CLASSES5].copy()
     lines.index = list(range(len(lines)))
-    plots.window_lines(ax, lines, n_few=0, ticks=[ctx.WSHORT.get(w, "24–26*") for w in ctx.WIN_NAMES])
+    plots.window_lines(ax, lines, n_few=0, ticks=[ctx.WSHORT.get(w, "24–26") for w in ctx.WIN_NAMES])
     ax.axvspan(len(ctx.WIN_NAMES) - 1.5, len(ctx.WIN_NAMES) - 0.5, facecolor=plots.FEW_FILL, hatch=style.PARTIAL_HATCH, edgecolor=style.GRID,
                linewidth=0, zorder=0)
     ax.set_xlim(-0.3, len(ctx.WIN_NAMES) + 0.55)

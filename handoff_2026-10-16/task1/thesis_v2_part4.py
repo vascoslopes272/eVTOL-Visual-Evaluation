@@ -111,7 +111,7 @@ def fig_centroid_dispersion(ctx):
     t, _, _ = dispersion(ctx)
     wins = list(t["cohort"])
     x = np.arange(len(wins))
-    one = dict(zip(ctx.WIN_NAMES, ["≤ 2011", "2012–15", "2016–19", "2020–23", "2024–26*"]))       # one-line cohorts (2026-10-23)
+    one = dict(zip(ctx.WIN_NAMES, ["≤ 2011", "2012–15", "2016–19", "2020–23", "2024–26"]))       # one-line cohorts (2026-10-23)
     ticks = [f"{one[w]}\nn {n}" for w, n in zip(wins, t["aircraft"])]
     fig, axs = plt.subplots(1, 2, figsize=(ctx.W, 3.4), constrained_layout=True)
     a = axs[0]

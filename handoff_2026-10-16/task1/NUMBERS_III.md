@@ -12,7 +12,7 @@ Source: `q6_architecture_shares_by_cohort.csv` (share of the cohort's designs).
 | 2012-15  |        58 | 34.5 %           | 15.5 %          |
 | 2016-19  |       213 | 23.5 %           | 22.5 %          |
 | 2020-23  |       237 | 20.7 %           | 31.6 %          |
-| 2024–26* |        56 | 21.4 %           | 28.6 %          |
+| 2024–26  |        56 | 21.4 %           | 28.6 %          |
 
 ## III.1, Spearman rho of share on priority year (2008–2023)
 
@@ -40,7 +40,7 @@ VT share per cohort:
 | 2012-15  |                           33 |           24 | 72.7 %     |
 | 2016-19  |                          138 |           83 | 60.1 %     |
 | 2020-23  |                          192 |          114 | 59.4 %     |
-| 2024–26* |                           52 |           30 | 57.7 %     |
+| 2024–26  |                           52 |           30 | 57.7 %     |
 
 VT share per priority year (read years, 20 designs or more, 2016–2023); condition 1 met in 2016, 2017, 2018, 2019, 2021, 2022, 2023 (all designs: 2016, 2017, 2021, 2022, 2023):
 
@@ -188,7 +188,7 @@ Source: `q6_architecture_shares_by_cohort.csv` (`designs`), `q7_condition3_cohes
 | 2012-15  |                                             58 |                                      58 |                                  58 |                                    58 |                 0 |
 | 2016-19  |                                            213 |                                     211 |                                 211 |                                   211 |                 2 |
 | 2020-23  |                                            237 |                                     237 |                                 236 |                                   236 |                 0 |
-| 2024–26* |                                             56 |                                      56 |                                  56 |                                    55 |                 0 |
+| 2024–26  |                                             56 |                                      56 |                                  56 |                                    55 |                 0 |
 
 Why they differ: the shares of III.1 divide by every design of the cohort, including the designs with no architecture recorded (a bar segment 'no architecture recorded'), while the form distance needs an architecture to place a design in a level, so those designs are left out. The two designs without an architecture (`CN109263914A_ua1`, `CN109263949A_ua1`) have priority year 2018, so only 2016–19 differs (213 against 211). A·W·T drops further designs whose wings or tilt are not recorded.
 

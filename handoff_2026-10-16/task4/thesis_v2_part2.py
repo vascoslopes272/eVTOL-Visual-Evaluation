@@ -628,6 +628,28 @@ def curve_to_2026(ctx) -> pd.DataFrame:
 TAIL_BAND = "#e3e3e3"
 
 
+def _clear_label(ax, text, x0, y0, x, curves, side, color, pad_pt=2.5):
+    """A curve label centred at ``x0``, above (side +1) or below (-1) ``y0``, moved away from the curves until its box (plus ``pad_pt``)
+    holds no point of any of them."""
+    t = ax.text(x0, y0, text, ha="center", va="bottom" if side > 0 else "top", fontsize=8.4, color=color, zorder=6)
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    pts = np.vstack([np.column_stack([x, c]) for c in curves])
+    disp = ax.transData.transform(pts)
+    pad = pad_pt * fig.dpi / 72
+    step = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.015
+    y = y0
+    for _ in range(200):
+        b = t.get_window_extent(rend)
+        hit = ((disp[:, 0] > b.x0 - pad) & (disp[:, 0] < b.x1 + pad) & (disp[:, 1] > b.y0 - pad) & (disp[:, 1] < b.y1 + pad)).any()
+        if not hit:
+            break
+        y += side * step
+        t.set_y(y)
+    return t
+
+
 def fig_discovery_curve_v2(ctx):
     """II3 main (Fig 4.8, thesis style 2026-10-20): configurations seen as the designs accumulate in priority order, to 2026, panels
     (a) A, (b) A·W·T, (c) A·U: real order solid black, random-order expectation dashed grey, the 2024–26* part thin dotted and faded;
@@ -640,9 +662,11 @@ def fig_discovery_curve_v2(ctx):
     levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
     RND = "#7a7a7a"
     starts = {}
+    curves = []
     with ts_rc():
         fig, axs4 = plt.subplots(1, 4, figsize=(ts.TEXTWIDTH, TS_H["q6_discovery_curve"]), layout="constrained",
-                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.5]))   # (d) wider (1.12 -> 1.5): its label now sits under it, centred (2026-10-23)
+                                 gridspec_kw=dict(width_ratios=[1, 1, 1, 1.25]))   # (d) a little wider: its label sits under it, centred (2026-10-23)
+        fig.get_layout_engine().set(w_pad=0.04, wspace=0.06)
         axs, axd = axs4[:3], axs4[3]
         for j, (ax, (lvl, nm)) in enumerate(zip(axs, levels)):
             g = full[full["level"] == lvl]
@@ -670,13 +694,10 @@ def fig_discovery_curve_v2(ctx):
                 ax.plot([xs, xs], [0, hi * 0.06], color=NOTE, linewidth=0.7, zorder=5)
                 ax.text(xs, hi * 0.08, str(yr), ha="center", va="bottom", fontsize=8, color=NOTE)
             ts.panel_label(ax, f"({'abc'[j]}) {nm}")
-            if j == 1:                                                # the two curves named once, in (b)
-                xi = int(np.searchsorted(x, n_c * 0.8))
-                ax.text(x[xi], rnd[xi] + hi * 0.08, "random order", ha="right", va="bottom", fontsize=8.4, color=RND)
-                xi = int(np.searchsorted(x, n_c * 0.72))
-                ax.text(x[xi], real[xi] - hi * 0.08, "real order", ha="center", va="top", fontsize=8.4, color="#000000")
+            if j == 1:                                                # the two curves named once, in (b), clear of both curves (sweep 2026-10-23)
+                curves.append((ax, x, real, rnd, n_c, hi))
         axs[0].set_ylabel("distinct\nconfigurations seen")
-        ts.shared_xlabel(axs[1], "all designs, in priority order (dotted: 2024–26*, incomplete)")      # frames.discovery_inputs: every design with a configuration
+        ts.shared_xlabel(axs[1], "all designs, in priority order")      # frames.discovery_inputs: every design with a configuration; "dotted: 2024–26, incomplete" is in the caption
         # (d) the last-100 numbers as a dot plot
         obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
         rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
@@ -690,20 +711,25 @@ def fig_discovery_curve_v2(ctx):
                 axd.text(max(o, r) + xm * 0.11, y, f"{o:.1f} (both)", ha="left", va="center", fontsize=8.4)
             else:
                 lo_, hi_ = (r, o) if r < o else (o, r)
-                axd.text(hi_ + xm * 0.07, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
-                axd.text(lo_ - xm * 0.07, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
+                axd.text(hi_ + xm * 0.11, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
+                axd.text(lo_ - xm * 0.11, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
         key = next((i for i, (o, r) in enumerate(zip(obs, rnd_)) if abs(o - r) >= 0.5), 1)       # the words on the widest-apart row
         axd.text(obs[key], yy[key] + 0.3, "real", ha="center", va="bottom", fontsize=8.4, color="#000000")
         axd.text(rnd_[key], yy[key] + 0.3, "random", ha="center", va="bottom", fontsize=8.4, color=RND)
-        axd.set_yticks(yy, [nm for _, nm in levels])
         axd.set_ylim(-0.6, len(levels) - 0.3)
-        axd.set_xlim(-xm * 0.32, xm * 1.35)
+        axd.set_xlim(-xm * 0.72, xm * 1.35)
+        axd.set_yticks([])                                         # the level names inside the plot, left (sweep 2026-10-23: even gaps)
+        for y, (_, nm) in zip(yy, levels):
+            axd.text(-xm * 0.68, y, nm, ha="left", va="center", fontsize=8.4, color="#000000")
         axd.xaxis.set_major_locator(mticker.MultipleLocator(2))
-        axd.spines["left"].set_visible(False)
-        axd.tick_params(axis="y", length=0)
+        axd.set_xticks([t for t in axd.get_xticks() if t >= 0])
         axd.set_xlabel("new configurations")
         ts.panel_label(axd, f"(d) last {tail} designs to 2023")
         ts.place_panel_labels(fig)
+        for ax, x, real, rnd, n_c, hi in curves:
+            _clear_label(ax, "random order", n_c * 0.5, max(np.interp(n_c * 0.5, x, real), np.interp(n_c * 0.5, x, rnd)), x, (real, rnd), +1, RND)
+            _clear_label(ax, "real order", n_c * 0.72, min(np.interp(n_c * 0.72, x, real), np.interp(n_c * 0.72, x, rnd)), x, (real, rnd), -1,
+                         "#000000")
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
     data["level"] = data["level"].map(LEVEL)
@@ -721,40 +747,49 @@ COHORT_LOOK = {"<= 2011": ("#b0b0b0", (0, (1, 1.2)), "^", 1.3), "2012-15": ("#8a
                "2024-26 (partial)": ("#c6dbef", (0, (2.5, 1.5)), "v", 0.9)}
 
 
+#: Fig 4.7 (batch 2, 2026-10-23): cohort -> (grey, line style, marker); lightness, dash and marker all step, so the five read apart in
+#: greyscale; 2024-26* hollow light markers only, never joined
+HALF_LOOK = {"<= 2011": ("#a6a6a6", (0, (1, 1.2)), "^"), "2012-15": ("#7a7a7a", (0, (5, 1.5, 1, 1.5)), "D"),
+             "2016-19": ("#4d4d4d", (0, (4, 1.8)), "s"), "2020-23": ("#000000", "-", "o"), "2024-26 (partial)": ("#7a7a7a", None, "o")}
+
+
 def fig_half_of_cohort_v2(ctx):
-    """II3 auxiliary (Fig 4.7, thesis style 2026-10-20): one curve per cohort, the cumulative share of the cohort's designs held by its k
-    largest A·U configurations (ranked within the cohort, among the configurations of five designs or more: ``frames.zones``); cohorts in
-    ts.GREYS (≤2011 lightest, 2020–23 black), 2024–26* hollow, faded and dotted; a dashed 50 % line; the crossing of each cohort a larger
-    marker; direct labels at the right end ("2016–19: half in 9"), no legend. The frame keeps all 20 ranks; 12 are drawn."""
+    """II3 auxiliary (Fig 4.7; batch 2 of 2026-10-23): one curve per cohort, the cumulative share of the cohort's designs held by its k
+    largest A·U configurations (ranked within the cohort, among the configurations of five designs or more: ``frames.zones``). Each cohort
+    its own grey, dash and marker (HALF_LOOK); 2024–26* hollow light markers only; a dashed 50 % line; the crossing of each cohort a larger
+    marker; one unframed legend row under the plot ("2016–19: half in 9") instead of end labels. The frame keeps all 20 ranks; 12 drawn."""
     d = q6._data(ctx)
     z = d["zones"]
     K, K_DRAW = 20, 12
     ranks = np.arange(1, K + 1)
-    look = {"<= 2011": ts.GREYS[0], "2012-15": ts.GREYS[1], "2016-19": ts.GREYS[2], "2020-23": ts.GREYS[4], "2024-26 (partial)": ts.GREYS[3]}
     name = dict(zip(ctx.WIN_NAMES, ts.COHORTS))
-    rows, ends = [], []
+    rows, handles = [], []
     with ts_rc():
         fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, TS_H["q6_half_of_cohort"]), layout="constrained")
-        room = 3.6                                                    # x units right of rank 12 for the end labels
         ax.plot([0.5, K_DRAW + 0.5], [0.5, 0.5], color="#1a1a1a", linewidth=0.8, linestyle=(0, (4, 3)), zorder=1)
-        ax.text(0.6, 0.515, "50 %", ha="left", va="bottom", fontsize=8.4, color=NOTE)
+        ax.text(K_DRAW + 0.45, 0.485, "50 %", ha="right", va="top", fontsize=8.4, color=NOTE)
         for w in ctx.WIN_NAMES:
             c = np.sort(z[w].astype(float).to_numpy())[::-1]
             cs = np.cumsum(c) / c.sum()
             k = int(np.searchsorted(cs, 0.5)) + 1
-            col, part = look[w], "partial" in w
-            al = ts.INCOMPLETE_ALPHA if part else 1.0
-            ax.plot(ranks[:K_DRAW], cs[:K_DRAW], color=col, linewidth=0.9 if part else 1.2, linestyle=(0, (1, 1.5)) if part else "-",
-                    alpha=al, zorder=4 if w == "2020-23" else 3)
-            ax.plot(ranks[:K_DRAW], cs[:K_DRAW], "o", ms=3.0, mfc="white" if part else col, mec=col, mew=0.8, alpha=al, ls="none",
-                    zorder=4 if w == "2020-23" else 3)
-            ax.plot(k, cs[k - 1], "o", ms=6.5, mfc="white" if part else col, mec=col, mew=1.2, alpha=al, ls="none", zorder=5)
-            ends.append((cs[K_DRAW - 1], f"{name[w]}: half in {k}", col, al))
+            col, dash, mk = HALF_LOOK[w]
+            part = "partial" in w
+            zo = 4 if w == "2020-23" else 3
+            if part:
+                ts.incomplete_point(ax, ranks[:K_DRAW], cs[:K_DRAW], col, marker=mk, ms=3.6, zorder=zo)
+                ax.plot(k, cs[k - 1], mk, ms=6.5, mfc="white", mec=col, mew=1.0, alpha=ts.INCOMPLETE_ALPHA, ls="none", zorder=5)
+                handles.append(Line2D([], [], ls="none", marker=mk, ms=4.2, mfc="white", mec=col, mew=0.9, alpha=ts.INCOMPLETE_ALPHA,
+                                      label=f"{name[w]}: half in {k}"))
+            else:
+                ax.plot(ranks[:K_DRAW], cs[:K_DRAW], color=col, linewidth=1.3, linestyle=dash, marker=mk, ms=3.6, mfc=col, mec=col,
+                        mew=0.8, zorder=zo)
+                ax.plot(k, cs[k - 1], mk, ms=7.0, mfc=col, mec="white", mew=0.9, ls="none", zorder=5)
+                handles.append(Line2D([], [], color=col, linewidth=1.3, linestyle=dash, marker=mk, ms=4.2, mfc=col, mec=col,
+                                      label=f"{name[w]}: half in {k}"))
             rows += [{"cohort": "2024-26 (incomplete)" if part else plots.WINDOW_TICKS[w], "rank": int(r), "designs in the configuration": int(c[r - 1]),
                       "cumulative share": round(float(cs[r - 1]), 4), "crosses 50 % here": bool(r == k)} for r in ranks]
-        ax.set_xlim(0.5, K_DRAW + 0.5 + room)
+        ax.set_xlim(0.5, K_DRAW + 0.5)
         ax.set_ylim(0, 1.0)
-        ax.spines["bottom"].set_bounds(0.5, K_DRAW + 0.5)
         ax.set_xticks(list(range(1, K_DRAW + 1)))
         ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
         ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{100 * v:.0f}"))
@@ -762,13 +797,8 @@ def fig_half_of_cohort_v2(ctx):
         ax.set_ylabel("cumulative share of\nthe cohort's designs (%)")
         ax.text(0.6, 0.97, "base: the cohort's designs in A·U configurations of 5 designs or more", ha="left", va="top", fontsize=8.4,
                 color=NOTE)                                           # frames.zones keeps configurations of five designs or more (2026-10-23)
-        gap = ts_pt_to_data(ax, 10.5)
-        ys = ts_spread([e[0] for e in ends], gap, hi=1.0 - gap / 2)
-        x_lab = K_DRAW + 0.5 + 0.55
-        for (y0, txt, col, al), y in zip(ends, ys):
-            ax.text(x_lab + 0.15, y, txt, ha="left", va="center", fontsize=8.4, color="#1a1a1a" if col in (ts.GREYS[3], ts.GREYS[4]) else NOTE)
-            ax.plot([K_DRAW + 0.15, x_lab], [y0, y], color=col, linewidth=0.5, alpha=max(al, 0.8), zorder=2)
-        ax.xaxis.label.set_x((K_DRAW / 2) / (K_DRAW + room))
+        fig.legend(handles=handles, loc="outside lower center", ncol=len(handles), frameon=False, handlelength=1.7, columnspacing=0.55,
+                   handletextpad=0.3, borderaxespad=0.1)
     return fig, pd.DataFrame(rows)
 
 

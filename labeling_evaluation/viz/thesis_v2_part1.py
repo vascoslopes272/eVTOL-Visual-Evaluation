@@ -393,7 +393,7 @@ def fig_patenting_vs_investment_v2(ctx):
     ax.grid(color=style.GRID, linewidth=0.5)
     ax.grid(axis="x", visible=True)
     ax.set_axisbelow(True)
-    ax.text(0.99, 0.03, "open dot: year still filling\n* January to August, not annualised", transform=ax.transAxes,
+    ax.text(0.99, 0.03, f"open dot: {ts.INCOMPLETE_YEAR_LABEL.lstrip('* ')}\n* January to August, not annualised", transform=ax.transAxes,
             ha="right", va="bottom", fontsize=MIN_PT, color=style.MUTED)
     fig.canvas.draw()
     failed = plots.place_labels(ax, inv["funding US$ bn per year"].to_numpy(), inv["unique aircraft per year"].to_numpy(),
@@ -628,7 +628,7 @@ EVENT_SHORT = {"2016-01-06": "EHang 184, Uber Elevate", "2016-10-27": None,     
 VFS_OF = {"LC": "Lift + Cruise", "VT": "Vectored Thrust", "WM": "Wingless (Multicopter)", "ER": "Electric Rotorcraft",
           "HB": "Hover Bikes / PFD"}
 #: Fig 4.4: rotation of the one-line cohort ticks in its five narrow panels (30 degrees overlaps there; see the report of 2026-10-23)
-TICK_ROT = 60
+CLASS_MIX_LEGEND_COLS = 1     # Fig 4.4: one row of the two entries is 17.4 cm at 8.4 pt (> 16 cm), so two rows
 VFS_TITLE = {"LC": "Lift + Cruise", "VT": "Vectored\nThrust", "WM": "Wingless\n(Multicopter)", "ER": "Electric\nRotorcraft",
              "HB": "Hover Bikes\n/ PFD"}
 
@@ -710,10 +710,10 @@ def fig_filings_per_year_ts(ctx):
     ax.add_artist(_RawText(yr[i16] - 1.6, float(designs.iloc[i16 - 1]) + top * 0.2, f"all designs ({n_des})", color=BAR_GREY,
                            ha="right", va="center", fontsize=8.4, transform=ax.transData))      # the base named (author 2026-10-23)
     ip = years.index(partial)
-    ax.text(yr[-1], float(fam.iloc[ip]) + top * 0.12, "incomplete", ha="right", va="bottom", fontsize=8.4, color=EVENT_TEXT)
+    ts.bottom_legend(fig, [ts.incomplete_handle("#333333")], [ts.INCOMPLETE_YEAR_LABEL])   # replaces the in-plot "incomplete" (author 2026-10-23)
     ax.set_xlim(yr[0] - 0.6, yr[-1] + 0.6)
     ticks = [years[0]] + [y for y in years if y % 2 == 0 and y >= years[0] + 2]
-    ax.set_xticks(ticks, ["≤2005" if y == years[0] else str(y) for y in ticks])
+    ax.set_xticks(ticks, ["≤2005" if y == years[0] else (f"{y}*" if y >= partial else str(y)) for y in ticks])
     ax.set_xlabel(ts.YEAR_X)
     ax.set_ylabel("count per priority year")
     data = pd.DataFrame({"designs filed": designs.to_numpy(), "patent families": fam.to_numpy(), "2024-26 (incomplete)": ~done}, index=t.index)
@@ -779,7 +779,7 @@ def _growth_axes(ax):
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"×{v:g}"))
     ax.set_ylim(0.21, 24)
     ax.set_xlim(2004.2, 2026.6)
-    ax.set_xticks([2005, 2010, 2015, 2020, 2025])
+    ax.set_xticks([2005, 2010, 2015, 2020, 2025], ["2005", "2010", "2015", "2020", "2025*"])   # * incomplete year (author 2026-10-23)
     ax.set_xlabel(ts.YEAR_X)
     ax.set_ylabel("patent families, index\n2005–09 = 1 (log)")        # every series counts patent families (frames.growth_series)
 
@@ -796,7 +796,7 @@ def _growth_legend(fig, ctx, keys):
     h = [Line2D([], [], color="#333333", lw=1.2) for _ in used]
     lab = [f"best model (AIC, BIC): {MODEL_WORDS[m]}" if len(used) == 1 else f"{MODEL_WORDS[m]}" for m in used]
     h.append(Line2D([], [], ls="none", marker="o", ms=3, mfc="white", mec="#333333", alpha=ts.INCOMPLETE_ALPHA))
-    lab.append(f"{q1.GROWTH_MODEL_LAST + 1}–26: incomplete, not fitted")
+    lab.append(ts.INCOMPLETE_YEAR_LABEL)            # one wording for incomplete years (author 2026-10-23); the hollow years are those after the fit
     ts.bottom_legend(fig, h, lab)
 
 
@@ -819,7 +819,7 @@ def fig_growth_rates_ts(ctx):
     ts.incomplete_point(b, yrs[~done], ratio.to_numpy()[~done], col, ms=3, zorder=3)
     b.set_ylim(0, max(8.0, float(np.nanmax(ratio.to_numpy())) * 1.1))
     b.set_xlim(2004.2, 2026.6)
-    b.set_xticks([2005, 2010, 2015, 2020, 2025])
+    b.set_xticks([2005, 2010, 2015, 2020, 2025], ["2005", "2010", "2015", "2020", "2025*"])   # * incomplete year (author 2026-10-23)
     b.set_xlabel(ts.YEAR_X)
     b.set_ylabel("eVTOL architecture families per\n1 000 aeronautics families")
     ts.panel_label(b, "(b) eVTOL against aeronautics")
@@ -848,14 +848,23 @@ def fig_growth_baselines_ts(ctx):
     return fig, data
 
 
+CLASS_MIX_TICK_ROT = 60      # Fig 4.4: five one-line cohort ticks collide in a fifth of the width even at 30 and 45 degrees
+
+
 def fig_class_mix_ts(ctx):
-    """Fig 4.4: one small panel per VFS directory category (the fold frames.CLASS5_ORDER), share of the cohort's designs per cohort;
-    patent dataset solid + filled, VFS directory dashed + hollow, 2024-26 hollow and faded, never joined to 2020-23; shared y."""
+    """Fig 4.4 (restored 2026-10-23 from the pre-batch-2 version, author): one small panel per VFS directory category (the fold
+    frames.CLASS5_ORDER), share of the cohort's designs per cohort; patent dataset solid + filled, VFS directory dashed + hollow, 2024-26*
+    hollow and faded, never joined to 2020-23; shared y. Panel labels under each panel (coloured), one-line cohort ticks, the x-axis
+    wording on a figure-wide axis label under the panel labels; the small legend: patent dataset, VFS directory, incomplete cohort."""
     mix = q4.class_mix(ctx)
     wins = list(ctx.WIN_NAMES)
     order = ["LC", "VT", "WM", "ER", "HB"]                                   # the mockup's order
     x = np.arange(len(wins))
-    fig, axes = plt.subplots(1, 5, figsize=(ts.TEXTWIDTH, 2.95), layout="constrained", sharey=True)   # 2.4 + labels under the panels and 60° cohort ticks (2026-10-23)
+    fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.05), layout="constrained")
+    gs = fig.add_gridspec(2, 5, height_ratios=[1, 0.001])
+    axes = []
+    for k in range(5):
+        axes.append(fig.add_subplot(gs[0, k], sharey=axes[0] if axes else None))
     for i, (code, ax) in enumerate(zip(order, axes)):
         colr = ts.VFS[VFS_OF[code]]
         for src, ls, filled in ((q4.SRC_PATENT, "-", True), (q4.SRC_DIR, "--", False)):
@@ -864,23 +873,25 @@ def fig_class_mix_ts(ctx):
                     mfc=colr if filled else "white", mec=colr, mew=0.9, zorder=3)
             ts.incomplete_point(ax, x[-1:], s[-1:], colr, ms=3.5, zorder=3)
         ts.panel_label(ax, f"({'abcde'[i]}) {VFS_TITLE[code]}", color=colr)
-        ax.set_xticks(x, ts.COHORTS[:len(wins)])         # one line; ts.save rotates them 30 degrees in these narrow panels
+        ax.set_xticks(x, ts.COHORTS[:len(wins)], rotation=CLASS_MIX_TICK_ROT, ha="right", rotation_mode="anchor")   # one line, 2024–26*
         ax.set_xlim(-0.5, len(wins) - 0.5)
         ax.set_ylim(0, 75)
         ax.set_yticks([0, 25, 50, 75])
         if i:
             ax.tick_params(labelleft=False)
     axes[0].set_ylabel("share of the cohort (%)")
+    # the x-axis wording on the axis itself (author 2026-10-23): a label-only axes across the five columns, under the panel labels, so
+    # no panel label changes colour
+    lab = fig.add_subplot(gs[1, :])
+    lab.set_xticks([]); lab.set_yticks([])
+    for sp in lab.spines.values():
+        sp.set_visible(False)
+    lab.patch.set_visible(False)
+    lab.set_xlabel("priority-year cohort (directory: development year)")
     h = [Line2D([], [], color="#333333", ls="-", marker="o", ms=3.5, lw=1.2),
-         Line2D([], [], color="#333333", ls="--", marker="o", ms=3.5, mfc="white", lw=1.2)]
-    leg = ts.bottom_legend(fig, h, ["patent dataset: share of all designs with a directory category", "VFS directory: share of VFS directory aircraft (in domain)"], ncol=1)   # two rows: one row runs off the 16 cm page
-    leg.set_title("priority-year cohort (VFS directory: development-year cohort)", prop={"size": 9})   # the shared x label, under the panel labels (on panel (c) it would take (c)'s colour)
-    _raw(leg.get_texts()[1], "VFS directory: share of VFS directory aircraft (in domain)")
-    for ax in axes:                          # five one-line cohort ticks do not fit a fifth of the width, even at 30 degrees
-        for t in ax.get_xticklabels():
-            t.set_rotation(TICK_ROT)
-            t.set_ha("right")
-            t.set_rotation_mode("anchor")
+         Line2D([], [], color="#333333", ls="--", marker="o", ms=3.5, mfc="white", lw=1.2),
+         ts.incomplete_handle("#333333")]
+    ts.bottom_legend(fig, h, ["patent dataset", "VFS directory", ts.INCOMPLETE_LABEL])   # no title, no text-only entries
     ts.place_panel_labels(fig)
     data = mix[mix["source"].isin([q4.SRC_PATENT, q4.SRC_DIR]) & mix["window"].isin(wins)].copy()
     data["source"] = data["source"].replace({q4.SRC_DIR: "VFS eVTOL directory, pages in the domain (development year)",

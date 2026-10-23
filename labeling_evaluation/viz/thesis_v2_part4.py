@@ -130,7 +130,6 @@ def fig_centroid_dispersion(ctx):
     a.grid(axis="y", color=style.GRID, linewidth=0.5)
     a.set_axisbelow(True)
     for ax in axs:
-        ax.axvspan(len(wins) - 1.5, len(wins) - 0.5, facecolor="none", zorder=0, linewidth=0, hatch=plots.PARTIAL_HATCH, edgecolor=style.GRID)
         ax.set_xlabel("priority-year cohort\n(base, n: all designs with an architecture)", fontsize=FS)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="observed"),

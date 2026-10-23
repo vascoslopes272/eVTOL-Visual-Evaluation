@@ -28,7 +28,7 @@ RULES (apply in every figure)
               patent dataset = solid; VFS directory = dashed + hollow marker.
   Incomplete  2024-26 cohort / years: hollow marker or outline-only bar, same colour, alpha 0.6,
               NEVER joined by a line to 2020-23 / 2023. Mark the cohort label with '*'.
-  Cohorts     labels exactly: <= 2011, 2012-15, 2016-19, 2020-23, 2024-26*  (en dash), ONE line; rotated 30 deg
+  Cohorts     labels exactly: <= 2011, 2012-15, 2016-19, 2020-23, 2024-26* (asterisk restored, author 2026-10-23)  (en dash), ONE line; rotated 30 deg
               (fit_cohort_ticks) when a panel is too narrow. x label 'priority-year cohort' / 'priority year'.
   Bases       the y label (or a note top-left) names the base: all designs / actively protected designs /
               designs of the architecture / VFS directory aircraft (2026-10-23).
@@ -77,6 +77,30 @@ COHORTS = ['≤ 2011', '2012–15', '2016–19', '2020–23', '2024–26*']
 #: fit_cohort_ticks rotates them by 30 degrees. The old name is kept so every builder picks up the one-line form.
 COHORTS_2L = COHORTS
 COHORT_X = 'priority-year cohort'          # x label of every cohort chart
+#: the two marks the whole dissertation uses one way (author 2026-10-23): a hollow marker = a cohort with FEW_MAX designs or fewer
+#: (of the series drawn: architecture, region, ...); the incomplete 2024-26 cohort = the asterisk on its label, both named in the legend
+FEW_MAX = 20
+HOLLOW_LABEL = f'hollow marker: cohort with {FEW_MAX} designs or fewer'
+INCOMPLETE_LABEL = '* incomplete cohort, not tested'
+INCOMPLETE_YEAR_LABEL = '* incomplete year, not tested'   # the same mark for the yearly figures (4.2, 4.3, investment)
+
+
+def is_few(n) -> bool:
+    """The hollow-marker rule: a cohort with FEW_MAX designs or fewer (n = the designs of the series in that cohort)."""
+    return n is not None and n == n and n <= FEW_MAX
+
+
+def hollow_handle(color='#555555', marker='o'):
+    """Legend entry for the hollow-marker rule."""
+    from matplotlib.lines import Line2D
+    return Line2D([], [], marker=marker, ms=4.2, mfc='white', mec=color, color=color, ls='none', label=HOLLOW_LABEL)
+
+
+def incomplete_handle(color='#555555', marker='o'):
+    """Legend entry for the incomplete 2024-26 cohort: its hollow light marker, labelled with the asterisk rule."""
+    from matplotlib.lines import Line2D
+    return Line2D([], [], marker=marker, ms=4.2, mfc='white', mec=color, color=color, ls='none', alpha=INCOMPLETE_ALPHA,
+                  label=INCOMPLETE_LABEL)
 YEAR_X = 'priority year'                   # x label of every yearly chart
 
 # Coordinator addition (2026-10-20): this machine has no TeX Gyre Heros / Helvetica / Arial, but it has Nimbus Sans

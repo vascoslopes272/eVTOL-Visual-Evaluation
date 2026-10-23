@@ -79,14 +79,20 @@ def _spread(ys, gap):
 
 
 # ---------------------------------------------------------------------------------------------- 4.17 assignee types
-ATYPE_COL = {"Named company": ts.ATYPE["Company"], "Individual inventor": ts.ATYPE["Individual inventor"],
-             "University / institute": ts.ATYPE["University / institute"]}
-ATYPE_WORD = {"Named company": "company", "Individual inventor": "individual inventor", "University / institute": "univ. / inst."}
+#: Fig 4.18 (round 5, 2026-10-23): one blue, dark -> light (company, individual inventors, universities and institutes); the text in the
+#: segment's colour, darkened where the fill is too light to read on white
+ATYPE_COL = {"Named company": ts.ATYPE["Company"], "Individual inventor": ts.BLUES[2], "University / institute": ts.BLUES[0]}
+ATYPE_TEXT = {"Named company": ts.ATYPE["Company"], "Individual inventor": ts.BLUES[3], "University / institute": "#4A8CC2"}
+ATYPE_INK = {"Named company": "white", "Individual inventor": INK, "University / institute": INK}   # value labels inside the segment
+INC_ROW_ALPHA = 0.45                                                                                # the 2024-26* row
+ATYPE_WORD = {"Named company": "company", "Individual inventor": "individual inventor", "University / institute": "universities\nand institutes"}   # two lines: one runs to the page edge
 
 
 def fig_filer_types(ctx):
-    """4.17: horizontal 100 % rows, all designs, all patents, then each cohort; company and individual shares inside, university in a column
-    on the right; 2024-26* at alpha 0.6. Data and CSV as thesis_q2.fig_filer_types_flat."""
+    """Fig 4.18 (restored 2026-10-23 from the pre-batch-2 version at the author's request): horizontal 100 % rows, all designs, all
+    patents, then each cohort; company and individual shares inside, university in a column on the right, the type names above the
+    bars. The 2024-26* row in the same colours as the others, marked only by the asterisk on its label; the asterisk rule as one line
+    under the axis (ts.INCOMPLETE_LABEL). Data and CSV as thesis_q2.fig_filer_types_flat."""
     parts, parts_n, bars = q2._filer_types_parts(ctx)
     order = ["Named company", "Individual inventor", "University / institute"]
     sh = parts[order].div(parts[order].sum(axis=1), axis=0)
@@ -95,46 +101,51 @@ def fig_filer_types(ctx):
     labels = ["all designs", "all patents"] + [COHORT[b] for b in bars[2:]]
     ypos = [0, 1] + [2.45 + k for k in range(len(bars) - 2)]
     with _rc():
-        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.45), layout="constrained")
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.6), layout="constrained")
         for y, r in zip(ypos, rows):
-            faded = bars[r] == INCOMPLETE
             left = 0.0
+            inc = bars[r] == INCOMPLETE
             for k in order:
                 v = float(sh.loc[r, k])
-                ax.barh(y, v, 0.72, left=left, color=ATYPE_COL[k], alpha=ts.INCOMPLETE_ALPHA if faded else 1.0,
-                        edgecolor="white", linewidth=0.6)
+                ax.barh(y, v, 0.72, left=left, color=ATYPE_COL[k], alpha=INC_ROW_ALPHA if inc else 1.0, edgecolor="white", linewidth=0.6)
                 if k != "University / institute" and v >= 0.08:
-                    col = "white" if (k == "Named company" and not faded) else INK
+                    col = INK if inc else ATYPE_INK[k]          # the faded dark blue is too light for white text
                     ax.text(left + v / 2, y, f"{100 * v:.1f} %", ha="center", va="center", fontsize=TS, color=col)
                 left += v
             ax.text(1.025, y, f"{100 * float(sh.loc[r, 'University / institute']):.1f} %", transform=ax.get_yaxis_transform(),
-                    ha="left", va="center", fontsize=TS, color=ATYPE_COL["University / institute"])
+                    ha="left", va="center", fontsize=TS, color=ATYPE_TEXT["University / institute"])
         # the key as direct labels over the first row
         s0 = sh.loc[rows[0]]
         cx = {"Named company": s0["Named company"] / 2, "Individual inventor": s0["Named company"] + s0["Individual inventor"] / 2}
         for k, x in cx.items():
-            ax.text(x, -0.62, ATYPE_WORD[k], ha="center", va="bottom", fontsize=TS, color=ATYPE_COL[k] if k == "Named company" else MUTED)
+            ax.text(x, -0.62, ATYPE_WORD[k], ha="center", va="bottom", fontsize=TS, color=ATYPE_TEXT[k])
         ax.text(1.025, -0.62, ATYPE_WORD["University / institute"], transform=ax.get_yaxis_transform(), ha="left", va="bottom",
-                fontsize=TS, color=ATYPE_COL["University / institute"])
+                fontsize=TS, color=ATYPE_TEXT["University / institute"])
         ax.set_yticks(ypos, labels)
         ax.set_ylabel("priority-year cohort")      # author 2026-10-23
         ax.set_ylim(ypos[-1] + 0.55, -0.62)
         ax.set_xlim(0, 1)
         ax.set_xticks([0, .25, .5, .75, 1], ["0", "25", "50", "75", "100"])
-        ax.set_xlabel("share of all designs (%); row \u2018all patents\u2019: share of the representative patents")      # base: q2._filer_types_parts (2026-10-23)
+        ax.set_xlabel("share of all designs (%)")      # the "all patents" row's base is in the caption (author 2026-10-23)
         ax.spines["left"].set_visible(False)
         ax.tick_params(axis="y", length=0)
+        fig.legend(handles=[Line2D([], [], linestyle="none", label=ts.INCOMPLETE_LABEL)], loc="outside lower center", frameon=False,
+                   handlelength=0, handletextpad=0)      # the asterisk rule, one line (author 2026-10-23)
     data = parts.assign(bar=bars, n=parts_n)
     return fig, data
 
 
-# ---------------------------------------------------------------------------------------------- 4.18 concentration
-BAND_DESC = ["≥10 designs", "5–9 designs", "2–4 designs", "1 design"]
+# ---------------------------------------------------------------------------------------------- 4.19 concentration
+BAND_DESC = ["≥ 10 designs", "5–9 designs", "2–4 designs", "1 design"]
+#: Fig 4.19 (round 5, 2026-10-23): the area under the curve shaded by size group in the blue scale of Fig 4.18, darkest for the largest
+BAND_FILL = [ts.ATYPE["Company"], ts.BLUES[3], ts.BLUES[2], ts.BLUES[0]]
 
 
 def fig_largest_filers_share(ctx):
-    """4.18: the cumulative share of all designs held by the named assignees ranked largest first, one blue (ts.BLUES[3]) for
-    every size group A-D (author 2026-10-23: the four shades read as four series), the group brackets under the axis, the group ends marked, the share of all named assignees dashed."""
+    """Fig 4.19: the cumulative share of all designs held by the companies and universities (named assignees; individual inventors are
+    excluded, hence the curve stops at 70 %) ranked largest first. Round 5 (2026-10-23): the area under the curve shaded by size group
+    (dark blue for the largest), each group named "<n> assignees with <k> designs each" in a small key with its shade, a dot at the end
+    of each group labelled with its cumulative share; the dashed line of all named assignees kept."""
     d = q2._frames(ctx)
     sizes, cov, v = d["sizes"], d["cov"], ctx.v
     n_air, n_named = len(v), len(sizes)
@@ -142,49 +153,33 @@ def fig_largest_filers_share(ctx):
     rank = np.arange(1, n_named + 1)
     xs, ys = np.r_[0, rank], np.r_[0, cum]
     edges = [0] + cov["cumulative firms"].astype(int).tolist()
-    cols = [ts.BLUES[3]] * 4
-    letters = "ABCD"
     with _rc():
-        fig, (ax, axb) = plt.subplots(2, 1, figsize=(ts.TEXTWIDTH, 2.6), layout="constrained", height_ratios=[1, 0.13])
-        for k in range(len(edges) - 1):
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.4), layout="constrained")
+        for k in range(len(edges) - 1):                                 # the area of each group, under its stretch of the curve
             sl = slice(edges[k], edges[k + 1] + 1)
-            ax.step(xs[sl], ys[sl], where="post", color=cols[k], linewidth=1.6, zorder=3, solid_capstyle="butt")
+            ax.fill_between(xs[sl], 0, ys[sl], step="post", color=BAND_FILL[k], linewidth=0, zorder=1)
+        ax.step(xs, ys, where="post", color=ts.ATYPE["Company"], linewidth=1.2, zorder=3, solid_capstyle="butt")
         share_named = float(sizes.sum() / n_air)
-        ax.axhline(share_named, color=MUTED, linewidth=0.7, linestyle="--", zorder=1)
-        ax.text(n_named, share_named + 0.03, f"all {n_named} named assignees: {int(sizes.sum())} designs, {_pct(share_named)}",
-                ha="right", va="bottom", fontsize=TS, color=MUTED)
-        ends = [edges[k + 1] for k in range(len(edges) - 1)]
-        ax.plot(ends, [cum[e - 1] for e in ends], "o", color=INK, markersize=4, zorder=5)
-        for e in ends[:-1]:
-            ax.annotate(_pct(cum[e - 1]), (e, cum[e - 1]), xytext=(5, -3), textcoords="offset points", ha="left", va="top", fontsize=TS, color=INK)
-        # group descriptions: A and B are short stretches, labelled above with leader lines; C and D beside their stretch
-        desc = [f"{letters[k]}  {BAND_DESC[k]}: {int(r['firms'])} assignees" for k, r in cov.reset_index(drop=True).iterrows()]
-        for k, ytxt, xtxt in ((0, 0.93, 18), (1, 0.82, 28)):
-            x0, x1 = edges[k], edges[k + 1]
-            xm = (x0 + x1) / 2
-            ym = float(np.interp(xm, xs, ys)) + 0.02
-            ax.text(xtxt, ytxt, desc[k], ha="left", va="center", fontsize=TS, color=INK)
-            ax.plot([xm, xtxt - 0.8], [ym, ytxt - 0.035], color=MUTED, linewidth=0.5, zorder=2)        # leader line (a Line2D, not an arrow)
-        xc = (edges[2] + edges[3]) / 2
-        ax.text(xc + 4, float(np.interp(xc, xs, ys)) - 0.05, desc[2], ha="left", va="top", fontsize=TS, color=INK)
-        xd = (edges[3] + edges[4]) / 2
-        ax.text(xd, float(np.interp(xd, xs, ys)) - 0.07, desc[3], ha="center", va="top", fontsize=TS, color=INK)
+        ax.axhline(share_named, color=MUTED, linewidth=0.7, linestyle="--", zorder=2)
+        ax.text(n_named - 16, share_named + 0.03, f"all {n_named} companies and universities: {int(sizes.sum())} designs, {_pct(share_named)}",
+                ha="right", va="bottom", fontsize=TS, color=MUTED)      # ends short of the last dot, whose share is printed above it
+        ends = edges[1:]
+        for k, e in enumerate(ends):                                    # a dot at the end of each group, its cumulative share above-left
+            ax.plot(e, cum[e - 1], "o", color=INK, markersize=4, zorder=5)   # (on white, above the curve; the first one centred)
+            first = k == 0
+            ax.annotate(_pct(cum[e - 1]), (e, cum[e - 1]), xytext=(3, 9) if first else (-3, 4), textcoords="offset points",
+                        ha="center" if first else "right", va="bottom", fontsize=TS, color=INK, zorder=6)
+        names = [f"{int(r['firms'])} assignees with {BAND_DESC[k].replace('designs', 'designs each').replace('1 design', '1 design each')}"
+                 for k, r in cov.reset_index(drop=True).iterrows()]
+        ax.legend(handles=[Patch(facecolor=BAND_FILL[k], edgecolor="none", label=names[k]) for k in range(len(names))],
+                  loc="upper left", bbox_to_anchor=(0.0, 1.0), ncol=2, frameon=False, fontsize=TS, handlelength=1.2, handleheight=0.9,
+                  columnspacing=1.2, labelspacing=0.3, borderaxespad=0.2)
         ax.set_xlim(0, n_named + 2)
         ax.set_ylim(0, 1)
         ax.set_yticks([0, .2, .4, .6, .8, 1], ["0", "20", "40", "60", "80", "100"])
         ax.set_xticks([0, 50, 100, 150, n_named])
         ax.set_ylabel(f"cumulative share of\nall {n_air} designs (%)")
-        # brackets A-D under the x axis
-        for k in range(len(edges) - 1):
-            a, b = edges[k] + 0.4, edges[k + 1] - 0.4
-            axb.plot([a, a, b, b], [1, 0.55, 0.55, 1], color=cols[k], linewidth=1.6, solid_capstyle="butt", clip_on=False)
-            axb.text((edges[k] + edges[k + 1]) / 2, 0.3, letters[k], ha="center", va="top", fontsize=TS, fontweight="bold", color=INK)
-        axb.set_xlim(ax.get_xlim())
-        axb.set_ylim(-0.6, 1)
-        axb.set_xticks([]); axb.set_yticks([])
-        for sp in axb.spines.values():
-            sp.set_visible(False)
-        axb.set_xlabel("named assignees ranked by designs, largest first")
+        ax.set_xlabel("companies and universities ranked by designs, largest first")
     data = pd.DataFrame({"rank": rank, "firm": sizes.index, "unique aircraft": sizes.to_numpy(), "cumulative share": np.round(cum, 4)})
     return fig, data
 
@@ -193,8 +188,7 @@ def fig_largest_filers_share(ctx):
 def _region_handles(ns=None):
     hs, ls = [], []
     for r in REGIONS:
-        hs.append((Patch(facecolor=ts.REGION[r], edgecolor="none"),
-                   Line2D([], [], ls="none", marker=ts.REGION_MARKER[r], mfc="white", mec=ts.REGION[r], ms=3.5, mew=0.8)))
+        hs.append(Patch(facecolor=ts.REGION[r], edgecolor="none"))       # colour only (sweep 3: no markers on the bars)
         ls.append(f"{r} (n {ns[r]})" if ns else r)
     return hs, ls
 
@@ -222,7 +216,6 @@ def fig_region_design_all_years(ctx):
                 vals = np.array([float(sub.loc[r, a]) / n for a in answers])
                 xx = x + (j - 1) * bw
                 ax.bar(xx, vals, bw, color=ts.REGION[r], edgecolor="white", linewidth=0.4, zorder=2)
-                ax.plot(xx, vals, ls="none", marker=ts.REGION_MARKER[r], mfc="white", mec=ts.REGION[r], ms=3.2, mew=0.8, zorder=4)
                 if var == "tilting unit":
                     ax.text(xx[0], vals[0] / 2, f"{100 * vals[0]:.0f}", ha="center", va="center", fontsize=TS, color="white", zorder=5)
             if var == "tilting unit":
@@ -277,21 +270,17 @@ def fig_region_mix_by_window_class(ctx):
                 if ok[-1]:                                                       # dodged by region so coincident points stay visible
                     ts.incomplete_point(ax, x[-1] + DODGE[r], y[-1], ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, zorder=3)
             ts.panel_label(ax, f"({'abcdef'[k]}) {ARCH_TITLE[c]}")
-            sig = mc[(mc["variable"] == "class") & (mc["answer"] == c) & (mc["p"] < 0.05)]
-            for i, (_, t) in enumerate(sig.iterrows()):
-                p = "p < 0.001" if t["p"] < 0.001 else f"p {t['p']:.3f}"
-                ax.text(0.03, 0.97 - 0.13 * i, f"{ABBR[t['region']]} ρ {t['rho']:+.2f}, {p}".replace("ρ -", "ρ −"), transform=ax.transAxes,
-                        ha="left", va="top", fontsize=TS, color=ts.REGION[t["region"]])
+            # the significant trends (NA in CVT: rho +0.24, p < 0.001) are in the caption (sweep 3, 2026-10-23), not in the panel
         axs[0, 0].set_ylim(0, 0.6)
         axs[0, 0].set_yticks([0, .2, .4], ["0", "20", "40"])
         axs[0, 0].set_xlim(-0.35, len(wins) - 0.65)
         for ax in axs[1]:
-            ax.set_xticks(x, [COHORT_2L[w] for w in wins])
+            ax.set_xticks(x, [COHORT_2L[w] for w in wins], rotation=30, ha="right", rotation_mode="anchor")   # 30 degrees: flat, "2020–23" and "2024–26" touch (author 2026-10-23)
+            ax.set_xlabel(ts.COHORT_X)                  # own label on each bottom panel, above its panel label (batch 2: no shared label)
         fig.supylabel("share of the region's designs with an architecture (%)", fontsize=9)
-        ts.shared_xlabel(axs[1, 1], ts.COHORT_X)
         h = [Line2D([], [], color=ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, lw=1.2) for r in REGIONS]
-        h.append(Line2D([], [], ls="none", marker="o", mfc="white", mec=MUTED, mew=0.8, ms=3.5, alpha=ts.INCOMPLETE_ALPHA))
-        ts.bottom_legend(fig, h, list(REGIONS) + ["2024–26* (incomplete)"])
+        h.append(ts.incomplete_handle(MUTED))            # 2024-26*: hollow light markers, named in the legend (author 2026-10-23)
+        ts.bottom_legend(fig, h, list(REGIONS) + [ts.INCOMPLETE_LABEL])
         ts.place_panel_labels(fig)
     return fig, data
 
@@ -318,12 +307,11 @@ def fig_region_family_share(ctx):
         pos = _spread([e[1] for e in ends], 0.06)
         for (reg, yv), yp in zip(ends, pos):
             ax.text(xw[-1] + 0.08, yp, f"{ABBR[reg]} {_pct(yv)}", ha="left", va="center", fontsize=TS, color=ts.REGION[reg])
-        for reg, i, n in notes:
-            ax.text(xw[i], 0.42, f"{reg}:\nn {n}, not plotted", ha="center", va="center", fontsize=8, color=ts.REGION[reg])
+        # a cohort under frames.CH5_THIN designs is not drawn; its n is in the caption (sweep 3, 2026-10-23)
         ax.set_xticks(xw, [f"{COHORT[w]}\nχ² p {q7.pval5(q7._tp(d, 'family F', w))}" for w in wins])
         ax.set_xlim(-0.3, len(wins) - 0.45)
-        ax.set_ylim(0, 0.65)
-        ax.set_yticks([0, .2, .4, .6], ["0", "20", "40", "60"])
+        ax.set_ylim(0.10, 0.65)                                         # from 10 %: the lowest value drawn is 22 % (sweep 3)
+        ax.set_yticks([.2, .4, .6], ["20", "40", "60"])
         ax.set_xlabel(ts.COHORT_X)
         ax.set_ylabel("share of the region's\ndesigns in family F (%)")
         # base: frames.region_lean, F base = the region's designs of the cohort with an architecture (2026-10-23)

@@ -374,14 +374,15 @@ def _fade_incomplete_column(ax, k: int) -> None:
     ax.axvline(k - 0.5, color=style.MUTED, linewidth=0.8, linestyle="--", zorder=5)
 
 
-def _cohort_bands(ax, k: int, bottom: bool = False) -> None:
-    """The two grey bands of a trace figure, drawn alike: few designs (the first N_FEW cohorts) and incomplete (the last). Their labels sit at
-    the top of the band, or at its foot (``bottom``) in a composite panel, where the tests take the top."""
-    plots.few_band(ax, N_FEW, text=None)
+def _cohort_bands(ax, k: int, bottom: bool = False, n_few: int = N_FEW) -> None:
+    """The two grey bands of a trace figure, drawn alike: few designs (the leading ``n_few`` cohorts, in which every series drawn holds
+    ts.FEW_MAX designs or fewer) and incomplete (the last). Their labels sit at the top of the band, or at its foot (``bottom``) in a
+    composite panel, where the tests take the top."""
+    plots.few_band(ax, n_few, text=None)
     ax.axvspan(k - 1.5, k - 0.5, color=plots.FEW_FILL, zorder=0, linewidth=0)
     ax.axvline(k - 1.5, color=style.MUTED, linewidth=0.8, linestyle="--", zorder=1)
     y, va = (0.02, "bottom") if bottom else (0.985, "top")
-    ax.text((N_FEW - 1) / 2, y, "few designs", transform=ax.get_xaxis_transform(), ha="center", va=va, fontsize=MIN_PT, color=style.MUTED, zorder=6)
+    ax.text((n_few - 1) / 2, y, "few designs", transform=ax.get_xaxis_transform(), ha="center", va=va, fontsize=MIN_PT, color=style.MUTED, zorder=6)
     ax.text(k - 0.95, y, "incomplete", transform=ax.get_xaxis_transform(), ha="center", va=va, fontsize=MIN_PT, color=style.MUTED, zorder=6)
 
 
@@ -389,9 +390,27 @@ def _tick(w: str, ns) -> str:
     return f"{COHORT_TICK[w]}\n" + "·".join(str(int(n)) for n in ns)
 
 
-def _line5(ax, y, color, dash, marker, ms: float = 4.4, lw: float = 1.4) -> None:
+def _hollow(ns, xi: int) -> bool:
+    """The hollow-marker rule (author 2026-10-23): a cohort with ts.FEW_MAX designs or fewer of the series drawn (``ns`` = its designs
+    per cohort); without ``ns`` the old rule, the first N_FEW cohorts."""
+    if ns is None:
+        return xi < N_FEW
+    return ts.is_few(float(np.asarray(ns, dtype=float)[xi]))
+
+
+def _n_few_lead(*series) -> int:
+    """The leading run of cohorts in which every series drawn is few (ts.is_few): the extent of the grey "few designs" band."""
+    arr = [np.asarray(s_, dtype=float) for s_ in series]
+    k = 0
+    while k < len(arr[0]) - 1 and all(ts.is_few(a[k]) for a in arr):
+        k += 1
+    return k
+
+
+def _line5(ax, y, color, dash, marker, ms: float = 4.4, lw: float = 1.4, ns=None) -> None:
     """One trace over the five cohorts: the line through the complete cohorts, a dashed segment to the incomplete one; the markers of the
-    few-design cohorts and of the incomplete cohort hollow. A blank cohort (under 5 designs) breaks nothing: the line joins the drawn ones."""
+    few-design cohorts (ts.is_few on ``ns``) and of the incomplete cohort hollow. A blank cohort (under 5 designs) breaks nothing: the line
+    joins the drawn ones."""
     y = np.asarray(y, dtype=float)
     x = np.arange(len(y))
     ok = np.isfinite(y)
@@ -401,7 +420,7 @@ def _line5(ax, y, color, dash, marker, ms: float = 4.4, lw: float = 1.4) -> None
     if ok[k] and len(xc):
         ax.plot([xc[-1], k], [y[xc[-1]], y[k]], color=color, linestyle=(0, (2.2, 2.0)), linewidth=lw * 0.9, zorder=3, alpha=0.75)
     for xi in x[ok]:
-        hollow = xi < N_FEW or xi == k
+        hollow = _hollow(ns, xi) or xi == k
         ax.plot(xi, y[xi], marker=marker, markersize=ms, color=color, markeredgecolor=color, markeredgewidth=1.0,
                 markerfacecolor="white" if hollow else color, linestyle="none", zorder=4, alpha=0.8 if xi == k else 1.0)
 
@@ -409,6 +428,11 @@ def _line5(ax, y, color, dash, marker, ms: float = 4.4, lw: float = 1.4) -> None
 def _handles3(labels=None, codes=ARCH3) -> list:
     return [Line2D([], [], color=style.cls(c).color, linestyle=style.cls(c).dash, marker=style.cls(c).marker, markersize=4.4, linewidth=1.4,
                    label=(labels or LABEL3)[c]) for c in codes]
+
+
+def _marks() -> list:
+    """The two marks of the dissertation (author 2026-10-23): the hollow-marker rule and the incomplete cohort, as legend entries."""
+    return [ts.hollow_handle(style.MUTED), ts.incomplete_handle(style.MUTED)]
 
 
 def _hollow_handle(label: str, color=style.MUTED) -> Line2D:
@@ -446,17 +470,17 @@ def panel_share(ax, ctx, col: str, ylabel: str, in_panel: bool):
     k = len(wins)
     fr = dw.pivot(index="window", columns="code", values=col).reindex(wins)[ARCH3]
     ns = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
-    _cohort_bands(ax, k, bottom=in_panel)
+    _cohort_bands(ax, k, bottom=in_panel, n_few=_n_few_lead(*[ns[c] for c in ARCH3]))
     for c in ARCH3:
         s = style.cls(c)
-        _line5(ax, fr[c], s.color, s.dash, s.marker)
+        _line5(ax, fr[c], s.color, s.dash, s.marker, ns=ns[c])
     ax.set_xticks(range(k), [_tick(w, ns.loc[w]) for w in wins])
     _share_axes(ax, k, ylabel, in_panel)
     tests = _trace_tests(ctx, col)
     if in_panel:
         _panel_tests(ax, [f"{SHORT3[c]} {_test_txt(tests[c]['rho'], tests[c]['p'])}" for c in ARCH3])
     data = _csv_cohorts(dw[["class", "code", "window", "aircraft", col]].reset_index(drop=True))
-    return _handles3({c: f"{LABEL3[c]}: {_test_txt(tests[c]['rho'], tests[c]['p'])}" for c in ARCH3}), data
+    return _handles3({c: f"{LABEL3[c]}: {_test_txt(tests[c]['rho'], tests[c]['p'])}" for c in ARCH3}) + _marks(), data
 
 
 def panel_cvt_booms(ax, ctx, in_panel: bool):
@@ -466,8 +490,8 @@ def panel_cvt_booms(ax, ctx, in_panel: bool):
     cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
     sc = style.cls("CVT")
     y = cv["share with units on booms"].to_numpy(dtype=float)
-    _cohort_bands(ax, k, bottom=in_panel)
-    _line5(ax, y, sc.color, sc.dash, sc.marker)
+    _cohort_bands(ax, k, bottom=in_panel, n_few=_n_few_lead(cv["aircraft"]))
+    _line5(ax, y, sc.color, sc.dash, sc.marker, ns=cv["aircraft"])
     for xi in range(k):
         if not np.isfinite(y[xi]):
             continue
@@ -480,7 +504,7 @@ def panel_cvt_booms(ax, ctx, in_panel: bool):
     if in_panel:
         _panel_tests(ax, [f"CVT {_test_txt(t['rho'], t['p'])}"])
     data = _csv_cohorts(cv[["aircraft", "aircraft, units on booms", "share with units on booms"]].reset_index())
-    return _handles3({"CVT": f"{LABEL3['CVT']}: {_test_txt(t['rho'], t['p'])}"}, ["CVT"]), data
+    return _handles3({"CVT": f"{LABEL3['CVT']}: {_test_txt(t['rho'], t['p'])}"}, ["CVT"]) + _marks(), data
 
 
 def panel_cvt_ducted_booms(ax, ctx, in_panel: bool):
@@ -492,12 +516,12 @@ def panel_cvt_ducted_booms(ax, ctx, in_panel: bool):
     sc = style.cls("CVT")
     nb, nn = cv["aircraft, units on booms"].to_numpy(), cv["aircraft, no units on booms"].to_numpy()
     lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
-    _cohort_bands(ax, k, bottom=in_panel)
+    _cohort_bands(ax, k, bottom=in_panel, n_few=_n_few_lead(nb, nn))
     handles = []
     for name, col, color, marker, ns in (("units on booms", "ducted share, units on booms", sc.color, sc.marker, nb),
                                          ("no units on booms", "ducted share, no units on booms", style.MUTED, "o", nn)):
         y = cv[col].to_numpy(dtype=float)
-        _line5(ax, y, color, "-", marker)
+        _line5(ax, y, color, "-", marker, ns=ns)
         for xi in range(k):
             if np.isfinite(y[xi]):
                 below = name.startswith("units")
@@ -513,7 +537,7 @@ def panel_cvt_ducted_booms(ax, ctx, in_panel: bool):
         _panel_tests(ax, [f"on booms: {lt.loc['units on booms', 'movement']} ({_test_txt(lt.loc['units on booms', 'rho'], lt.loc['units on booms', 'p'])})",
                           f"none on booms: {lt.loc['no units on booms', 'movement']} ({_test_txt(lt.loc['no units on booms', 'rho'], lt.loc['no units on booms', 'p'])})"])
     data = _csv_cohorts(cv[["aircraft, units on booms", "ducted share, units on booms", "aircraft, no units on booms", "ducted share, no units on booms"]].reset_index())
-    return handles, data
+    return handles + _marks(), data
 
 
 def _standalone(ctx, draw, height_in: float, legend_rows: int):
@@ -767,7 +791,7 @@ TRACE_SPLIT = ("q6_iv1_traces_booms", "q6_iv1_traces_ducts")
 TS_COL = {"SLC": ts.ARCH["SLC"], "TR": ts.ARCH["TP"], "CVT": ts.ARCH["CVT"]}
 TS_MARK = {"SLC": "o", "TR": "s", "CVT": "^"}
 #: Fig 4.14 only: the cohort ticks shortened as in the reference mockup (five two-line ticks of ts.COHORTS_2L do not fit a third of the width)
-COHORTS_SHORT = ["≤\n2011", "12–\n15", "16–\n19", "20–\n23", "24–\n26*"]
+COHORTS_SHORT = ["≤\n2011", "12–\n15", "16–\n19", "20–\n23", "24–\n26"]
 #: Fig 4.14 only: shorter printed layout names (the panel subtitle carries the rest); the CSV keeps the full names
 LAYOUT_SHORT = [("propulsors tilt · ", "tilt + "), ("a wing tilts · ", "wing tilts + "), ("2+ tilting sets, in ", "2+ sets, "),
                 ("propulsors and a wing tilt · ", "both tilt + ")]
@@ -786,9 +810,9 @@ INC_GREY = ts.GREYS[2]
 LAYOUT_TICK_ROT = 45  # Fig 4.14: the 2024-26* bars in shades of this grey instead of the faded architecture colour
 
 
-def _ts_line(ax, y, color, marker, ms: float = 4.2, lw: float = 1.2) -> None:
+def _ts_line(ax, y, color, marker, ms: float = 4.2, lw: float = 1.2, ns=None) -> None:
     """One series over the five cohorts in the thesis style: a solid line through the complete cohorts (a blank cohort, under 5 designs,
-    is skipped); the few-design cohorts (the first N_FEW) hollow; 2024-26 a hollow faded marker, never joined to 2020-23."""
+    is skipped); a cohort with ts.FEW_MAX designs or fewer of the series (``ns``) hollow; 2024-26 a hollow faded marker, never joined."""
     y = np.asarray(y, dtype=float)
     k = len(y) - 1
     x = np.arange(len(y))
@@ -796,7 +820,7 @@ def _ts_line(ax, y, color, marker, ms: float = 4.2, lw: float = 1.2) -> None:
     xc = x[:k][ok[:k]]
     ax.plot(xc, y[xc], color=color, linewidth=lw, zorder=3, solid_capstyle="round")
     for xi in xc:
-        few = xi < N_FEW
+        few = _hollow(ns, xi)
         ax.plot(xi, y[xi], marker=marker, ms=ms, mfc="white" if few else color, mec=color, mew=1.0, ls="none", zorder=4)
     if ok[k]:
         ts.incomplete_point(ax, k, y[k], color, marker=marker, ms=ms, zorder=4)
@@ -839,7 +863,7 @@ def _rho_p(rho, p) -> str:
 
 
 #: Fig 4.14 (author 2026-10-23): the printed name of each layout, keyed by the record's configuration (q6 pmix5); "other" = every
-#: layout outside the three kept (SLC: only the three "stowed in cruise" layouts; TP: one design with no tilting set recorded)
+#: layout outside the three kept (SLC: only the three "stowed in cruise" layouts; TP: one design with no tilting set recorded, named so)
 LAYOUT_NAME = {
     "lift units on booms": "lift propulsors on booms", "lift units on the wing": "lift propulsors on the wing",
     "lift units on the body": "lift propulsors on the body",
@@ -848,15 +872,30 @@ LAYOUT_NAME = {
     "rotors tilt · fixed units on booms": "tilting propulsors, fixed ones on booms",
     "rotors tilt · fixed units elsewhere": "tilting propulsors, fixed ones elsewhere",
     "a wing tilts · fixed units elsewhere": "a wing tilts, fixed propulsors elsewhere"}
-OTHER_NAME = {"SLC": "other (stowed in cruise)", "TR": "other", "CVT": "other"}
+OTHER_NAME = {"SLC": "other (stowed in cruise)", "TR": "no tilting set recorded", "CVT": "other"}   # TP: its only other layout (author 2026-10-23)
 OTHER_FILL = "#D9D9D9"
-LAYOUT_INC_ALPHA = 0.45   # the 2024-26* bar: the same colours, faded, thin outline
+LAYOUT_INC_ALPHA = 0.45   # the 2024-26* bar: the same colours, faded, no outline (its note is in the caption)
+LAYOUT_H = 3.2            # in; two thirds of the 4.6 in of the first redraw (author 2026-10-23, second batch)
+LAYOUT_H5 = 3.265         # round 5 (2026-10-23): the bars 20 % taller (0.97 -> 1.16 in) and the n line under the ticks; legends as before
 
 
 def _layout_looks(col: str) -> list:
     """Fills of the kept layouts, from the leader of 2020-23 (bottom) up: the architecture's colour, a clearly lighter tint, a pale tint
     hatched in the colour. Each item: (face, hatch, hatch colour)."""
     return [(col, "", None), (_p2.ts_tint(col, 0.45), "", None), (_p2.ts_tint(col, 0.14), "////", _p2.ts_tint(col, 0.7))]
+
+
+def _layout_tick_n(ax, ns) -> None:
+    """Fig 4.14 (round 5, 2026-10-23): under each rotated cohort tick a second, grey line "n 18" = the architecture's designs in that
+    cohort (the base of the 100 % bar). Drawn as a text with a blank first line at the tick label's own anchor and rotation, so it
+    sits exactly one line under the cohort, right-aligned with it, at the tick font size."""
+    tick = ax.xaxis.get_major_ticks()[0]
+    trans, va, ha = ax.get_xaxis_text1_transform(tick.get_pad() + tick.get_tick_padding())
+    fs = ax.get_xticklabels()[0].get_fontsize()
+    for xi, n in enumerate(ns):
+        if n == n:
+            ax.text(xi, 0, f"\nn {int(n)}", transform=trans, rotation=LAYOUT_TICK_ROT, rotation_mode="anchor", ha="right", va=va,
+                    fontsize=fs, color=NOTE, clip_on=False)
 
 
 def fig_layout_rows(ctx):
@@ -871,9 +910,9 @@ def fig_layout_rows(ctx):
     k = len(wins)
     sub = {"SLC": "where the lift propulsors sit", "TR": "how the tilting thrust is split", "CVT": "what tilts, where fixed ones sit"}
     with _p2.ts_rc(), mpl.rc_context({"hatch.linewidth": 0.6}):
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 4.6), layout="constrained")
-        fig.get_layout_engine().set(w_pad=0.02, wspace=0.05, h_pad=0.01, hspace=0.0)
-        gs = fig.add_gridspec(2, 3, height_ratios=[2.2, 1.25])
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, LAYOUT_H5), layout="constrained")
+        fig.get_layout_engine().set(w_pad=0.02, wspace=0.05, h_pad=0.0, hspace=0.0)
+        gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 0.62])
         axs = [fig.add_subplot(gs[0, 0])]
         axs += [fig.add_subplot(gs[0, j], sharey=axs[0]) for j in (1, 2)]
         keys = [fig.add_subplot(gs[1, j]) for j in range(3)]
@@ -910,14 +949,14 @@ def fig_layout_rows(ctx):
                                 bbox=dict(boxstyle="square,pad=0.08", fc=_p2.ts_tint(col, 0.14), ec="none") if hatch else None)
                 bottom = bottom + vals
                 handles.append(mpl.patches.Patch(facecolor=face, edgecolor=hcol or "none", hatch=hatch, linewidth=0,
-                                                 label="\n".join(textwrap.wrap(name, 27))))
-            ax.bar(k - 1, 1.0, width=0.78, fill=False, edgecolor="#8a8a8a", linewidth=0.6, zorder=4)     # 2024-26*: thin outline
+                                                 label="\n".join(textwrap.wrap(name, 30))))
             _ts_cohort_axis(ax, k, 0.0)
             for t in ax.get_xticklabels():                    # one line, rotated: five cohorts do not fit a third of the width flat
                 t.set_rotation(LAYOUT_TICK_ROT)
                 t.set_ha("right")
                 t.set_rotation_mode("anchor")
-            _ts_pct_axis(ax, "share of the\narchitecture's designs (%)" if j == 0 else None)
+            _layout_tick_n(ax, m.groupby("window")["class aircraft"].first().reindex(wins).to_numpy())
+            _ts_pct_axis(ax, "share of the\narchitecture's\ndesigns (%)" if j == 0 else None)
             if j:
                 ax.tick_params(labelleft=False)
             if j == 1:
@@ -926,25 +965,40 @@ def fig_layout_rows(ctx):
             kax.set_xticks([]); kax.set_yticks([])
             for sp in kax.spines.values():
                 sp.set_visible(False)
-            kax.legend(handles=handles[::-1], loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False, handlelength=1.4, handleheight=1.1,
-                       borderaxespad=0.0, labelspacing=0.35, handletextpad=0.5, fontsize=8.4)
+            hl = handles[::-1]
+            if j == 0:      # one more line of panel (a)'s legend, aligned with its text column (round 5, 2026-10-23): no swatch
+                hl = hl + [Line2D([], [], linestyle="none", marker=None, label=ts.INCOMPLETE_LABEL)]
+            kax.legend(handles=hl, loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False, handlelength=1.4, handleheight=1.0,
+                       borderaxespad=0.0, labelspacing=0.22, handletextpad=0.5, fontsize=8.4)
+            kax.get_legend().set_in_layout(False)       # its height is fitted below; its width must not squeeze the bar columns
             ts.panel_label(kax, f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}")
         ts.place_panel_labels(fig)
-        fig.supxlabel("* incomplete cohort, not tested", fontsize=8.4, color=NOTE)
+        # the key row as tall as its longest legend (measured): the bars take the rest of the page height
+        for _ in range(4):
+            fig.canvas.draw()
+            need = max(kx.get_legend().get_window_extent().height / max(kx.get_window_extent().height, 1.0) for kx in keys)
+            if abs(need - 1.0) < 0.03:
+                break
+            r = gs.get_height_ratios()
+            gs.set_height_ratios([r[0], r[1] * need * 1.02])
     return fig, _csv_cohorts(pmix.reset_index(drop=True))
 
 
-def _trace_panel_share(ax, ctx, col: str) -> None:
+DUCT_ROOM = 3.3          # Fig 4.16: room right of the cohorts for the ρ labels (LABEL_ROOM elsewhere)
+
+
+def _trace_panel_share(ax, ctx, col: str, room: float = LABEL_ROOM) -> None:
     """The share ``col`` of SLC, TP and CVT per cohort, with ρ and p of each (every year to 2023) at the line ends."""
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins)
     fr = dw.pivot(index="window", columns="code", values=col).reindex(wins)[ARCH3]
+    ns = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
     tests = _trace_tests(ctx, col)
     items = []
     for c in ARCH3:
-        _ts_line(ax, fr[c], TS_COL[c], TS_MARK[c])
+        _ts_line(ax, fr[c], TS_COL[c], TS_MARK[c], ns=ns[c])
         items.append((_last(fr[c]), f"{SHORT3[c]}\n{_rho_p(tests[c]['rho'], tests[c]['p'])}", TS_COL[c]))
-    _ts_cohort_axis(ax, k, LABEL_ROOM)
+    _ts_cohort_axis(ax, k, room)
     _ts_pct_axis(ax)
     _ts_end_labels(ax, items, k - 1 + LABEL_DX, lines=2, lo=0, hi=1.0)
 
@@ -956,27 +1010,29 @@ def fig_traces_booms(ctx):
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins)
     with _p2.ts_rc():
-        fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 3.15), layout="constrained", sharey=True)   # 2.45 + bottom panel labels and the legend box (2026-10-23)
-        # the legend box and the panel labels first: the end labels are spread at the axes' final height
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.95), layout="constrained")       # 2.45 + panel labels and the key row
+        gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12])
+        a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
+        b.tick_params(labelleft=False)
+        # the key and the panel labels first: the end labels are spread at the axes' final height
         for ax in (a, b):
             ax.set_xlabel(ts.COHORT_X)
         ts.panel_label(a, "(a) Propulsors on booms")
         ts.panel_label(b, "(b) CVT, propulsors on booms")
-        _key_box(fig, _key_handles(), ncol=3)
         ts.place_panel_labels(fig)
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]))     # row 1 the architectures, row 2 the one hollow entry (round 5)
         _trace_panel_share(a, ctx, "share with units on booms")
         a.set_ylabel("share of the\narchitecture's designs (%)")
         cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
         y = cv["share with units on booms"].to_numpy(dtype=float)
-        _ts_line(b, y, TS_COL["CVT"], TS_MARK["CVT"])
+        _ts_line(b, y, TS_COL["CVT"], TS_MARK["CVT"], ns=cv["aircraft"])
         for xi in range(k):
             if np.isfinite(y[xi]):
                 b.annotate(f"{100 * y[xi]:.0f} %", (xi, y[xi]), textcoords="offset points", xytext=(0, 5), ha="center", va="bottom",
                            fontsize=8, color="#1a1a1a", alpha=ts.INCOMPLETE_ALPHA if xi == k - 1 else 1.0)
-        t = _trace_tests(ctx, "share with units on booms")["CVT"]
-        _ts_cohort_axis(b, k, LABEL_ROOM)
+        _ts_cohort_axis(b, k, 0.6)                    # no end label: panel (a) already gives the CVT rho and p (author 2026-10-23)
         _ts_pct_axis(b)
-        _ts_end_labels(b, [(_last(y) - 0.15, f"CVT\n{_rho_p(t['rho'], t['p'])}", TS_COL["CVT"])], k - 1 + LABEL_DX, lo=0, hi=1.0)      # under the end point and its value
+        _key_fit(fig)                                 # row 2 back under row 1 once the columns have settled
     return fig, None
 
 
@@ -990,61 +1046,108 @@ def fig_traces_ducts(ctx):
     cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
     lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
     with _p2.ts_rc():
-        fig, (a, b) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 3.3), layout="constrained", sharey=True)   # 2.45 + bottom panel labels and the legend box (2026-10-23)
-        # the legend box and the panel labels first: the end labels are spread at the axes' final height
+        # (b) narrower than (a) (author 2026-10-23: it holds two short lines, no ≤ 2011 point); more room right of both for the ρ labels
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.1), layout="constrained")
+        gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12], width_ratios=[1.2, 1])
+        a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
+        b.tick_params(labelleft=False)
+        # the key and the panel labels first: the end labels are spread at the axes' final height
         for ax in (a, b):
             ax.set_xlabel(ts.COHORT_X)
         ts.panel_label(a, "(a) Ducted propulsor")
         ts.panel_label(b, "(b) CVT ducted, by boom layout")
-        lines_b = [Line2D([], [], color=TS_COL["CVT"], marker="^", ms=4.2, lw=1.2, label="CVT, propulsors on booms"),
-                   Line2D([], [], color=_p2.ts_tint(TS_COL["CVT"], 0.5), marker="o", ms=4.2, lw=1.2, label="CVT, no propulsors on booms")]
-        _key_box(fig, _key_handles(lines_b), ncol=3)
         ts.place_panel_labels(fig)
-        _trace_panel_share(a, ctx, "share with a ducted unit")
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]))     # as Fig 4.15; panel (b) names its two CVT lines directly
+        _trace_panel_share(a, ctx, "share with a ducted unit", room=DUCT_ROOM)
         a.set_ylabel("share of the\narchitecture's designs (%)")
         items = []
-        for name, txt, colname, color, marker in (("units on booms", "CVT, propulsors\non booms", "ducted share, units on booms", TS_COL["CVT"], "^"),
-                                                  ("no units on booms", "CVT, no propulsors\non booms", "ducted share, no units on booms",
-                                                   _p2.ts_tint(TS_COL["CVT"], 0.5), "o")):
+        for name, txt, colname, color, marker, ncol_ in (("units on booms", "CVT, propulsors\non booms", "ducted share, units on booms", TS_COL["CVT"], "^",
+                                                          "aircraft, units on booms"),
+                                                         ("no units on booms", "CVT, no\npropulsors\non booms", "ducted share, no units on booms",
+                                                          _p2.ts_tint(TS_COL["CVT"], 0.5), "o", "aircraft, no units on booms")):
             yv = cv[colname].to_numpy(dtype=float)
-            _ts_line(b, yv, color, marker)
+            _ts_line(b, yv, color, marker, ns=cv[ncol_])
             r = lt.loc[name]
             items.append((_last(yv), f"{txt}\n{_rho_p(r['rho'], r['p'])}", color))
-        _ts_cohort_axis(b, k, LABEL_ROOM)
+        _ts_cohort_axis(b, k, DUCT_ROOM + 0.4)
         _ts_pct_axis(b)
-        _ts_end_labels(b, items, k - 1 + LABEL_DX, lines=3, lo=0, hi=1.0)
+        # "CVT, no propulsors" ran past the right edge in print (author 2026-10-24): three lines of name + the test line
+        _ts_end_labels(b, items, k - 1 + LABEL_DX, lines=4, lo=0, hi=1.0)
         b.text(0.02, 0.98, "base: the CVT designs\nof each boom layout", transform=b.transAxes, ha="left", va="top", fontsize=8.4,
                color=NOTE, linespacing=1.1)
+        _key_fit(fig)                                 # row 2 back under row 1 once the columns have settled
     return fig, None
 
 
 #: the point labels of the centre scatter (the cohort ticks shortened, as in the archived v2 figure)
 CENTRE_TAG = ["≤ 2011", "12–15", "16–19", "20–23", "24–26*"]
-#: the hollow-marker rule of every Analysis IV figure, in words (N_FEW: the first two cohorts)
-HOLLOW_RULE = "hollow: few designs\n(≤ 2011, 2012–15)"
+#: the hollow-marker rule of every Analysis IV figure, in words (the count rule of ts.is_few)
+HOLLOW_RULE = ts.HOLLOW_LABEL
 
 
-def _key_handles(extra=(), incomplete: str = "* incomplete cohort (2024–26),\nnot tested") -> list:
-    """The legend box of the Analysis IV line figures (author 2026-10-23): the three architectures in full, ``extra`` lines, the hollow
-    marker rule and the incomplete cohort."""
-    h = [Line2D([], [], color=TS_COL[c], marker=TS_MARK[c], ms=4.2, lw=1.2, label=f"{SHORT3[c]}  {ts.ARCH_NAME['TP' if c == 'TR' else c]}")
+#: Figs 4.15-4.17 (round 5, 2026-10-23): the two marks merged into one entry with one grey hollow circle
+MERGED_HOLLOW = f"hollow: {ts.FEW_MAX} designs or fewer, or the incomplete cohort (2024–26*, not tested)"
+
+
+def _key_handles(extra=()) -> list:
+    """The first key row of the Analysis IV line figures: the three architectures in full (``extra`` appended)."""
+    h = [Line2D([], [], color=TS_COL[c], marker=TS_MARK[c], ms=4.2, lw=1.2, label=f"{SHORT3[c]} {ts.ARCH_NAME['TP' if c == 'TR' else c]}")
          for c in ARCH3]
-    h += list(extra)
-    h.append(Line2D([], [], color="#555555", marker="o", ms=4.2, mfc="white", mec="#555555", ls="none", label=HOLLOW_RULE))
-    h.append(_incomplete_handle(incomplete))
-    return h
+    return h + list(extra)
 
 
-def _incomplete_handle(label: str) -> Line2D:
-    return Line2D([], [], color="#555555", marker="o", ms=4.2, mfc="white", mec="#555555", ls="none", alpha=ts.INCOMPLETE_ALPHA, label=label)
+def _key_axes(fig, cell):
+    """A blank axes in the bottom row of the figure's gridspec that holds the two-row key (no ticks, no spines)."""
+    kax = fig.add_subplot(cell)
+    kax.set_xticks([]); kax.set_yticks([])
+    for sp in kax.spines.values():
+        sp.set_visible(False)
+    kax.patch.set_alpha(0)
+    return kax
 
 
-def _key_box(fig, handles, ncol: int):
-    """The legend box under the figure (framed, unlike ts.bottom_legend: the author asked for a box)."""
+def _key_two_rows(fig, gs, kax, row: int = 1) -> None:
+    """Row 1: the three architectures, centred under the panels (as before); row 2: the one merged hollow entry, on one line,
+    left-aligned under row 1 (its marker under the first marker of row 1). The key row of ``gs`` is fitted to the two legends' height."""
+    kw = dict(frameon=False, handlelength=1.6, handletextpad=0.5, borderaxespad=0.0, fontsize=8.4)
+    l1 = kax.legend(handles=_key_handles(), loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3, columnspacing=1.0, **kw)
+    kax.add_artist(l1)
+    hh = Line2D([], [], marker="o", ms=4.2, mfc="white", mec=style.MUTED, color=style.MUTED, ls="none", label=MERGED_HOLLOW)
+    l2 = kax.legend(handles=[hh], loc="upper left", **kw)
+    fig._key2 = (gs, kax, l1, l2, row)
+    _key_fit(fig)
+
+
+def _key_fit(fig) -> None:
+    """Fit the key row's height to the two legends and put row 2 under row 1's first entry; run again at the end of a builder,
+    after the layout has settled (the y label and the end labels move the columns)."""
+    gs, kax, l1, l2, row = fig._key2
+    fs_px = 8.4 / 72 * fig.dpi
+    for _ in range(6):
+        fig.canvas.draw()
+        inv = kax.transAxes.inverted()
+        b1 = l1.get_window_extent()
+        # row 2's inner top one label spacing under row 1's inner bottom (each legend has borderpad 0.4 font sizes)
+        x0, y0 = inv.transform((b1.x0, b1.y0 + 2 * l1.borderpad * fs_px - 0.3 * fs_px))
+        l2.set_bbox_to_anchor((x0, y0), transform=kax.transAxes)
+        fig.canvas.draw()
+        b2 = l2.get_window_extent()
+        need = (b1.y1 - b2.y0) / max(kax.get_window_extent().height, 1.0)
+        if abs(need - 1.0) < 0.02:
+            break
+        r = list(gs.get_height_ratios())
+        r[row] *= need
+        gs.set_height_ratios(r)
+
+
+def _key_row(fig, handles, ncol: int = None):
+    """The key under the panels as in Figs 4.9 and 4.12 (ts.bottom_legend: unframed, outside lower centre), on one row by default;
+    ``ncol`` splits it into rows read left to right."""
+    ncol = ncol or len(handles)
     rows = -(-len(handles) // ncol)
     order = [handles[r * ncol + c] for c in range(ncol) for r in range(rows) if r * ncol + c < len(handles)]   # read row by row
-    return fig.legend(handles=order, loc="outside lower center", ncol=ncol, frameon=True, fancybox=False, edgecolor="#9a9a9a",
-                      framealpha=1.0, handlelength=1.6, columnspacing=1.2, borderpad=0.5, labelspacing=0.35)
+    return fig.legend(handles=order, loc="outside lower center", ncol=ncol, frameon=False, handlelength=1.6, columnspacing=1.0,
+                      handletextpad=0.5, labelspacing=0.3)
 
 
 def fig_centres5(ctx):
@@ -1055,42 +1158,50 @@ def fig_centres5(ctx):
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins) - 1                                                          # index of the incomplete cohort
     with _p2.ts_rc():
-        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 3.6), layout="constrained")
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.9), layout="constrained")
+        gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.12])
+        ax = fig.add_subplot(gs[0, 0])
         pts = []
         for c in ARCH3:
             col, mk = TS_COL[c], TS_MARK[c]
             d = dw[dw["code"] == c].set_index("window").reindex(wins)
             xs, ys = d["tilting sets (mean)"].to_numpy(float), d["propulsive units (median)"].to_numpy(float)
+            nd = d["aircraft"].to_numpy(float)
             for i in range(k):
                 if not (np.isfinite(xs[i]) and np.isfinite(ys[i])):
                     continue
-                few = i < N_FEW
+                few = ts.is_few(nd[i])
                 ax.plot(xs[i], ys[i], marker=mk, ms=6.5, mfc="white" if few else col, mec=col, mew=1.2, ls="none", zorder=4)
                 j = i + 1
                 if j < k and np.isfinite(xs[j]) and np.isfinite(ys[j]):
                     ax.annotate("", xy=(xs[j], ys[j]), xytext=(xs[i], ys[i]), zorder=3,
-                                arrowprops=dict(arrowstyle="->", color=col, lw=1.2, shrinkA=5, shrinkB=5, alpha=0.45 if j < N_FEW else 1.0))
+                                arrowprops=dict(arrowstyle="->", color=col, lw=1.2, shrinkA=5, shrinkB=5, alpha=0.45 if ts.is_few(nd[j]) else 1.0))
                 pts.append((c, i, xs[i], ys[i]))
             if np.isfinite(xs[k]) and np.isfinite(ys[k]):                        # 2024-26*: faded ring, a little larger so it shows over a point
                 ax.plot(xs[k], ys[k], marker=mk, ms=8.0, mfc="none", mec=col, mew=1.0, alpha=ts.INCOMPLETE_ALPHA, ls="none", zorder=5)
                 pts.append((c, k, xs[k], ys[k]))
-        # labels right of the point; left when a point of the same architecture sits on the same level just to its right (the pair
-        # reads left-right, as in the archived figure) or, for 2024-26*, when it falls on another point
+        # point labels. 2024-26*: always below right of its point (one rule for the three). A complete cohort: right of the point; left
+        # when a point of the same architecture sits on the same level just to its right, or when a 2024-26* point falls on it; and when
+        # two points of one architecture all but coincide (TP 2016-19 / 2020-23), both right, the earlier below, the later above.
         for c, i, x, y in pts:
-            same = [(cc, ii, xx, yy) for cc, ii, xx, yy in pts if (cc, ii) != (c, i)]
-            if i == k:
-                left = any(abs(xx - x) < 0.05 and abs(yy - y) < 0.3 for _, _, xx, yy in same)
-            else:
-                left = any(cc == c and ii < k and abs(yy - y) < 0.3 and 0 < xx - x < 0.35 for cc, ii, xx, yy in same)
-            ax.annotate(CENTRE_TAG[i], (x, y), textcoords="offset points", xytext=(-7 if left else 7, 0), ha="right" if left else "left",
-                        va="center", fontsize=8.4, color=TS_COL[c], alpha=ts.INCOMPLETE_ALPHA if i == k else 1.0, zorder=6)
+            same = [(cc, ii, xx, yy) for cc, ii, xx, yy in pts if (cc, ii) != (c, i) and cc == c]
+            off, ha, va = ((6, -4), "left", "top") if i == k else ((7, 0), "left", "center")
+            if i < k:
+                twin = [ii for _, ii, xx, yy in same if ii < k and abs(xx - x) < 0.08 and abs(yy - y) < 0.3]
+                if twin:
+                    off, va = ((6, -5), "top") if i < twin[0] else ((6, 5), "bottom")
+                elif any(ii == k and abs(xx - x) < 0.05 and abs(yy - y) < 0.3 for _, ii, xx, yy in same) or \
+                        any(ii < k and abs(yy - y) < 0.3 and 0 < xx - x < 0.35 for _, ii, xx, yy in same):
+                    off, ha = (-7, 0), "right"
+            ax.annotate(CENTRE_TAG[i], (x, y), textcoords="offset points", xytext=off, ha=ha, va=va,
+                        fontsize=8.4, color=TS_COL[c], alpha=ts.INCOMPLETE_ALPHA if i == k else 1.0, zorder=6)
         ax.set_xlim(-0.4, 2.95)
-        ax.set_ylim(0, 10.8)
+        ax.set_ylim(0, 11.0)
         ax.xaxis.set_major_locator(mticker.MultipleLocator(0.5))
         ax.yaxis.set_major_locator(mticker.MultipleLocator(2))
         ax.set_xlabel("tilting sets per design (mean of the architecture's designs)")
-        ax.set_ylabel("propulsors per design\n(median of the architecture's designs)")
-        _key_box(fig, _key_handles(incomplete="* incomplete cohort"), ncol=3)
+        ax.set_ylabel("propulsors per design\n(median of the\narchitecture's designs)")
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, 0]))     # as Fig 4.15
     data = dw[dw["code"].isin(ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
     return fig, _csv_cohorts(data.reset_index(drop=True))
 

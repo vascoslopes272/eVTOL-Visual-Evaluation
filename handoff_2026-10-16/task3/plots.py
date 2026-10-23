@@ -646,7 +646,7 @@ def discovery_lines(ax, curve: pd.DataFrame, names: dict, tail: int, tail_box: O
 
 # ====================================================================================== chapter 3 (notebook 42)
 #: the window ticks as the figures print them
-WINDOW_TICKS = {"<= 2011": "≤2011", "2012-15": "2012–15", "2016-19": "2016–19", "2020-23": "2020–23", "2024-26 (partial)": "2024–26*"}
+WINDOW_TICKS = {"<= 2011": "≤2011", "2012-15": "2012–15", "2016-19": "2016–19", "2020-23": "2020–23", "2024-26 (partial)": "2024–26"}
 #: the fill of the windows that hold few aircraft, and the colour of a condition that is MET (a status, not a class)
 FEW_FILL = "#efeeec"
 MET = "#d62728"

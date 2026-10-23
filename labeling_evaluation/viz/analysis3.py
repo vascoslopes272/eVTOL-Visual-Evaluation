@@ -36,11 +36,13 @@ def runs(years, k: int) -> list:
 RHO_LATE_FIRST = 2016
 
 
-def rho_table(ctx) -> pd.DataFrame:
+def rho_table(ctx, v: pd.DataFrame | None = None, codes=None) -> pd.DataFrame:
     """Spearman rho and p of each architecture's share of the year's aircraft on the priority year (2008 to the last complete
     year), architectures with 20 aircraft or more over those years; all unique aircraft with an architecture recorded. Each p column
-    has its Holm-adjusted column beside it, one family per column (the architectures tested over that span)."""
-    v = ctx.v
+    has its Holm-adjusted column beside it, one family per column (the architectures tested over that span).
+    ``v``: another set of designs (default ctx.v); ``codes``: test exactly these architectures instead of those with 20 or more
+    (the follow-up without Bell / Textron keeps the III.1 family, viz/followup_iii1.py)."""
+    v = ctx.v if v is None else v
     last = ctx.cfg.analysis["last_complete_year"]
     w = v[v["topType"].notna() & v["year"].between(frames.DD_YEAR_FIRST, last)]
     cnt = pd.crosstab(w["year"], w["topType"])
@@ -48,7 +50,7 @@ def rho_table(ctx) -> pd.DataFrame:
     rows = []
     for c in cnt.columns:
         n = int(cnt[c].sum())
-        if n < 20:
+        if (n < 20) if codes is None else (c not in codes):
             continue
         r, p = stats.spearmanr(share.index, share[c])
         ok = cnt.sum(axis=1) >= frames.DD_YEAR_MIN

@@ -105,7 +105,7 @@ def fig_condition1_family(ctx):
     first_read = int(yrs[rd_all][0])
     fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
     plots.condition1_years(ax, yrs, fy["F share"], fy["F share in force"], fy["read, all"], fy["read, in force"], [], first_read,
-                           f"few designs\n(under {cfg.analysis['trend_min_n']} a year): not read")
+                           f"few designs\n(under {cfg.analysis['trend_min_n']} a year): not tested")
     fa = fy.set_index("priority year")["F share"]
     for y in above:
         ax.plot(y, fa[y], "o", markersize=10.5, markerfacecolor="none", markeredgecolor=plots.MET, markeredgewidth=1.7, zorder=5)

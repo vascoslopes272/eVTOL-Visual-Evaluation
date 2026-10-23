@@ -105,7 +105,7 @@ def fig_condition1_family(ctx):
     first_read = int(yrs[rd_all][0])
     fig, ax = plt.subplots(figsize=(ctx.W, 3.6), constrained_layout=True)
     plots.condition1_years(ax, yrs, fy["F share"], fy["F share in force"], fy["read, all"], fy["read, in force"], [], first_read,
-                           f"few designs\n(under {cfg.analysis['trend_min_n']} a year): not read")
+                           f"few designs\n(under {cfg.analysis['trend_min_n']} a year): not tested")
     fa = fy.set_index("priority year")["F share"]
     for y in above:
         ax.plot(y, fa[y], "o", markersize=10.5, markerfacecolor="none", markeredgecolor=plots.MET, markeredgewidth=1.7, zorder=5)
@@ -171,7 +171,7 @@ def fig_condition3_cohesion(ctx):
     for ax, lvl in zip(axb, MAIN_LEVELS):
         s = form[form["level"] == lvl]
         sm = s[s["weighting"] == main].set_index("window").reindex(win).reset_index()
-        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])])
+        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])])
         ax.tick_params(axis="x", labelrotation=90)          # three panels: upright ticks ran into each other (as condition 2)
         ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest cohorts")
