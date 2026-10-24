@@ -257,6 +257,8 @@ def write_numbers_I(cfg, ctx) -> Path:
         cols=("number", "value", "source"))
     out.append("*If any count differs from the ones you listed:* one reading differs. The directory's 1 229 pages, the 871 kept, the 97 matched pages, the 43 companies read and the 22 that file all match. The **35** is the number of the 43 companies on which the script's answer equals the author's, counting the companies both leave blank; the script returns a non-blank match for **18** of them. Say which of the two the text should print.\n")
 
+    out += _funnel_family(ctx, q4, CSV)
+
     # ----------------------------------------------------------------------------------- 4 the checks of 2026-10-12
     out.append("## 4. Checks requested on 2026-10-12 (no figure or text changed by them)\n")
     out += _checks_section(cfg, ctx, c, q4, CSV)
@@ -313,6 +315,19 @@ def write_numbers_I(cfg, ctx) -> Path:
     _append_manifest(base, [("Data_for_writing/NUMBERS_I.md", "yes", "numbers of Analysis I with their sources")]
                      + [(f"Data_for_writing/csv/{f.name}", "no", "table behind NUMBERS_I.md (not printed)") for f in sorted(CSV.glob("numbers_I_*.csv"))])
     return p
+
+
+def _funnel_family(ctx, q4, CSV) -> list:
+    """Subsection of section 3 (supervisor review 2): the funnel family, six tests with one Holm correction."""
+    fam = q4.funnel_family(ctx)
+    fam.to_csv(CSV / "numbers_I_funnel_family_holm.csv", index=False)
+    names = {"flown": "flown designs (TRL 5 or more)", "fari": "designs of the flown index assignees"}
+    rows = [(f"`{r['key']}`", f"{names[r['group']]} ({r['n group']}) vs the rest ({r['n rest']})", r["attribute"].replace("folded class", "architecture (five directory categories)")
+             .replace("priority window", "priority-year cohort"), f"{r['p raw']:.4f}", ctx.pval(r["p Holm"])) for _, r in fam.iterrows()]
+    return ["### The funnel family: six tests, Holm-corrected (supervisor review 2)\n",
+            "Pearson chi-square of each group against the rest of the 627 designs (`frames.representativeness`); the Holm correction runs once over the six raw p "
+            "(`lib.multiple.holm`). Source: `viz/thesis_q4.py:funnel_family`; CSV: `numbers_I_funnel_family_holm.csv`.\n",
+            _md_table(pd.DataFrame(rows, columns=["key", "groups", "attribute", "p raw", "p Holm"])), ""]
 
 
 def _growth_models(ctx, CSV) -> list:

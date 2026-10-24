@@ -196,6 +196,22 @@ def representativeness(ctx) -> dict:
     return _cache(ctx, "rep", build)
 
 
+#: the funnel family (supervisor review 2): the flown group and the flown index-assignee group against the rest, each on three
+#: attributes; one Holm correction over the six tests. Key stem -> attribute of frames.REP_CATEGORICAL
+FUNNEL_FAMILY = {"cohort": "priority window", "class": "folded class", "region": "applicant region"}
+
+
+def funnel_family(ctx) -> pd.DataFrame:
+    """The six tests of the funnel family with the raw (unrounded) and Holm-corrected p, one row per test."""
+    rep = representativeness(ctx)
+    rows = [{"key": f"{grp}_{stem}_p_holm", "group": grp, "attribute": attr, "n group": rep[f"n_{grp}"],
+             "n rest": len(ctx.v) - rep[f"n_{grp}"], "p raw": rep[grp].attrs["p_raw"][attr]}
+            for grp in ("flown", "fari") for stem, attr in FUNNEL_FAMILY.items()]
+    out = pd.DataFrame(rows)
+    out["p Holm"] = holm(out["p raw"].to_numpy())
+    return out
+
+
 def directory_mix(ctx, in_domain: bool = True) -> dict:
     """§1.3.5: the dataset against the directory all years together, the parts of the directory and the tests.
     2026-10-15: the directory is the pages inside the technological domain (electric, crewed: ``directory_frame()['in_domain']``) and
@@ -521,6 +537,7 @@ def numbers(ctx) -> dict:
     def p_of(tab, attr):
         return tab.set_index("attribute").loc[attr, "p"]
     tab4, tab5 = rep["tab4"], rep["tab5"]
+    fam = funnel_family(ctx)
     flown = tl[tl["first flight (ARI)"] <= frames.ARI_RELEASE_YEAR]
     gap = flown["years to first flight"]
     eis = tl["years to entry into service"].dropna()
@@ -563,4 +580,5 @@ def numbers(ctx) -> dict:
         "fari_differs": str(int((tab5["verdict"] == "differs").sum())),
         "fari_region_gap": tab5.set_index("attribute").loc["applicant region", "largest gap"],
         "fari_class_gap": tab5.set_index("attribute").loc["architecture group", "largest gap"],
+        **dict(zip(fam["key"], fam["p Holm"].map(pval))),   # flown_/fari_ cohort/class/region_p_holm: six tests, one Holm family
     }

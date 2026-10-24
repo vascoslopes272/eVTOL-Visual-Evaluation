@@ -365,6 +365,20 @@ def _spread(ys, gap, lo, hi):
     return out
 
 
+def _tick_n(ax, ns) -> None:
+    """Fig 4.9 (author 2026-10-24): under each cohort tick a second, grey line "n 63" = every design of the cohort (the base of the shares),
+    as in Fig 4.14, at the tick font size; placed one line under the tick label's own anchor, and the axis title moved down by that line."""
+    import matplotlib.transforms as mtrans
+    tick = ax.xaxis.get_major_ticks()[0]
+    trans, va, _ = ax.get_xaxis_text1_transform(tick.get_pad() + tick.get_tick_padding())
+    fs = ax.get_xticklabels()[0].get_fontsize()
+    line = 1.25 * fs
+    trans = trans + mtrans.ScaledTranslation(0, -line / 72, ax.figure.dpi_scale_trans)
+    for xi, n in enumerate(ns):
+        ax.text(xi, 0, f"n {int(n)}", transform=trans, ha="center", va=va, fontsize=fs, color=p2.NOTE, clip_on=False)
+    ax.xaxis.labelpad += line
+
+
 def fig_architecture_shares_by_cohort(ctx):
     """Fig 4.9: each architecture's share of the cohort's designs, one line per architecture in its ts.ARCH colour (SLC, TP, CVT thick,
     the rest thin and lighter); the JOIN_N smallest categories joined into "Other"; 2024-26 hollow, not joined; direct labels at the right."""
@@ -400,10 +414,15 @@ def fig_architecture_shares_by_cohort(ctx):
         ax.set_xlim(-0.3, n + 1.55)
         ax.spines["bottom"].set_bounds(-0.3, n - 1 + 0.3)
         ax.set_xticks(x, ts.COHORTS)
+        _tick_n(ax, n_win)
         ax.set_ylabel("share of all designs (%)")          # base: every design of the cohort (frames.class_counts_by_window)
         ax.set_xlabel(ts.COHORT_X)
         _grid(ax)
-        ts.bottom_legend(fig, [ts.incomplete_handle()], [ts.INCOMPLETE_LABEL])      # 2024-26* drawn hollow (author 2026-10-23)
+        n_none = int(ctx.v["topType"].isna().sum())
+        note = "n counts every design of the cohort" + (f", including {n_none} in 2016–19 with no architecture recorded" if n_none else "")
+        assert ctx.v.loc[ctx.v["topType"].isna(), "window"].eq("2016-19").all(), "the base note names 2016-19 only"
+        leg = ts.bottom_legend(fig, [ts.incomplete_handle(), Line2D([], [], linestyle="none")], [ts.INCOMPLETE_LABEL, note], ncol=1)
+        leg.get_texts()[1].set_color(p2.NOTE)               # base of the shares, one grey line under the entry (author 2026-10-24)
         fig.canvas.draw()
         gap = abs(ax.transData.inverted().transform((0, 0))[1] - ax.transData.inverted().transform((0, 10.2 * fig.dpi / 72))[1])
         last = share.iloc[-1].to_numpy(dtype=float) * 100
