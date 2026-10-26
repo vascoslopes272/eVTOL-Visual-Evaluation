@@ -81,7 +81,7 @@ def fill(template_name: str, out_name: str, data) -> Path:
 
 
 # ------------------------------------------------------------------------------------------------ domain
-def build_domain(cfg):
+def build_domain(cfg, keys=None):
     raw = pd.read_csv(cfg.path("evtolnews_aircraft"), keep_default_na=False)
     d = frames.directory_frame(cfg).rename(columns={"status": "status_resolved"})
     w = raw.merge(d[["slug_key", "class5", "status_resolved", "in_domain", "patented"]], on="slug_key", how="left")
@@ -144,6 +144,8 @@ def build_domain(cfg):
     n = sample_n(len(bulk_idx))
     rng = np.random.default_rng(SEED)
     sample_idx = list(rng.choice(bulk_idx, size=n, replace=False))
+    if keys is not None:  # resample: the given pages, patent-linked ones included, all as section B
+        sample_idx = [i for i in excluded if w.iloc[i]["slug_key"] in set(keys)]; contra_idx = []; bulk_idx = excluded; n = len(sample_idx)
 
     data = {"contradictions": [row(i, "A") for i in contra_idx], "sample": [row(i, "B") for i in sample_idx],
             "pool_n": len(bulk_idx), "opts": [["exclude", "confirm excluded"], ["in_domain", "override: actually in-domain"]]}
@@ -239,7 +241,7 @@ def build_ari(cfg):
     return data
 
 
-def build_domain_included(cfg):
+def build_domain_included(cfg, keys=None):
     """Random sample (95 % CI, e = 10 %) of the pages the rules KEPT in the domain: is any of them really out?"""
     raw = pd.read_csv(cfg.path("evtolnews_aircraft"), keep_default_na=False)
     d = frames.directory_frame(cfg).rename(columns={"status": "status_resolved"})
@@ -247,6 +249,8 @@ def build_domain_included(cfg):
     inc = w.index[w["in_domain"].astype(bool)].tolist()
     n = sample_n(len(inc))
     idx = list(np.random.default_rng(SEED).choice(inc, size=n, replace=False))
+    if keys is not None:  # resample: the given pages
+        idx = [i for i in inc if w.iloc[i]["slug_key"] in set(keys)]; n = len(idx)
     dec = pd.read_csv(cfg.path("evtolnews_aircraft").parent.parent / "1_filter" / "image_decisions.csv", keep_default_na=False,
                       usecols=["slug_key", "img_pos", "local_path", "keep"])
     dec = dec[dec["keep"].astype(str).eq("True")].sort_values(["slug_key", "img_pos"])

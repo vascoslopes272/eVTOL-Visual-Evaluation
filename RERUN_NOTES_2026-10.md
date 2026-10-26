@@ -200,6 +200,8 @@ values to every Part I figure whatever the threshold. What changes is the status
 - At 70 % they pass only on the point share, in the units the figures use (same cohort, same side of TRL 2). On the lower bound they fail.
 - At 60 % they pass on the lower bound too, except the exact year and the exact TRL.
 
+**Update 2026-10-25:** the 70 % on the point estimate is the author's own ruling (the dissertation's bar); the sentence "no 70 % threshold exists in the code or the review notes" described the files and is now out of date. Read the 70 % columns above on the share. The 90 % lower-bound rule stays as the stricter reading. Domain flag (first script version): 89.7 % excluded side, 76.1 % kept side, 78.5 % weighted (128/156 = 82.1 % raw) - passes 70 % on the point estimate; the kept side's lower bound (66.7 %) does not pass 70 %.
+
 So "the scripts are acceptable stand-ins" is true only below 70 % on the lower bound. Above that the text has to call them baselines.
 
 ## Step 4. Figure 4.2, the growth comparison (`q1_growth_rates`)

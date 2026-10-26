@@ -19,6 +19,10 @@ Only the domain flag is rule-and-script based. The year, TRL and company map wer
 
 Sample size for a proportion with a finite population: n0 = z^2 p (1 - p) / e^2 with z = 1.96, p = 0.5, e = 10 % (n0 = 96), then n = n0 N / (n0 + N - 1). Random draw with seed 42 (`notebooks/_build/prepare_review_pages.py`). The result is the Wilson interval with the finite-population correction (`lib/intervals.wilson_fpc_interval`). A source is accepted when the **lower** bound of the 95 % interval is at or above the threshold (default 90 %).
 
+**Acceptance bar (author's ruling, 2026-10-25).** The dissertation's bar for the rule-based scripts is **70 % on the point estimate**. It is the author's own ruling; it was not in the code or in these notes before today. The 90 % lower-bound rule above stays as the stricter reading and is reported beside it. The domain flag at review time: excluded side 89.7 % and kept side 76.1 % pass 70 % on the point estimate; on the lower bound the kept side (66.7 %) does not pass 70 %, and neither side passes 90 %.
+
+**Domain figures, first script version (11 October sample).** Excluded 61/68 = 89.7 % (82.1-94.3 %, pool 223); kept 67/88 = 76.1 % (66.7-83.6 %, pool 1 040); both together 128/156 = 82.1 % raw, 78.5 % (71.4-85.7 %) weighted by pool size, pool 1 263. The script was corrected afterwards to follow the Section 3.1.1 rules (the rules themselves did not change); the corrected script has no independent sample (59/68 and 77/88 on the same pages, in-sample, no interval). Table note: "128/156 raw; 78.5 % weights each side by its pool".
+
 ## 3. Rules used for the domain flag (directory side only; the patent dataset's own gate is unchanged)
 
 1. A power source that offers an electric version counts as electric; only a source with no electric option (fuel cell, turbine, hydrogen, hybrid only) is out.
