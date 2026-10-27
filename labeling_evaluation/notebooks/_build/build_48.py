@@ -28,6 +28,7 @@ display(rep)
 print('all PDFs at their final width and within 55 % of it' if rep['width ok'].all() and rep['height ok (<= 0.55)'].all() else 'CHECK THE PDF SIZES ABOVE')
 p = latex_v15.write_numbers_I(cfg, ctx)
 print('written', p)
-print('LaTeX_v15 files:', sorted(str(f.relative_to(latex_v15.root(cfg))) for f in latex_v15.root(cfg).rglob('*') if f.is_file()))""")]
+print('LaTeX_v15 files:', sorted(str(f.relative_to(latex_v15.root(cfg))) for f in latex_v15.root(cfg).rglob('*') if f.is_file()))"""),
+          nbf.v4.new_code_cell("from viz import followup_2026_10_27_flown_propulsors as fp\nr = fp.run(cfg, ctx)      # inserts 'I.3, propulsors of the flown designs (Mann-Whitney)' into NUMBERS_I.md after the funnel family\ndisplay(r['table']); print('U', r['U'], '| p', r['p'], '| p Holm (seven tests)', r['p_holm'])")]
 build(48, "Thesis figures, Part I (Evidence base)", "viz.thesis_v2_part1", GROUPS, SOURCES, "write_readme_48.py",
       "thesis_figures_v2/Part_I_evidence_base", run="--run" in sys.argv, forbidden=figcheck.FORBIDDEN_PART1, extra_cells=EXPORT)

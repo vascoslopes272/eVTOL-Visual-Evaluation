@@ -1,0 +1,207 @@
+"""Analysis V.1 (who files) as one figure of two panels (author 2026-10-27): (a) the assignee types of q2_filer_types as vertical stacked
+bars per cohort, (b) the cumulative share of q2_largest_filers_share, side by side, equal width, 16 cm x 7 cm, plot boxes of the same
+height and level, panel letters 9 pt at the top left of each panel.
+
+Same data, colours and words as the two single figures of viz/thesis_style_partv.py (fig_filer_types, fig_largest_filers_share), which
+stay as they are; only the layout changes. Writes to LaTeX_v15/:
+    Figures/Part_V_assignees_and_regions/V1_who_files/main/q2_assignees_types_and_concentration.{pdf,png}
+    Data_for_writing/csv/q2_assignees_types_and_concentration.csv   (both panels' data, one 'panel' column)
+Driver: python3 -m viz.thesis_style_partv_combined
+"""
+from __future__ import annotations
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.patches import Patch
+from matplotlib.text import Text
+
+from viz import analysis5 as a5
+from viz import config, figcheck, thesis
+from viz import thesis_q2 as q2
+from viz import thesis_style_partv as sp
+from viz.thesis_latex_common import root as latex_root
+
+ts = sp.ts
+NAME = "q2_assignees_types_and_concentration"
+GROUP, ROLE, PART = "V1_who_files", "main", "Part_V_assignees_and_regions"
+CM = 2.54
+HEIGHT_CM = 7.0
+LETTER_PT = 9
+TS = 8.0                     # direct labels: 8 pt, the floor
+X_LEFT = 44                  # (b) room left of rank 0 for the 16 % and 29 % marks
+#: the two plot boxes, in inches of the 6.3 in x HEIGHT_CM page: same top and bottom (author 2026-10-27: same plot height, (a)'s x axis
+#: level with (b)'s), each panel half the page (width ratios 1:1); left = room for the y label and ticks, right = gap to the next panel
+TOP_IN, BOTTOM_IN = 0.24, 0.72
+A_LEFT_IN, A_RIGHT_IN = 0.46, 0.03
+B_LEFT_IN, B_RIGHT_IN = 0.62, 0.10
+#: (a) the values inside the segments without the " %" (the axis is in %): with it, 63.6 does not fit inside a bar
+IN_BAR = "{:.1f}"
+ORDER_A = ["Named company", "Individual inventor", "University / institute"]          # stack order from the bottom
+WORD_A = dict(sp.ATYPE_WORD, **{"University / institute": "universities and institutes"})   # one-line key
+#: (a) bar centres: at 8 pt the binding widths are "10.1 %" next to "19.6 %" (25 pt each, so a cohort pitch of 1 unit = ~27 pt) and
+#: "designs" next to "patents" (27.5 and 26.2 pt, so the two all-years bars 1.13 apart); the gap before the cohorts 1.1; bars 0.68 wide
+XPOS_A = [0, 1.13] + [2.23 + k for k in range(5)]
+BAR_A = 0.68
+EDGE_A = 0.42
+#: (a) cohort ticks on two lines, "2012" over "–15" ("≤" over "2011"): the pitch is ~27 pt and "2016–19" at 8 pt is 31 pt (one line
+#: would be rotated by ts.save)
+COHORT_A = {c: c.replace(" ", "\n").replace("–", "\n–") for c in ts.COHORTS}
+
+
+def _types(ax, ctx):
+    """Panel (a): fig_filer_types as vertical stacked bars, cohorts on the x axis (as the other per-cohort figures): "all designs", "all
+    patents", a gap, then the five cohorts. Company and individual-inventor values inside their segments; the universities value, too thin
+    to hold text, just above the bar in the universities blue. The key is one line under the x label (the bars fill 0-100, so there is no
+    clear area inside), the asterisk rule under it."""
+    parts, parts_n, bars = q2._filer_types_parts(ctx)
+    sh = parts[ORDER_A].div(parts[ORDER_A].sum(axis=1), axis=0)
+    rows = [1, 0] + list(range(2, len(bars)))
+    labels = ["all\ndesigns", "all\npatents"] + [COHORT_A[sp.COHORT[b]] for b in bars[2:]]
+    xpos = XPOS_A
+    for x, r in zip(xpos, rows):
+        bottom = 0.0
+        inc = bars[r] == sp.INCOMPLETE
+        for k in ORDER_A:
+            v = float(sh.loc[r, k])
+            ax.bar(x, v, BAR_A, bottom=bottom, color=sp.ATYPE_COL[k], alpha=sp.INC_ROW_ALPHA if inc else 1.0, edgecolor="white", linewidth=0.6)
+            if k != "University / institute" and v >= 0.08:
+                col = sp.INK if inc else sp.ATYPE_INK[k]
+                ax.text(x, bottom + v / 2, IN_BAR.format(100 * v), ha="center", va="center", fontsize=TS, color=col)
+            bottom += v
+        u = float(sh.loc[r, "University / institute"])
+        if u >= 0.08:          # wide enough to hold its value (2020-23, 2024-26*): inside, as the other segments
+            ax.text(x, bottom - u / 2, IN_BAR.format(100 * u), ha="center", va="center", fontsize=TS, color=sp.INK)
+        else:                  # too thin: just above the bar, in the universities blue
+            ax.annotate(f"{100 * u:.1f} %", (x, bottom), xytext=(0, 1.5), textcoords="offset points", ha="center", va="bottom",
+                        fontsize=TS, color=sp.ATYPE_TEXT["University / institute"], annotation_clip=False)
+    ax.axvline((xpos[1] + xpos[2]) / 2, color=sp.MUTED, linewidth=0.8, linestyle=":")   # all years | cohorts, as in fig_filer_types
+    ax.set_xticks(xpos, labels)
+    ax.set_xlim(xpos[0] - EDGE_A, xpos[-1] + EDGE_A)
+    ax.set_ylim(0, 1)
+    ax.set_yticks([0, .25, .5, .75, 1], ["0", "25", "50", "75", "100"])
+    ax.set_ylabel("share of all designs (%)")
+    ax.set_xlabel("priority-year cohort")
+    ax.tick_params(axis="x", length=0, labelsize=TS)
+    ax.spines["bottom"].set_bounds(xpos[0] - EDGE_A, xpos[-1] + EDGE_A)
+    return parts.assign(bar=bars, n=parts_n)
+
+
+def _types_key(fig, ax, ax_b):
+    """(a)'s key in one line just under the lower of the two x labels ((b)'s, two lines), starting at the page's left edge (flush with "(a)"), and the asterisk rule to its
+    right on the same line (it runs into (b)'s half, which is empty under (b)'s x label). Placed after a draw, from the x label's extent,
+    so nothing overlaps whatever the label's height."""
+    fig.canvas.draw()
+    inv = fig.transFigure.inverted()
+    y_lab = min(inv.transform(a.xaxis.label.get_window_extent())[0, 1] for a in (ax, ax_b))
+    x0 = inv.transform(ax.yaxis.get_tightbbox())[0, 0]
+    pt = 1 / 72 / fig.get_figheight()                         # one point in figure fractions (vertical)
+    leg = fig.legend(handles=[Patch(facecolor=sp.ATYPE_COL[k], edgecolor="none", label=WORD_A[k]) for k in ORDER_A],
+                     loc="upper left", bbox_to_anchor=(x0, y_lab - 2 * pt), ncol=3, frameon=False,
+                     fontsize=TS, handlelength=0.8, handleheight=0.8, handletextpad=0.3, columnspacing=0.6, borderaxespad=0, borderpad=0)
+    for t in leg.get_texts():
+        t.set_color(sp.ATYPE_TEXT[ORDER_A[leg.get_texts().index(t)]])
+    fig.canvas.draw()
+    last = inv.transform(leg.get_texts()[-1].get_window_extent())
+    note = fig.text(last[1, 0] + 1.2 * TS / 72 / fig.get_figwidth(), (last[0, 1] + last[1, 1]) / 2, ts.INCOMPLETE_LABEL,
+                    ha="left", va="center", fontsize=TS, color=sp.INK)
+    return note, leg
+
+
+def _concentration(ax, ctx):
+    """Panel (b): fig_largest_filers_share drawn into ``ax``. The key in one column inside the plot box at the top left, over the empty
+    area above the curve; the y axis ends at 100; the dashed line's label in three lines in the light area under the end of the curve;
+    the x axis starts a little left of 0 so the 16 % and 29 % marks keep their place above-left of their dots without crossing the y axis."""
+    d = q2._frames(ctx)
+    sizes, cov, v = d["sizes"], d["cov"], ctx.v
+    n_air, n_named = len(v), len(sizes)
+    cum = (sizes.cumsum() / n_air).to_numpy()
+    rank = np.arange(1, n_named + 1)
+    xs, ys = np.r_[0, rank], np.r_[0, cum]
+    edges = [0] + cov["cumulative firms"].astype(int).tolist()
+    for k in range(len(edges) - 1):
+        sl = slice(edges[k], edges[k + 1] + 1)
+        ax.fill_between(xs[sl], 0, ys[sl], step="post", color=sp.BAND_FILL[k], linewidth=0, zorder=1)
+    ax.step(xs, ys, where="post", color=ts.ATYPE["Company"], linewidth=1.2, zorder=3, solid_capstyle="butt")
+    share_named = float(sizes.sum() / n_air)
+    ax.axhline(share_named, color=sp.MUTED, linewidth=0.7, linestyle="--", zorder=2)
+    ax.text(n_named - 3, 0.40, f"all {n_named} companies\nand universities:\n{int(sizes.sum())} designs, {sp._pct(share_named)}",
+            ha="right", va="top", fontsize=TS, color=sp.MUTED, linespacing=1.15, zorder=4)
+    for k, e in enumerate(edges[1:]):
+        ax.plot(e, cum[e - 1], "o", color=sp.INK, markersize=4, zorder=5)
+        ax.annotate(sp._pct(cum[e - 1]), (e, cum[e - 1]), xytext=(-3, 3), textcoords="offset points",
+                    ha="right", va="bottom", fontsize=TS, color=sp.INK, zorder=6)
+    names = [f"{int(r['firms'])} assignees with {sp.BAND_DESC[k].replace('designs', 'designs each').replace('1 design', '1 design each')}"
+             for k, r in cov.reset_index(drop=True).iterrows()]
+    ax.legend(handles=[Patch(facecolor=sp.BAND_FILL[k], edgecolor="none", label=names[k]) for k in range(len(names))],
+              loc="upper left", bbox_to_anchor=(0.03, 1.0), ncol=1, frameon=False, fontsize=TS, handlelength=1.2, handleheight=0.8,
+              labelspacing=0.1, borderaxespad=0, borderpad=0, handletextpad=0.5)
+    ax.set_xlim(-X_LEFT, n_named + 2)
+    ax.set_ylim(0, 1)
+    ax.spines["left"].set_bounds(0, 1)
+    ax.spines["bottom"].set_bounds(-X_LEFT, n_named)   # from the y axis, so the two lines meet at the corner
+    ax.set_yticks([0, .2, .4, .6, .8, 1], ["0", "20", "40", "60", "80", "100"])
+    ax.set_xticks([0, 50, 100, 150, n_named])
+    ax.set_ylabel(f"cumulative share of\nall {n_air} designs (%)")
+    ax.set_xlabel("companies and universities ranked\nby designs, largest first")
+    return pd.DataFrame({"rank": rank, "firm": sizes.index, "unique aircraft": sizes.to_numpy(), "cumulative share": np.round(cum, 4)})
+
+
+def _letters(fig, axes):
+    """"(a)" and "(b)" 9 pt, on one line 4 pt above the top of the (shared) plot boxes (clear of the "100" tick label), each flush with the
+    left edge of its panel's y labels."""
+    fig.canvas.draw()
+    inv = fig.transFigure.inverted()
+    for ax, letter in zip(axes, ("(a)", "(b)")):
+        x0 = inv.transform(ax.yaxis.get_tightbbox())[0, 0]
+        fig.text(x0, ax.get_position().y1 + 4 / 72 / fig.get_figheight(), letter, ha="left", va="bottom", fontsize=LETTER_PT, fontfamily=ts.SANS, color=sp.INK)
+
+
+def fig_types_and_concentration(ctx):
+    """The two panels side by side, 6.3 in (16 cm) x HEIGHT_CM, each half the page. The plot boxes are placed by hand (no constrained
+    layout) so they share top and bottom exactly; the extras of each panel are placed inside that frame. Returns (fig, data) with data =
+    both panels' rows, a 'panel' column first."""
+    with sp._rc():
+        W, H = ts.TEXTWIDTH, HEIGHT_CM / CM
+        fig = plt.figure(figsize=(W, H))
+        y0, h = BOTTOM_IN / H, (H - TOP_IN - BOTTOM_IN) / H
+        axa = fig.add_axes([A_LEFT_IN / W, y0, (W / 2 - A_LEFT_IN - A_RIGHT_IN) / W, h])
+        axb = fig.add_axes([0.5 + B_LEFT_IN / W, y0, (W / 2 - B_LEFT_IN - B_RIGHT_IN) / W, h])
+        da = _types(axa, ctx)
+        db = _concentration(axb, ctx)
+        for ax in (axa, axb):
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.spines[["left", "bottom"]].set_visible(True)
+        _types_key(fig, axa, axb)
+        _letters(fig, (axa, axb))
+    data = pd.concat([da.reset_index(drop=True).assign(panel="(a) assignee types"),
+                      db.assign(panel="(b) cumulative share of the largest")], ignore_index=True)
+    for c in data.columns:                               # counts stay whole numbers where the other panel leaves them blank
+        if c != "cumulative share" and pd.api.types.is_float_dtype(data[c]) and (data[c].dropna() % 1 == 0).all():
+            data[c] = data[c].astype("Int64")
+    return fig, data[["panel"] + [c for c in data.columns if c != "panel"]]
+
+
+def export(cfg=None, ctx=None) -> dict:
+    """Build, check (6.3 in wide, nothing under 8 pt: ts.save) and write the pdf, png and csv; returns the facts to print."""
+    cfg = cfg or config.load(strict=False)
+    ctx = ctx or thesis.context(cfg)
+    root = latex_root(cfg)
+    pdf = root / "Figures" / PART / GROUP / ROLE / f"{NAME}.pdf"
+    csv = root / "Data_for_writing" / "csv" / f"{NAME}.csv"
+    csv.parent.mkdir(parents=True, exist_ok=True)
+    with mpl.rc_context(ts.RC):
+        fig, data = fig_types_and_concentration(ctx)
+        ts.save(fig, NAME, pdf.parent)
+    a5.relabel_df(data).to_csv(csv, index=False)
+    info = dict(name=NAME, pdf=pdf, png=pdf.with_suffix(".png"), csv=csv, width_cm=round(fig.get_figwidth() * CM, 2),
+                height_cm=round(fig.get_figheight() * CM, 2), overlaps=figcheck.overlaps(fig),
+                smallest_pt=min(t.get_fontsize() for t in fig.findobj(Text) if t.get_text().strip()))
+    plt.close(fig)
+    return info
+
+
+if __name__ == "__main__":
+    i = export()
+    print(i["pdf"], "\n", i["csv"], "\n", i["width_cm"], "x", i["height_cm"], "cm | smallest", i["smallest_pt"], "pt | overlaps", i["overlaps"])
