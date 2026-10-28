@@ -19,7 +19,9 @@ RULES (apply in every figure)
               ONE row, at the BOTTOM of the figure, under the x-axis label and above the caption
               (fig.legend(loc='outside lower center')), no frame. Same place as the key of the
               method diagrams (Figs 3.10-3.14), so every key in the thesis sits below its graphic.
-  Colour      one colour per category, identical in every figure (dicts below):
+              Exception (author 2026-10-28, legends pass): bottom_legend(rows=2) allows two rows for the figures of that
+              pass, which also name their test under the panel label (panel_label(note=...)) and end with a footnote line.
+  Colour     one colour per category, identical in every figure (dicts below):
                 architectures ARCH, directory categories VFS, regions REGION (+ REGION_MARKER),
                 assignee types ATYPE. One colour per ANALYSIS for single-series figures:
                 levels of description (A, A.W.T, A.U), D and configurations -> black, cohorts GREYS;
@@ -83,6 +85,11 @@ FEW_MAX = 20
 HOLLOW_LABEL = f'hollow marker: cohort with {FEW_MAX} designs or fewer'
 INCOMPLETE_LABEL = '* incomplete cohort, not tested'
 INCOMPLETE_YEAR_LABEL = '* incomplete year, not tested'   # the same mark for the yearly figures (4.2, 4.3, investment)
+#: the footnote line under the bottom legend wherever the asterisk appears (author 2026-10-28)
+INCOMPLETE_FOOTNOTE = '* 2024–26 incomplete cohort, not tested'
+#: the thin space before % ("95 %"): Nimbus Sans has no U+2009, so it is the mathtext \, (same line height)
+THIN = r'$\,$'
+NOTE = '#555555'                           # grey of the notes under the panel labels and of the footnote line
 
 
 def is_few(n) -> bool:
@@ -151,13 +158,15 @@ def shared_xlabel(ax, text):
     ax._ts_shared = text
 
 
-def panel_label(ax, text, color=None):
+def panel_label(ax, text, color=None, note=None):
     """The panel label "(a) short title" (author 2026-10-23: at the bottom of every panel, centred under the x tick labels, axis-label
     size, nothing at the top). Recorded here, written by place_panel_labels (ts.save calls it), which puts it in the x-label slot under
-    the panel's own x label, so constrained layout makes room for it."""
+    the panel's own x label, so constrained layout makes room for it. ``note`` (author 2026-10-28): lines directly under the label,
+    same size, NOTE grey, e.g. the test of the panel in words."""
     for loc in ('left', 'center', 'right'):
         ax.set_title('', loc=loc)
     ax._ts_panel = (text, color)
+    ax._ts_note = note
 
 
 def place_panel_labels(fig):
@@ -176,12 +185,28 @@ def place_panel_labels(fig):
         rows.setdefault(key, []).append(a)
     for row in rows.values():
         n_own = max((len(a._ts_own_xlabel.split('\n')) if a._ts_own_xlabel else 0) for a in row)
+        n_note = max((len(a._ts_note.split('\n')) if getattr(a, '_ts_note', None) else 0) for a in row)
         for a in row:
             own = a._ts_own_xlabel.split('\n') if a._ts_own_xlabel else []
             text, color = a._ts_panel
             shared = getattr(a, '_ts_shared', None)
-            lines = own + [' '] * (n_own - len(own)) + text.split('\n') + (shared.split('\n') if shared else [])
+            assert not (n_note and shared), 'a note under the panel label and a shared x label in one row'
+            # the note: blank lines in the x label hold its room in the layout; the grey text is drawn over them, anchored at the
+            # bottom of the label, so its first line sits right under the panel label (a panel without a note keeps no blank lines;
+            # the labels of a row are top-aligned, batch 4 2026-10-28)
+            note = getattr(a, '_ts_note', None)
+            k_note = len(note.split('\n')) if note else 0
+            lines = own + [' '] * (n_own - len(own)) + text.split('\n') + [' '] * k_note + (shared.split('\n') if shared else [])
             a.set_xlabel('\n'.join(lines), ha='center', linespacing=1.25, **({'color': color} if color and not own and not shared else {}))
+            if k_note:
+                body = note
+                art = getattr(a, '_ts_note_art', None)
+                if art is None:
+                    art = a.annotate(body, xy=(0.5, 0), xycoords=a.xaxis.label, ha='center', va='bottom', linespacing=1.25,
+                                     fontsize=a.xaxis.label.get_fontsize(), color=NOTE, annotation_clip=False)
+                    art.set_in_layout(False)
+                    a._ts_note_art = art
+                art.set_text(body)
             # centred under the drawn x axis: a figure that keeps room right of the data for end labels shortens the bottom spine
             b = a.spines['bottom'].get_bounds()
             x0, x1 = a.get_xlim()
@@ -210,11 +235,94 @@ def fit_cohort_ticks(fig, rotation=30):
     fig.canvas.draw()
 
 
-def bottom_legend(fig, handles=None, labels=None, ncol=None):
-    """The only legend form allowed: one row, bottom of the figure, no frame."""
+def bottom_legend(fig, handles=None, labels=None, ncol=None, rows=1, footnote=None, **kw):
+    """The only legend form allowed: one row, bottom of the figure, no frame. ``rows=2`` only for the figures of the 2026-10-28 legends
+    pass (author); the entries fill column by column, so the reading order is down each column. ``footnote``: one NOTE-grey line under
+    the entries (e.g. INCOMPLETE_FOOTNOTE), drawn over a blank last row so constrained layout makes room for it. ``kw`` goes to fig.legend."""
+    from matplotlib.lines import Line2D
+    assert rows in (1, 2), 'a bottom legend has one row, two in the 2026-10-28 legends pass'
     h, l = (handles, labels) if handles else fig.axes[0].get_legend_handles_labels()
-    return fig.legend(h, l, loc='outside lower center', ncol=ncol or len(l), frameon=False,
-                      handlelength=1.6, columnspacing=1.2)
+    h, l = list(h), list(l)
+    nc = ncol or -(-len(l) // rows)
+    if footnote:
+        per = -(-len(l) // nc)                     # entries per column, then one blank row under every column
+        blank = lambda: Line2D([], [], linestyle='none')   # noqa: E731
+        hh, ll = [], []
+        for c in range(nc):
+            col_h, col_l = h[c * per:(c + 1) * per], l[c * per:(c + 1) * per]
+            k = per + 1 - len(col_h)
+            hh += col_h + [blank() for _ in range(k)]
+            ll += col_l + [' '] * k
+        h, l = hh, ll
+    leg = fig.legend(h, l, **{**dict(loc='outside lower center', ncol=nc, frameon=False, handlelength=1.6, columnspacing=1.2), **kw})
+    if footnote:
+        from matplotlib.text import Annotation
+        fs = leg.get_texts()[0].get_fontsize()
+        fig._ts_footnote = fig.add_artist(Annotation(footnote, xy=(0.5, 0), xycoords=leg, xytext=(0, leg.borderpad * fs),
+                                                     textcoords='offset points', ha='center', va='bottom', fontsize=fs, color=NOTE,
+                                                     annotation_clip=False))
+        fig._ts_footnote.set_in_layout(False)
+    return leg
+
+
+def compact_legend(target, handles, labels, footnote=None, breaks=(), bare=(), loc='outside lower center', width_in=None,
+                   colsep=1.0, keyline=None, **kw):
+    """Legends pass, batch 4 (author 2026-10-28): the key laid out in rows across the page width instead of one entry per line.
+    The entries keep their order and fill a row while they fit the width (``width_in``, the page width by default); ``breaks`` = entry
+    indices that must start a new row. ``bare`` = entry indices drawn without a handle (a note such as "x axis, ..."). ``footnote`` (e.g.
+    INCOMPLETE_FOOTNOTE) ends the last row, NOTE grey, right-aligned with the widest row; it starts a row of its own only when it does not
+    fit. ``keyline``: a NOTE-grey line of its own, centred under the rows (the key of the point labels). ``target`` is the figure (a bottom legend, constrained layout makes room) or a key axes (loc 'upper center'). Returns the
+    legend; ``legend._ts_rows`` = the labels of each row, for the report."""
+    from matplotlib.offsetbox import DrawingArea, HPacker, TextArea, VPacker
+    fig = target if hasattr(target, 'add_axes') and not hasattr(target, 'transData') else target.figure
+    kw = {**dict(frameon=False, handlelength=1.6, handletextpad=0.5, borderaxespad=0.5), **kw}
+    if loc != 'outside lower center' and 'bbox_to_anchor' not in kw:
+        kw['bbox_to_anchor'] = (0.5, 1.0)
+    leg = target.legend(list(handles), list(labels), loc=loc, ncol=len(labels), **kw)
+    fs = leg.get_texts()[0].get_fontsize()
+    entries = [col.get_children()[0] for col in leg._legend_handle_box.get_children()]
+    for i in bare:                                          # no handle and no gap before the text
+        entries[i].get_children()[0].width, entries[i].sep = 0, 0
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    pt = rend.points_to_pixels(1.0)
+    wid = [e.get_bbox(rend).width / pt for e in entries]
+    avail = (width_in or fig.get_figwidth()) * 72 - 2 * (leg.borderpad + leg.borderaxespad) * fs - 4
+    sep = colsep * fs
+    rows, cur, w = [], [], 0.0
+    for i, (e, x) in enumerate(zip(entries, wid)):
+        if cur and (i in breaks or w + sep + x > avail):
+            rows.append((cur, w))
+            cur, w = [], 0.0
+        w = x if not cur else w + sep + x
+        cur.append(i)
+    rows.append((cur, w))
+    boxes = []
+    if footnote:
+        fn = TextArea(footnote, textprops=dict(color=NOTE, fontsize=fs))
+        fn.set_figure(fig)
+        fn_w = fn.get_bbox(rend).width / pt
+        widest = max(r[1] for r in rows)
+        last, lw = rows[-1]
+        if lw + sep + fn_w > avail:                         # does not fit the last row: a row of its own, right-aligned
+            rows.append(([], 0.0))
+            last, lw = [], 0.0
+        full = max(widest, lw + sep + fn_w)
+        gap = full - lw - fn_w if last else full - fn_w
+    for k, (idx, w) in enumerate(rows):
+        kids = [entries[i] for i in idx]
+        if footnote and k == len(rows) - 1:
+            kids = kids + [DrawingArea(max(gap - (sep if kids else 0), 0), 1), fn]
+        boxes.append(HPacker(children=kids, sep=sep, pad=0, align='center'))
+    if keyline:
+        boxes.append(TextArea(keyline, textprops=dict(color=NOTE, fontsize=fs)))
+    box = VPacker(children=boxes, sep=leg.labelspacing * fs, pad=0, align='center')
+    leg._legend_box._children = [leg._legend_title_box, box]
+    leg._legend_handle_box = box
+    leg._legend_box.set_figure(fig)
+    leg._ts_rows = [[leg.get_texts()[i].get_text() for i in r[0]] + ([footnote] if footnote and k == len(rows) - 1 else [])
+                    for k, r in enumerate(rows)]
+    return leg
 
 
 def label_end(ax, x, y, text, color, dx=.12, dy=0, **kw):

@@ -5,9 +5,9 @@ Same data and the same CSV as the builders they replace; only the drawing change
 
     4.17 q2_filer_types                  fig_filer_types           (thesis_q2._filer_types_parts)
     4.18 q2_largest_filers_share         fig_largest_filers_share  (thesis_q2._frames: sizes, cov)
-    4.19 q3_region_design_all_years      fig_region_design_all_years   (data of thesis_q3.fig_region_design_all_years; NA w/o its largest
+    4.17 q3_region_design_all_years      fig_region_design_all_years   (data of thesis_q3.fig_region_design_all_years; NA w/o its largest
                                                                         assignee from thesis_q7._data)
-    4.20 q3_region_mix_by_window_class   fig_region_mix_by_window_class (data of thesis_q3.fig_region_mix_by_window_class; trends from
+    4.18 q3_region_mix_by_window_class   fig_region_mix_by_window_class (data of thesis_q3.fig_region_mix_by_window_class; trends from
                                                                         thesis_q3._frames['mc'])
     4.21 q7_region_family_share          fig_region_family_share   (thesis_q7._data: ln, ts)
 
@@ -194,8 +194,10 @@ def _region_handles(ns=None):
 
 
 def fig_region_design_all_years(ctx):
-    """4.19: three panels, one shared y axis: (a) architecture, (b) propulsors per aircraft, (c) any propulsor tilts; three bars per
-    category (region colours, the region marker on each bar top); (c) also North America without its largest assignee (hollow marker)."""
+    """4.17: three panels, one shared y axis: (a) architecture, (b) propulsors per aircraft, (c) any propulsor tilts; three bars per
+    category (region colours, the region marker on each bar top); (c) also North America without its largest assignee (hollow marker).
+    Legends pass (author 2026-10-28): what each panel counts under its label, the architecture key on the line under the legend, and
+    "NA without <largest assignee>" a legend entry instead of a label with a leader in (c)."""
     fig0, data = q3.fig_region_design_all_years(ctx)
     plt.close(fig0)
     big = q7._data(ctx)["ts"].attrs["left_out"]
@@ -203,9 +205,11 @@ def fig_region_design_all_years(ctx):
     panels = [("class", "(a) architecture", q3.CLASSES5, ["SLC", "TP", "CVT", "TW", "MR", "other"]),
               ("propulsive units", "(b) propulsors per aircraft", q3.UNIT_ANS, [a.replace("-", "–") for a in q3.UNIT_ANS]),
               ("tilting unit", "(c) any propulsor tilts", [True], ["any tilt"])]
+    notes = {"class": "architecture of the region's designs", "propulsive units": "propulsors per design",
+             "tilting unit": "share with any\ntilting propulsor"}
     ns = {r: int(data[(data["variable"] == "class") & (data["region"] == r)]["n"].iloc[0]) for r in REGIONS}
     with _rc():
-        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.7), layout="constrained", sharey=True,   # 2.45 + labels under the panels (2026-10-23)
+        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 3.18), layout="constrained", sharey=True,   # 2.45 + labels under the panels (2026-10-23); 3.18 (batch 4, legend in one row), 3.36: + notes, legend row, key line, bar height kept (2026-10-28)
                                 gridspec_kw=dict(width_ratios=[6, 5, 3.2]))
         for ax, (var, title, answers, ticks) in zip(axs, panels):
             sub = data[data["variable"] == var].set_index("region")
@@ -220,19 +224,15 @@ def fig_region_design_all_years(ctx):
                     ax.text(xx[0], vals[0] / 2, f"{100 * vals[0]:.0f}", ha="center", va="center", fontsize=TS, color="white", zorder=5)
             if var == "tilting unit":
                 xna = x[0] - bw
-                ax.plot([xna], [na_wo], ls="none", marker=ts.REGION_MARKER["North America"], mfc="white", mec=ts.REGION["North America"],
-                        ms=4.2, mew=1.0, zorder=5)
+                na_mark = dict(ls="none", marker=ts.REGION_MARKER["North America"], mfc="white", mec=ts.REGION["North America"], ms=4.2, mew=1.0)
+                ax.plot([xna], [na_wo], zorder=5, **na_mark)
                 short = big.split(" /")[0] + "/" + big.split("/ ")[-1] if "/" in big else big
-                xt, yt = x[0] + 0.6, 0.60
-                ax.text(xt, yt, f"NA without\n{short}: {100 * na_wo:.0f} %", ha="left", va="center", fontsize=TS,
-                        color=ts.REGION["North America"])
-                ax.plot([xna + 0.07, xt - 0.03], [na_wo, yt], color=ts.REGION["North America"], linewidth=0.5, zorder=5)
                 ax.set_xlim(-0.65, 1.75)
             else:
                 ax.set_xlim(-0.55, len(answers) - 0.45)
             ax.set_xticks(x, ticks)
             ax.tick_params(axis="x", length=0)
-            ts.panel_label(ax, title)
+            ts.panel_label(ax, title, note=notes[var])
         axs[0].set_ylim(0, 0.7)
         axs[0].set_yticks(np.arange(0, 0.71, 0.1), [f"{v}" for v in range(0, 71, 10)])
         axs[0].set_ylabel("share of the region's\ndesigns, all years (%)")
@@ -243,22 +243,30 @@ def fig_region_design_all_years(ctx):
             ax.tick_params(axis="y", left=False)
             ax.spines["left"].set_visible(False)
         h, l = _region_handles(ns)
-        ts.bottom_legend(fig, h, l)
+        # (c)'s small dot named in the legend, its value kept (author 2026-10-28); the architecture key on the line under the legend
+        h.append(Line2D([], [], **na_mark))
+        l.append(f"NA without {short}, {100 * na_wo:.0f}{ts.THIN}%")
+        ts.compact_legend(fig, h, l,          # batch 4 (2026-10-28): the four entries in one row where they fit, the key line under them
+                          keyline="SLC Separate Lift + Cruise, TP Tilt Propulsor, CVT Combined Vectored Thrust, TW Tilt Wing, MR Multicopter")
         ts.place_panel_labels(fig)
     return fig, data
 
 
 # ---------------------------------------------------------------------------------------------- 4.20 architecture per region and cohort
+#: Fig 4.18 page height: 3.4 in before the legends pass; 3.93 keeps the plot height with the two-column legend and the footnote (above the
+#: 3.6 in ceiling; accepted by the author 2026-10-28)
+C_HEIGHT = 3.76   # batch 4 (2026-10-28): legend in three rows instead of four
 def fig_region_mix_by_window_class(ctx):
-    """4.20: 2 x 3 small line charts, one per architecture; x = cohort from 2012-15, a line per region (colour and marker); a cell under
-    frames.CH5_THIN designs is not drawn; 2024-26* hollow and never joined. Each significant 2012-2023 trend (p < 0.05) printed in its panel."""
+    """4.18: 2 x 3 small line charts, one per architecture; x = cohort from 2012-15, a line per region (colour and marker); a cell under
+    frames.CH5_THIN designs is not drawn; 2024-26* hollow and never joined. The significant trend (NA in CVT) is in the caption, not the
+    figure (author 2026-10-23, kept 2026-10-28). Legends pass (2026-10-28): the n per cohort of each region, the two marks, the footnote."""
     fig0, data = q3.fig_region_mix_by_window_class(ctx)
     plt.close(fig0)
     mc = q3._frames(ctx)["mc"]
     wins = frames.CH5_WINS + [INCOMPLETE]
     x = np.arange(len(wins), dtype=float)
     with _rc():
-        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, ts.H_TWO_ROWS + 0.4), layout="constrained", sharex=True, sharey=True)   # + labels under the panels (2026-10-23)
+        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, C_HEIGHT), layout="constrained", sharex=True, sharey=True)   # 3.4 + labels under the panels (2026-10-23); C_HEIGHT: + legend rows (2026-10-28)
         for k, (ax, c) in enumerate(zip(axs.flat, q3.CLASSES5)):
             for r in REGIONS:
                 s = data[data["region"] == r].set_index("window")
@@ -277,11 +285,22 @@ def fig_region_mix_by_window_class(ctx):
         for ax in axs[1]:
             ax.set_xticks(x, [COHORT_2L[w] for w in wins], rotation=30, ha="right", rotation_mode="anchor")   # 30 degrees: flat, "2020–23" and "2024–26" touch (author 2026-10-23)
             ax.set_xlabel(ts.COHORT_X)                  # own label on each bottom panel, above its panel label (batch 2: no shared label)
-        fig.supylabel("share of the region's designs with an architecture (%)", fontsize=9)
+        ylab = fig.supylabel("share of the region's designs\nwith an architecture (%)", fontsize=9)   # two lines: it must fit the plots' height
         h = [Line2D([], [], color=ts.REGION[r], marker=ts.REGION_MARKER[r], ms=3.5, lw=1.2) for r in REGIONS]
         h.append(ts.incomplete_handle(MUTED))            # 2024-26*: hollow light markers, named in the legend (author 2026-10-23)
-        ts.bottom_legend(fig, h, list(REGIONS) + [ts.INCOMPLETE_LABEL])
+        h.append(Line2D([], [], linestyle="none"))
+        # legends pass (author 2026-10-28): each region's n per cohort in cohort order, the two marks in words, the footnote line
+        ns = {r: ", ".join(str(int(v)) for v in data[data["region"] == r].set_index("window").loc[wins, "n"]) for r in REGIONS}
+        # batch 4 (2026-10-28): the three regions on the first row (closer spacing, so they fit); the two marks and the footnote do not
+        # fit one row, so "missing point" comes first and "open marker" shares the last row with the footnote, both about 2024-26
+        ts.compact_legend(fig, [h[0], h[1], h[2], h[4], h[3]], [f"{r} ({ABBR[r]}, n {ns[r]})" for r in REGIONS]
+                          + [f"missing point = cohort under {frames.CH5_THIN} designs, not plotted", "open marker = 2024–26*, incomplete cohort"],
+                          footnote=ts.INCOMPLETE_FOOTNOTE, breaks=[3, 4], bare=[3], colsep=0.8, borderaxespad=0.2, handlelength=1.4)
         ts.place_panel_labels(fig)
+        fig.canvas.draw()                                # the y label centred on the plots, not on the page with its legend (2026-10-28)
+        top, bot = axs[0, 0].get_position().y1, axs[1, 0].get_position().y0
+        ylab.set_y((top + bot) / 2)
+        ylab.set_va("center")
     return fig, data
 
 

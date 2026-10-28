@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
+from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.text import Text
@@ -42,7 +43,7 @@ import thesis_style as ts                                     # noqa: E402
 
 #: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): full text width, ts.save, no bbox crop
 TS_FIGS = {"q6_configuration_core", "q6_half_of_cohort", "q6_discovery_curve"}
-TS_H = {"q6_configuration_core": 2.45, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.85}   # discovery 2.3 -> 2.6: labels under the panels; 2.85: + the incomplete-cohort legend row (2026-10-23)
+TS_H = {"q6_configuration_core": 3.13, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.34}   # discovery 2.3 -> 2.6: labels under the panels; 2.85: + the incomplete-cohort legend row (2026-10-23); 2.0: x labels gone, one legend row at the bottom, under the panel labels (2026-10-28)
 NOTE = "#555555"                                              # dark grey of the 8 pt notes (local; candidate for thesis_style)
 
 
@@ -503,7 +504,8 @@ def fig_configuration_core_v2(ctx):
     distinct assignees per design. The core configurations (thesis_q6: taken by share until half of the 2016–23 designs) coloured by
     architecture and labelled; every other configuration a small grey dot; a thin dashed line at the share threshold between core and
     periphery, "periphery" / "core (…)" at the top (the word "rim" was dropped on 2026-10-22); a ring round the configuration whose largest assignee holds more than 40 % (``SOLO_ASSIGNEE``),
-    with an 8 pt note on a short leader. No hulls. Data and CSV as before (the three largest non-core configurations are no longer named)."""
+    with an 8 pt note on a short leader. No hulls. Data and CSV as before (the three largest non-core configurations are no longer named).
+    Legends pass (author 2026-10-28): a bottom legend of the four marks in two rows, the architecture key and the label number under it."""
     d = q6._data(ctx)
     zz, core, rim = d["zz"], d["core"], d["rim"]
     lab = core
@@ -531,6 +533,17 @@ def fig_configuration_core_v2(ctx):
         ax.axvline(thr, color=NOTE, linewidth=0.7, linestyle=(0, (3, 2)), zorder=2)
         ax.set_xlabel("share of all 2016–23 designs with an A·U configuration (%)")      # frames.zones: share_recent (2026-10-23: base named)
         ax.set_ylabel("distinct assignees per\ndesign of the configuration")
+        # the four marks, two rows, and the key of the point labels under them (author 2026-10-28)
+        dot = lambda c, ms=np.sqrt(s_core) * 0.9: Line2D([], [], marker="o", linestyle="none", ms=ms, color=c, mec="white", mew=0.4)   # noqa: E731
+        ring = Line2D([], [], marker="o", linestyle="none", ms=np.sqrt(s_core * 4.2) * 0.9, mfc="none", mec="#1a1a1a", mew=0.7)
+        # batch 4 (author 2026-10-28): the four marks in rows across the page width, in their order; the key line stays under them
+        three = tuple(dot(ts.ARCH[k]) for k in ("SLC", "TP", "CVT"))       # side by side; the ringed dot below is drawn one over the other
+        ts.compact_legend(fig, [three, dot(ts.NEUTRAL, np.sqrt(s_grey) * 0.9), Line2D([], [], color=NOTE, linewidth=0.7, linestyle=(0, (3, 2))),
+                                (dot(ts.ARCH["CVT"]), ring)],
+                          [f"core configuration ({len(core)} configurations, half of the 2016–23 designs)", "periphery configuration", "core cut",
+                           f"one assignee holds over 40{ts.THIN}% of the configuration"],
+                          keyline="SLC Separate Lift + Cruise, TP Tilt Propulsor, CVT Combined Vectored Thrust, number = propulsor band",
+                          handler_map={three: HandlerTuple(ndivide=None, pad=0.2)})
         ytop = 1.105
         t_rim = ax.text(thr - 0.0012, ytop, "periphery", ha="right", va="center", fontsize=8.4, color=NOTE)
         t_core = ax.text(thr + 0.0012, ytop, f"core ({len(core)} configurations, half of the designs)", ha="left", va="center", fontsize=8.4, color=NOTE)
@@ -563,7 +576,7 @@ def fig_configuration_core_v2(ctx):
         A = ax.transData.transform(zz[[X, Y]].to_numpy(dtype=float))
         marks = [Bbox([[x - 3 * k, y - 3 * k], [x + 3 * k, y + 3 * k]]) for x, y in A]
         axbb = ax.get_window_extent(rend)
-        note = "largest assignee > 40 %"
+        note = f"largest assignee > 40{ts.THIN}%"
         for i, (px, py) in zip(sel, ring_xy):
             placed = False
             for dx, dy in [(14, -24), (24, -24), (34, -22), (44, -18), (24, 18), (-14, -24), (-24, -24), (-34, -22), (-24, 18)]:
@@ -650,19 +663,37 @@ def _clear_label(ax, text, x0, y0, x, curves, side, color, pad_pt=2.5):
     return t
 
 
+#: Fig 4.7 (author 2026-10-28): each level of description written out under its panel label
+#: T = whether any propulsor tilts, U = the propulsor band (author 2026-10-28, second batch)
+LEVEL_WORDS = {"A0": "A, architecture", "A1t": "A·W·T, architecture,\nwings, tilt", "A0c": "A·U, architecture,\npropulsor band"}
+
+
+class _Bracket:
+    """Legend key of the "last 100" bracket of Fig 4.7 (drawn by _BracketHandler)."""
+
+
+class _BracketHandler:
+    """The bracket of the curves (a)-(c) as a legend handle: a short bar with its ends down, NOTE grey."""
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
+        w, h = handlebox.width, handlebox.height
+        ln = Line2D([0, 0, w, w], [h * 0.25, h * 0.8, h * 0.8, h * 0.25], color=NOTE, linewidth=0.7, transform=handlebox.get_transform())
+        handlebox.add_artist(ln)
+        return ln
+
+
 def fig_discovery_curve_v2(ctx):
-    """II3 main (Fig 4.8, thesis style 2026-10-20): configurations seen as the designs accumulate in priority order, to 2026, panels
+    """II3 main (Fig 4.7, thesis style 2026-10-20): configurations seen as the designs accumulate in priority order, to 2026, panels
     (a) A, (b) A·W·T, (c) A·U: real order solid black, random-order expectation dashed grey, the 2024–26* part thin dotted and faded;
     the last 100 designs to 2023 marked by a thin bracket (no shaded zone); the first design of 2016 and of 2020 as short ticks at the
     foot. (d): the new configurations among the last 100 designs to 2023 as a dot plot, real (filled) against random (hollow), one row per
-    level, values printed. Every number as before."""
+    level, values printed. Every number as before. Legends pass (author 2026-10-28; Fig 4.7): the levels written out under the panel
+    labels, the bracket in the bottom legend, the footnote; batch 4: the dots of (d) named with the two orders' lines in the bottom legend."""
     d = q6._data(ctx)
     full, est, tail = curve_to_2026(ctx), d["est"], ctx.cfg.analysis["discovery_tail"]
     n_done = d["curve"].groupby("level")["aircraft"].max()
     levels = [(k, LEVEL[k]) for k in ("A0", "A1t", "A0c")]
     RND = "#7a7a7a"
     starts = {}
-    curves = []
     with ts_rc():
         fig, axs4 = plt.subplots(1, 4, figsize=(ts.TEXTWIDTH, TS_H["q6_discovery_curve"]), layout="constrained",
                                  gridspec_kw=dict(width_ratios=[1, 1, 1, 1.25]))   # (d) a little wider: its label sits under it, centred (2026-10-23)
@@ -693,11 +724,8 @@ def fig_discovery_curve_v2(ctx):
                 starts[(nm, yr)] = xs
                 ax.plot([xs, xs], [0, hi * 0.06], color=NOTE, linewidth=0.7, zorder=5)
                 ax.text(xs, hi * 0.08, str(yr), ha="center", va="bottom", fontsize=8, color=NOTE)
-            ts.panel_label(ax, f"({'abc'[j]}) {nm}")
-            if j == 1:                                                # the two curves named once, in (b), clear of both curves (sweep 2026-10-23)
-                curves.append((ax, x, real, rnd, n_c, hi))
+            ts.panel_label(ax, f"({'abc'[j]}) {nm}", note=LEVEL_WORDS[lvl])
         axs[0].set_ylabel("distinct\nconfigurations seen")
-        ts.shared_xlabel(axs[1], "all designs, in priority order")      # frames.discovery_inputs: every design with a configuration; "dotted: 2024–26, incomplete" is in the caption
         # (d) the last-100 numbers as a dot plot
         obs = [float(est.loc[lvl, "new in the last 100 aircraft"]) for lvl, _ in levels]
         rnd_ = [float(est.loc[lvl, "new in the last 100, random order"]) for lvl, _ in levels]
@@ -713,9 +741,6 @@ def fig_discovery_curve_v2(ctx):
                 lo_, hi_ = (r, o) if r < o else (o, r)
                 axd.text(hi_ + xm * 0.11, y, f"{hi_:.1f}", ha="left", va="center", fontsize=8.4, color="#000000" if hi_ == o else RND)
                 axd.text(lo_ - xm * 0.11, y, f"{lo_:.1f}", ha="right", va="center", fontsize=8.4, color="#000000" if lo_ == o else RND)
-        key = next((i for i, (o, r) in enumerate(zip(obs, rnd_)) if abs(o - r) >= 0.5), 1)       # the words on the widest-apart row
-        axd.text(obs[key], yy[key] + 0.3, "real", ha="center", va="bottom", fontsize=8.4, color="#000000")
-        axd.text(rnd_[key], yy[key] + 0.3, "random", ha="center", va="bottom", fontsize=8.4, color=RND)
         axd.set_ylim(-0.6, len(levels) - 0.3)
         axd.set_xlim(-xm * 0.72, xm * 1.35)
         axd.set_yticks([])                                         # the level names inside the plot, left (sweep 2026-10-23: even gaps)
@@ -723,17 +748,20 @@ def fig_discovery_curve_v2(ctx):
             axd.text(-xm * 0.68, y, nm, ha="left", va="center", fontsize=8.4, color="#000000")
         axd.xaxis.set_major_locator(mticker.MultipleLocator(2))
         axd.set_xticks([t for t in axd.get_xticks() if t >= 0])
-        axd.set_xlabel("new configurations")
-        ts.panel_label(axd, f"(d) last {tail} designs to 2023")
-        # the one mark the dissertation uses for the incomplete cohort (author 2026-10-23): the dotted 2024-26* part, named in a legend row
-        fig.legend(handles=[Line2D([], [], color="#000000", linewidth=0.8, linestyle=(1.0, (1, 2.2)), alpha=ts.INCOMPLETE_ALPHA,
-                                   label=ts.INCOMPLETE_LABEL)],                               # the dotted handle is the 2024-26* part
-                   loc="outside lower center", frameon=False, handlelength=2.2, handletextpad=0.5, borderaxespad=0.1)
+        ts.panel_label(axd, f"(d) new configurations,\nlast {tail} designs to 2023")
+        # batch 4 (author 2026-10-28): the entries in rows across the page width, the dots of (d) drawn with the two orders' lines (no key
+        # under (d) any more), the footnote at the end of the last row; the x-axis note has no handle
+        dot_real = Line2D([], [], marker="o", ms=5, color="#000000", ls="none")
+        dot_rnd = Line2D([], [], marker="o", ms=5, mfc="white", mec=RND, mew=1.0, ls="none")
+        ts.compact_legend(fig, [Line2D([], [], linestyle="none"), _Bracket(),
+                                (Line2D([], [], color="#000000", linewidth=1.3, solid_capstyle="butt"), dot_real),
+                                (Line2D([], [], color=RND, linewidth=1.0, linestyle=(0, (3.5, 2))), dot_rnd),
+                                Line2D([], [], color="#000000", linewidth=0.8, linestyle=(1.0, (1, 2.2)), alpha=ts.INCOMPLETE_ALPHA)],
+                          ["x axis, all designs in priority order", f"last {tail} designs to 2023, counted in (d)", "real order",
+                           "random order (mean of all orders)", "2024–26*, incomplete"],     # the dotted handle is the 2024-26* part
+                          footnote=ts.INCOMPLETE_FOOTNOTE, bare=[0], handlelength=1.9, handletextpad=0.4, borderaxespad=0.1,
+                          handler_map={_Bracket: _BracketHandler()})
         ts.place_panel_labels(fig)
-        for ax, x, real, rnd, n_c, hi in curves:
-            _clear_label(ax, "random order", n_c * 0.5, max(np.interp(n_c * 0.5, x, real), np.interp(n_c * 0.5, x, rnd)), x, (real, rnd), +1, RND)
-            _clear_label(ax, "real order", n_c * 0.72, min(np.interp(n_c * 0.72, x, real), np.interp(n_c * 0.72, x, rnd)), x, (real, rnd), -1,
-                         "#000000")
     data = full[["level", "aircraft", "priority year reached", "archetypes (date order)", "archetypes (random order)"]].rename(
         columns={"aircraft": "designs", "archetypes (date order)": "configurations (real order)", "archetypes (random order)": "configurations (random order)"})
     data["level"] = data["level"].map(LEVEL)

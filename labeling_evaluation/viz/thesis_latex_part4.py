@@ -706,8 +706,8 @@ def fig_iv1_traces(ctx):
 
 
 def export_iv1_traces(cfg, ctx, png_dir: Path = None):
-    """Write the two figures that replace the composite q6_iv1_traces (split 2026-10-20: q6_iv1_traces_booms = Fig 4.15,
-    q6_iv1_traces_ducts = Fig 4.16) with ts.save (vector PDF + 300 dpi PNG, 6.3 in, no bounding-box crop) to LaTeX_v15 and the two
+    """Write the two figures that replace the composite q6_iv1_traces (split 2026-10-20: q6_iv1_traces_booms = Fig 4.13,
+    q6_iv1_traces_ducts = Fig 4.14) with ts.save (vector PDF + 300 dpi PNG, 6.3 in, no bounding-box crop) to LaTeX_v15 and the two
     hand-over folders (a PNG copy also in ``png_dir`` if given). The composite itself is no longer written. Returns one check row per figure."""
     R = root(cfg)
     rows, rel = [], []
@@ -776,7 +776,7 @@ def _centre_trajectory5(ax, centres: dict, markersize: float = 6.0) -> list:
     return pts
 
 
-# ================================================================================== thesis style (2026-10-20 restyle of Figs 4.14-4.17)
+# ================================================================================== thesis style (2026-10-20 restyle of Figs 4.12-4.15)
 import sys as _sys
 _NB = Path(__file__).resolve().parents[1] / "notebooks"
 if str(_NB) not in _sys.path:
@@ -786,13 +786,13 @@ from viz import thesis_v2_part2 as _p2                        # noqa: E402  (sha
 
 #: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): 6.3 in wide, written with ts.save, no bbox crop
 TS_FIGS = {"q6_leading_layout_by_architecture", "q6_architecture_centres_tilting_units", "q6_iv1_traces_booms", "q6_iv1_traces_ducts"}
-#: the two figures that replace the composite q6_iv1_traces (split 2026-10-20: Fig 4.15 booms, Fig 4.16 ducts)
+#: the two figures that replace the composite q6_iv1_traces (split 2026-10-20: Fig 4.13 booms, Fig 4.14 ducts)
 TRACE_SPLIT = ("q6_iv1_traces_booms", "q6_iv1_traces_ducts")
 TS_COL = {"SLC": ts.ARCH["SLC"], "TR": ts.ARCH["TP"], "CVT": ts.ARCH["CVT"]}
 TS_MARK = {"SLC": "o", "TR": "s", "CVT": "^"}
-#: Fig 4.14 only: the cohort ticks shortened as in the reference mockup (five two-line ticks of ts.COHORTS_2L do not fit a third of the width)
+#: Fig 4.12 only: the cohort ticks shortened as in the reference mockup (five two-line ticks of ts.COHORTS_2L do not fit a third of the width)
 COHORTS_SHORT = ["≤\n2011", "12–\n15", "16–\n19", "20–\n23", "24–\n26"]
-#: Fig 4.14 only: shorter printed layout names (the panel subtitle carries the rest); the CSV keeps the full names
+#: Fig 4.12 only: shorter printed layout names (the panel subtitle carries the rest); the CSV keeps the full names
 LAYOUT_SHORT = [("propulsors tilt · ", "tilt + "), ("a wing tilts · ", "wing tilts + "), ("2+ tilting sets, in ", "2+ sets, "),
                 ("propulsors and a wing tilt · ", "both tilt + ")]
 
@@ -805,9 +805,9 @@ NOTE = _p2.NOTE
 LABEL_DX = 0.8          # end labels start this far right of the 2024-26* column, so its hollow markers read as data, not as legend keys
 LABEL_ROOM = 2.75
 INC_GREY = ts.GREYS[2]
-#: Fig 4.14 only: the cohort ticks' rotation. The brief asks 30 degrees; at 30 the neighbouring ticks touch in these narrow panels
+#: Fig 4.12 only: the cohort ticks' rotation. The brief asks 30 degrees; at 30 the neighbouring ticks touch in these narrow panels
 #: (0.59 cm per cohort, 8.4 pt), at 45 they clear. Set to 30 to follow the brief to the letter.
-LAYOUT_TICK_ROT = 45  # Fig 4.14: the 2024-26* bars in shades of this grey instead of the faded architecture colour
+LAYOUT_TICK_ROT = 45  # Fig 4.12: the 2024-26* bars in shades of this grey instead of the faded architecture colour
 
 
 def _ts_line(ax, y, color, marker, ms: float = 4.2, lw: float = 1.2, ns=None) -> None:
@@ -862,7 +862,7 @@ def _rho_p(rho, p) -> str:
     return _test_txt(rho, p) if rho == rho else "not tested"
 
 
-#: Fig 4.14 (author 2026-10-23): the printed name of each layout, keyed by the record's configuration (q6 pmix5); "other" = every
+#: Fig 4.12 (author 2026-10-23): the printed name of each layout, keyed by the record's configuration (q6 pmix5); "other" = every
 #: layout outside the three kept (SLC: only the three "stowed in cruise" layouts; TP: one design with no tilting set recorded, named so)
 LAYOUT_NAME = {
     "lift units on booms": "lift propulsors on booms", "lift units on the wing": "lift propulsors on the wing",
@@ -876,7 +876,9 @@ OTHER_NAME = {"SLC": "other (stowed in cruise)", "TR": "no tilting set recorded"
 OTHER_FILL = "#D9D9D9"
 LAYOUT_INC_ALPHA = 0.45   # the 2024-26* bar: the same colours, faded, no outline (its note is in the caption)
 LAYOUT_H = 3.2            # in; two thirds of the 4.6 in of the first redraw (author 2026-10-23, second batch)
-LAYOUT_H5 = 3.265         # round 5 (2026-10-23): the bars 20 % taller (0.97 -> 1.16 in) and the n line under the ticks; legends as before
+#: Fig 4.12 legends pass (2026-10-28): the "each bar = 100 %" note under every panel (True, 4.08 in) or once in the bottom legend (False; accepted)
+LAYOUT_NOTE_EACH = False
+LAYOUT_H5 = 3.70          # batch 4: bottom key in two rows; round 5 (2026-10-23): the bars 20 % taller (0.97 -> 1.16 in), 3.265 in; 3.81: + the bottom key and footnote, bar height kept (option F2, accepted 2026-10-28)
 
 
 def _layout_looks(col: str) -> list:
@@ -886,7 +888,7 @@ def _layout_looks(col: str) -> list:
 
 
 def _layout_tick_n(ax, ns) -> None:
-    """Fig 4.14 (round 5, 2026-10-23): under each rotated cohort tick a second, grey line "n 18" = the architecture's designs in that
+    """Fig 4.12 (round 5, 2026-10-23): under each rotated cohort tick a second, grey line "n 18" = the architecture's designs in that
     cohort (the base of the 100 % bar). Drawn as a text with a blank first line at the tick label's own anchor and rotation, so it
     sits exactly one line under the cohort, right-aligned with it, at the tick font size."""
     tick = ax.xaxis.get_major_ticks()[0]
@@ -899,11 +901,12 @@ def _layout_tick_n(ax, ns) -> None:
 
 
 def fig_layout_rows(ctx):
-    """Fig 4.14 (redrawn 2026-10-23 for a clear key): the layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, three
+    """Fig 4.12 (redrawn 2026-10-23 for a clear key): the layouts inside Separate Lift + Cruise, Tilt Propulsor and CVT per cohort, three
     panels of 100 % stacked bars. The layout that leads in 2020-23 at the bottom in the architecture's colour, the next ones clearly lighter
     or hatched, "other" light grey on top; one legend under each panel (top to bottom as stacked), then the panel label. 2024-26* in the
     same colours, faded, with a thin outline. The share printed in every segment of 8 % or more. Same data and blocks as before
-    (q6 pmix5; the three or four largest layouts of 2020-23, the rest "other"). n per cohort: caption."""
+    (q6 pmix5; the three or four largest layouts of 2020-23, the rest "other"). n per cohort: caption.
+    Legends pass (author 2026-10-28): "each bar = 100 %" under every panel label; the faded bar and the footnote in a bottom legend."""
     d = q6._data(ctx)
     pmix = d["pmix5"]
     wins = list(ctx.WIN_NAMES)
@@ -912,7 +915,7 @@ def fig_layout_rows(ctx):
     with _p2.ts_rc(), mpl.rc_context({"hatch.linewidth": 0.6}):
         fig = plt.figure(figsize=(ts.TEXTWIDTH, LAYOUT_H5), layout="constrained")
         fig.get_layout_engine().set(w_pad=0.02, wspace=0.05, h_pad=0.0, hspace=0.0)
-        gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 0.62])
+        gs = fig.add_gridspec(3, 3, height_ratios=[1.0, 0.62, 0.1])     # row 3: the bottom key and the footnote (2026-10-28)
         axs = [fig.add_subplot(gs[0, 0])]
         axs += [fig.add_subplot(gs[0, j], sharey=axs[0]) for j in (1, 2)]
         keys = [fig.add_subplot(gs[1, j]) for j in range(3)]
@@ -965,13 +968,23 @@ def fig_layout_rows(ctx):
             kax.set_xticks([]); kax.set_yticks([])
             for sp in kax.spines.values():
                 sp.set_visible(False)
-            hl = handles[::-1]
-            if j == 0:      # one more line of panel (a)'s legend, aligned with its text column (round 5, 2026-10-23): no swatch
-                hl = hl + [Line2D([], [], linestyle="none", marker=None, label=ts.INCOMPLETE_LABEL)]
+            hl = handles[::-1]          # the incomplete-cohort line of (a) moved to the bottom legend and the footnote (2026-10-28)
             kax.legend(handles=hl, loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False, handlelength=1.4, handleheight=1.0,
                        borderaxespad=0.0, labelspacing=0.22, handletextpad=0.5, fontsize=8.4)
             kax.get_legend().set_in_layout(False)       # its height is fitted below; its width must not squeeze the bar columns
-            ts.panel_label(kax, f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}")
+            ts.panel_label(kax, f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}",
+                           note=f"each bar = 100{ts.THIN}% of\nthe architecture's designs\nin the cohort" if LAYOUT_NOTE_EACH else None)
+        # the faded bar named once under the three panels, and the footnote (author 2026-10-28)
+        h = [mpl.patches.Patch(facecolor=INC_GREY, alpha=LAYOUT_INC_ALPHA, edgecolor="none")]
+        l = ["faded bar = 2024–26*, incomplete cohort"]
+        if not LAYOUT_NOTE_EACH:                     # the panel note said once, as a key entry (option shown to the author 2026-10-28)
+            h.insert(0, mpl.patches.Patch(facecolor="none", edgecolor="#1a1a1a", linewidth=0.6))
+            l.insert(0, f"each bar = 100{ts.THIN}% of the architecture's designs in the cohort")
+        kbot = _key_axes(fig, gs[2, 1])               # a key row of its own, as Figs 4.13-4.15 (a figure legend overlaps the panel labels here); under (b), its legends kept out of the widths
+        lb = ts.compact_legend(kbot, h, l, footnote=ts.INCOMPLETE_FOOTNOTE, loc="upper center", fontsize=8.4, breaks=[1] if len(l) > 1 else (),
+                               borderaxespad=0.0, width_in=ts.TEXTWIDTH)   # batch 4 (2026-10-28): rows across the page width; the footnote
+                                                                           # shares the faded bar's row (the three do not fit one row)
+        lb.set_in_layout(False)                       # its height is fitted by _key_fit; its width must not squeeze the bar columns
         ts.place_panel_labels(fig)
         # the key row as tall as its longest legend (measured): the bars take the rest of the page height
         for _ in range(4):
@@ -980,11 +993,20 @@ def fig_layout_rows(ctx):
             if abs(need - 1.0) < 0.03:
                 break
             r = gs.get_height_ratios()
-            gs.set_height_ratios([r[0], r[1] * need * 1.02])
+            gs.set_height_ratios([r[0], r[1] * need * 1.02, r[2]])
+        fig._key2 = (gs, kbot, [(lb, None)], 2)
+        for _ in range(3):                            # the bottom key row as tall as its lines, then the panel keys again (each fit moves the other)
+            _key_fit(fig)
+            fig.canvas.draw()
+            need = max(kx.get_legend().get_window_extent().height / max(kx.get_window_extent().height, 1.0) for kx in keys)
+            if abs(need - 1.0) < 0.03:
+                break
+            r = gs.get_height_ratios()
+            gs.set_height_ratios([r[0], r[1] * need * 1.02, r[2]])
     return fig, _csv_cohorts(pmix.reset_index(drop=True))
 
 
-DUCT_ROOM = 3.3          # Fig 4.16: room right of the cohorts for the ρ labels (LABEL_ROOM elsewhere)
+DUCT_ROOM = 3.3          # Fig 4.14: room right of the cohorts for the ρ labels (LABEL_ROOM elsewhere)
 
 
 def _trace_panel_share(ax, ctx, col: str, room: float = LABEL_ROOM) -> None:
@@ -1004,13 +1026,14 @@ def _trace_panel_share(ax, ctx, col: str, room: float = LABEL_ROOM) -> None:
 
 
 def fig_traces_booms(ctx):
-    """Fig 4.15 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with propulsors on booms per cohort, (b) the
+    """Fig 4.13 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with propulsors on booms per cohort, (b) the
     CVT share with its value at each point. ρ and p (Spearman, every year to 2023) as direct labels at the line ends. Hollow markers:
-    few designs (≤2011, 2012–15); 2024–26* hollow and faded, never joined. n per cohort and line: caption."""
+    few designs (≤2011, 2012–15); 2024–26* hollow and faded, never joined. n per cohort and line: caption.
+    Legends pass (author 2026-10-28): the marks and "ρ, p" named in the key, a note under (b), the footnote line."""
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins)
     with _p2.ts_rc():
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.95), layout="constrained")       # 2.45 + panel labels and the key row
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.29), layout="constrained")       # 2.45 + panel labels and the key row; 3.29: key in three rows (batch 4); 3.555: + marks, note, footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12])
         a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
         b.tick_params(labelleft=False)
@@ -1018,9 +1041,9 @@ def fig_traces_booms(ctx):
         for ax in (a, b):
             ax.set_xlabel(ts.COHORT_X)
         ts.panel_label(a, "(a) Propulsors on booms")
-        ts.panel_label(b, "(b) CVT, propulsors on booms")
+        ts.panel_label(b, "(b) CVT, propulsors on booms", note="CVT trace alone, values on the points")
         ts.place_panel_labels(fig)
-        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]))     # row 1 the architectures, row 2 the one hollow entry (round 5)
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks(), footnote=ts.INCOMPLETE_FOOTNOTE)   # legends pass 2026-10-28
         _trace_panel_share(a, ctx, "share with units on booms")
         a.set_ylabel("share of the\narchitecture's designs (%)")
         cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
@@ -1028,7 +1051,7 @@ def fig_traces_booms(ctx):
         _ts_line(b, y, TS_COL["CVT"], TS_MARK["CVT"], ns=cv["aircraft"])
         for xi in range(k):
             if np.isfinite(y[xi]):
-                b.annotate(f"{100 * y[xi]:.0f} %", (xi, y[xi]), textcoords="offset points", xytext=(0, 5), ha="center", va="bottom",
+                b.annotate(f"{100 * y[xi]:.0f}{ts.THIN}%", (xi, y[xi]), textcoords="offset points", xytext=(0, 5), ha="center", va="bottom",
                            fontsize=8, color="#1a1a1a", alpha=ts.INCOMPLETE_ALPHA if xi == k - 1 else 1.0)
         _ts_cohort_axis(b, k, 0.6)                    # no end label: panel (a) already gives the CVT rho and p (author 2026-10-23)
         _ts_pct_axis(b)
@@ -1037,7 +1060,7 @@ def fig_traces_booms(ctx):
 
 
 def fig_traces_ducts(ctx):
-    """Fig 4.16 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with a ducted propulsor per cohort, (b) the
+    """Fig 4.14 (split from q6_iv1_traces, 2026-10-20): (a) share of SLC, TP and CVT designs with a ducted propulsor per cohort, (b) the
     CVT ducted share inside each boom layout (propulsors on booms; none on booms, a light tint of the CVT colour), with the two tests of
     the frame ``links``. ρ and p as direct labels at the line ends; the n/N point labels moved to the caption."""
     d = q6._data(ctx)
@@ -1047,7 +1070,7 @@ def fig_traces_ducts(ctx):
     lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
     with _p2.ts_rc():
         # (b) narrower than (a) (author 2026-10-23: it holds two short lines, no ≤ 2011 point); more room right of both for the ρ labels
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.1), layout="constrained")
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.29), layout="constrained")     # 3.1; 3.29: key in three rows (batch 4); 3.55: + marks and footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12], width_ratios=[1.2, 1])
         a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
         b.tick_params(labelleft=False)
@@ -1057,7 +1080,7 @@ def fig_traces_ducts(ctx):
         ts.panel_label(a, "(a) Ducted propulsor")
         ts.panel_label(b, "(b) CVT ducted, by boom layout")
         ts.place_panel_labels(fig)
-        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]))     # as Fig 4.15; panel (b) names its two CVT lines directly
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks(), footnote=ts.INCOMPLETE_FOOTNOTE)   # as Fig 4.13; panel (b) names its two CVT lines directly
         _trace_panel_share(a, ctx, "share with a ducted unit", room=DUCT_ROOM)
         a.set_ylabel("share of the\narchitecture's designs (%)")
         items = []
@@ -1085,8 +1108,18 @@ CENTRE_TAG = ["≤ 2011", "12–15", "16–19", "20–23", "24–26*"]
 HOLLOW_RULE = ts.HOLLOW_LABEL
 
 
-#: Figs 4.15-4.17 (round 5, 2026-10-23): the two marks merged into one entry with one grey hollow circle
-MERGED_HOLLOW = f"hollow: {ts.FEW_MAX} designs or fewer, or the incomplete cohort (2024–26*, not tested)"
+def _trace_marks() -> list:
+    """Figs 4.13 and 4.14 (author 2026-10-28): the marks and the label of the line ends, one key entry each."""
+    mk = dict(marker="o", ms=4.2, color=style.MUTED, ls="none")
+    return [Line2D([], [], mec=style.MUTED, label="filled marker = cohort tested", **mk),       # wordings shortened in batch 4 (author)
+            Line2D([], [], mfc="white", mec=style.MUTED, mew=1.0, label=OPEN_MARK, **mk),
+            Line2D([], [], linestyle="none", label="ρ, p = Spearman with priority year, before Holm")]
+
+
+#: the open marker of Figs 4.13-4.15 (batch 4, author 2026-10-28; 4.15 takes the wording of 4.13/4.14 so its key fits two rows)
+OPEN_MARK = f"open marker = {ts.FEW_MAX} designs or fewer, or 2024–26*"
+
+
 
 
 def _key_handles(extra=()) -> list:
@@ -1106,33 +1139,38 @@ def _key_axes(fig, cell):
     return kax
 
 
-def _key_two_rows(fig, gs, kax, row: int = 1) -> None:
-    """Row 1: the three architectures, centred under the panels (as before); row 2: the one merged hollow entry, on one line,
-    left-aligned under row 1 (its marker under the first marker of row 1). The key row of ``gs`` is fitted to the two legends' height."""
-    kw = dict(frameon=False, handlelength=1.6, handletextpad=0.5, borderaxespad=0.0, fontsize=8.4)
-    l1 = kax.legend(handles=_key_handles(), loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3, columnspacing=1.0, **kw)
-    kax.add_artist(l1)
-    hh = Line2D([], [], marker="o", ms=4.2, mfc="white", mec=style.MUTED, color=style.MUTED, ls="none", label=MERGED_HOLLOW)
-    l2 = kax.legend(handles=[hh], loc="upper left", **kw)
-    fig._key2 = (gs, kax, l1, l2, row)
+def _key_two_rows(fig, gs, kax, row: int = 1, marks=None, footnote: str = None) -> None:
+    """The key of Figs 4.13-4.15 in the key axes ``kax``: the three architectures on the first row, then ``marks`` (the open marker by
+    default) and the ``footnote`` (ts.INCOMPLETE_FOOTNOTE, at the end of the last row) in rows across the page width (ts.compact_legend,
+    batch 4 of the legends pass, 2026-10-28). The key row of ``gs`` is fitted to the legend's height."""
+    if marks is None:
+        marks = [Line2D([], [], marker="o", ms=4.2, mfc="white", mec=style.MUTED, color=style.MUTED, ls="none", label=OPEN_MARK)]
+    h = _key_handles() + list(marks)
+    bare = [i for i, m in enumerate(h) if m.get_marker() in (None, "None", "") and m.get_linestyle() in ("None", "none", "")]
+    leg = ts.compact_legend(kax, h, [m.get_label() for m in h], footnote=footnote, breaks=[3], bare=bare, loc="upper center",
+                            fontsize=8.4, borderaxespad=0.0)
+    fig._key2 = (gs, kax, [(leg, None)], row)
     _key_fit(fig)
 
 
 def _key_fit(fig) -> None:
-    """Fit the key row's height to the two legends and put row 2 under row 1's first entry; run again at the end of a builder,
-    after the layout has settled (the y label and the end labels move the columns)."""
-    gs, kax, l1, l2, row = fig._key2
+    """Fit the key row's height to its legends and put each one under the one before (a mark list under row 1's first entry, the
+    footnote centred); run again at the end of a builder, after the layout has settled (the y label and the end labels move the columns)."""
+    gs, kax, chain, row = fig._key2
     fs_px = 8.4 / 72 * fig.dpi
     for _ in range(6):
         fig.canvas.draw()
         inv = kax.transAxes.inverted()
-        b1 = l1.get_window_extent()
-        # row 2's inner top one label spacing under row 1's inner bottom (each legend has borderpad 0.4 font sizes)
-        x0, y0 = inv.transform((b1.x0, b1.y0 + 2 * l1.borderpad * fs_px - 0.3 * fs_px))
-        l2.set_bbox_to_anchor((x0, y0), transform=kax.transAxes)
-        fig.canvas.draw()
-        b2 = l2.get_window_extent()
-        need = (b1.y1 - b2.y0) / max(kax.get_window_extent().height, 1.0)
+        b1 = chain[0][0].get_window_extent()
+        prev = b1
+        for leg, align in chain[1:]:
+            # the next legend's inner top one label spacing under the previous one's inner bottom (borderpad 0.4 font sizes each)
+            x = b1.x0 if align == "left" else (b1.x0 + b1.x1) / 2
+            x0, y0 = inv.transform((x, prev.y0 + 2 * leg.borderpad * fs_px - 0.3 * fs_px))
+            leg.set_bbox_to_anchor((x0, y0), transform=kax.transAxes)
+            fig.canvas.draw()
+            prev = leg.get_window_extent()
+        need = (b1.y1 - prev.y0) / max(kax.get_window_extent().height, 1.0)
         if abs(need - 1.0) < 0.02:
             break
         r = list(gs.get_height_ratios())
@@ -1151,14 +1189,14 @@ def _key_row(fig, handles, ncol: int = None):
 
 
 def fig_centres5(ctx):
-    """Fig 4.17 (restored 2026-10-23 as ONE scatter, after the archived v2 appendix figure; the two-panel version of 2026-10-20 is
+    """Fig 4.15 (restored 2026-10-23 as ONE scatter, after the archived v2 appendix figure; the two-panel version of 2026-10-20 is
     retired): the centre of SLC, TP and CVT per cohort, x = mean tilting sets per design, y = median propulsors per design; one path per
     architecture, an arrow from each cohort to the next, each point labelled with its cohort. Hollow: few designs (the first N_FEW
     cohorts); 2024–26* faded, labelled, no arrow into it. No title, no test in the figure; the legend box names the architectures."""
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins) - 1                                                          # index of the incomplete cohort
     with _p2.ts_rc():
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.9), layout="constrained")
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.92), layout="constrained")      # 2.9; 3.06: + the footnote line (2026-10-28); 2.92: key in two rows (batch 4)
         gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.12])
         ax = fig.add_subplot(gs[0, 0])
         pts = []
@@ -1201,13 +1239,13 @@ def fig_centres5(ctx):
         ax.yaxis.set_major_locator(mticker.MultipleLocator(2))
         ax.set_xlabel("tilting sets per design (mean of the architecture's designs)")
         ax.set_ylabel("propulsors per design\n(median of the\narchitecture's designs)")
-        _key_two_rows(fig, gs, _key_axes(fig, gs[1, 0]))     # as Fig 4.15
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, 0]), footnote=ts.INCOMPLETE_FOOTNOTE)     # as Fig 4.13; the footnote line (2026-10-28)
     data = dw[dw["code"].isin(ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
     return fig, _csv_cohorts(data.reset_index(drop=True))
 
 
 def caption_counts(ctx) -> dict:
-    """The n behind Figs 4.14-4.17 that the figures no longer print (for the captions): designs per cohort and architecture, and the CVT
+    """The n behind Figs 4.12-4.15 that the figures no longer print (for the captions): designs per cohort and architecture, and the CVT
     designs with and without propulsors on booms."""
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     n = dw.pivot(index="window", columns="code", values="aircraft").reindex(wins)[ARCH3]
@@ -1234,10 +1272,10 @@ REFRESH = {
     "q6_cvt_ducted_by_boom_layout": ("IV2_attributes_and_drivers", "main", fig_cvt_ducted_booms5, FRAC62,
                                      "CVT ducted share with and without propulsors on booms, with the tests; 2024-26 drawn, not tested"),
     "q6_iv1_traces_booms": ("IV2_attributes_and_drivers", "main", fig_traces_booms, 1.0,
-                            "Fig 4.15 (split from q6_iv1_traces, 2026-10-20): share with propulsors on booms per architecture and cohort, and the CVT share "
+                            "Fig 4.13 (split from q6_iv1_traces, 2026-10-20): share with propulsors on booms per architecture and cohort, and the CVT share "
                             "with its values; rho and p at the line ends; 2024-26 drawn, not tested"),
     "q6_iv1_traces_ducts": ("IV2_attributes_and_drivers", "main", fig_traces_ducts, 1.0,
-                            "Fig 4.16 (split from q6_iv1_traces, 2026-10-20): share with a ducted propulsor per architecture and cohort, and the CVT ducted "
+                            "Fig 4.14 (split from q6_iv1_traces, 2026-10-20): share with a ducted propulsor per architecture and cohort, and the CVT ducted "
                             "share inside each boom layout; rho and p at the line ends; 2024-26 drawn, not tested"),
 }
 

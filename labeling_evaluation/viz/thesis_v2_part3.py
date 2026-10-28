@@ -441,9 +441,10 @@ def fig_architecture_shares_by_cohort(ctx):
 
 
 def fig_family_conditions(ctx):
-    """Fig 4.12: the three conditions on F, all designs (solid, filled) and actively protected (dashed, hollow), colour ts.ARCH['F']:
+    """Fig 4.11: the three conditions on F, all designs (solid, filled) and actively protected (dashed, hollow), colour ts.ARCH['F']:
     (a) share per priority year from 2016 against 50 %, (b) ²D per cohort with its band, (c) ΔQ per cohort with its band. The values are
-    the tidy table of thesis_q7.fig_family_conditions; its "granted and live" series is not drawn (and left out of the table)."""
+    the tidy table of thesis_q7.fig_family_conditions; its "granted and live" series is not drawn (and left out of the table).
+    Legends pass (author 2026-10-28): the test of each panel in words under its label, five legend entries in two rows, the footnote."""
     import matplotlib.pyplot as _plt
     from lib import dominant_design as _dd
     f0, data = q7.fig_family_conditions(ctx)
@@ -453,7 +454,7 @@ def fig_family_conditions(ctx):
     col = ts.ARCH["F"]
     bases = (("all designs", False, 0.0), ("actively protected", True, 0.14))
     with mpl.rc_context(ts.RC):
-        fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.7), layout="constrained")   # 2.5 + labels under the panels (2026-10-23)
+        fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 3.23), layout="constrained")   # 2.5 + labels under the panels (2026-10-23); 3.35: + notes, footnote (2026-10-28); 3.23: legend in rows (batch 4)
         # (a) condition 1, read years only
         p1 = data[data["panel"] == "(a) condition 1"]
         top_at = {}
@@ -474,17 +475,17 @@ def fig_family_conditions(ctx):
         s_all = p1[(p1["base"] == "all designs") & p1["drawn"]]
         for yr, sh in zip(s_all["year / cohort"].astype(int), s_all["value"].astype(float)):
             if sh > 0.5:
-                a1.annotate(f"{100 * sh:.1f} %", (yr, top_at[yr]), textcoords="offset points", xytext=(0, 4), ha="center", va="bottom", fontsize=8.4, color=col)
+                a1.annotate(f"{100 * sh:.1f}{ts.THIN}%", (yr, top_at[yr]), textcoords="offset points", xytext=(0, 4), ha="center", va="bottom", fontsize=8.4, color=col)
         a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=2)
         yrs_all = sorted(p1["year / cohort"].astype(int).unique())
-        a1.text(yrs_all[0] - 0.4, 51, "50 %", ha="left", va="bottom", fontsize=8.4, color=REF)
+        a1.text(yrs_all[0] - 0.4, 51, f"50{ts.THIN}% threshold", ha="left", va="bottom", fontsize=8.4, color=REF)
         a1.set_xlim(yrs_all[0] - 0.5, yrs_all[-1] + 0.5)
         a1.set_xticks(yrs_all, [str(y) if (y - yrs_all[0]) % 2 == 0 else "" for y in yrs_all])
         a1.set_ylim(0, 75)
         a1.set_yticks([0, 20, 40, 60])
         a1.set_ylabel("share of designs in F (%)")
         a1.set_xlabel("priority year")
-        ts.panel_label(a1, "(a) share")
+        ts.panel_label(a1, "(a) share", note=f"share of designs in F,\ncondition met above 50{ts.THIN}%\nin two consecutive years")
         _grid(a1)
         # (b) condition 2 and (c) condition 3, per cohort
         for ax, panel, whisk in ((a2, "(b) condition 2", True), (a3, "(c) condition 3", False)):
@@ -497,17 +498,17 @@ def fig_family_conditions(ctx):
             ax.set_xlabel(ts.COHORT_X)
         a2.set_ylim(0, float(np.nanmax(data.loc[data["panel"] == "(b) condition 2", ["value", "band high", "whisker high"]].to_numpy(float))) * 1.12)
         a2.set_ylabel("²D of F")
-        ts.panel_label(a2, "(b) balance")
+        ts.panel_label(a2, "(b) balance", note="balance ²D of F,\nmet below the band")
         a3.axhline(0, color=REF, linewidth=0.5, zorder=2)
         a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
-        ts.panel_label(a3, "(c) disparity")
-        # the incomplete cohort added to the key (author 2026-10-23): five entries, two rows
-        ts.bottom_legend(fig, [Line2D([], [], color=col, marker="o"),
+        ts.panel_label(a3, "(c) disparity", note="disparity ΔQ of F against\nthe two earliest cohorts,\nmet below the band")
+        # batch 4 (author 2026-10-28): the five entries in rows across the page width, the footnote at the end of the last row
+        ts.compact_legend(fig, [Line2D([], [], color=col, marker="o"),
                                Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
                                mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
                                Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2), ts.incomplete_handle(col)],
-                         ["all designs", "actively protected designs", "permutation band (95 %), all designs", "condition met",
-                          ts.INCOMPLETE_LABEL], ncol=3)
+                         ["all designs", "actively protected designs", f"95{ts.THIN}% permutation band", "condition met",
+                          "2024–26*, incomplete cohort"], footnote=ts.INCOMPLETE_FOOTNOTE)
         ts.fit_cohort_ticks(fig)
         ts.place_panel_labels(fig)
         fig.canvas.draw()
