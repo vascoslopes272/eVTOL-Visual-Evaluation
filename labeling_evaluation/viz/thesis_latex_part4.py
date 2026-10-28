@@ -867,18 +867,17 @@ def _rho_p(rho, p) -> str:
 LAYOUT_NAME = {
     "lift units on booms": "lift propulsors on booms", "lift units on the wing": "lift propulsors on the wing",
     "lift units on the body": "lift propulsors on the body",
-    "one tilting set": "one tilting set", "two or more tilting sets, on one station": "two or more tilting sets, in one place",
-    "two or more tilting sets, on two or more stations": "two or more tilting sets, in two or more places",
-    "rotors tilt · fixed units on booms": "tilting propulsors, fixed ones on booms",
-    "rotors tilt · fixed units elsewhere": "tilting propulsors, fixed ones elsewhere",
-    "a wing tilts · fixed units elsewhere": "a wing tilts, fixed propulsors elsewhere"}
+    # (b) and (c) shortened so no key entry wraps (author, batch 5, 2026-10-28)
+    "one tilting set": "one tilting set", "two or more tilting sets, on one station": "2+ tilting sets, one place",
+    "two or more tilting sets, on two or more stations": "2+ tilting sets, 2+ places",
+    "rotors tilt · fixed units on booms": "tilt, fixed on booms",
+    "rotors tilt · fixed units elsewhere": "tilt, fixed elsewhere",
+    "a wing tilts · fixed units elsewhere": "wing tilts, fixed elsewhere"}
 OTHER_NAME = {"SLC": "other (stowed in cruise)", "TR": "no tilting set recorded", "CVT": "other"}   # TP: its only other layout (author 2026-10-23)
 OTHER_FILL = "#D9D9D9"
 LAYOUT_INC_ALPHA = 0.45   # the 2024-26* bar: the same colours, faded, no outline (its note is in the caption)
 LAYOUT_H = 3.2            # in; two thirds of the 4.6 in of the first redraw (author 2026-10-23, second batch)
-#: Fig 4.12 legends pass (2026-10-28): the "each bar = 100 %" note under every panel (True, 4.08 in) or once in the bottom legend (False; accepted)
-LAYOUT_NOTE_EACH = False
-LAYOUT_H5 = 3.70          # batch 4: bottom key in two rows; round 5 (2026-10-23): the bars 20 % taller (0.97 -> 1.16 in), 3.265 in; 3.81: + the bottom key and footnote, bar height kept (option F2, accepted 2026-10-28)
+LAYOUT_H5 = 3.04          # batch 5: short stack names, one bottom line; batch 4: bottom key in two rows; round 5 (2026-10-23): the bars 20 % taller (0.97 -> 1.16 in), 3.265 in; 3.81: + the bottom key and footnote, bar height kept (option F2, accepted 2026-10-28)
 
 
 def _layout_looks(col: str) -> list:
@@ -972,18 +971,14 @@ def fig_layout_rows(ctx):
             kax.legend(handles=hl, loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False, handlelength=1.4, handleheight=1.0,
                        borderaxespad=0.0, labelspacing=0.22, handletextpad=0.5, fontsize=8.4)
             kax.get_legend().set_in_layout(False)       # its height is fitted below; its width must not squeeze the bar columns
-            ts.panel_label(kax, f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}",
-                           note=f"each bar = 100{ts.THIN}% of\nthe architecture's designs\nin the cohort" if LAYOUT_NOTE_EACH else None)
+            ts.panel_label(kax, f"({'abc'[j]}) {ts.ARCH_NAME['TP' if c == 'TR' else c]}\n{sub[c]}")
+            kax.xaxis.labelpad = 1.0                  # the panel label close under its key (batch 5)
         # the faded bar named once under the three panels, and the footnote (author 2026-10-28)
+        # batch 5 (author 2026-10-28): one line, the faded bar and the asterisk together; "each bar = 100 %" dropped
         h = [mpl.patches.Patch(facecolor=INC_GREY, alpha=LAYOUT_INC_ALPHA, edgecolor="none")]
-        l = ["faded bar = 2024–26*, incomplete cohort"]
-        if not LAYOUT_NOTE_EACH:                     # the panel note said once, as a key entry (option shown to the author 2026-10-28)
-            h.insert(0, mpl.patches.Patch(facecolor="none", edgecolor="#1a1a1a", linewidth=0.6))
-            l.insert(0, f"each bar = 100{ts.THIN}% of the architecture's designs in the cohort")
+        l = ["* 2024–26 incomplete cohort, faded, not tested"]
         kbot = _key_axes(fig, gs[2, 1])               # a key row of its own, as Figs 4.13-4.15 (a figure legend overlaps the panel labels here); under (b), its legends kept out of the widths
-        lb = ts.compact_legend(kbot, h, l, footnote=ts.INCOMPLETE_FOOTNOTE, loc="upper center", fontsize=8.4, breaks=[1] if len(l) > 1 else (),
-                               borderaxespad=0.0, width_in=ts.TEXTWIDTH)   # batch 4 (2026-10-28): rows across the page width; the footnote
-                                                                           # shares the faded bar's row (the three do not fit one row)
+        lb = ts.compact_legend(kbot, h, l, loc="upper center", fontsize=8.4, borderaxespad=0.0, width_in=ts.TEXTWIDTH)
         lb.set_in_layout(False)                       # its height is fitted by _key_fit; its width must not squeeze the bar columns
         ts.place_panel_labels(fig)
         # the key row as tall as its longest legend (measured): the bars take the rest of the page height
@@ -1033,7 +1028,7 @@ def fig_traces_booms(ctx):
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins)
     with _p2.ts_rc():
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.29), layout="constrained")       # 2.45 + panel labels and the key row; 3.29: key in three rows (batch 4); 3.555: + marks, note, footnote, plot height kept (2026-10-28)
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.11), layout="constrained")       # 2.45 + panel labels and the key row; 3.11: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.555: + marks, note, footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12])
         a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
         b.tick_params(labelleft=False)
@@ -1043,7 +1038,7 @@ def fig_traces_booms(ctx):
         ts.panel_label(a, "(a) Propulsors on booms")
         ts.panel_label(b, "(b) CVT, propulsors on booms", note="CVT trace alone, values on the points")
         ts.place_panel_labels(fig)
-        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks(), footnote=ts.INCOMPLETE_FOOTNOTE)   # legends pass 2026-10-28
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks())   # batch 5: two rows, architectures / open marker + rho line; no footnote (author)   # legends pass 2026-10-28
         _trace_panel_share(a, ctx, "share with units on booms")
         a.set_ylabel("share of the\narchitecture's designs (%)")
         cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
@@ -1070,7 +1065,7 @@ def fig_traces_ducts(ctx):
     lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
     with _p2.ts_rc():
         # (b) narrower than (a) (author 2026-10-23: it holds two short lines, no ≤ 2011 point); more room right of both for the ρ labels
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.29), layout="constrained")     # 3.1; 3.29: key in three rows (batch 4); 3.55: + marks and footnote, plot height kept (2026-10-28)
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.12), layout="constrained")     # 3.1; 3.12: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.55: + marks and footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12], width_ratios=[1.2, 1])
         a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
         b.tick_params(labelleft=False)
@@ -1080,7 +1075,7 @@ def fig_traces_ducts(ctx):
         ts.panel_label(a, "(a) Ducted propulsor")
         ts.panel_label(b, "(b) CVT ducted, by boom layout")
         ts.place_panel_labels(fig)
-        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks(), footnote=ts.INCOMPLETE_FOOTNOTE)   # as Fig 4.13; panel (b) names its two CVT lines directly
+        _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks())   # batch 5: two rows, architectures / open marker + rho line; no footnote (author)   # as Fig 4.13; panel (b) names its two CVT lines directly
         _trace_panel_share(a, ctx, "share with a ducted unit", room=DUCT_ROOM)
         a.set_ylabel("share of the\narchitecture's designs (%)")
         items = []
@@ -1111,9 +1106,9 @@ HOLLOW_RULE = ts.HOLLOW_LABEL
 def _trace_marks() -> list:
     """Figs 4.13 and 4.14 (author 2026-10-28): the marks and the label of the line ends, one key entry each."""
     mk = dict(marker="o", ms=4.2, color=style.MUTED, ls="none")
-    return [Line2D([], [], mec=style.MUTED, label="filled marker = cohort tested", **mk),       # wordings shortened in batch 4 (author)
-            Line2D([], [], mfc="white", mec=style.MUTED, mew=1.0, label=OPEN_MARK, **mk),
-            Line2D([], [], linestyle="none", label="ρ, p = Spearman with priority year, before Holm")]
+    # batch 5 (author 2026-10-28): "filled marker" dropped; p named uncorrected; no footnote (the open marker names 2024-26*)
+    return [Line2D([], [], mfc="white", mec=style.MUTED, mew=1.0, label=OPEN_MARK, **mk),
+            Line2D([], [], linestyle="none", label="ρ, p = Spearman vs. priority year, uncorrected")]
 
 
 #: the open marker of Figs 4.13-4.15 (batch 4, author 2026-10-28; 4.15 takes the wording of 4.13/4.14 so its key fits two rows)
@@ -1139,7 +1134,7 @@ def _key_axes(fig, cell):
     return kax
 
 
-def _key_two_rows(fig, gs, kax, row: int = 1, marks=None, footnote: str = None) -> None:
+def _key_two_rows(fig, gs, kax, row: int = 1, marks=None, footnote: str = None, breaks=(3,)) -> None:
     """The key of Figs 4.13-4.15 in the key axes ``kax``: the three architectures on the first row, then ``marks`` (the open marker by
     default) and the ``footnote`` (ts.INCOMPLETE_FOOTNOTE, at the end of the last row) in rows across the page width (ts.compact_legend,
     batch 4 of the legends pass, 2026-10-28). The key row of ``gs`` is fitted to the legend's height."""
@@ -1147,7 +1142,7 @@ def _key_two_rows(fig, gs, kax, row: int = 1, marks=None, footnote: str = None) 
         marks = [Line2D([], [], marker="o", ms=4.2, mfc="white", mec=style.MUTED, color=style.MUTED, ls="none", label=OPEN_MARK)]
     h = _key_handles() + list(marks)
     bare = [i for i, m in enumerate(h) if m.get_marker() in (None, "None", "") and m.get_linestyle() in ("None", "none", "")]
-    leg = ts.compact_legend(kax, h, [m.get_label() for m in h], footnote=footnote, breaks=[3], bare=bare, loc="upper center",
+    leg = ts.compact_legend(kax, h, [m.get_label() for m in h], footnote=footnote, breaks=list(breaks), bare=bare, loc="upper center",
                             fontsize=8.4, borderaxespad=0.0)
     fig._key2 = (gs, kax, [(leg, None)], row)
     _key_fit(fig)

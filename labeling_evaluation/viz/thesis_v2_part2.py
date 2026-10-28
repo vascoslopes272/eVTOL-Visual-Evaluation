@@ -43,7 +43,7 @@ import thesis_style as ts                                     # noqa: E402
 
 #: the figures of this module drawn in the thesis style (notebooks/thesis_style.py): full text width, ts.save, no bbox crop
 TS_FIGS = {"q6_configuration_core", "q6_half_of_cohort", "q6_discovery_curve"}
-TS_H = {"q6_configuration_core": 3.13, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.34}   # discovery 2.3 -> 2.6: labels under the panels; 2.85: + the incomplete-cohort legend row (2026-10-23); 2.0: x labels gone, one legend row at the bottom, under the panel labels (2026-10-28)
+TS_H = {"q6_configuration_core": 2.75, "q6_half_of_cohort": 2.4, "q6_discovery_curve": 2.34}   # discovery 2.3 -> 2.6: labels under the panels; 2.85: + the incomplete-cohort legend row (2026-10-23); 2.0: x labels gone, one legend row at the bottom, under the panel labels (2026-10-28)
 NOTE = "#555555"                                              # dark grey of the 8 pt notes (local; candidate for thesis_style)
 
 
@@ -535,14 +535,11 @@ def fig_configuration_core_v2(ctx):
         ax.set_ylabel("distinct assignees per\ndesign of the configuration")
         # the four marks, two rows, and the key of the point labels under them (author 2026-10-28)
         dot = lambda c, ms=np.sqrt(s_core) * 0.9: Line2D([], [], marker="o", linestyle="none", ms=ms, color=c, mec="white", mew=0.4)   # noqa: E731
-        ring = Line2D([], [], marker="o", linestyle="none", ms=np.sqrt(s_core * 4.2) * 0.9, mfc="none", mec="#1a1a1a", mew=0.7)
         # batch 4 (author 2026-10-28): the four marks in rows across the page width, in their order; the key line stays under them
         three = tuple(dot(ts.ARCH[k]) for k in ("SLC", "TP", "CVT"))       # side by side; the ringed dot below is drawn one over the other
-        ts.compact_legend(fig, [three, dot(ts.NEUTRAL, np.sqrt(s_grey) * 0.9), Line2D([], [], color=NOTE, linewidth=0.7, linestyle=(0, (3, 2))),
-                                (dot(ts.ARCH["CVT"]), ring)],
-                          [f"core configuration ({len(core)} configurations, half of the 2016–23 designs)", "periphery configuration", "core cut",
-                           f"one assignee holds over 40{ts.THIN}% of the configuration"],
-                          keyline="SLC Separate Lift + Cruise, TP Tilt Propulsor, CVT Combined Vectored Thrust, number = propulsor band",
+        # batch 5 (author 2026-10-28): the ring entry and the key line dropped (the ring is annotated in the plot); one row of three
+        ts.compact_legend(fig, [three, dot(ts.NEUTRAL, np.sqrt(s_grey) * 0.9), Line2D([], [], color=NOTE, linewidth=0.7, linestyle=(0, (3, 2)))],
+                          [f"core configuration ({len(core)} configurations, half of the 2016–23 designs)", "periphery configuration", "core cut"],
                           handler_map={three: HandlerTuple(ndivide=None, pad=0.2)})
         ytop = 1.105
         t_rim = ax.text(thr - 0.0012, ytop, "periphery", ha="right", va="center", fontsize=8.4, color=NOTE)
@@ -755,10 +752,9 @@ def fig_discovery_curve_v2(ctx):
         dot_rnd = Line2D([], [], marker="o", ms=5, mfc="white", mec=RND, mew=1.0, ls="none")
         ts.compact_legend(fig, [Line2D([], [], linestyle="none"), _Bracket(),
                                 (Line2D([], [], color="#000000", linewidth=1.3, solid_capstyle="butt"), dot_real),
-                                (Line2D([], [], color=RND, linewidth=1.0, linestyle=(0, (3.5, 2))), dot_rnd),
-                                Line2D([], [], color="#000000", linewidth=0.8, linestyle=(1.0, (1, 2.2)), alpha=ts.INCOMPLETE_ALPHA)],
+                                (Line2D([], [], color=RND, linewidth=1.0, linestyle=(0, (3.5, 2))), dot_rnd)],
                           ["x axis, all designs in priority order", f"last {tail} designs to 2023, counted in (d)", "real order",
-                           "random order (mean of all orders)", "2024–26*, incomplete"],     # the dotted handle is the 2024-26* part
+                           "random order (mean of all orders)"],          # batch 5: the dotted 2024-26* entry dropped, the footnote says it
                           footnote=ts.INCOMPLETE_FOOTNOTE, bare=[0], handlelength=1.9, handletextpad=0.4, borderaxespad=0.1,
                           handler_map={_Bracket: _BracketHandler()})
         ts.place_panel_labels(fig)

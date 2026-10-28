@@ -205,11 +205,9 @@ def fig_region_design_all_years(ctx):
     panels = [("class", "(a) architecture", q3.CLASSES5, ["SLC", "TP", "CVT", "TW", "MR", "other"]),
               ("propulsive units", "(b) propulsors per aircraft", q3.UNIT_ANS, [a.replace("-", "–") for a in q3.UNIT_ANS]),
               ("tilting unit", "(c) any propulsor tilts", [True], ["any tilt"])]
-    notes = {"class": "architecture of the region's designs", "propulsive units": "propulsors per design",
-             "tilting unit": "share with any\ntilting propulsor"}
     ns = {r: int(data[(data["variable"] == "class") & (data["region"] == r)]["n"].iloc[0]) for r in REGIONS}
     with _rc():
-        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 3.18), layout="constrained", sharey=True,   # 2.45 + labels under the panels (2026-10-23); 3.18 (batch 4, legend in one row), 3.36: + notes, legend row, key line, bar height kept (2026-10-28)
+        fig, axs = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.72), layout="constrained", sharey=True,   # 2.45 + labels under the panels (2026-10-23); 2.72 (batch 5: no notes, no key line); 3.18 (batch 4, legend in one row), 3.36: + notes, legend row, key line, bar height kept (2026-10-28)
                                 gridspec_kw=dict(width_ratios=[6, 5, 3.2]))
         for ax, (var, title, answers, ticks) in zip(axs, panels):
             sub = data[data["variable"] == var].set_index("region")
@@ -232,7 +230,7 @@ def fig_region_design_all_years(ctx):
                 ax.set_xlim(-0.55, len(answers) - 0.45)
             ax.set_xticks(x, ticks)
             ax.tick_params(axis="x", length=0)
-            ts.panel_label(ax, title, note=notes[var])
+            ts.panel_label(ax, title)              # batch 5 (2026-10-28): the notes repeated the panel labels, dropped
         axs[0].set_ylim(0, 0.7)
         axs[0].set_yticks(np.arange(0, 0.71, 0.1), [f"{v}" for v in range(0, 71, 10)])
         axs[0].set_ylabel("share of the region's\ndesigns, all years (%)")
@@ -246,8 +244,7 @@ def fig_region_design_all_years(ctx):
         # (c)'s small dot named in the legend, its value kept (author 2026-10-28); the architecture key on the line under the legend
         h.append(Line2D([], [], **na_mark))
         l.append(f"NA without {short}, {100 * na_wo:.0f}{ts.THIN}%")
-        ts.compact_legend(fig, h, l,          # batch 4 (2026-10-28): the four entries in one row where they fit, the key line under them
-                          keyline="SLC Separate Lift + Cruise, TP Tilt Propulsor, CVT Combined Vectored Thrust, TW Tilt Wing, MR Multicopter")
+        ts.compact_legend(fig, h, l)          # batch 4: the four entries in one row; batch 5: no code key line (the caption expands the codes)
         ts.place_panel_labels(fig)
     return fig, data
 
@@ -255,7 +252,7 @@ def fig_region_design_all_years(ctx):
 # ---------------------------------------------------------------------------------------------- 4.20 architecture per region and cohort
 #: Fig 4.18 page height: 3.4 in before the legends pass; 3.93 keeps the plot height with the two-column legend and the footnote (above the
 #: 3.6 in ceiling; accepted by the author 2026-10-28)
-C_HEIGHT = 3.76   # batch 4 (2026-10-28): legend in three rows instead of four
+C_HEIGHT = 3.58   # batch 4 (2026-10-28): legend in three rows instead of four; batch 5: two rows
 def fig_region_mix_by_window_class(ctx):
     """4.18: 2 x 3 small line charts, one per architecture; x = cohort from 2012-15, a line per region (colour and marker); a cell under
     frames.CH5_THIN designs is not drawn; 2024-26* hollow and never joined. The significant trend (NA in CVT) is in the caption, not the
@@ -291,11 +288,11 @@ def fig_region_mix_by_window_class(ctx):
         h.append(Line2D([], [], linestyle="none"))
         # legends pass (author 2026-10-28): each region's n per cohort in cohort order, the two marks in words, the footnote line
         ns = {r: ", ".join(str(int(v)) for v in data[data["region"] == r].set_index("window").loc[wins, "n"]) for r in REGIONS}
-        # batch 4 (2026-10-28): the three regions on the first row (closer spacing, so they fit); the two marks and the footnote do not
-        # fit one row, so "missing point" comes first and "open marker" shares the last row with the footnote, both about 2024-26
-        ts.compact_legend(fig, [h[0], h[1], h[2], h[4], h[3]], [f"{r} ({ABBR[r]}, n {ns[r]})" for r in REGIONS]
-                          + [f"missing point = cohort under {frames.CH5_THIN} designs, not plotted", "open marker = 2024–26*, incomplete cohort"],
-                          footnote=ts.INCOMPLETE_FOOTNOTE, breaks=[3, 4], bare=[3], colsep=0.8, borderaxespad=0.2, handlelength=1.4)
+        # batch 4 (2026-10-28): the three regions on the first row (closer spacing, so they fit); batch 5: the open-marker entry dropped
+        # (the footnote explains the asterisk), "missing point" and the footnote share the second row
+        ts.compact_legend(fig, [h[0], h[1], h[2], h[4]], [f"{r} ({ABBR[r]}, n {ns[r]})" for r in REGIONS]
+                          + [f"missing point = cohort under {frames.CH5_THIN} designs, not plotted"],
+                          footnote=ts.INCOMPLETE_FOOTNOTE, breaks=[3], bare=[3], colsep=0.8, borderaxespad=0.2, handlelength=1.4)
         ts.place_panel_labels(fig)
         fig.canvas.draw()                                # the y label centred on the plots, not on the page with its legend (2026-10-28)
         top, bot = axs[0, 0].get_position().y1, axs[1, 0].get_position().y0

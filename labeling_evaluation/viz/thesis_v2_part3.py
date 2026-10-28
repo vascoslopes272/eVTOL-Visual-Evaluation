@@ -440,6 +440,11 @@ def fig_architecture_shares_by_cohort(ctx):
     return fig, share.round(4).assign(designs=n_win)
 
 
+#: Fig 4.11 (c) note (batch 5, author 2026-10-28): one line; "(vs. two earliest cohorts)" left out because it ran past the page; the y
+#: label already says "against the two earliest cohorts"
+C3_NOTE = "met below the band"          # the longer form ran past the page edge (measured, batch 5)
+
+
 def fig_family_conditions(ctx):
     """Fig 4.11: the three conditions on F, all designs (solid, filled) and actively protected (dashed, hollow), colour ts.ARCH['F']:
     (a) share per priority year from 2016 against 50 %, (b) ²D per cohort with its band, (c) ΔQ per cohort with its band. The values are
@@ -454,7 +459,7 @@ def fig_family_conditions(ctx):
     col = ts.ARCH["F"]
     bases = (("all designs", False, 0.0), ("actively protected", True, 0.14))
     with mpl.rc_context(ts.RC):
-        fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 3.23), layout="constrained")   # 2.5 + labels under the panels (2026-10-23); 3.35: + notes, footnote (2026-10-28); 3.23: legend in rows (batch 4)
+        fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.94), layout="constrained")   # 2.5 + labels under the panels (2026-10-23); 3.35: + notes, footnote (2026-10-28); 3.23: legend in rows (batch 4); 2.94: one-line notes, one entry fewer (batch 5)
         # (a) condition 1, read years only
         p1 = data[data["panel"] == "(a) condition 1"]
         top_at = {}
@@ -485,7 +490,7 @@ def fig_family_conditions(ctx):
         a1.set_yticks([0, 20, 40, 60])
         a1.set_ylabel("share of designs in F (%)")
         a1.set_xlabel("priority year")
-        ts.panel_label(a1, "(a) share", note=f"share of designs in F,\ncondition met above 50{ts.THIN}%\nin two consecutive years")
+        ts.panel_label(a1, "(a) share", note=f"met above 50{ts.THIN}% in two consecutive years")     # one line each (batch 5)
         _grid(a1)
         # (b) condition 2 and (c) condition 3, per cohort
         for ax, panel, whisk in ((a2, "(b) condition 2", True), (a3, "(c) condition 3", False)):
@@ -498,17 +503,17 @@ def fig_family_conditions(ctx):
             ax.set_xlabel(ts.COHORT_X)
         a2.set_ylim(0, float(np.nanmax(data.loc[data["panel"] == "(b) condition 2", ["value", "band high", "whisker high"]].to_numpy(float))) * 1.12)
         a2.set_ylabel("²D of F")
-        ts.panel_label(a2, "(b) balance", note="balance ²D of F,\nmet below the band")
+        ts.panel_label(a2, "(b) balance", note="met below the band")
         a3.axhline(0, color=REF, linewidth=0.5, zorder=2)
         a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
-        ts.panel_label(a3, "(c) disparity", note="disparity ΔQ of F against\nthe two earliest cohorts,\nmet below the band")
+        ts.panel_label(a3, "(c) disparity", note=C3_NOTE)
         # batch 4 (author 2026-10-28): the five entries in rows across the page width, the footnote at the end of the last row
         ts.compact_legend(fig, [Line2D([], [], color=col, marker="o"),
                                Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
                                mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2), ts.incomplete_handle(col)],
-                         ["all designs", "actively protected designs", f"95{ts.THIN}% permutation band", "condition met",
-                          "2024–26*, incomplete cohort"], footnote=ts.INCOMPLETE_FOOTNOTE)
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
+                         ["all designs", "actively protected designs", f"95{ts.THIN}% permutation band", "condition met"],
+                         footnote=ts.INCOMPLETE_FOOTNOTE)            # batch 5: the 2024-26* entry dropped, the footnote says it
         ts.fit_cohort_ticks(fig)
         ts.place_panel_labels(fig)
         fig.canvas.draw()
