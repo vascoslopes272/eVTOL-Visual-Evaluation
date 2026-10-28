@@ -86,6 +86,8 @@ def export(cfg, ctx):
         t.to_csv(csvd / f"{name}.csv", index=False)
         manifest.append((f"Data_for_writing/csv/{name}.csv", used, SHOWS[name]))
     _numbers(cfg, ctx, R)
+    from viz import followup_iii1                    # its section of NUMBERS_III.md, which _numbers has just rewritten
+    followup_iii1.run(cfg, ctx)
     manifest.append(("Data_for_writing/NUMBERS_III.md", True, "numbers of Analysis III with their sources"))
     mf = R / "Data_for_writing" / "MANIFEST.md"
     new = not mf.exists()
@@ -105,7 +107,7 @@ def _numbers(cfg, ctx, R: Path):
     d6 = q6._data(ctx)
     share = d6["share"]
     n_win = d6["n_win"]
-    cohort = lambda w: "2024–26" if "partial" in w else w          # noqa: E731
+    cohort = lambda w: "2024–26*" if "partial" in w else w          # noqa: E731
     tpl = pd.DataFrame({"cohort": [cohort(w) for w in ctx.WIN_NAMES], "designs": n_win.to_numpy(),
                         "Tilt Propulsor": (share["TR"] * 100).round(1).astype(str) + " %", "Lift + Cruise": (share["SLC"] * 100).round(1).astype(str) + " %"})
     di = analysis3.directory(ctx, d)
@@ -164,14 +166,15 @@ def _numbers(cfg, ctx, R: Path):
          "VT share per cohort:\n", tables_md(vt), "", "VT share per priority year (read years, 20 designs or more, 2016–2023); condition 1 met in "
          + ", ".join(map(str, di["met"])) + " (all designs: " + ", ".join(map(str, di["met_all"])) + "):\n", tables_md(vy), "",
          "Balance (²D rarefied to 40, all designs, 1000 permutations) with the band, per cohort; 2024–26* is incomplete and not read:\n", tables_md(bal), "",
-         "## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity; condition 3 under the w15 weighting)\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
-         "## The numbers behind the verdict\n", "Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 of the form distance under w15 (15 dimensions, each of the four systems weighing 1) and the lower edge of its band (1000 permutations, seed 42).\n", tables_md(analysis3.verdict_two_bases(ctx)[1]), "",
+         "## Verdict table (each base read alone: all designs is the main reading, actively protected the sensitivity; condition 3 under the w15 weighting, on the actively protected base against the all-designs baseline and band)\n", "Source: `q7_verdict_table.csv`.\n", tables_md(ver), "",
+         "## The numbers behind the verdict\n", "Source: `q7_verdict_detail.csv`. Condition 1: the largest share of a read year (20 designs or more) and the years met; condition 2: ²D rarefied to 40 and the lower edge of its band; condition 3: ΔQ 2020-23 of the form distance under w15 (15 dimensions, each of the four systems weighing 1) and the lower edge of its band (1000 permutations, seed 42); on the actively protected base against the all-designs baseline and band (§3.4.4, table 'Condition 3, actively protected against the all-designs baseline'), its own-baseline values in the last two columns.\n", tables_md(analysis3.verdict_two_bases(ctx)[1]), "",
          "## Weights table (condition 3, the reported weighting w15: 15 dimensions of the codebook, each of the four systems weighing 1, 4 in all)\n", "Source: `q7_condition3_weights.csv`; 15 dimensions, 625 designs (two designs have no architecture recorded). "
          "Eleven dimensions are compared as options (0 same, 1 different); three are ordered and compared by rank difference over a fixed range: boom count (0 when no boom, 1, 2, 3 to 4, 5 or more; / 4), wing count (0 when no wing, 1, 2, 3; / 3) and the band of propulsors (1 to 3, 4, 5 to 6, 7 to 8, 9 or more; / 4, the bands of A·U); "
          "the tilt share is the share 0 to 1 of the design's propulsors whose thrust turns between hover and cruise (a propulsor that pivots on its mount, sits on a tilting wing, a tilting empennage or a tilting boom, or a Tilt Body design, which turns whole), compared by absolute difference; "
          "the mount locations are the set of stations carrying propulsors among fuselage, wing, boom and empennage, compared by Jaccard distance (the share of the stations used by either design that only one of them uses). "
          "The three wing dimensions read wing 1 (the primary wing of codebook R5-03, which is wing 1 in every design: the author checked the 4 designs whose role reading pointed to wing 2 on 2026-10-16); enclosure and tractor/pusher arrangement read the set with the most propulsors (first listed on a tie); a dimension that does not apply or that an override hides is blank and left out of the pair's average, and the propulsion dimensions are blank for designs with no propulsor card (Hoverbike, Personal Flying Vehicle). The 34-dimension weighting of 2026-10-14 (w34) stays in the code for the record and is no longer reported.\n", tables_md(wts), "",
          "## Condition 3 on F (the same w15 weights; Q on the designs of F's base, per cohort)\n", "Source: `q7_condition3_family.csv`. Q uses no architecture, so F on all designs is the same set as A.\n", tables_md(fam), "",
+         "## Condition 3, actively protected against the all-designs baseline\n", "Source: `viz/analysis3.py` form_ap_vs_all (dissertation §3.4.4, III.2). Q of the actively protected designs of 2020-23; baseline = pooled Q of the two earliest cohorts of all designs; band: all designs shuffled 1000 times (seed 42), cohort sizes of all designs kept except 2020-23, which takes the size of its actively protected cohort; w15.\n", tables_md(analysis3.form_ap_vs_all(ctx)), "",
          "## Three-year check (condition 1, three consecutive years, actively protected designs)\n", "Source: `q7_three_year_check.csv`.\n", tables_md(t3), "",
          "## F on granted and live patents alone\n", "Source: `q7_granted_live_condition1.csv`, `q7_granted_live_condition2.csv`.\n", tables_md(gl1), "", tables_md(gl2), "",
          "## III.4, which VT share the figure draws\n",

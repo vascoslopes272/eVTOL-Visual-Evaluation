@@ -1,7 +1,7 @@
 """Follow-up 2026-10-24 to NUMBERS_I (Analysis I.1, professor comments 35 and 71): the yearly total of designs corrected for publication lag,
 with the same correction V.3 applies per region (``frames.region_years``, the frame behind na_share_2023_corr). Reads ctx only; draws no
 figure. Writes LaTeX_v15/Data_for_writing/csv/q1_filings_per_year_lag_corrected.csv and appends the section "Follow-up 2026-10-24,
-lag-corrected total" to NUMBERS_I.md (once).
+lag-corrected total" to NUMBERS_I.md (a rerun replaces it). Also run by ``latex_v15.write_numbers_I`` (notebook 48).
 
     python -m viz.followup_2026_10_24_parti      (from labeling_evaluation/)
 """
@@ -15,7 +15,7 @@ import pandas as pd
 
 from lib import growth as _growth
 from viz import frames
-from viz.thesis_latex_common import root as latex_root, tables_md
+from viz.thesis_latex_common import drop_section, root as latex_root, tables_md
 
 HEADING = "## Follow-up 2026-10-24, lag-corrected total"
 YEARS = range(2016, 2024)
@@ -52,10 +52,7 @@ def run(cfg, ctx):
     t.to_csv(dfw / "csv" / "q1_filings_per_year_lag_corrected.csv", index=False)
 
     nf = dfw / "NUMBERS_I.md"
-    txt = nf.read_text(encoding="utf-8")
-    if HEADING in txt:
-        print("NUMBERS_I.md already holds", HEADING, "- not appended")
-        return t, meta
+    txt = drop_section(nf.read_text(encoding="utf-8"), HEADING)
     shutil.copy2(nf, nf.with_name(f"PRE_FOLLOWUP_{datetime.now():%Y%m%d_%H%M%S}_NUMBERS_I.md"))
     ti = t.set_index("priority year")
     raw21, e21 = ti.loc[2021, "designs counted (raw)"], ti.loc[2021, "designs expected after correction"]

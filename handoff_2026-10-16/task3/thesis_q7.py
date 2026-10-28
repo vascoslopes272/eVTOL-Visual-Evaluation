@@ -171,7 +171,7 @@ def fig_condition3_cohesion(ctx):
     for ax, lvl in zip(axb, MAIN_LEVELS):
         s = form[form["level"] == lvl]
         sm = s[s["weighting"] == main].set_index("window").reindex(win).reset_index()
-        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])])
+        plots.cohesion_panel(ax, sm, None, partial, [f"{ctx.WSHORT.get(w, '24–26*')}, n {int(n)}" for w, n in zip(win, sm["aircraft"])])
         ax.tick_params(axis="x", labelrotation=90)          # three panels: upright ticks ran into each other (as condition 2)
         ax.set_title(SET_TITLE[lvl], fontsize=7.5, loc="left")
     axb[0].set_ylabel("ΔQ: change in how unlike two aircraft\nare, against the two earliest cohorts")

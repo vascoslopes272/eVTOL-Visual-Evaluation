@@ -1,5 +1,6 @@
 """Follow-up 2026-10-24 to NUMBERS_I section 2: age at lapse of the lapsed patents of the 604 designs of ``q1_in_force_status`` and the
-share of designs not actively protected per priority year. Appends "Age at lapse ..." to NUMBERS_I.md (once), CSVs next to it.
+share of designs not actively protected per priority year. Inserts "Age at lapse ..." at the end of section 2 of NUMBERS_I.md (a rerun
+replaces it), CSVs next to it. Also run by ``latex_v15.write_numbers_I`` (notebook 48).
 
 Lapse date = PatSeer 'Estimated Expiry Date' of a patent whose 'Legal Status Current' is INACTIVE (the raw export has no separate lapse-date
 column; for an inactive record PatSeer sets this field to the date of the last status event: equals 'Register Legal Status Date' for 79 % of the
@@ -16,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from viz import frames, thesis_q1
-from viz.thesis_latex_common import root as latex_root, tables_md
+from viz.thesis_latex_common import drop_section, root as latex_root, tables_md
 
 HEADING = "Age at lapse and share not actively protected per priority year (follow-up 2026-10-24)"
 RAW = "/mnt/storage_11tb/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1639__dataset_08_06_26.xlsx"
@@ -66,10 +67,7 @@ def run(cfg, ctx):
     ages.to_csv(dfw / "csv" / "q1_age_at_lapse.csv", index=False)
     yr.to_csv(dfw / "csv" / "q1_not_protected_by_priority_year.csv", index=False)
     nf = dfw / "NUMBERS_I.md"
-    txt = nf.read_text(encoding="utf-8")
-    if HEADING in txt:
-        print("already in NUMBERS_I.md - not appended")
-        return ages, by_status, yr, meta
+    txt = drop_section(nf.read_text(encoding="utf-8"), f"### {HEADING}")
     shutil.copy2(nf, nf.with_name(f"PRE_FOLLOWUP_{datetime.now():%Y%m%d_%H%M%S}_NUMBERS_I.md"))
     L = [f"\n### {HEADING}\n",
          "Source: `viz/followup_2026_10_24_lapse_age.py`; CSV `q1_age_at_lapse.csv`, `q1_age_at_lapse_patents.csv`, `q1_not_protected_by_priority_year.csv`. "

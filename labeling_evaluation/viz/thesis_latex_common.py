@@ -2,6 +2,7 @@
 No exporter imports another part's exporter; whatever two or more of them need lives here."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -18,3 +19,15 @@ def root(cfg) -> Path:
 
 def tables_md(df: pd.DataFrame) -> str:
     return df.to_markdown(index=False) if hasattr(df, "to_markdown") else df.to_string(index=False)
+
+
+def drop_section(txt: str, heading: str) -> str:
+    """``txt`` without the section that starts at the line ``heading`` (a markdown heading, '#'s included) and runs to the next heading of
+    the same or a higher level, or to the end; every copy goes. A follow-up that inserts a section into a NUMBERS file calls this first, so a
+    rerun replaces its section instead of adding a second one, whatever order the notebooks ran in."""
+    level = len(heading) - len(heading.lstrip("#"))
+    start, nxt = re.compile(rf"^{re.escape(heading)}[ \t]*$", re.M), re.compile(rf"^#{{1,{level}}} ", re.M)
+    while m := start.search(txt):
+        e = nxt.search(txt, m.end())
+        txt = txt[:m.start()] + (txt[e.start():] if e else "")
+    return txt

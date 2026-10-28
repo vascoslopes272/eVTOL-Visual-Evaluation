@@ -2,8 +2,8 @@
 the definition of ``viz.thesis_q4.representativeness``) against the other designs, Mann-Whitney U two-sided, and its Holm p inside the
 funnel family (the six tests of ``viz.thesis_q4.funnel_family`` plus this one, one Holm correction over the seven raw p). Reads ctx only;
 changes no figure, table or other number. Writes LaTeX_v15/Data_for_writing/csv/numbers_I_flown_propulsors_mw.csv and inserts the section
-"I.3, propulsors of the flown designs (Mann-Whitney)" into NUMBERS_I.md after the funnel family (once). Run by notebook 48 after
-``latex_v15.write_numbers_I``.
+"I.3, propulsors of the flown designs (Mann-Whitney)" into NUMBERS_I.md after the funnel family (a rerun replaces it). Run by
+``latex_v15.write_numbers_I`` (notebook 48).
 
     python -m viz.followup_2026_10_27_flown_propulsors      (from labeling_evaluation/)
 """
@@ -18,7 +18,7 @@ from scipy.stats import mannwhitneyu
 
 from lib.multiple import holm
 from viz import frames, thesis_q4
-from viz.thesis_latex_common import root as latex_root, tables_md
+from viz.thesis_latex_common import drop_section, root as latex_root, tables_md
 
 HEADING = "### I.3, propulsors of the flown designs (Mann-Whitney)"
 AFTER = "## 4. Checks requested on 2026-10-12"            # the section is inserted just before this heading (the end of section 3)
@@ -52,10 +52,7 @@ def run(cfg, ctx):
         dfw / "csv" / "numbers_I_flown_propulsors_mw.csv", index=False)
 
     nf = dfw / "NUMBERS_I.md"
-    txt = nf.read_text(encoding="utf-8")
-    if HEADING in txt:
-        print("NUMBERS_I.md already holds", HEADING, "- not inserted")
-        return res
+    txt = drop_section(nf.read_text(encoding="utf-8"), HEADING)
     shutil.copy2(nf, nf.with_name(f"PRE_FOLLOWUP_{datetime.now():%Y%m%d_%H%M%S}_NUMBERS_I.md"))
     pv = lambda p: f"{p:.1e}" if p < 0.001 else f"{p:.3f}"          # noqa: E731
     gap = t["median propulsors"].iloc[0] - t["median propulsors"].iloc[1]

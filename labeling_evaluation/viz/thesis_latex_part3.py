@@ -86,6 +86,8 @@ def export(cfg, ctx):
         t.to_csv(csvd / f"{name}.csv", index=False)
         manifest.append((f"Data_for_writing/csv/{name}.csv", used, SHOWS[name]))
     _numbers(cfg, ctx, R)
+    from viz import followup_iii1                    # its section of NUMBERS_III.md, which _numbers has just rewritten
+    followup_iii1.run(cfg, ctx)
     manifest.append(("Data_for_writing/NUMBERS_III.md", True, "numbers of Analysis III with their sources"))
     mf = R / "Data_for_writing" / "MANIFEST.md"
     new = not mf.exists()

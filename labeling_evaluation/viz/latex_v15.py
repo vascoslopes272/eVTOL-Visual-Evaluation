@@ -314,6 +314,11 @@ def write_numbers_I(cfg, ctx) -> Path:
     p.write_text("\n".join(out) + "\n", encoding="utf-8")
     _append_manifest(base, [("Data_for_writing/NUMBERS_I.md", "yes", "numbers of Analysis I with their sources")]
                      + [(f"Data_for_writing/csv/{f.name}", "no", "table behind NUMBERS_I.md (not printed)") for f in sorted(CSV.glob("numbers_I_*.csv"))])
+    # the follow-up sections of NUMBERS_I.md, which the write above has just dropped (each replaces its own section on a rerun)
+    from viz import (followup_2026_10_24_lag_keys, followup_2026_10_24_lapse_age, followup_2026_10_24_parti,
+                     followup_2026_10_27_flown_propulsors)
+    for fu in (followup_2026_10_24_lapse_age, followup_2026_10_27_flown_propulsors, followup_2026_10_24_lag_keys, followup_2026_10_24_parti):
+        fu.run(cfg, ctx)
     return p
 
 

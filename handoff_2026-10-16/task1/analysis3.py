@@ -36,11 +36,13 @@ def runs(years, k: int) -> list:
 RHO_LATE_FIRST = 2016
 
 
-def rho_table(ctx) -> pd.DataFrame:
+def rho_table(ctx, v: pd.DataFrame | None = None, codes=None) -> pd.DataFrame:
     """Spearman rho and p of each architecture's share of the year's aircraft on the priority year (2008 to the last complete
     year), architectures with 20 aircraft or more over those years; all unique aircraft with an architecture recorded. Each p column
-    has its Holm-adjusted column beside it, one family per column (the architectures tested over that span)."""
-    v = ctx.v
+    has its Holm-adjusted column beside it, one family per column (the architectures tested over that span).
+    ``v``: another set of designs (default ctx.v); ``codes``: test exactly these architectures instead of those with 20 or more
+    (the follow-up without Bell / Textron keeps the III.1 family, viz/followup_iii1.py)."""
+    v = ctx.v if v is None else v
     last = ctx.cfg.analysis["last_complete_year"]
     w = v[v["topType"].notna() & v["year"].between(frames.DD_YEAR_FIRST, last)]
     cnt = pd.crosstab(w["year"], w["topType"])
@@ -48,7 +50,7 @@ def rho_table(ctx) -> pd.DataFrame:
     rows = []
     for c in cnt.columns:
         n = int(cnt[c].sum())
-        if n < 20:
+        if (n < 20) if codes is None else (c not in codes):
             continue
         r, p = stats.spearmanr(share.index, share[c])
         ok = cnt.sum(axis=1) >= frames.DD_YEAR_MIN
@@ -101,6 +103,48 @@ def form_family(ctx) -> pd.DataFrame:
     return t
 
 
+def form_ap_vs_all(ctx, cohort: str = "2020-23") -> pd.DataFrame:
+    """Condition 3 of the actively protected designs of ``cohort`` against the ALL-DESIGNS baseline (dissertation §3.4.4, III.2): Q of the
+    actively protected designs of the cohort; baseline = pooled Q of the two earliest cohorts of all designs (cohesion_band's reference);
+    band: the all designs shuffled (thesis_q7.PERMS times, a fresh default_rng(seed) per level), cut into blocks of the all-designs cohort
+    sizes except ``cohort``, which takes the size of its actively protected cohort; ΔQ* = Q* of that block - mean Q* of the two earliest
+    blocks, band = percentiles 2.5 / 97.5. At A, A·W·T, A·U (frames.archetype_key) and F (= A: Q uses no architecture), w15."""
+    if getattr(ctx, "_a3_ap_all", None) is not None and cohort == "2020-23":
+        return ctx._a3_ap_all
+    ds, v = ctx.ds, ctx.v
+    D, frame = frames.form_distance(ds, frames.Q_WEIGHTINGS[0])
+    at = {a: i for i, a in enumerate(frame["aircraft_id"].to_numpy())}
+    live = v["aircraft_id"].map(frames.patent_state(ds, v)["in_force"]).astype(bool)
+    base_w = list(ctx.WIN_NAMES)[:2]
+    out = []
+    for lvl in ("A0", "A1t", "A0c"):
+        sub = v[frames.archetype_key(v, lvl).notna()].dropna(subset=["window"]).copy()
+        sub["row"] = sub["aircraft_id"].map(at)
+        sub = sub[sub["row"].notna()]
+        rows, win, ap = sub["row"].astype(int).to_numpy(), sub["window"].to_numpy(), live[sub.index].to_numpy()
+        per = {w: rows[win == w] for w in ctx.WIN_NAMES}
+        ref = float(np.mean([dd.mean_pairwise_distance(D, per[w]) for w in base_w]))
+        tgt = rows[(win == cohort) & ap]
+        q = dd.mean_pairwise_distance(D, tgt)
+        sizes = {w: (len(tgt) if w == cohort else len(per[w])) for w in ctx.WIN_NAMES}
+        rng, band = np.random.default_rng(ctx.SEED), []
+        for _ in range(thesis_q7.PERMS):
+            sh, cut, drawn = rng.permutation(rows), 0, {}
+            for w in ctx.WIN_NAMES:
+                drawn[w] = dd.mean_pairwise_distance(D, sh[cut:cut + sizes[w]])
+                cut += sizes[w]
+            band.append(drawn[cohort] - np.mean([drawn[w] for w in base_w]))
+        lo, hi = float(np.percentile(band, 2.5)), float(np.percentile(band, 97.5))
+        out.append({"level": _LVL[lvl], "cohort": cohort, "actively protected designs": int(len(tgt)), "Q": round(q, 4),
+                    "baseline (all designs, two earliest cohorts)": round(ref, 4), "ΔQ": round(q - ref, 4),
+                    "band low": round(lo, 4), "band high": round(hi, 4), "below band": bool(q - ref < lo)})
+    f = dict(out[0], level=_LVL["family_b"])
+    t = pd.DataFrame(out + [f])
+    if cohort == "2020-23":
+        ctx._a3_ap_all = t
+    return t
+
+
 # ---- the verdict on each base, never mixed (results freeze 2026-10-14)
 _BASE_DY = {"all designs": "all", "actively protected": "in force"}
 _LVL = {"A0": "A", "A1t": "A·W·T", "A0c": "A·U", "family_b": "F"}
@@ -123,8 +167,9 @@ def _base_frames(ctx):
 
 
 def verdict_two_bases(ctx):
-    """The verdict per base (all designs = the main reading; actively protected = sensitivity), each condition read on the SAME base,
-    and the numbers behind it. Returns (verdict table, detail table)."""
+    """The verdict per base (all designs = the main reading; actively protected = sensitivity), conditions 1 and 2 read on the SAME base,
+    condition 3 of the actively protected base on its 2020-23 designs against the all-designs baseline and band (§3.4.4,
+    :func:`form_ap_vs_all`; the own-baseline ΔQ stays in the detail table). Returns (verdict table, detail table)."""
     frames.set_window_bounds(ctx.cfg)
     d = thesis_q7._data(ctx)
     dy = d["dy"]
@@ -132,6 +177,9 @@ def verdict_two_bases(ctx):
     wof = lambda yy: next(w for w, lo, hi in frames._WIN_BOUNDS if lo <= yy <= hi)      # noqa: E731
     main = frames.Q_WEIGHTINGS[0]
     pc = lambda x: f"{100 * x:.1f} %"                                                   # noqa: E731
+    # condition 3 of the actively protected base reads 2020-23 against the all-designs baseline and band (§3.4.4, form_ap_vs_all);
+    # its own-baseline values stay in the detail table as extra columns
+    apa = form_ap_vs_all(ctx).set_index("level")
     rows, det = [], []
     for base, (bal, form) in _base_frames(ctx).items():
         cells = {}
@@ -148,6 +196,8 @@ def verdict_two_bases(ctx):
             below2 = bl[bl["below band"].astype(str).eq("True")]["window"].tolist()
             fm = form[form["level"].eq(lvl) & form["weighting"].eq(main) & form["window"].isin(complete)]
             below3 = fm[fm["below band"].astype(str).eq("True")]["window"].tolist()
+            if base == "actively protected":
+                below3 = ["2020-23"] if bool(apa.loc[name, "below band"]) else []
             inside = dd.all_three_windows(set(yrs), set(below2), set(below3), wof)
             cells[name] = {"1": c1, "2": ("✓ met in " + ", ".join(below2)) if below2 else "✗ not met",
                            "3": ("✓ met in " + ", ".join(below3)) if below3 else "✗ not met",
@@ -161,8 +211,15 @@ def verdict_two_bases(ctx):
                 r[f"²D {w}"] = float(q["D2"].iloc[0]) if len(q) else np.nan
                 r[f"²D lower band edge {w}"] = float(q["D2 permutation low"].iloc[0]) if len(q) else np.nan
             q = fm[fm["window"].eq("2020-23")]
-            r["ΔQ 2020-23"] = float(q["ΔQ"].iloc[0])
-            r["ΔQ lower band edge 2020-23"] = float(q["ΔQ permutation low"].iloc[0])
+            if base == "actively protected":
+                r["ΔQ 2020-23"] = float(apa.loc[name, "ΔQ"])
+                r["ΔQ lower band edge 2020-23"] = float(apa.loc[name, "band low"])
+            else:
+                r["ΔQ 2020-23"] = float(q["ΔQ"].iloc[0])
+                r["ΔQ lower band edge 2020-23"] = float(q["ΔQ permutation low"].iloc[0])
+            r["condition 3 baseline"] = "all designs"
+            r["ΔQ 2020-23, own baseline"] = float(q["ΔQ"].iloc[0])
+            r["ΔQ lower band edge 2020-23, own baseline"] = float(q["ΔQ permutation low"].iloc[0])
             det.append(r)
         for cond, label in (("1", "1, counts: one architecture above 50 % of the designs, two consecutive priority years"),
                             ("2", "2, balance: ²D below the permutation band"),

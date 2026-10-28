@@ -91,9 +91,11 @@ def fig_largest_architectures_over_time(ctx):
     last = lines.iloc[-1]
     plots.end_labels(ax, n - 1, [last[c] for c in five], [arch(c).short for c in five], [style.cls(c).color for c in five], gap=0.03, fontsize=FS)
     ax.set_ylabel("share of all designs")                  # base: every design of the cohort (frames.class_counts_by_window)
-    ax.set_xlabel(f"{ts.COHORT_X} (* still filling)")
+    ax.set_xlabel(ts.COHORT_X)                             # the asterisk is named in the legend (author 2026-10-23)
     fig.legend(handles=[Line2D([], [], color=style.cls(c).color, linestyle=style.cls(c).dash, marker=style.cls(c).marker, markersize=4.6,
-                               linewidth=1.4, label=f"{arch(c).short} {arch(c).name}") for c in five],
+                               linewidth=1.4, label=f"{arch(c).short} {arch(c).name}") for c in five]
+                       + [mpl.patches.Patch(facecolor=plots.FEW_FILL, hatch=style.PARTIAL_HATCH, edgecolor=style.GRID, linewidth=0,
+                                            label=ts.INCOMPLETE_LABEL)],     # the incomplete cohort's band, as drawn
                loc="outside lower center", ncol=3, fontsize=FS, handlelength=2.0, columnspacing=1.0)
     return _bump(fig), share[five].round(4)
 
@@ -287,8 +289,8 @@ def _pair_figure(ctx, panels, ylabel, sharey=False):
         ts.panel_label(ax, ttl)
     axs[0].set_ylabel(ylabel)
     ts.bottom_legend(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                           Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                     ["permutation band (95 %)", "below the band: condition met"])
+                           Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2), ts.incomplete_handle("black")],
+                     ["permutation band (95 %)", "below the band: condition met", ts.INCOMPLETE_LABEL])   # 2024-26* (author 2026-10-23)
     ts.fit_cohort_ticks(fig)
     ts.place_panel_labels(fig)
     return fig, axs
@@ -337,8 +339,8 @@ def fig_condition3_form(ctx):
         ts.panel_label(ax, PAIR_TITLES[0].removeprefix("(a) "))
         ax.axhline(0, color=REF, linewidth=0.5, zorder=2)
         ts.bottom_legend(fig, [mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                         ["permutation band (95 %)", "below the band: condition met"])
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2), ts.incomplete_handle("black")],
+                         ["permutation band (95 %)", "below the band: condition met", ts.INCOMPLETE_LABEL])   # 2024-26* (author 2026-10-23)
         ts.place_panel_labels(fig)
         fig.canvas.draw()
     _exact(fig)
@@ -361,6 +363,20 @@ def _spread(ys, gap, lo, hi):
     out = np.empty_like(p)
     out[o] = p
     return out
+
+
+def _tick_n(ax, ns) -> None:
+    """Fig 4.9 (author 2026-10-24): under each cohort tick a second, grey line "n 63" = every design of the cohort (the base of the shares),
+    as in Fig 4.14, at the tick font size; placed one line under the tick label's own anchor, and the axis title moved down by that line."""
+    import matplotlib.transforms as mtrans
+    tick = ax.xaxis.get_major_ticks()[0]
+    trans, va, _ = ax.get_xaxis_text1_transform(tick.get_pad() + tick.get_tick_padding())
+    fs = ax.get_xticklabels()[0].get_fontsize()
+    line = 1.25 * fs
+    trans = trans + mtrans.ScaledTranslation(0, -line / 72, ax.figure.dpi_scale_trans)
+    for xi, n in enumerate(ns):
+        ax.text(xi, 0, f"n {int(n)}", transform=trans, ha="center", va=va, fontsize=fs, color=p2.NOTE, clip_on=False)
+    ax.xaxis.labelpad += line
 
 
 def fig_architecture_shares_by_cohort(ctx):
@@ -398,9 +414,15 @@ def fig_architecture_shares_by_cohort(ctx):
         ax.set_xlim(-0.3, n + 1.55)
         ax.spines["bottom"].set_bounds(-0.3, n - 1 + 0.3)
         ax.set_xticks(x, ts.COHORTS)
+        _tick_n(ax, n_win)
         ax.set_ylabel("share of all designs (%)")          # base: every design of the cohort (frames.class_counts_by_window)
         ax.set_xlabel(ts.COHORT_X)
         _grid(ax)
+        n_none = int(ctx.v["topType"].isna().sum())
+        note = "n counts every design of the cohort" + (f", including {n_none} in 2016–19 with no architecture recorded" if n_none else "")
+        assert ctx.v.loc[ctx.v["topType"].isna(), "window"].eq("2016-19").all(), "the base note names 2016-19 only"
+        leg = ts.bottom_legend(fig, [ts.incomplete_handle(), Line2D([], [], linestyle="none")], [ts.INCOMPLETE_LABEL, note], ncol=1)
+        leg.get_texts()[1].set_color(p2.NOTE)               # base of the shares, one grey line under the entry (author 2026-10-24)
         fig.canvas.draw()
         gap = abs(ax.transData.inverted().transform((0, 0))[1] - ax.transData.inverted().transform((0, 10.2 * fig.dpi / 72))[1])
         last = share.iloc[-1].to_numpy(dtype=float) * 100
@@ -479,11 +501,13 @@ def fig_family_conditions(ctx):
         a3.axhline(0, color=REF, linewidth=0.5, zorder=2)
         a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
         ts.panel_label(a3, "(c) disparity")
+        # the incomplete cohort added to the key (author 2026-10-23): five entries, two rows
         ts.bottom_legend(fig, [Line2D([], [], color=col, marker="o"),
                                Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
                                mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                         ["all designs", "actively protected designs", "permutation band (95 %), all designs", "condition met"])
+                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2), ts.incomplete_handle(col)],
+                         ["all designs", "actively protected designs", "permutation band (95 %), all designs", "condition met",
+                          ts.INCOMPLETE_LABEL], ncol=3)
         ts.fit_cohort_ticks(fig)
         ts.place_panel_labels(fig)
         fig.canvas.draw()
@@ -522,7 +546,8 @@ def _runs(years):
 def fig_directory_categories(ctx):
     """Fig 4.13: (a) Vectored Thrust's share per priority year, all designs solid and actively protected dashed (years under 20 designs
     hollow grey), the 50 % line, and the years where condition 1 is met (a read year above 50 % next to another one) as red bars, one row
-    per base; (b) ²D per cohort with its 95 % interval against the permutation band. Colour ts.VFS['Vectored Thrust']."""
+    per base; (b) ²D per cohort with its 95 % interval against the permutation band. Colour ts.VFS['Vectored Thrust'].
+    Restored 2026-10-23 (author) from the pre-batch-2 version: the direct labels kept; one legend row for the incomplete cohort."""
     r = analysis3.directory(ctx, q7._data(ctx))
     vy = _vt_yearly(ctx)
     for base in ("all", "in force"):                         # VT is the largest category in every read year: the share drawn is condition 1's
@@ -535,41 +560,35 @@ def fig_directory_categories(ctx):
     win = ctx.WIN_NAMES
     bal = r["balance"].set_index("window").reindex(win)
     with mpl.rc_context(ts.RC):
-        # batch 2 (2026-10-23): (a) decluttered: the met years in a thin strip under it (same x), the line names in the legend row
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.0), layout="constrained")
-        gs = fig.add_gridspec(2, 2, width_ratios=[1.25, 1], height_ratios=[1, 0.2])   # (b)'s cohort ticks stay rotated; (a)'s labels align with (b)'s
-        a1 = fig.add_subplot(gs[0, 0])
-        strip = fig.add_subplot(gs[1, 0], sharex=a1)
-        a2 = fig.add_subplot(gs[:, 1])
+        fig, (a1, a2) = plt.subplots(1, 2, figsize=(ts.TEXTWIDTH, 2.7), layout="constrained", gridspec_kw=dict(width_ratios=[1.6, 1]))   # 2.5 + labels under the panels (2026-10-23)
         for base, dashed in (("all", False), ("in force", True)):
             t = vy[base]
             yrs, y, rd = t["priority year"].to_numpy(), t["VT share"].to_numpy(float) * 100, t["read"].to_numpy(bool)
             ls = "--" if dashed else "-"
             first = int(np.argmax(rd))
             a1.plot(yrs[:first + 1], y[:first + 1], linestyle=ls, color=UNREAD, linewidth=0.9, zorder=2)
-            a1.plot(yrs[~rd], y[~rd], "o", markerfacecolor="white", markeredgecolor=UNREAD, markeredgewidth=0.8, linestyle="none", zorder=3)
-            a1.plot(yrs[rd], y[rd], marker="o", linestyle=ls, color=col, markeredgecolor=col, zorder=4,
-                    **(dict(markerfacecolor="white", markeredgewidth=0.9) if dashed else {}))
+            mk = "^" if dashed else "o"                  # round 5: shape tells the base (all designs circle, actively protected triangle)
+            a1.plot(yrs[~rd], y[~rd], mk, markerfacecolor="white", markeredgecolor=UNREAD, markeredgewidth=0.8, linestyle="none", zorder=3)
+            a1.plot(yrs[rd], y[rd], marker=mk, linestyle=ls, color=col, markeredgecolor=col, zorder=4)   # filled: hollow = incomplete cohort only
         a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=1)
         y0, y1 = int(vy["all"]["priority year"].iloc[0]), int(vy["all"]["priority year"].iloc[-1])
         a1.text(y1 + 0.5, 48, "50 %", ha="right", va="top", fontsize=8.4, color=REF)
-        for row, (yy, met) in enumerate(((1, r["met_all"]), (0, r["met"]))):
-            for a, b in _runs(met):
-                strip.plot([a - 0.4, b + 0.4], [yy, yy], color=ts.HIGHLIGHT, linewidth=3.2, solid_capstyle="butt", zorder=4)
-        strip.set_ylim(-0.6, 1.6)
-        strip.set_yticks([1, 0], ["met, all designs", "met, actively protected"])
-        strip.tick_params(axis="y", length=0)
-        for t in strip.get_yticklabels():
-            t.set_color(ts.HIGHLIGHT)
-        strip.spines["left"].set_visible(False)
+        a1.text(2011.5, 24, f"under {frames.DD_YEAR_MIN} designs: not tested", ha="center", va="bottom", fontsize=8.4, color=UNREAD)
+        for row, (yy, met, lab) in enumerate(((17, r["met_all"], "met, all designs"), (6, r["met"], "met, actively protected"))):
+            runs = _runs(met)
+            for a, b in runs:
+                a1.plot([a - 0.4, b + 0.4], [yy, yy], color=ts.HIGHLIGHT, linewidth=3.2, solid_capstyle="butt", zorder=4)
+            if runs:
+                a1.text(runs[0][0] - 0.65, yy, lab, ha="right", va="center", fontsize=8.4, color=ts.HIGHLIGHT)
+        a1.text(2018.6, 78, "actively protected", ha="center", va="bottom", fontsize=8.4, color=col)
+        a1.text(2020.0, 34, "all designs", ha="center", va="top", fontsize=8.4, color=col)
         a1.set_xlim(y0 - 0.5, y1 + 0.5)
-        strip.set_xticks(range(y0, y1 + 1), [str(y) if (y - y0) % 2 == 0 else "" for y in range(y0, y1 + 1)])
-        a1.tick_params(axis="x", labelbottom=False)
+        a1.set_xticks(range(y0, y1 + 1), [str(y) if (y - y0) % 2 == 0 else "" for y in range(y0, y1 + 1)])
         a1.set_ylim(0, 105)
         a1.set_yticks([0, 20, 40, 60, 80, 100])
         a1.set_ylabel("share of designs in\nVectored Thrust (%)")
-        strip.set_xlabel("priority year")
-        ts.panel_label(strip, "(a) condition 1, Vectored Thrust share")
+        a1.set_xlabel("priority year")
+        ts.panel_label(a1, "(a) condition 1, Vectored Thrust share")
         _grid(a1)
         metw = [bool(bal.loc[w, "below band"]) and "partial" not in w for w in win]
         _band_series(a2, bal["D2"], bal["D2 permutation low"], bal["D2 permutation high"], col, wlo=bal["D2 low"], whi=bal["D2 high"], met=metw)
@@ -577,13 +596,7 @@ def fig_directory_categories(ctx):
         a2.set_ylabel("²D of all designs with a\ndirectory category: large\ndesigns in play")   # base: analysis3.directory, every design with a directory category (625 of 627)
         a2.set_xlabel(ts.COHORT_X)
         ts.panel_label(a2, "(b) condition 2, balance")
-        ts.bottom_legend(fig, [Line2D([], [], color=col, marker="o"),
-                               Line2D([], [], color=col, marker="o", linestyle="--", markerfacecolor="white", markeredgewidth=0.9),
-                               Line2D([], [], color=UNREAD, marker="o", linestyle="none", markerfacecolor="white", markeredgewidth=0.8),
-                               mpl.patches.Patch(facecolor=ts.BAND, edgecolor="none"),
-                               Line2D([], [], marker="o", color=ts.HIGHLIGHT, linestyle="none", markersize=5.2)],
-                         ["all designs", "actively protected designs", f"under {frames.DD_YEAR_MIN} designs: not tested",
-                          "permutation band (95 %)", "condition met"], ncol=3)
+        ts.bottom_legend(fig, [ts.incomplete_handle(col)], [ts.INCOMPLETE_LABEL])    # (b) draws 2024-26* (author 2026-10-23)
         ts.fit_cohort_ticks(fig)
         ts.place_panel_labels(fig)
         fig.canvas.draw()

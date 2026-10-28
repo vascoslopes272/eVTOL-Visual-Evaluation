@@ -1022,7 +1022,7 @@ def representativeness(w: pd.DataFrame, mask: pd.Series, label: str, window_orde
 
     Ported from: la_tables.py:_representativeness"""
     from lib import association
-    rows = []
+    rows, p_raw = [], {}
     a_all, b_all = w[mask], w[~mask]
     for name, col in REP_CATEGORICAL:
         a, b = a_all[col], b_all[col]
@@ -1036,6 +1036,7 @@ def representativeness(w: pd.DataFrame, mask: pd.Series, label: str, window_orde
             p = association.chi2_test(obs)["p"]
         except Exception:
             p = float("nan")
+        p_raw[name] = p
         for k, lev in enumerate(levels):
             pa, pb = float(ca[lev]) / max(len(a), 1) * 100, float(cb[lev]) / max(len(b), 1) * 100
             rows.append({"attribute": name, "level": str(lev), label: int(ca[lev]), f"{label} %": round(pa, 1),
@@ -1049,6 +1050,7 @@ def representativeness(w: pd.DataFrame, mask: pd.Series, label: str, window_orde
             p = association.mann_whitney_p(a, b)
         except Exception:
             p = float("nan")
+        p_raw[name] = p
         rows.append({"attribute": name, "level": "median", label: len(a), f"{label} %": round(float(a.median()), 1),
                      "rest": len(b), "rest %": round(float(b.median()), 1),
                      "gap pp": round(float(a.median() - b.median()), 1), "test": "Mann-Whitney",
@@ -1064,7 +1066,7 @@ def representativeness(w: pd.DataFrame, mask: pd.Series, label: str, window_orde
         gap_of[attr] = (f"{sub.loc[k, 'level']} ({sub.loc[k, 'gap pp']:+.1f} pp)"
                         if sub.loc[k, "level"] != "median" else f"median {sub.loc[k, 'gap pp']:+.1f}")
     out["largest gap"] = [gap_of[a] if t else "" for a, t in zip(out["attribute"], out["test"].ne(""))]
-    out.attrs.update({"in": n_in, "rest": n_rest})
+    out.attrs.update({"in": n_in, "rest": n_rest, "p_raw": p_raw})      # p_raw: the unrounded p of each attribute (Holm reads these)
     return out
 
 

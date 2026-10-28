@@ -6,8 +6,8 @@ over every design of the cohort; Spearman rho of each architecture's yearly shar
 same architectures and the same Holm family (one per span) as III.1. The assignee's designs leave numerator and denominator.
 Spearman uses no random draw, so the seed (ctx.SEED) plays no part. No figure is touched.
 
-Called by notebook 57; writes Data_for_writing/csv/q7_iii1_without_bell.csv and the section SECTION of Data_for_writing/NUMBERS_III.md
-(notebook 52 rewrites NUMBERS_III.md, so run 57 after 52).
+Called by notebook 57 and, at the end of NUMBERS_III.md, by notebook 52 (``thesis_latex_part3.export``), so the order of the two no longer
+matters; writes Data_for_writing/csv/q7_iii1_without_bell.csv and the section SECTION of Data_for_writing/NUMBERS_III.md (a rerun replaces it).
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import pandas as pd
 
 from viz import analysis3, frames
 from viz import thesis_v2_part2 as p2
-from viz.thesis_latex_common import root
+from viz.thesis_latex_common import drop_section, root
 
 ASSIGNEE = "Bell / Textron"
 SECTION = "## Follow-up 2026-10-23, III.1 without Bell / Textron"
@@ -148,8 +148,6 @@ def run(cfg, ctx) -> dict:
          tables_md(_fmt(r[(r["assignees"] == "all assignees") & (r["architecture"] != tp)].drop(columns="assignees"))), "",
          "### 5. Answer\n", sentence, ""]
     md = R / "NUMBERS_III.md"
-    text = md.read_text(encoding="utf-8")
-    if SECTION in text:                                  # rerun: replace the section, which is always the last one
-        text = text[:text.index(SECTION)].rstrip() + "\n"
+    text = drop_section(md.read_text(encoding="utf-8"), SECTION)
     md.write_text(text.rstrip() + "\n\n" + "\n".join(L), encoding="utf-8")
     return {"designs": a, "shares": s, "rho": r, "sentence": sentence, "section": "\n".join(L)}
