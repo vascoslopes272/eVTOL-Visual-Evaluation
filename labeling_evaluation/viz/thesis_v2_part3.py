@@ -442,6 +442,7 @@ def fig_architecture_shares_by_cohort(ctx):
 
 #: Fig 4.11 (c) note (batch 5, author 2026-10-28): one line; "(vs. two earliest cohorts)" left out because it ran past the page; the y
 #: label already says "against the two earliest cohorts"
+LABEL_Y = 36.0                             # Fig 4.11 (a): top of the share label under the lines (%), clear of every series
 C3_NOTE = "met below the band"          # the longer form ran past the page edge (measured, batch 5)
 
 
@@ -456,13 +457,26 @@ def fig_family_conditions(ctx):
     _plt.close(f0)
     data = data[data["base"] != "granted and live"].reset_index(drop=True)
     win = ctx.WIN_NAMES
+    # 2026-10-29 (author): (c) actively protected is read against the all-designs baseline and band (§3.4.4, the verdict table since
+    # 2026-10-27), not its own two earliest cohorts; analysis3.form_ap_vs_all per cohort, level F; 2024-26 drawn, never tested
+    c3 = (data["panel"] == "(c) condition 3") & (data["base"] == "actively protected")
+    for i in data.index[c3]:
+        w = data.at[i, "year / cohort"]
+        r = analysis3.form_ap_vs_all(ctx, w).set_index("level").iloc[-1]
+        data.loc[i, ["value", "band low", "band high", "n"]] = [r["ΔQ"], r["band low"], r["band high"], r["actively protected designs"]]
+        data.at[i, "met"] = bool(r["below band"]) and w not in (win[0], win[1], win[-1])     # the baseline cohorts are not tested
+    # (a) the table's met follows the rings drawn (condition 1 on each base); it was left False on actively protected
+    c1 = data["panel"] == "(a) condition 1"
+    for base in ("all designs", "actively protected"):
+        s = data[c1 & (data["base"] == base) & data["drawn"].astype(bool)]
+        met = _dd.condition1_years(pd.DataFrame({"priority year": s["year / cohort"].astype(int), "read": True, "above 50 %": s["value"] > 0.5}))
+        data.loc[s.index, "met"] = s["year / cohort"].astype(int).isin(list(met)).to_numpy()
     col = ts.ARCH["F"]
     bases = (("all designs", False, 0.0), ("actively protected", True, 0.14))
     with mpl.rc_context(ts.RC):
         fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(ts.TEXTWIDTH, 2.94), layout="constrained")   # 2.5 + labels under the panels (2026-10-23); 3.35: + notes, footnote (2026-10-28); 3.23: legend in rows (batch 4); 2.94: one-line notes, one entry fewer (batch 5)
         # (a) condition 1, read years only
         p1 = data[data["panel"] == "(a) condition 1"]
-        top_at = {}
         for base, dashed, _ in bases:
             s = p1[(p1["base"] == base) & p1["drawn"]]
             yrs, y = s["year / cohort"].astype(int).to_numpy(), s["value"].to_numpy(float) * 100
@@ -475,12 +489,13 @@ def fig_family_conditions(ctx):
                     a1.plot(yr, yy, "o", markersize=5.2, markerfacecolor="white", markeredgecolor=ts.HIGHLIGHT, markeredgewidth=1.2, zorder=6)
                 else:
                     a1.plot(yr, yy, "o", markersize=5.2, color=ts.HIGHLIGHT, zorder=6)
-            for yr, yy in zip(yrs, y):
-                top_at[yr] = max(top_at.get(yr, 0), yy)
         s_all = p1[(p1["base"] == "all designs") & p1["drawn"]]
         for yr, sh in zip(s_all["year / cohort"].astype(int), s_all["value"].astype(float)):
             if sh > 0.5:
-                a1.annotate(f"{100 * sh:.1f}{ts.THIN}%", (yr, top_at[yr]), textcoords="offset points", xytext=(0, 4), ha="center", va="bottom", fontsize=8.4, color=col)
+                # 2026-10-29 (author): the label names the solid (all designs) marker; above the markers it read as the dashed one
+                # (59.3 % in 2021), so it sits under the lines with a leader up to the solid marker
+                a1.annotate(f"{100 * sh:.1f}{ts.THIN}%", (yr, 100 * sh), xytext=(yr, LABEL_Y), textcoords="data", ha="center", va="top",
+                            fontsize=8.4, color=col, arrowprops=dict(arrowstyle="-", color=col, lw=0.6, shrinkA=1, shrinkB=3))
         a1.axhline(50, color=REF, linewidth=0.8, linestyle=(0, (4, 2)), zorder=2)
         yrs_all = sorted(p1["year / cohort"].astype(int).unique())
         a1.text(yrs_all[0] - 0.4, 51, f"50{ts.THIN}% threshold", ha="left", va="bottom", fontsize=8.4, color=REF)

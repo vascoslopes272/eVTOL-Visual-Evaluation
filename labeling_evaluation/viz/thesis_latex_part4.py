@@ -975,10 +975,10 @@ def fig_layout_rows(ctx):
             kax.xaxis.labelpad = 1.0                  # the panel label close under its key (batch 5)
         # the faded bar named once under the three panels, and the footnote (author 2026-10-28)
         # batch 5 (author 2026-10-28): one line, the faded bar and the asterisk together; "each bar = 100 %" dropped
-        h = [mpl.patches.Patch(facecolor=INC_GREY, alpha=LAYOUT_INC_ALPHA, edgecolor="none")]
+        h = [Line2D([], [], linestyle="none")]        # batch 6: plain text, no swatch
         l = ["* 2024–26 incomplete cohort, faded, not tested"]
         kbot = _key_axes(fig, gs[2, 1])               # a key row of its own, as Figs 4.13-4.15 (a figure legend overlaps the panel labels here); under (b), its legends kept out of the widths
-        lb = ts.compact_legend(kbot, h, l, loc="upper center", fontsize=8.4, borderaxespad=0.0, width_in=ts.TEXTWIDTH)
+        lb = ts.compact_legend(kbot, h, l, bare=[0], loc="upper center", fontsize=8.4, borderaxespad=0.0, width_in=ts.TEXTWIDTH)
         lb.set_in_layout(False)                       # its height is fitted by _key_fit; its width must not squeeze the bar columns
         ts.place_panel_labels(fig)
         # the key row as tall as its longest legend (measured): the bars take the rest of the page height
