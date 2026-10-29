@@ -4,15 +4,15 @@ panel,base,year / cohort,value,band low,band high,whisker low,whisker high,drawn
 (a) condition 1,all designs,2018,0.3939,,,,,True,False,66,26
 (a) condition 1,all designs,2019,0.4068,,,,,True,False,59,24
 (a) condition 1,all designs,2020,0.4928,,,,,True,False,69,34
-(a) condition 1,all designs,2021,0.5694,,,,,True,True,72,41
+(a) condition 1,all designs,2021,0.5694,,,,,True,False,72,41
 (a) condition 1,all designs,2022,0.4792,,,,,True,False,48,23
 (a) condition 1,all designs,2023,0.3958,,,,,True,False,48,19
 (a) condition 1,actively protected,2016,0.25,,,,,True,False,24,6
 (a) condition 1,actively protected,2017,0.1818,,,,,True,False,33,6
 (a) condition 1,actively protected,2018,0.2973,,,,,True,False,37,11
 (a) condition 1,actively protected,2019,0.3636,,,,,True,False,44,16
-(a) condition 1,actively protected,2020,0.5185,,,,,True,False,54,28
-(a) condition 1,actively protected,2021,0.5932,,,,,True,False,59,35
+(a) condition 1,actively protected,2020,0.5185,,,,,True,True,54,28
+(a) condition 1,actively protected,2021,0.5932,,,,,True,True,59,35
 (a) condition 1,actively protected,2022,0.4286,,,,,True,False,35,15
 (a) condition 1,actively protected,2023,0.4318,,,,,True,False,44,19
 (b) condition 2,all designs,<= 2011,3.9,3.11,5.36,3.23,4.62,True,False,63,
@@ -30,8 +30,8 @@ panel,base,year / cohort,value,band low,band high,whisker low,whisker high,drawn
 (c) condition 3,all designs,2016-19,0.0215,-0.0205,0.0361,,,True,False,211,
 (c) condition 3,all designs,2020-23,-0.0279,-0.0196,0.0351,,,True,True,237,
 (c) condition 3,all designs,2024-26 (partial),0.0027,-0.0437,0.0401,,,True,False,56,
-(c) condition 3,actively protected,<= 2011,0.0043,-0.0472,0.0345,,,True,False,18,
-(c) condition 3,actively protected,2012-15,-0.0043,-0.0345,0.0472,,,True,False,33,
-(c) condition 3,actively protected,2016-19,0.0663,-0.0244,0.0692,,,True,False,138,
-(c) condition 3,actively protected,2020-23,0.0091,-0.0227,0.0666,,,True,False,192,
-(c) condition 3,actively protected,2024-26 (partial),0.0349,-0.0429,0.0712,,,True,False,52,
+(c) condition 3,actively protected,<= 2011,-0.0356,-0.0452,0.0222,,,True,False,18,
+(c) condition 3,actively protected,2012-15,-0.0443,-0.0296,0.0222,,,True,False,33,
+(c) condition 3,actively protected,2016-19,0.0263,-0.0247,0.0358,,,True,False,138,
+(c) condition 3,actively protected,2020-23,-0.0309,-0.0206,0.0349,,,True,True,192,
+(c) condition 3,actively protected,2024-26 (partial),-0.0051,-0.0463,0.0403,,,True,False,52,

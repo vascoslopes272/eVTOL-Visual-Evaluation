@@ -111,7 +111,7 @@ def fig_centroid_dispersion(ctx):
     t, _, _ = dispersion(ctx)
     wins = list(t["cohort"])
     x = np.arange(len(wins))
-    one = dict(zip(ctx.WIN_NAMES, ["≤ 2011", "2012–15", "2016–19", "2020–23", "2024–26"]))       # one-line cohorts (2026-10-23)
+    one = dict(zip(ctx.WIN_NAMES, ["≤ 2011", "2012–15", "2016–19", "2020–23", "2024–26*"]))       # one-line cohorts (2026-10-23)
     ticks = [f"{one[w]}\nn {n}" for w, n in zip(wins, t["aircraft"])]
     fig, axs = plt.subplots(1, 2, figsize=(ctx.W, 3.4), constrained_layout=True)
     a = axs[0]
@@ -130,7 +130,6 @@ def fig_centroid_dispersion(ctx):
     a.grid(axis="y", color=style.GRID, linewidth=0.5)
     a.set_axisbelow(True)
     for ax in axs:
-        ax.axvspan(len(wins) - 1.5, len(wins) - 0.5, facecolor="none", zorder=0, linewidth=0, hatch=plots.PARTIAL_HATCH, edgecolor=style.GRID)
         ax.set_xlabel("priority-year cohort\n(base, n: all designs with an architecture)", fontsize=FS)
     fig.legend(handles=[Patch(facecolor="#dedcd8", label="permutation band (95 %)"),
                         Line2D([], [], color=style.INK, marker="o", markersize=3.6, linewidth=1.5, label="observed"),
