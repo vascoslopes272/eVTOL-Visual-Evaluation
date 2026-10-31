@@ -1028,9 +1028,9 @@ def fig_traces_booms(ctx):
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins)
     with _p2.ts_rc():
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.11), layout="constrained")       # 2.45 + panel labels and the key row; 3.11: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.555: + marks, note, footnote, plot height kept (2026-10-28)
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.5), layout="constrained")       # 2.5: page save, height only (2026-10-31); 3.11: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.555: + marks, note, footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12])
-        a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
+        a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1])          # (b) its own y range since 2026-10-31 (0-80), tick labels still hidden
         b.tick_params(labelleft=False)
         # the key and the panel labels first: the end labels are spread at the axes' final height
         for ax in (a, b):
@@ -1040,7 +1040,7 @@ def fig_traces_booms(ctx):
         ts.place_panel_labels(fig)
         _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks())   # batch 5: two rows, architectures / open marker + rho line; no footnote (author)   # legends pass 2026-10-28
         _trace_panel_share(a, ctx, "share with units on booms")
-        a.set_ylabel("share of the\narchitecture's designs (%)")
+        a.set_ylabel("share of the\narchitecture's\ndesigns (%)")      # three lines, same words (2026-10-31): two ran past the shorter axis
         cv = dw[dw["code"] == "CVT"].set_index("window").reindex(wins)
         y = cv["share with units on booms"].to_numpy(dtype=float)
         _ts_line(b, y, TS_COL["CVT"], TS_MARK["CVT"], ns=cv["aircraft"])
@@ -1050,6 +1050,7 @@ def fig_traces_booms(ctx):
                            fontsize=8, color="#1a1a1a", alpha=ts.INCOMPLETE_ALPHA if xi == k - 1 else 1.0)
         _ts_cohort_axis(b, k, 0.6)                    # no end label: panel (a) already gives the CVT rho and p (author 2026-10-23)
         _ts_pct_axis(b)
+        b.set_ylim(0, 0.8)                            # page save (2026-10-31): the CVT trace tops at 62 %, its labels fit under 80
         _key_fit(fig)                                 # row 2 back under row 1 once the columns have settled
     return fig, None
 
@@ -1191,7 +1192,7 @@ def fig_centres5(ctx):
     dw, wins = q6._data(ctx)["dw5"], _wins(ctx)
     k = len(wins) - 1                                                          # index of the incomplete cohort
     with _p2.ts_rc():
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.92), layout="constrained")      # 2.9; 3.06: + the footnote line (2026-10-28); 2.92: key in two rows (batch 4)
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.36), layout="constrained")      # 2.36: page save, height only (2026-10-31); 2.92 before; 2.9; 3.06: + the footnote line (2026-10-28); 2.92: key in two rows (batch 4)
         gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.12])
         ax = fig.add_subplot(gs[0, 0])
         pts = []
@@ -1226,6 +1227,12 @@ def fig_centres5(ctx):
                 elif any(ii == k and abs(xx - x) < 0.05 and abs(yy - y) < 0.3 for _, ii, xx, yy in same) or \
                         any(ii < k and abs(yy - y) < 0.3 and 0 < xx - x < 0.35 for _, ii, xx, yy in same):
                     off, ha = (-7, 0), "right"
+            # page save (2026-10-31): at the shorter height two 2024-26* labels ran into a neighbour below right of their point,
+            # CVT's into TP's 20–23 (now right of the point) and SLC's into SLC's 12–15 (now below left, under 16–19)
+            if c == "CVT" and i == k:
+                off, va = (8, 0), "center"
+            elif c == "SLC" and i == k:
+                off, ha = (-7, -4), "right"
             ax.annotate(CENTRE_TAG[i], (x, y), textcoords="offset points", xytext=off, ha=ha, va=va,
                         fontsize=8.4, color=TS_COL[c], alpha=ts.INCOMPLETE_ALPHA if i == k else 1.0, zorder=6)
         ax.set_xlim(-0.4, 2.95)
@@ -1233,7 +1240,7 @@ def fig_centres5(ctx):
         ax.xaxis.set_major_locator(mticker.MultipleLocator(0.5))
         ax.yaxis.set_major_locator(mticker.MultipleLocator(2))
         ax.set_xlabel("tilting sets per design (mean of the architecture's designs)")
-        ax.set_ylabel("propulsors per design\n(median of the\narchitecture's designs)")
+        ax.set_ylabel("propulsors per design\n(median of the designs)")      # two lines (2026-10-31): the three ran past the shorter axis
         _key_two_rows(fig, gs, _key_axes(fig, gs[1, 0]), footnote=ts.INCOMPLETE_FOOTNOTE)     # as Fig 4.13; the footnote line (2026-10-28)
     data = dw[dw["code"].isin(ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
     return fig, _csv_cohorts(data.reset_index(drop=True))

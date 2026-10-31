@@ -75,7 +75,7 @@ def _calc(ctx):
     # segment slopes (2026-10-14): the eVTOL patent families and the B64 series, each with its own turning point (same method, breaks and
     # bootstrap draws as ``tp``, a fresh generator seeded like the shared one: for the eVTOL families, its first series, the result is ``tp``'s)
     seg = {}
-    for key, label in (("evtol_families", "eVTOL architecture patents"), ("b64", "aeronautics (CPC B64)")):
+    for key, label in (("evtol_families", "eVTOL architecture patent families"), ("b64", "aeronautics (CPC B64)")):
         y06 = ser[key].reindex(range(2006, 2024), fill_value=0).astype(float)
         t_ = growth.turning_point(y06.index.to_numpy(float), np.log(y06.to_numpy()), np.random.default_rng(ctx.SEED))
         b = int(t_["break"])
@@ -283,14 +283,14 @@ ITEMS = [
          read="The first bar holds 1999-2005. A year is faded with a dashed outline while the snapshot is less than the 90th-percentile publication lag (3 years) after its end; its bar total is printed on it. An event stands on its calendar year."),
     dict(name="q1_growth_rates", slot="results", kind="figure", sub="A",
          title="Growth of each series, log axis",
-         caption="eVTOL architecture patents against three worldwide baselines (WIPO, PatSeer), each relative to its own 2005-09 mean on a log axis, with its fitted line over 2005-2023.",
+         caption="eVTOL architecture patent families against three worldwide baselines (WIPO, PatSeer), each relative to its own 2005-09 mean on a log axis, with its fitted line over 2005-2023.",
          source_item="Figure 1 (ii)", flag=None, flag_note="", builder=fig_growth_rates,
          source="PatSeer worldwide simple families for CPC B64 and CPC section B · WIPO patent families by origin (indicator 6a) for all patents, exported 2026-09-25 · human labelling",
          unit="patent families per priority year, each relative to its own 2005-09 mean",
          read="Equal slopes are equal growth rates; points are yearly counts, lines are least-squares fits of log count on year over 2005-2023; the legend prints each doubling time."),
     dict(name="q1_growth_rates_table", slot="appendix", kind="table", sub="A",
          title="Doubling times against the baselines",
-         caption="Doubling time of every series over 2005-2023 with its bootstrap interval, and how many times as fast the eVTOL architecture patents grow against each baseline.",
+         caption="Doubling time of every series over 2005-2023 with its bootstrap interval, and how many times as fast the eVTOL architecture patent families grow against each baseline.",
          source_item="la_growth_rates / la_growth_ratios (Figure 1 ii data)", flag=None, flag_note="", builder=tab_growth_rates,
          source="PatSeer · WIPO · human labelling (lib.growth.loglinear_fit, growth_ratio_table: 2 000 bootstrap draws over years, seed 42)",
          unit="patent families per priority year (the eVTOL unique aircraft row counts aircraft)",

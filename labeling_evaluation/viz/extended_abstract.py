@@ -31,18 +31,21 @@ WRAP = {"SLC": "Separate\nLift + Cruise", "CVT": "Combined\nVectored Thrust"}
 OPEN_NOTE = f"open marker = {ts.FEW_MAX} designs or fewer, or 2024–26 (incomplete)"
 
 
+#: author 2026-10-29: the EA figures carry a short title under the plot (ts.panel_label, the x-label slot), letters at the bottom only
+TITLE_CENTRES = "Propulsors against tilting sets, centre per priority-year cohort"
+TITLE_SHARES = "Share of designs per architecture and priority-year cohort"
+#: the Unicode ² in the (b) title: a mathtext superscript made that line taller, so the three titles did not sit on one line
+TITLE_COND = (f"(a) Condition 1, share above 50{ts.THIN}%", "(b) Condition 2, ²D below the band", "(c) Condition 3, ΔQ below the band")
+
+
 def out_dir(cfg) -> Path:
     return root(cfg).parent / "LaTeX_v16" / "Figures" / "Extended_Abstract"
 
 
-def _letter(ax, s, x=-0.22):
-    """Panel letter at the top left of the panel, above the axes (a left title, so the constrained layout keeps room for it)."""
-    ax.set_title(s, loc="left", x=x, fontsize=PT, fontweight="bold", pad=7)
-
-
 # ---- centres (Fig 4.15)
-def centres(sf, ctx):
-    """Fig 4.15 in a (sub)figure ``sf``: the centre of SLC, TP and CVT per cohort, arrows cohort to cohort; the key in rows under it."""
+def centres(sf, ctx, side=False):
+    """Fig 4.15 in a (sub)figure ``sf``: the centre of SLC, TP and CVT per cohort, arrows cohort to cohort; the key in rows under it
+    (``side``: in one column right of the plot, the open-marker note as its last entry, for the 160 x 45 mm figure)."""
     dw, wins = q6._data(ctx)["dw5"], l4._wins(ctx)
     k = len(wins) - 1
     ax = sf.subplots()
@@ -65,7 +68,8 @@ def centres(sf, ctx):
             pts.append((c, k, xs[k], ys[k]))
     for c, i, x, y in pts:                                       # the placement rule of fig_centres5
         same = [(cc, ii, xx, yy) for cc, ii, xx, yy in pts if (cc, ii) != (c, i) and cc == c]
-        off, ha, va = ((5, -3), "left", "top") if i == k else ((5, 0), "left", "center")
+        hang = i == k and not (side and c != "SLC")                 # side (50 mm): the CVT 24-26* tag hung under its marker touched
+        off, ha, va = ((5, -3), "left", "top") if hang else ((5, 0), "left", "center")   # TP 20-23; SLC's centred touched SLC 20-23
         if i < k:
             twin = [ii for _, ii, xx, yy in same if ii < k and abs(xx - x) < 0.08 and abs(yy - y) < 0.3]
             if twin:
@@ -80,21 +84,28 @@ def centres(sf, ctx):
     ax.xaxis.set_major_locator(mticker.MultipleLocator(0.5))
     ax.yaxis.set_major_locator(mticker.MultipleLocator(2))
     ax.set_xlabel("tilting sets per design (mean)")
-    ax.set_ylabel("propulsors per design (median)")
+    ax.set_ylabel("propulsors per design\n(median)" if side else "propulsors per design (median)")   # one line ran past 50 mm
     h = [Line2D([], [], color=l4.TS_COL[c], marker=l4.TS_MARK[c], ms=4.0, lw=1.0) for c in l4.ARCH3]
     names = [ts.ARCH_NAME["TP" if c == "TR" else c] for c in l4.ARCH3]
-    order = [0, 2, 1]                                              # fig.legend fills columns: row 1 = SLC TP, row 2 = CVT
-    sf.legend([h[i] for i in order], [names[i] for i in order], loc="outside lower center", ncol=2, frameon=False,
-              handlelength=1.6, columnspacing=1.0, handletextpad=0.5, labelspacing=0.25, borderaxespad=1.4)
-    sf.text(0.5, 0.0, OPEN_NOTE, ha="center", va="bottom", fontsize=PT, color=ts.NOTE)
+    if side:
+        leg = sf.legend(h + [Line2D([], [], linestyle="none")], names + [OPEN_NOTE.replace(" or fewer, ", " or fewer,\n")],
+                        loc="outside right center", ncol=1, frameon=False, handlelength=1.6, handletextpad=0.5, labelspacing=0.6)
+        leg.get_texts()[-1].set_color(ts.NOTE)
+    else:
+        order = [0, 2, 1]                                          # fig.legend fills columns: row 1 = SLC TP, row 2 = CVT
+        sf.legend([h[i] for i in order], [names[i] for i in order], loc="outside lower center", ncol=2, frameon=False,
+                  handlelength=1.6, columnspacing=1.0, handletextpad=0.5, labelspacing=0.25, borderaxespad=1.4)
+        sf.text(0.5, 0.0, OPEN_NOTE, ha="center", va="bottom", fontsize=PT, color=ts.NOTE)
     data = dw[dw["code"].isin(l4.ARCH3)][["class", "window", "aircraft", "tilting sets (mean)", "propulsive units (median)"]]
     return ax, l4._csv_cohorts(data.reset_index(drop=True))
 
 
 # ---- shares (Fig 4.9)
-def shares(sf, ctx):
+def shares(sf, ctx, wide=False):
     """Fig 4.9 in a (sub)figure ``sf``: each architecture's share of the cohort, labels at the right end of the lines, n under the ticks;
-    no legend box (the open 2024-26 marker is named in the tick's asterisk and in the caption)."""
+    no legend box (the open 2024-26 marker is named in the tick's asterisk and in the caption). ``wide`` (160 mm): the full cohort
+    names on the ticks and the end labels on one line."""
+    wrap = {} if wide else WRAP
     d = q6._data(ctx)
     n_win = d["n_win"]
     share, _, _ = v2.joined_shares(ctx)
@@ -121,14 +132,14 @@ def shares(sf, ctx):
     top = float(np.ceil(share.to_numpy().max() * 100 / 5) * 5 + 2)
     ax.set_ylim(0, top)
     ax.set_xlim(-0.3, n - 1 + 0.3)
-    ax.set_xticks(x, [f"{t}\nn {int(m)}" for t, m in zip(l4.CENTRE_TAG, n_win)])   # the short cohort tags of Fig 4.15 (the full ones
-    #                                                                                  do not fit 78 mm); n under each
+    tags = ts.COHORTS if wide else l4.CENTRE_TAG                     # the short cohort tags of Fig 4.15 (the full ones do not fit 78 mm)
+    ax.set_xticks(x, [f"{t}\nn {int(m)}" for t, m in zip(tags, n_win)])   # n under each
     ax.set_ylabel("share of all designs (%)")
     ax.set_xlabel(ts.COHORT_X)
     v2._grid(ax)
     sf.canvas.draw()
     gap = abs(ax.transData.inverted().transform((0, 0))[1] - ax.transData.inverted().transform((0, 8.4 * sf.dpi / 72))[1])
-    big_gap = {c: 1.9 if v2.TS_CODE.get(c, c) in WRAP else 1.0 for c in codes}
+    big_gap = {c: 1.9 if v2.TS_CODE.get(c, c) in wrap else 1.0 for c in codes}
     pos = _spread_var(last_v, [gap * big_gap[c] for c in codes], 0.6, top - 0.5)
     xl = n - 1 + 0.38
     for c, yv, yp in zip(codes, last_v, pos):
@@ -136,7 +147,7 @@ def shares(sf, ctx):
         col = ts.ARCH[k]
         main = c in big
         ax.plot([n - 1 + dodge[c] + 0.07, xl - 0.06], [yv, yp], color=col, linewidth=0.5, alpha=1.0 if main else 0.7, zorder=2)
-        ax.text(xl, yp, WRAP.get(k, ts.ARCH_NAME[k] if k != "Other" else "Other"), color=col, ha="left", va="center", fontsize=IN_PLOT, linespacing=0.95,
+        ax.text(xl, yp, wrap.get(k, ts.ARCH_NAME[k] if k != "Other" else "Other"), color=col, ha="left", va="center", fontsize=IN_PLOT, linespacing=0.95,
                 fontweight="bold" if main else "normal", clip_on=False)
     return ax, share.round(4).assign(designs=n_win)
 
@@ -159,9 +170,9 @@ def _spread_var(ys, gaps, lo, hi):
 
 # ---- the three conditions on F (Fig 4.11)
 def family_conditions(fig, ctx):
-    """Fig 4.11 at 160 x 60 mm: the panel titles dropped (they repeat the y labels), the letters at the top left, each panel's test under
-    its x label, the key in two rows under the panels. Values from thesis_v2_part3.fig_family_conditions (panel c: actively protected
-    against the all-designs baseline and band)."""
+    """Fig 4.11 at 160 x 60 mm: "(a) title" under each panel's x label (TITLE_COND, the test of the panel in the title), the key in two
+    rows under the panels. Values from thesis_v2_part3.fig_family_conditions (panel c: actively protected against the all-designs
+    baseline and band)."""
     from lib import dominant_design as _dd
     f0, data = v2.fig_family_conditions(ctx)
     plt.close(f0)
@@ -193,7 +204,7 @@ def family_conditions(fig, ctx):
     a1.set_ylim(0, 75)
     a1.set_yticks([0, 20, 40, 60])
     a1.set_ylabel("share of designs in F (%)")
-    a1.set_xlabel(f"priority year\nmet above 50{ts.THIN}% in two consecutive years")
+    a1.set_xlabel("priority year")
     v2._grid(a1)
     for ax, panel, whisk in ((a2, "(b) condition 2", True), (a3, "(c) condition 3", False)):
         p = data[data["panel"] == panel]
@@ -202,11 +213,15 @@ def family_conditions(fig, ctx):
             v2._band_series(ax, s["value"], s["band low"], s["band high"], col, wlo=s["whisker low"] if whisk and not dashed else None,
                             whi=s["whisker high"] if whisk and not dashed else None, met=s["met"].astype(bool).tolist(), dashed=dashed, dx=dx,
                             band=not dashed)
-        ax.set_xlabel(f"{ts.COHORT_X}\nmet below the band")
+        ax.set_xlabel(ts.COHORT_X)
     a2.set_ylim(0, float(np.nanmax(data.loc[data["panel"] == "(b) condition 2", ["value", "band high", "whisker high"]].to_numpy(float))) * 1.12)
-    a2.set_ylabel("²D of F")
+    a2.set_ylabel(r"$^{2}\mathrm{D}$ of F")                         # mathtext: the Unicode ² printed small and looked cut off
     a3.axhline(0, color=v2.REF, linewidth=0.5, zorder=2)
-    a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
+    a3.set_ylabel("ΔQ of F")                                        # the two baselines are named in the caption (author 2026-10-29)
+    for ax, t in zip((a1, a2, a3), TITLE_COND):
+        ts.panel_label(ax, t)
+    fig.get_layout_engine().set(rect=(0, 0, 0.99, 1))              # the (c) title is wider than its panel; constrained layout left it
+    #                                                                 5 px past the right edge (measured)
     for ax in (a2, a3):
         ax.set_xticks(np.arange(len(win)), l4.CENTRE_TAG, rotation=30, ha="right", rotation_mode="anchor")   # short tags, turned as
         #                                                                       ts.fit_cohort_ticks does where a panel is too narrow
@@ -241,33 +256,26 @@ def _clipped(fig) -> int:
 
 
 def build(ctx, cfg) -> pd.DataFrame:
-    """Write the four Extended Abstract PDFs (and a 300 dpi PNG beside each for checking); return their size and smallest font."""
+    """Write the Extended Abstract PDFs (and a 300 dpi PNG beside each for checking); return their size and smallest font.
+    Author 2026-10-29: the old two-panel ea_centres_and_shares is split into ea_centres_wide and ea_shares_wide (160 x 50 / 45 mm, one
+    above the other in the EA); every title and panel letter sits under the plot (ts.panel_label / ts.place_panel_labels)."""
     out = out_dir(cfg)
     out.mkdir(parents=True, exist_ok=True)
     rows = []
     with mpl.rc_context(RC):
         jobs = {
-            "ea_centres_and_shares": (TEXT_W, 70 * MM, "pair"),
-            "ea_centres_1col": (COL_W, 65 * MM, centres),
-            "ea_shares_1col": (COL_W, 65 * MM, shares),
-            "ea_family_conditions": (TEXT_W, 60 * MM, family_conditions),
+            "ea_centres_wide": (TEXT_W, 50 * MM, lambda f, c: centres(f, c, side=True), TITLE_CENTRES),   # 45 mm cut the y label
+            "ea_shares_wide": (TEXT_W, 45 * MM, lambda f, c: shares(f, c, wide=True), TITLE_SHARES),
+            "ea_centres_1col": (COL_W, 65 * MM, centres, None),
+            "ea_shares_1col": (COL_W, 65 * MM, shares, None),
+            "ea_family_conditions": (TEXT_W, 60 * MM, family_conditions, None),
         }
-        for name, (w, h, how) in jobs.items():
+        for name, (w, h, how, title) in jobs.items():
             fig = plt.figure(figsize=(w, h), layout="constrained")
-            if how == "pair":
-                sa, sb = fig.subfigures(1, 2, wspace=0.02)
-                axa, _ = centres(sa, ctx)
-                axb, _ = shares(sb, ctx)
-                fig.canvas.draw()
-                _letter(axa, "(a)", -0.12); _letter(axb, "(b)", -0.2)
-            elif how is family_conditions:
-                axs, _ = how(fig, ctx)
-                fig.canvas.draw()
-                for ax, s in zip(axs, ("(a)", "(b)", "(c)")):
-                    _letter(ax, s, -0.2)
-            else:
-                ax, _ = how(fig, ctx)
-                _letter(ax, "", 0)
+            ax, _ = how(fig, ctx)
+            if title:
+                ts.panel_label(ax, title)
+            ts.place_panel_labels(fig)
             fig.canvas.draw()
             fig.savefig(out / f"{name}.pdf")
             fig.savefig(out / f"{name}.png", dpi=300)

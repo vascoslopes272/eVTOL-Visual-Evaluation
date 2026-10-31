@@ -520,7 +520,7 @@ def fig_family_conditions(ctx):
         a2.set_ylabel("²D of F")
         ts.panel_label(a2, "(b) balance", note="met below the band")
         a3.axhline(0, color=REF, linewidth=0.5, zorder=2)
-        a3.set_ylabel("ΔQ of F against the\ntwo earliest cohorts")
+        a3.set_ylabel("ΔQ of the cohort against\nthe two earliest cohorts")   # 2026-10-31: condition 3 is on the whole cohort, not F
         ts.panel_label(a3, "(c) disparity", note=C3_NOTE)
         # batch 4 (author 2026-10-28): the five entries in rows across the page width, the footnote at the end of the last row
         ts.compact_legend(fig, [Line2D([], [], color=col, marker="o"),

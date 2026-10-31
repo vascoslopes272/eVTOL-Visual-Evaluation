@@ -41,7 +41,7 @@ B_LEFT_IN, B_RIGHT_IN = 0.62, 0.10
 #: (a) the values inside the segments without the " %" (the axis is in %): with it, 63.6 does not fit inside a bar
 IN_BAR = "{:.1f}"
 ORDER_A = ["Named company", "Individual inventor", "University / institute"]          # stack order from the bottom
-WORD_A = dict(sp.ATYPE_WORD, **{"University / institute": "universities and institutes"})   # one-line key
+WORD_A = dict(sp.ATYPE_WORD, **{"University / institute": "university"})   # one-line key; "university" as the text names the type (2026-10-31)
 #: (a) bar centres: at 8 pt the binding widths are "10.1 %" next to "19.6 %" (25 pt each, so a cohort pitch of 1 unit = ~27 pt) and
 #: "designs" next to "patents" (27.5 and 26.2 pt, so the two all-years bars 1.13 apart); the gap before the cohorts 1.1; bars 0.68 wide
 XPOS_A = [0, 1.13] + [2.23 + k for k in range(5)]

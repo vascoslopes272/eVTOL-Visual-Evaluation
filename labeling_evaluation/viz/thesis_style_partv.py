@@ -224,7 +224,7 @@ def fig_region_design_all_years(ctx):
                 xna = x[0] - bw
                 na_mark = dict(ls="none", marker=ts.REGION_MARKER["North America"], mfc="white", mec=ts.REGION["North America"], ms=4.2, mew=1.0)
                 ax.plot([xna], [na_wo], zorder=5, **na_mark)
-                short = big.split(" /")[0] + "/" + big.split("/ ")[-1] if "/" in big else big
+                short = big.split(" /")[0] + " / " + big.split("/ ")[-1] if "/" in big else big   # "Bell / Textron", as the text (2026-10-31)
                 ax.set_xlim(-0.65, 1.75)
             else:
                 ax.set_xlim(-0.55, len(answers) - 0.45)
@@ -252,7 +252,7 @@ def fig_region_design_all_years(ctx):
 # ---------------------------------------------------------------------------------------------- 4.20 architecture per region and cohort
 #: Fig 4.18 page height: 3.4 in before the legends pass; 3.93 keeps the plot height with the two-column legend and the footnote (above the
 #: 3.6 in ceiling; accepted by the author 2026-10-28)
-C_HEIGHT = 3.58   # batch 4 (2026-10-28): legend in three rows instead of four; batch 5: two rows
+C_HEIGHT = 2.85   # page save (2026-10-31): 3.58 before, bottom row 0-35 and shorter; batch 4 (2026-10-28): legend in three rows instead of four; batch 5: two rows
 def fig_region_mix_by_window_class(ctx):
     """4.18: 2 x 3 small line charts, one per architecture; x = cohort from 2012-15, a line per region (colour and marker); a cell under
     frames.CH5_THIN designs is not drawn; 2024-26* hollow and never joined. The significant trend (NA in CVT) is in the caption, not the
@@ -263,7 +263,8 @@ def fig_region_mix_by_window_class(ctx):
     wins = frames.CH5_WINS + [INCOMPLETE]
     x = np.arange(len(wins), dtype=float)
     with _rc():
-        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, C_HEIGHT), layout="constrained", sharex=True, sharey=True)   # 3.4 + labels under the panels (2026-10-23); C_HEIGHT: + legend rows (2026-10-28)
+        fig, axs = plt.subplots(2, 3, figsize=(ts.TEXTWIDTH, C_HEIGHT), layout="constrained", sharex=True, sharey="row",
+                                gridspec_kw=dict(height_ratios=[1, 0.65]))   # 3.4 + labels under the panels (2026-10-23); C_HEIGHT: + legend rows (2026-10-28)
         for k, (ax, c) in enumerate(zip(axs.flat, q3.CLASSES5)):
             for r in REGIONS:
                 s = data[data["region"] == r].set_index("window")
@@ -278,6 +279,8 @@ def fig_region_mix_by_window_class(ctx):
             # the significant trends (NA in CVT: rho +0.24, p < 0.001) are in the caption (sweep 3, 2026-10-23), not in the panel
         axs[0, 0].set_ylim(0, 0.6)
         axs[0, 0].set_yticks([0, .2, .4], ["0", "20", "40"])
+        axs[1, 0].set_ylim(0, 0.35)                     # page save (2026-10-31): the bottom row's data stay under 30 %
+        axs[1, 0].set_yticks([0, .2], ["0", "20"])
         axs[0, 0].set_xlim(-0.35, len(wins) - 0.65)
         for ax in axs[1]:
             ax.set_xticks(x, [COHORT_2L[w] for w in wins], rotation=30, ha="right", rotation_mode="anchor")   # 30 degrees: flat, "2020–23" and "2024–26" touch (author 2026-10-23)
@@ -310,7 +313,7 @@ def fig_region_family_share(ctx):
     wins = frames.CH5_WINS
     xw = np.arange(len(wins), dtype=float)
     with _rc():
-        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 2.3), layout="constrained")
+        fig, ax = plt.subplots(figsize=(ts.TEXTWIDTH, 1.81), layout="constrained")   # 1.81: page save, height only (2026-10-31); 2.3 before
         ends, notes = [], []
         for _, r in ln.iterrows():
             reg = r["region"]
@@ -326,7 +329,7 @@ def fig_region_family_share(ctx):
         # a cohort under frames.CH5_THIN designs is not drawn; its n is in the caption (sweep 3, 2026-10-23)
         ax.set_xticks(xw, [f"{COHORT[w]}\nχ² p {q7.pval5(q7._tp(d, 'family F', w))}" for w in wins])
         ax.set_xlim(-0.3, len(wins) - 0.45)
-        ax.set_ylim(0.10, 0.65)                                         # from 10 %: the lowest value drawn is 22 % (sweep 3)
+        ax.set_ylim(0.15, 0.65)                                         # from 15 % (2026-10-31; 10 % before): the lowest value drawn is 22 % (sweep 3)
         ax.set_yticks([.2, .4, .6], ["20", "40", "60"])
         ax.set_xlabel(ts.COHORT_X)
         ax.set_ylabel("share of the region's\ndesigns in family F (%)")

@@ -33,7 +33,7 @@ SHOWS = {
     "q1_filings_per_year": "Designs filed per priority year (dark-grey bars, 2024-26 outline only) and patent families (blue line, same y axis); dated sector events as thin lines (thesis style, 2026-10-20)",
     "q4_dataset_vs_directory_classes": "Designs per architecture group in the patent dataset and the pages of the VFS eVTOL directory inside the domain, all years (appendix)",
     "q4_dataset_vs_directory_subsets": "Designs of each architecture group in the dataset and in four parts of the in-domain directory (appendix)",
-    "q1_growth_rates": "Growth of eVTOL architecture patents and aeronautics (CPC B64), relative to 2005-09, log2 scale, each drawn with the model that wins on AIC and BIC (its own break, fitted 2005-2022); (b) eVTOL families per 1 000 B64 families per priority year (supervisor review 2, 2026-10; no level-shift arrows)",
+    "q1_growth_rates": "Growth of eVTOL architecture patent families and aeronautics (CPC B64), relative to 2005-09, log2 scale, each drawn with the model that wins on AIC and BIC (its own break, fitted 2005-2022); (b) eVTOL families per 1 000 B64 families per priority year (supervisor review 2, 2026-10; no level-shift arrows)",
     "q1_growth_rates_baselines": "Appendix to q1_growth_rates: transport and operations (CPC section B) and all patents, the same reading, one panel each (supervisor review 2, 2026-10)",
     "q4_patent_vs_market_clock": "One row per AAM Reality Index firm that files here: first to last patent, peak year, first flight, entry into service (thesis style, 6.3 in, 2026-10-20)",
     "q1_in_force_status": "Share of designs not actively protected, by architecture and by filing office (US against the other offices), the nine architectures of ten designs or more, 604 designs (width not given: 1.0; appendix at most)",
@@ -151,13 +151,13 @@ def write_numbers_I(cfg, ctx) -> Path:
     r = lambda k: rates.loc[k]                                                                                  # noqa: E731
     ra = lambda who, ag: ratios[(ratios["eVTOL counted as"] == who) & (ratios["against"].str.startswith(ag))].iloc[0]      # noqa: E731
     table("Doubling times, 2005-2023 (years, 95 % interval)", [
-        ("eVTOL architecture patents (families)", f"{r('evtol_families')['doubling time (years)']} ({r('evtol_families')['95 % interval']})", f"csv/q1_growth_rates.csv; {S1}; q1.numbers()['dbl_fam']"),
+        ("eVTOL architecture patent families", f"{r('evtol_families')['doubling time (years)']} ({r('evtol_families')['95 % interval']})", f"csv/q1_growth_rates.csv; {S1}; q1.numbers()['dbl_fam']"),
         ("eVTOL unique designs", f"{r('evtol_aircraft')['doubling time (years)']} ({r('evtol_aircraft')['95 % interval']})", f"{S1}; q1.numbers()['dbl_ac']"),
         ("aeronautics (CPC B64)", f"{r('b64')['doubling time (years)']} ({r('b64')['95 % interval']})", f"{S1}; q1.numbers()['dbl_b64']"),
         ("transport and operations (CPC section B)", f"{r('secb')['doubling time (years)']} ({r('secb')['95 % interval']})", f"{S1}; q1.numbers()['dbl_secb']"),
         ("all patenting", f"{r('all')['doubling time (years)']} ({r('all')['95 % interval']})", f"{S1}; q1.numbers()['dbl_all']"),
-        ("growth per year, eVTOL architecture patents", r("evtol_families")["growth per year"], f"{S1}")])
-    table("Growth-rate ratio of eVTOL architecture patents (times as fast, 95 % interval)", [
+        ("growth per year, eVTOL architecture patent families", r("evtol_families")["growth per year"], f"{S1}")])
+    table("Growth-rate ratio of eVTOL architecture patent families (times as fast, 95 % interval)", [
         ("against aeronautics (CPC B64)", f"{ra('eVTOL architecture patents', 'aeronautics')['times as fast']} ({ra('eVTOL architecture patents', 'aeronautics')['95 % interval']})", f"{S1}; q1.numbers()['gr_fam_b64'], ['gr_fam_b64_ci']"),
         ("against transport and operations", f"{ra('eVTOL architecture patents', 'transport')['times as fast']} ({ra('eVTOL architecture patents', 'transport')['95 % interval']})", f"{S1}; q1.numbers()['gr_fam_secb']"),
         ("against all patents", f"{ra('eVTOL architecture patents', 'all')['times as fast']} ({ra('eVTOL architecture patents', 'all')['95 % interval']})", f"{S1}; q1.numbers()['gr_fam_all']"),
@@ -269,7 +269,7 @@ def write_numbers_I(cfg, ctx) -> Path:
     fpy = c["fpy"]
     rows = [
         ("q1_filings_per_year", f"627 designs over the priority years 2005 (pooled with the earlier ones) to {fpy.index.max()}; 625 have an architecture, 2 do not (grey segment); {n1['representative_s'] if 'representative_s' in n1 else int(cnt['patents_approved'])} patent families; cohort 2024-26 faded"),
-        ("q1_growth_rates", "eVTOL architecture patents, aeronautics, transport and operations, all patents; 2005-2023 fitted, 2024-26 shown and never fitted"),
+        ("q1_growth_rates", "eVTOL architecture patent families, aeronautics, transport and operations, all patents; 2005-2023 fitted, 2024-26 shown and never fitted"),
         ("q4_patent_vs_market_clock", f"{len(tl)} index firms with a first patent here; first flight {int(tl['first flight (ARI)'].notna().sum())} firms, entry into service {int(tl['entry into service (ARI)'].notna().sum())} firms"),
         ("q1_in_force_status", f"{len(big)} designs of the nine architectures, by office; {len(v) - len(big)} not plotted (see section 2)"),
         ("q4_class_mix", "patent dataset: " + ", ".join(f"{k} {int(t)}" for k, t in mix[mix['source'] == q4.SRC_PATENT].groupby('window')['window total'].first().reindex(ctx.WIN_NAMES).items())

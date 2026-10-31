@@ -728,7 +728,7 @@ MODEL_WORDS = {"a": "two lines with a level step", "b": "two lines meeting at th
 GROWTH_KEYS = {"evtol_families": "eVTOL", "b64": "aeronautics", "secb": "transport", "all": "all patents"}
 GROWTH_MARKER = {"evtol_families": "o", "b64": "s", "secb": "^", "all": "v"}
 #: the end label printed in the figure where it differs from GROWTH_KEYS (author, 2026-10-22)
-GROWTH_LABEL = {"evtol_families": "eVTOL architecture\npatents"}
+GROWTH_LABEL = {"evtol_families": "eVTOL architecture\npatent families"}   # families, as the axis (author 2026-10-30)
 
 
 def _growth_panel(ax, ctx, keys, fit_last=None):
@@ -801,7 +801,7 @@ def _growth_legend(fig, ctx, keys):
 
 
 def fig_growth_rates_ts(ctx):
-    """Fig 4.2 (supervisor review 2, 2026-10): (a) eVTOL architecture patents and aeronautics (CPC B64) relative to 2005-09, each drawn
+    """Fig 4.2 (supervisor review 2, 2026-10): (a) eVTOL architecture patent families and aeronautics (CPC B64) relative to 2005-09, each drawn
     with the model that wins on AIC and BIC for that series, its break the series' own (lib/growth_models, fitted 2005-2022);
     (b) the ratio of eVTOL families to B64 families per priority year (both PatSeer simple families), per 1 000. No level-shift
     arrows; the model comparison and the bootstrap intervals are in NUMBERS_I (csv/numbers_I_growth_models.csv, _growth_breakpoints.csv).
