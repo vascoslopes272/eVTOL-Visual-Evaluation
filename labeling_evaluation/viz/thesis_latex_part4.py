@@ -1066,7 +1066,7 @@ def fig_traces_ducts(ctx):
     lt = d["links"][d["links"]["link"].str.startswith("CVT")].set_index("group")
     with _p2.ts_rc():
         # (b) narrower than (a) (author 2026-10-23: it holds two short lines, no ≤ 2011 point); more room right of both for the ρ labels
-        fig = plt.figure(figsize=(ts.TEXTWIDTH, 3.12), layout="constrained")     # 3.1; 3.12: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.55: + marks and footnote, plot height kept (2026-10-28)
+        fig = plt.figure(figsize=(ts.TEXTWIDTH, 2.95), layout="constrained")     # 2.5: page save, height only (2026-11-01); 3.12: key in two rows (batch 5); 3.1; 3.12: key in two rows (batch 5); 3.29: key in three rows (batch 4); 3.55: + marks and footnote, plot height kept (2026-10-28)
         gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 0.12], width_ratios=[1.2, 1])
         a = fig.add_subplot(gs[0, 0]); b = fig.add_subplot(gs[0, 1], sharey=a)
         b.tick_params(labelleft=False)
@@ -1074,15 +1074,17 @@ def fig_traces_ducts(ctx):
         for ax in (a, b):
             ax.set_xlabel(ts.COHORT_X)
         ts.panel_label(a, "(a) Ducted propulsor")
-        ts.panel_label(b, "(b) CVT ducted, by boom layout")
+        ts.panel_label(b, "(b) CVT, ducted share, by boom layout", note="base: CVT designs with, or without,\npropulsors on booms")
         ts.place_panel_labels(fig)
         _key_two_rows(fig, gs, _key_axes(fig, gs[1, :]), marks=_trace_marks())   # batch 5: two rows, architectures / open marker + rho line; no footnote (author)   # as Fig 4.13; panel (b) names its two CVT lines directly
         _trace_panel_share(a, ctx, "share with a ducted unit", room=DUCT_ROOM)
         a.set_ylabel("share of the\narchitecture's designs (%)")
+        b.tick_params(labelleft=True)                 # (b) has its own y label (2026-11-01), so its own tick labels
+        b.set_ylabel("designs with a\nducted propulsor (%)")
         items = []
-        for name, txt, colname, color, marker, ncol_ in (("units on booms", "CVT, propulsors\non booms", "ducted share, units on booms", TS_COL["CVT"], "^",
+        for name, txt, colname, color, marker, ncol_ in (("units on booms", "CVT with\npropulsors\non booms", "ducted share, units on booms", TS_COL["CVT"], "^",
                                                           "aircraft, units on booms"),
-                                                         ("no units on booms", "CVT, no\npropulsors\non booms", "ducted share, no units on booms",
+                                                         ("no units on booms", "CVT without\npropulsors\non booms", "ducted share, no units on booms",
                                                           _p2.ts_tint(TS_COL["CVT"], 0.5), "o", "aircraft, no units on booms")):
             yv = cv[colname].to_numpy(dtype=float)
             _ts_line(b, yv, color, marker, ns=cv[ncol_])
@@ -1092,8 +1094,6 @@ def fig_traces_ducts(ctx):
         _ts_pct_axis(b)
         # "CVT, no propulsors" ran past the right edge in print (author 2026-10-24): three lines of name + the test line
         _ts_end_labels(b, items, k - 1 + LABEL_DX, lines=4, lo=0, hi=1.0)
-        b.text(0.02, 0.98, "base: the CVT designs\nof each boom layout", transform=b.transAxes, ha="left", va="top", fontsize=8.4,
-               color=NOTE, linespacing=1.1)
         _key_fit(fig)                                 # row 2 back under row 1 once the columns have settled
     return fig, None
 
